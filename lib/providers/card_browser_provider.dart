@@ -19,6 +19,7 @@ class CardBrowserProvider extends ChangeNotifier {
   String titleFilter = '';
   bool favouritesOnly = false;
   bool transcribedOnly = false;
+  int _operationToken = 0;
 
   void initializeForDeck(String deckId, List<CardImageModel> cards) {
     final idsChanged = !listEquals(
@@ -35,10 +36,12 @@ class CardBrowserProvider extends ChangeNotifier {
 
   Future<void> generateRandomHand({int count = 5}) async {
     if (isShuffling) return;
+    final token = ++_operationToken;
     isShuffling = true;
     selectedCardId = null;
     notifyListeners();
     await Future<void>.delayed(const Duration(milliseconds: 180));
+    if (token != _operationToken) return;
     final shuffled = List<CardImageModel>.from(availableCards)
       ..shuffle(_random);
     visibleHand = List.unmodifiable(shuffled.take(count));
@@ -51,6 +54,26 @@ class CardBrowserProvider extends ChangeNotifier {
     if (isShuffling) return;
     selectedCardId = null;
     visibleHand = List.unmodifiable(availableCards.take(count));
+    shuffleGeneration++;
+    notifyListeners();
+  }
+
+  void focusCard(String cardId, {String? category, int count = 5}) {
+    final card = _sourceCards.where((item) => item.id == cardId).firstOrNull;
+    if (card == null) return;
+    _operationToken++;
+    isShuffling = false;
+    categoryFilter = (category?.isEmpty ?? true) ? null : category;
+    _applyFilters(notify: false);
+    if (!availableCards.any((item) => item.id == cardId)) {
+      categoryFilter = null;
+      _applyFilters(notify: false);
+    }
+    visibleHand = List.unmodifiable([
+      card,
+      ...availableCards.where((item) => item.id != cardId).take(count - 1),
+    ]);
+    selectedCardId = cardId;
     shuffleGeneration++;
     notifyListeners();
   }
