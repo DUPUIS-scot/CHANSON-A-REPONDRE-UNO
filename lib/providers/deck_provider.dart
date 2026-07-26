@@ -43,9 +43,8 @@ class DeckProvider extends ChangeNotifier {
             .toList();
       }
       await _installProductionDeck();
-      _activeDeckId = await _storage.read(_activeKey);
-      if (activeDeck == null ||
-          _activeDeckId != AppConstants.productionDeckId) {
+      _activeDeckId = _decodeStoredId(await _storage.read(_activeKey));
+      if (activeDeck == null) {
         _activeDeckId = AppConstants.productionDeckId;
       }
       await _persist(notify: false);
@@ -55,6 +54,17 @@ class DeckProvider extends ChangeNotifier {
     } finally {
       _loading = false;
       notifyListeners();
+    }
+  }
+
+  String? _decodeStoredId(String? source) {
+    if (source == null || source.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(source);
+      return decoded is String ? decoded : source;
+    } on FormatException {
+      // Compatibility with versions that persisted the raw ID.
+      return source;
     }
   }
 
@@ -96,6 +106,7 @@ class DeckProvider extends ChangeNotifier {
   }
 
   Future<void> select(String id) async {
+    if (!_decks.any((deck) => deck.id == id)) return;
     _activeDeckId = id;
     await _persist();
   }
@@ -121,6 +132,7 @@ class DeckProvider extends ChangeNotifier {
 
   Future<void> rename(String id, String name) async {
     if (name.trim().isEmpty) return;
+    if (id == AppConstants.productionDeckId) return;
     _decks = _decks
         .map((deck) => deck.id == id ? deck.copyWith(name: name.trim()) : deck)
         .toList();
@@ -128,6 +140,7 @@ class DeckProvider extends ChangeNotifier {
   }
 
   Future<void> delete(String id) async {
+    if (id == AppConstants.productionDeckId) return;
     final deck = _decks.where((item) => item.id == id).firstOrNull;
     if (deck == null) return;
     await _importer.deleteFiles(deck);

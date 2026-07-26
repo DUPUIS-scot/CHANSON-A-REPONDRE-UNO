@@ -1,4 +1,8 @@
+import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+
+import '../providers/deck_provider.dart';
 import '../screens/ai_chat_screen.dart';
 import '../screens/card_browser_screen.dart';
 import '../screens/card_fullscreen_screen.dart';
@@ -8,7 +12,6 @@ import '../screens/dj_who_videos_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/journal_screen.dart';
 import '../screens/not_found_screen.dart';
-import '../screens/destination_screen.dart';
 import '../screens/play_screen.dart';
 import '../screens/rules_screen.dart';
 import '../screens/search_screen.dart';
@@ -124,7 +127,7 @@ abstract final class AppRouter {
       GoRoute(
         path: '/deck/:deckId',
         builder: (_, state) =>
-            DestinationScreen(title: 'Deck ${state.pathParameters['deckId']}'),
+            _DeckRouteScreen(deckId: state.pathParameters['deckId']!),
       ),
       GoRoute(
         path: '/card/:cardId',
@@ -146,4 +149,38 @@ abstract final class AppRouter {
       ),
     ],
   );
+}
+
+class _DeckRouteScreen extends StatefulWidget {
+  const _DeckRouteScreen({required this.deckId});
+
+  final String deckId;
+
+  @override
+  State<_DeckRouteScreen> createState() => _DeckRouteScreenState();
+}
+
+class _DeckRouteScreenState extends State<_DeckRouteScreen> {
+  bool routed = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final decks = context.watch<DeckProvider>();
+    if (routed || decks.loading) return;
+    if (!decks.decks.any((deck) => deck.id == widget.deckId)) return;
+    routed = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await context.read<DeckProvider>().select(widget.deckId);
+      if (mounted) context.go(AppRoutes.cards);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final decks = context.watch<DeckProvider>();
+    if (decks.loading || routed) return const CardBrowserScreen();
+    return NotFoundScreen(message: 'The requested deck does not exist.');
+  }
 }

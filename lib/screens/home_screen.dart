@@ -3,11 +3,14 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../core/app_router.dart';
+import '../providers/background_provider.dart';
 import '../providers/deck_provider.dart';
 import '../providers/game_provider.dart';
 import '../providers/home_experience_provider.dart';
+import '../services/background_import_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_bottom_navigation.dart';
+import '../widgets/background_widget.dart';
 import '../widgets/continue_progress_panel.dart';
 import '../widgets/interactive_curtain_overlay.dart';
 import '../widgets/deck_carousel.dart';
@@ -25,8 +28,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  static const _menuBackgroundAsset =
-      'assets/images/main_menu_background.png';
+  static const _menuBackgroundAsset = 'assets/images/main_menu_background.png';
 
   static const _cardAlignments = <Alignment>[
     Alignment.topLeft,
@@ -122,6 +124,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final decks = context.watch<DeckProvider>();
+    final background = context.watch<BackgroundProvider>();
     final game = context.watch<GameProvider>().state;
     final experience = context.watch<HomeExperienceProvider>();
     final homeInteractive = experience.homeInteractive;
@@ -137,13 +140,21 @@ class _HomeScreenState extends State<HomeScreen> {
         fit: StackFit.expand,
         children: [
           Positioned.fill(
-            child: Image.asset(
-              'assets/images/main_street_background.png',
-              fit: BoxFit.cover,
-              alignment: Alignment.center,
-              filterQuality: FilterQuality.high,
-              errorBuilder: (context, error, stackTrace) =>
-                  const ColoredBox(color: Color(0xFF090503)),
+            child: BackgroundWidget(
+              type: background.type == BackgroundMediaType.video
+                  ? BackgroundType.video
+                  : BackgroundType.image,
+              imagePath: background.imagePath,
+              videoPath: background.videoPath,
+              fallbackImagePath: 'assets/images/main_street_background.png',
+              muted: background.muteVideo,
+            ),
+          ),
+          Positioned.fill(
+            child: IgnorePointer(
+              child: ColoredBox(
+                color: Colors.black.withValues(alpha: background.darkOverlay),
+              ),
             ),
           ),
           IgnorePointer(
@@ -205,10 +216,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                     description: item.description,
                                     accent: item.accent,
                                     backgroundAsset: _menuBackgroundAsset,
-                                    backgroundAlignment:
-                                        _cardAlignments[index],
-                                    overlayOpacity:
-                                        _overlayOpacities[index],
+                                    backgroundAlignment: _cardAlignments[index],
+                                    overlayOpacity: _overlayOpacities[index],
                                     onTap: () => context.go(item.route),
                                   );
                                 },
