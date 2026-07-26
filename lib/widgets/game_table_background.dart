@@ -1,14 +1,22 @@
 import 'package:flutter/material.dart';
 
 class GameTableBackground extends StatelessWidget {
-  const GameTableBackground({required this.child, super.key});
+  const GameTableBackground({
+    required this.child,
+    this.stageLayer,
+    super.key,
+  });
+
   final Widget child;
+  final Widget? stageLayer;
+
   @override
   Widget build(BuildContext context) => Stack(
     fit: StackFit.expand,
     children: [
       const ColoredBox(color: Color(0xFF130D0B)),
       CustomPaint(painter: _TablePainter()),
+      ?stageLayer,
       Positioned(
         left: 0,
         top: 0,

@@ -13,7 +13,8 @@ import '../widgets/game_table_background.dart';
 import '../widgets/home_navigation_button.dart';
 import '../widgets/opponent_hand.dart';
 import '../widgets/player_hand.dart';
-import '../widgets/stored_image.dart';
+import '../widgets/puppet_dealer_controller.dart';
+import '../widgets/puppet_dealer_scene.dart';
 import 'play_hand_fullscreen_screen.dart';
 
 class PlayScreen extends StatefulWidget {
@@ -27,6 +28,9 @@ class _PlayScreenState extends State<PlayScreen> {
   CardImageModel? flyingCard;
   bool hideHand = false;
   bool previewOpening = false;
+  bool dealerBusy = false;
+  PuppetQuality puppetQuality = PuppetQuality.medium;
+  final PuppetDealerController puppetController = PuppetDealerController();
 
   Future<void> openHandPreview(
     List<CardImageModel> cards,
@@ -87,13 +91,17 @@ class _PlayScreenState extends State<PlayScreen> {
       );
       return;
     }
-    setState(() => flyingCard = selected);
-    await Future<void>.delayed(const Duration(milliseconds: 420));
+    setState(() {
+      flyingCard = selected;
+      dealerBusy = true;
+    });
+    await puppetController.receiveFromPlayer(selected.imagePath);
     if (!mounted) return;
     final played = await game.play(selected);
     if (!mounted) return;
     setState(() {
       flyingCard = null;
+      dealerBusy = false;
       selectedCardId = null;
       hideHand = context.read<SettingsProvider>().hidePlayerHandAfterTurn;
     });
@@ -101,6 +109,20 @@ class _PlayScreenState extends State<PlayScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(game.message!)));
+    }
+  }
+
+  Future<void> drawWithDealer() async {
+    final game = context.read<GameProvider>();
+    final state = game.state;
+    if (dealerBusy || state == null || state.drawPile.isEmpty) return;
+    final card = state.drawPile.last;
+    setState(() => dealerBusy = true);
+    try {
+      await puppetController.dealToPlayer(card.imagePath);
+      if (mounted) await game.draw();
+    } finally {
+      if (mounted) setState(() => dealerBusy = false);
     }
   }
 
@@ -115,8 +137,39 @@ class _PlayScreenState extends State<PlayScreen> {
       appBar: AppBar(
         title: const Text('Play'),
         backgroundColor: const Color(0xFF130D0B),
-        actions: const [
-          Padding(
+        actions: [
+          PopupMenuButton<PuppetQuality>(
+            initialValue: puppetQuality,
+            tooltip: '3D quality',
+            icon: const Icon(Icons.tune),
+            onSelected: (quality) {
+              setState(() => puppetQuality = quality);
+              puppetController.setQuality(quality);
+            },
+            itemBuilder: (context) => PuppetQuality.values
+                .map(
+                  (quality) => PopupMenuItem(
+                    value: quality,
+                    child: Row(
+                      children: [
+                        Icon(
+                          quality == puppetQuality
+                              ? Icons.radio_button_checked
+                              : Icons.radio_button_unchecked,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          '${quality.name[0].toUpperCase()}'
+                          '${quality.name.substring(1)}',
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+                .toList(),
+          ),
+          const Padding(
             padding: EdgeInsets.only(right: 8),
             child: HomeNavigationButton(confirmActiveGame: true),
           ),
@@ -125,6 +178,28 @@ class _PlayScreenState extends State<PlayScreen> {
       body: state == null
           ? _GameLauncher(decks: decks, game: game)
           : GameTableBackground(
+              stageLayer: LayoutBuilder(
+                builder: (context, constraints) {
+                  final narrow = constraints.maxWidth < 720;
+                  final width = narrow
+                      ? constraints.maxWidth
+                      : constraints.maxWidth * .48;
+                  final height = narrow
+                      ? constraints.maxHeight * .56
+                      : constraints.maxHeight * .64;
+                  return Align(
+                    alignment: Alignment.topCenter,
+                    child: SizedBox(
+                      width: width,
+                      height: height,
+                      child: PuppetDealerScene(
+                        controller: puppetController,
+                        quality: puppetQuality,
+                      ),
+                    ),
+                  );
+                },
+              ),
               child: SafeArea(
                 child: Stack(
                   children: [
@@ -161,8 +236,9 @@ class _PlayScreenState extends State<PlayScreen> {
                                           DrawPileWidget(
                                             count: state.drawPile.length,
                                             onDraw:
-                                                state.currentPlayerIndex == 0
-                                                ? game.draw
+                                                state.currentPlayerIndex == 0 &&
+                                                    !dealerBusy
+                                                ? drawWithDealer
                                                 : null,
                                           ),
                                           DiscardPileWidget(
@@ -224,14 +300,14 @@ class _PlayScreenState extends State<PlayScreen> {
                                     FilledButton.icon(
                                       onPressed:
                                           game.canPlay(selected) &&
-                                              flyingCard == null
+                                              !dealerBusy
                                           ? playSelected
                                           : null,
                                       icon: const Icon(Icons.play_arrow),
                                       label: const Text('PLAY CARD'),
                                     ),
                                     OutlinedButton.icon(
-                                      onPressed: flyingCard == null
+                                      onPressed: !dealerBusy
                                           ? () => setState(
                                               () => selectedCardId = null,
                                             )
@@ -268,45 +344,6 @@ class _PlayScreenState extends State<PlayScreen> {
                         );
                       },
                     ),
-                    if (flyingCard != null)
-                      Positioned.fill(
-                        child: IgnorePointer(
-                          child: TweenAnimationBuilder<double>(
-                            tween: Tween(begin: 0, end: 1),
-                            duration: const Duration(milliseconds: 420),
-                            curve: Curves.easeInOut,
-                            builder: (context, value, child) => Align(
-                              alignment: Alignment(0, .88 - value * 1.05),
-                              child: Transform.scale(
-                                scale: 1 - value * .18,
-                                child: Opacity(
-                                  opacity: 1 - value * .15,
-                                  child: child,
-                                ),
-                              ),
-                            ),
-                            child: Container(
-                              width: 92,
-                              height: 136,
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                  color: AppTheme.brightGold,
-                                  width: 3,
-                                ),
-                                borderRadius: BorderRadius.circular(8),
-                                boxShadow: const [
-                                  BoxShadow(
-                                    color: Color(0xAAFFC928),
-                                    blurRadius: 20,
-                                  ),
-                                ],
-                              ),
-                              clipBehavior: Clip.antiAlias,
-                              child: StoredImage(source: flyingCard!.imagePath),
-                            ),
-                          ),
-                        ),
-                      ),
                   ],
                 ),
               ),
