@@ -146,7 +146,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   : BackgroundType.image,
               imagePath: background.imagePath,
               videoPath: background.videoPath,
-              fallbackImagePath: 'assets/images/main_street_background.png',
+              fallbackImagePath: BackgroundProvider.defaultImageAsset,
               muted: background.muteVideo,
             ),
           ),

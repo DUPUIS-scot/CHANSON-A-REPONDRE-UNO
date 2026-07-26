@@ -10,21 +10,25 @@ class BackgroundProvider extends ChangeNotifier {
   final LocalStorageService _storage;
   final BackgroundImportService _importService;
   static const _key = 'background_settings';
+  static const defaultImageAsset = 'assets/images/default_background.png';
+  static const defaultVideoAsset = 'assets/videos/home_background.mp4';
+  static const defaultImageLabel = 'Default Edinburgh image';
+  static const defaultVideoLabel = 'Bundled SAUVAGE video';
 
-  BackgroundMediaType type = BackgroundMediaType.video;
+  BackgroundMediaType type = BackgroundMediaType.image;
   String? importedPath;
-  String currentFilename = 'Bundled SAUVAGE video';
+  String currentFilename = defaultImageLabel;
   double darkOverlay = .28;
   bool muteVideo = true;
 
   String get imagePath =>
       type == BackgroundMediaType.image && importedPath != null
       ? importedPath!
-      : 'assets/images/home_background.png';
+      : defaultImageAsset;
   String get videoPath =>
       type == BackgroundMediaType.video && importedPath != null
       ? importedPath!
-      : 'assets/videos/home_background.mp4';
+      : defaultVideoAsset;
 
   Future<void> load() async {
     try {
@@ -35,11 +39,7 @@ class BackgroundProvider extends ChangeNotifier {
             ? BackgroundMediaType.video
             : BackgroundMediaType.image;
         importedPath = map['path'] as String?;
-        currentFilename = importedPath == null
-            ? 'Bundled SAUVAGE video'
-            : type == BackgroundMediaType.video
-            ? 'Saved background video'
-            : 'Saved background image';
+        currentFilename = _labelFor(type, importedPath);
         darkOverlay = ((map['overlay'] as num?)?.toDouble() ?? .28).clamp(
           0,
           .6,
@@ -66,9 +66,9 @@ class BackgroundProvider extends ChangeNotifier {
 
   Future<void> restoreDefault() async {
     final previous = importedPath;
-    type = BackgroundMediaType.video;
+    type = BackgroundMediaType.image;
     importedPath = null;
-    currentFilename = 'Bundled SAUVAGE video';
+    currentFilename = defaultImageLabel;
     await _persist();
     await _importService.deleteIfManaged(previous);
   }
@@ -92,5 +92,16 @@ class BackgroundProvider extends ChangeNotifier {
       'muteVideo': muteVideo,
     });
     notifyListeners();
+  }
+
+  String _labelFor(BackgroundMediaType mediaType, String? path) {
+    if (path != null) {
+      return mediaType == BackgroundMediaType.video
+          ? 'Saved background video'
+          : 'Saved background image';
+    }
+    return mediaType == BackgroundMediaType.video
+        ? defaultVideoLabel
+        : defaultImageLabel;
   }
 }
