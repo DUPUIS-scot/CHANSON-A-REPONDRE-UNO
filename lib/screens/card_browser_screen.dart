@@ -10,9 +10,9 @@ import '../models/browse_hand_preview_args.dart';
 import '../providers/card_browser_provider.dart';
 import '../providers/deck_provider.dart';
 import '../theme/app_theme.dart';
+import '../widgets/browse_card_castle_scene.dart';
 import '../widgets/card_hand_toolbar.dart';
 import '../widgets/empty_deck_state.dart';
-import '../widgets/five_card_hand.dart';
 import '../widgets/home_navigation_button.dart';
 import '../widgets/selected_card_actions.dart';
 import 'browse_hand_fullscreen_screen.dart';
@@ -343,8 +343,10 @@ class _CardBrowserScreenState extends State<CardBrowserScreen> {
                             )
                           else
                             Expanded(
-                              child: FiveCardHand(
-                                cards: browser.visibleHand,
+                              child: BrowseCardCastleScene(
+                                cards: browser.availableCards,
+                                visibleCards: browser.visibleHand,
+                                pageStart: browser.pageStart,
                                 deckName: deck.name,
                                 selectedCardId: browser.selectedCardId,
                                 shuffleGeneration: browser.shuffleGeneration,
@@ -352,6 +354,10 @@ class _CardBrowserScreenState extends State<CardBrowserScreen> {
                                 onCardOpened: open,
                                 onCardLongPressed: (index) =>
                                     openHandPreview(index, deck.name),
+                                onPrevious: browser.previousPage,
+                                onNext: browser.nextPage,
+                                canGoPrevious: browser.canGoPrevious,
+                                canGoNext: browser.canGoNext,
                               ),
                             ),
                           if (selected != null)
