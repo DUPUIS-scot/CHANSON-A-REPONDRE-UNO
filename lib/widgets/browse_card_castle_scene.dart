@@ -8,6 +8,7 @@ import '../theme/app_theme.dart';
 import 'browse_hand_card.dart';
 import 'category_badge.dart';
 import 'stored_image.dart';
+import 'webgl_card_castle_view.dart';
 
 class BrowseCardCastleScene extends StatelessWidget {
   const BrowseCardCastleScene({
@@ -78,13 +79,25 @@ class BrowseCardCastleScene extends StatelessWidget {
                   const _CastleAtmosphere(),
                   Positioned.fill(
                     bottom: constraints.maxHeight * (compact ? .34 : .30),
-                    child: _CastleArchitecture(
+                    child: WebGlCardCastleView(
                       cards: cards,
-                      pageStart: pageStart,
-                      selectedCardId: selectedCardId,
-                      shuffleGeneration: shuffleGeneration,
-                      onSelected: onCardSelected,
-                      onOpened: onCardOpened,
+                      focusedCardId: selectedCardId,
+                      shuffleSeed: shuffleGeneration,
+                      onCardSelected: onCardSelected,
+                      onCardOpened: (id) {
+                        final card = cards
+                            .where((candidate) => candidate.id == id)
+                            .firstOrNull;
+                        if (card != null) onCardOpened(card);
+                      },
+                      fallback: _CastleArchitecture(
+                        cards: cards,
+                        pageStart: pageStart,
+                        selectedCardId: selectedCardId,
+                        shuffleGeneration: shuffleGeneration,
+                        onSelected: onCardSelected,
+                        onOpened: onCardOpened,
+                      ),
                     ),
                   ),
                   Align(

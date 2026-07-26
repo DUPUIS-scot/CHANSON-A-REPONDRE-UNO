@@ -90,6 +90,15 @@ class CardBrowserProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void focusCard(String cardId) {
+    final index = availableCards.indexWhere((card) => card.id == cardId);
+    if (index < 0) return;
+    pageStart = (index ~/ 5) * 5;
+    _setVisibleHand();
+    selectedCardId = cardId;
+    notifyListeners();
+  }
+
   void selectRelative(int offset) {
     if (visibleHand.isEmpty) return;
     final current = visibleHand.indexWhere((card) => card.id == selectedCardId);

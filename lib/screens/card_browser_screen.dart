@@ -350,7 +350,7 @@ class _CardBrowserScreenState extends State<CardBrowserScreen> {
                                 deckName: deck.name,
                                 selectedCardId: browser.selectedCardId,
                                 shuffleGeneration: browser.shuffleGeneration,
-                                onCardSelected: browser.selectCard,
+                                onCardSelected: browser.focusCard,
                                 onCardOpened: open,
                                 onCardLongPressed: (index) =>
                                     openHandPreview(index, deck.name),
