@@ -6,6 +6,7 @@ import '../core/app_router.dart';
 import '../providers/game_provider.dart';
 import '../services/navigation_guard_service.dart';
 import '../theme/app_theme.dart';
+import 'dj_who_avatar.dart';
 
 class HomeNavigationButton extends StatefulWidget {
   const HomeNavigationButton({
@@ -207,7 +208,7 @@ class _DjWhoControl extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.ondemand_video),
+                    const DjWhoAvatar(size: 32),
                     if (showLabel) ...[
                       const SizedBox(width: 8),
                       const Text('DJ WHO'),

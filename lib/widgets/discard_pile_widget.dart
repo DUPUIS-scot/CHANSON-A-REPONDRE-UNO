@@ -13,7 +13,7 @@ class DiscardPileWidget extends StatelessWidget {
   final int count;
   @override
   Widget build(BuildContext context) => Semantics(
-    label: 'Discard pile, top card ${topCard.title}',
+    label: 'Discard pile, ${topCard.category} card on top',
     child: SizedBox(
       width: 84,
       child: Column(
@@ -40,8 +40,12 @@ class DiscardPileWidget extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            '$count discarded',
-            style: Theme.of(context).textTheme.bodySmall,
+            'DISCARD PILE · $count',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ],
       ),

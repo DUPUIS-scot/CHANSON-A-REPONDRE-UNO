@@ -25,7 +25,7 @@ class SelectedCardActions extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            card.displayTitle,
+            card.category.toUpperCase(),
             style: Theme.of(context).textTheme.titleLarge,
           ),
           Text(deckName),

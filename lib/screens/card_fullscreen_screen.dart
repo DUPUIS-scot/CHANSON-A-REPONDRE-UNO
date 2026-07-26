@@ -35,6 +35,9 @@ class _CardFullscreenScreenState extends State<CardFullscreenScreen> {
     super.dispose();
   }
 
+  void _close() =>
+      context.canPop() ? context.pop() : context.go(AppRoutes.cards);
+
   @override
   Widget build(BuildContext context) {
     final cards = context.watch<DeckProvider>().cards;
@@ -52,8 +55,13 @@ class _CardFullscreenScreenState extends State<CardFullscreenScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: Text(card.displayTitle),
+        title: Text(card.category.toUpperCase()),
         backgroundColor: Colors.black,
+        leading: IconButton(
+          tooltip: 'Close fullscreen card',
+          onPressed: _close,
+          icon: const Icon(Icons.close_rounded),
+        ),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 12),
@@ -66,26 +74,46 @@ class _CardFullscreenScreenState extends State<CardFullscreenScreen> {
         ],
       ),
       body: CallbackShortcuts(
-        bindings: {
-          const SingleActivator(LogicalKeyboardKey.escape): () =>
-              context.canPop() ? context.pop() : context.go(AppRoutes.cards),
-        },
+        bindings: {const SingleActivator(LogicalKeyboardKey.escape): _close},
         child: Focus(
           autofocus: true,
           child: PageView.builder(
             controller: controller,
             itemCount: cards.length,
             onPageChanged: (index) => setState(() => currentIndex = index),
-            itemBuilder: (_, index) => InteractiveViewer(
-              minScale: .75,
-              maxScale: 5,
-              child: Center(
-                child: StoredImage(
-                  source: cards[index].path,
-                  fit: BoxFit.contain,
-                  errorBuilder: (_, _, _) =>
-                      const Icon(Icons.broken_image, size: 80),
-                ),
+            itemBuilder: (_, index) => LayoutBuilder(
+              builder: (context, constraints) => Stack(
+                fit: StackFit.expand,
+                children: [
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: _close,
+                  ),
+                  Center(
+                    child: GestureDetector(
+                      onTap: () {},
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth: constraints.maxWidth * .92,
+                          maxHeight: constraints.maxHeight * .92,
+                        ),
+                        child: AspectRatio(
+                          aspectRatio: cards[index].aspectRatio,
+                          child: InteractiveViewer(
+                            minScale: .75,
+                            maxScale: 5,
+                            child: StoredImage(
+                              source: cards[index].path,
+                              fit: BoxFit.contain,
+                              errorBuilder: (_, _, _) =>
+                                  const Icon(Icons.broken_image, size: 80),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

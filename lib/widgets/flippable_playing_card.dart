@@ -3,13 +3,16 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../data/card_categories.dart';
 import '../theme/app_theme.dart';
+import 'category_badge.dart';
 import 'stored_image.dart';
 
 class FlippablePlayingCard extends StatefulWidget {
   const FlippablePlayingCard({
     required this.frontImagePath,
     required this.backImagePath,
+    required this.category,
     required this.isFaceUp,
     required this.isSelected,
     required this.isPlayable,
@@ -22,6 +25,7 @@ class FlippablePlayingCard extends StatefulWidget {
 
   final String frontImagePath;
   final String backImagePath;
+  final String category;
   final bool isFaceUp;
   final bool isSelected;
   final bool isPlayable;
@@ -141,19 +145,37 @@ class _FlippablePlayingCardState extends State<FlippablePlayingCard>
                               Colors.transparent,
                               BlendMode.dst,
                             ),
-                      child: showFront
-                          ? StoredImage(
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          if (showFront)
+                            StoredImage(
                               source: widget.frontImagePath,
                               fit: BoxFit.contain,
                               errorBuilder: (_, _, _) =>
                                   const _FallbackFace(label: 'CARD'),
                             )
-                          : Image.asset(
-                              widget.backImagePath,
+                          else
+                            Image.asset(
+                              cardCategoryFor(widget.category).versoAsset,
                               fit: BoxFit.contain,
-                              errorBuilder: (_, _, _) =>
-                                  const _FallbackFace(label: 'CHanson'),
+                              errorBuilder: (_, _, _) => Image.asset(
+                                widget.backImagePath,
+                                fit: BoxFit.contain,
+                                errorBuilder: (_, _, _) =>
+                                    const _FallbackFace(label: 'CHanson'),
+                              ),
                             ),
+                          Positioned(
+                            left: 6,
+                            top: 6,
+                            child: CategoryBadge(
+                              category: widget.category,
+                              compact: true,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 );

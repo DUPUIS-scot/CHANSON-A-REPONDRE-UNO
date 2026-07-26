@@ -187,7 +187,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
                       .map(
                         (card) => DropdownMenuItem(
                           value: card.id,
-                          child: Text(card.title),
+                          child: Text(card.category.toUpperCase()),
                         ),
                       )
                       .toList(),
@@ -212,7 +212,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              card.title,
+                              card.category.toUpperCase(),
                               style: Theme.of(context).textTheme.titleLarge,
                             ),
                             Text(deck?.name ?? 'Unknown deck'),

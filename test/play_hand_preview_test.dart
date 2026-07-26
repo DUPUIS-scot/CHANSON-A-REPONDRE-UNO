@@ -82,7 +82,8 @@ void main() {
     );
     await tester.tap(find.text('OPEN'));
     await tester.pumpAndSettle();
-    expect(find.text('Card 1'), findsOneWidget);
+    expect(find.text('Card 1'), findsNothing);
+    expect(find.text('PAROLE'), findsOneWidget);
     expect(
       tester
           .widget<FullscreenPageIndicator>(find.byType(FullscreenPageIndicator))

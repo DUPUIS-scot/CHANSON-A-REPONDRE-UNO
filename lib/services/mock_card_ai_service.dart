@@ -31,7 +31,7 @@ class MockCardAiService implements CardAiService {
     required List<CardChatMessage> history,
     String? targetLanguage,
     String? summaryLength,
-  }) async => 'Mock response grounded in ${card.title}.';
+  }) async => 'Mock response grounded in the selected ${card.category} card.';
 
   Stream<String> discussCardStream({
     required CardImageModel card,
@@ -42,6 +42,6 @@ class MockCardAiService implements CardAiService {
     String? summaryLength,
   }) async* {
     yield 'Mock response ';
-    yield 'grounded in ${card.title}.';
+    yield 'grounded in the selected ${card.category} card.';
   }
 }

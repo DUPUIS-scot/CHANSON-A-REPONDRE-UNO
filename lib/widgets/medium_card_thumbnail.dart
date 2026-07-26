@@ -25,10 +25,8 @@ class _MediumCardThumbnailState extends State<MediumCardThumbnail> {
   @override
   Widget build(BuildContext context) => Semantics(
     button: true,
-    label: 'Open linked card: ${widget.card.title}',
-    child: Tooltip(
-      message: widget.card.title,
-      child: FocusableActionDetector(
+    label: 'Open linked ${widget.card.category} card',
+    child: FocusableActionDetector(
         mouseCursor: SystemMouseCursors.click,
         onShowHoverHighlight: (value) => setState(() => hovered = value),
         onShowFocusHighlight: (value) => setState(() => focused = value),
@@ -78,7 +76,6 @@ class _MediumCardThumbnailState extends State<MediumCardThumbnail> {
                       source: widget.card.path,
                       fit: BoxFit.contain,
                       errorBuilder: (_, _, _) => _ImageFallback(
-                        title: widget.card.title,
                         category: widget.card.category,
                       ),
                     ),
@@ -88,13 +85,6 @@ class _MediumCardThumbnailState extends State<MediumCardThumbnail> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          widget.card.title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        const SizedBox(height: 3),
                         Text(
                           widget.card.category.isEmpty
                               ? 'Uncategorised'
@@ -114,14 +104,12 @@ class _MediumCardThumbnailState extends State<MediumCardThumbnail> {
             ),
           ),
         ),
-      ),
     ),
   );
 }
 
 class _ImageFallback extends StatelessWidget {
-  const _ImageFallback({required this.title, required this.category});
-  final String title;
+  const _ImageFallback({required this.category});
   final String category;
 
   @override
@@ -134,7 +122,6 @@ class _ImageFallback extends StatelessWidget {
         children: [
           const Icon(Icons.image_not_supported_outlined, size: 34),
           const SizedBox(height: 8),
-          Text(title, textAlign: TextAlign.center, maxLines: 3),
           if (category.isNotEmpty) Text(category, textAlign: TextAlign.center),
           const SizedBox(height: 6),
           const Text('No image available', textAlign: TextAlign.center),

@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:http';
 import { readFile, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -11,8 +12,13 @@ const port = 8123;
 const debugPort = 9223;
 const chromePath =
   process.env.CHROME_PATH ||
-  'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
-const profilePath = 'C:\\tmp\\chanson-dealer-chrome-profile';
+  (process.platform === 'win32'
+    ? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
+    : 'google-chrome');
+const profilePath = join(
+  tmpdir(),
+  `chanson-dealer-chrome-profile-${process.pid}`,
+);
 const outputPath = new URL('../build/dealer-verification.png', import.meta.url);
 const animationOutputPath = new URL(
   '../build/dealer-animation-verification.png',
@@ -20,6 +26,10 @@ const animationOutputPath = new URL(
 );
 const castleOutputPath = new URL(
   '../build/search-castle-verification.png',
+  import.meta.url,
+);
+const castleFullscreenOutputPath = new URL(
+  '../build/search-castle-fullscreen-verification.png',
   import.meta.url,
 );
 
@@ -154,11 +164,21 @@ class DevTools {
 
 async function waitFor(client, expression, description, timeout = 30000) {
   const started = Date.now();
+  let lastError;
   while (Date.now() - started < timeout) {
-    if (await client.evaluate(expression)) return;
+    try {
+      if (await client.evaluate(expression)) return;
+      lastError = undefined;
+    } catch (error) {
+      // Flutter may replace a platform-view iframe between animation frames.
+      lastError = error;
+    }
     await delay(400);
   }
-  throw new Error(`Timed out waiting for ${description}.`);
+  throw new Error(
+    `Timed out waiting for ${description}.` +
+      (lastError ? ` Last evaluation error: ${lastError.message}` : ''),
+  );
 }
 
 async function seedGame(client) {
@@ -225,9 +245,70 @@ async function verifySearchCastle(client, url) {
   await waitFor(
     client,
     `Number(document.getElementById('search-card-castle-frame')
-      ?.contentDocument?.body.dataset.textureCount || 0) > 0`,
-    'a permanent card texture in the castle',
+      ?.contentDocument?.body.dataset.textureCount || 0) === 84`,
+    'all permanent card textures in the castle',
     20000,
+  );
+  await capture(client, castleOutputPath);
+  client.consoleMessages.length = 0;
+  const requestedFocusId = await client.evaluate(`(() => {
+    const frame = document.getElementById('search-card-castle-frame');
+    const cardId = frame?.contentDocument?.body.dataset.firstCardId || '';
+    frame?.contentWindow?.postMessage(JSON.stringify({
+      type: 'focusCard',
+      cardId,
+      animate: true,
+    }), location.origin);
+    return cardId;
+  })()`);
+  if (!requestedFocusId) {
+    throw new Error('The Search castle did not expose a stable card ID.');
+  }
+  await waitFor(
+    client,
+    `document.getElementById('search-card-castle-frame')
+      ?.contentDocument?.body.dataset.focusedCardId ===
+        ${JSON.stringify(requestedFocusId)}`,
+    'the selected card to focus in the castle',
+    5000,
+  );
+  await waitFor(
+    client,
+    `document.getElementById('search-card-castle-frame')
+      ?.contentDocument?.body.dataset.focusSettled === 'true'`,
+    'the castle camera focus animation to settle',
+    15000,
+  );
+  await delay(250);
+  const rendererInstanceId = await client.evaluate(
+    `document.getElementById('search-card-castle-frame')
+      ?.contentDocument?.body.dataset.rendererInstanceId || ''`,
+  );
+  await client.evaluate(`(() => {
+    const frame = document.getElementById('search-card-castle-frame');
+    frame?.contentWindow?.postMessage(
+      JSON.stringify({type: 'enterFullscreen'}),
+      location.origin,
+    );
+    return true;
+  })()`);
+  await waitFor(
+    client,
+    `document.getElementById('search-card-castle-frame')
+      ?.contentDocument?.body.classList.contains('fullscreen-castle') === true`,
+    'the existing Search castle to enter fullscreen',
+    5000,
+  );
+  await waitFor(
+    client,
+    `(() => {
+      const canvas = document.getElementById('search-card-castle-frame')
+        ?.contentDocument?.querySelector('canvas');
+      const rect = canvas?.getBoundingClientRect();
+      return (rect?.width || 0) >= 1300 && (rect?.height || 0) >= 850;
+    })()`,
+    'the fullscreen castle canvas to fill the browser',
+    5000,
   );
   const result = await client.evaluate(`(() => {
     const frame = document.getElementById('search-card-castle-frame');
@@ -239,7 +320,15 @@ async function verifySearchCastle(client, url) {
       frame: Boolean(frame),
       rendererStatus: body?.dataset.rendererStatus,
       cardCount: Number(body?.dataset.cardCount || 0),
+      meshCount: Number(body?.dataset.meshCount || 0),
       textureCount: Number(body?.dataset.textureCount || 0),
+      focusedCardId: body?.dataset.focusedCardId || '',
+      focusMode: body?.dataset.focusMode || '',
+      rendererInstanceId: body?.dataset.rendererInstanceId || '',
+      sceneObjectCount: Number(body?.dataset.sceneObjectCount || 0),
+      fullscreen: body?.classList.contains('fullscreen-castle') || false,
+      threeLoaded: Boolean(frame?.contentWindow?.THREE),
+      framePath: frame ? new URL(frame.src).pathname : '',
       canvas: Boolean(canvas),
       width: rect?.width || 0,
       height: rect?.height || 0,
@@ -251,18 +340,71 @@ async function verifySearchCastle(client, url) {
     !result.canvas ||
     result.rendererStatus !== 'ready' ||
     result.cardCount !== 84 ||
+    result.meshCount !== 84 ||
     result.textureCount < 1 ||
+    result.focusedCardId !== requestedFocusId ||
+    result.focusMode !== 'animated' ||
+    result.rendererInstanceId !== rendererInstanceId ||
+    result.sceneObjectCount < 40 ||
+    !result.fullscreen ||
+    !result.threeLoaded ||
+    result.framePath !== `${basePath}card_castle/card_castle.html` ||
     result.width <= 0 ||
     result.height <= 0
   ) {
     throw new Error(`Invalid Search castle result: ${JSON.stringify(result)}`);
   }
-  await capture(client, castleOutputPath);
+  await capture(client, castleFullscreenOutputPath);
+  await client.evaluate(`(() => {
+    const frame = document.getElementById('search-card-castle-frame');
+    frame?.contentWindow?.postMessage(
+      JSON.stringify({type: 'exitFullscreen'}),
+      location.origin,
+    );
+    return true;
+  })()`);
+  await waitFor(
+    client,
+    `document.getElementById('search-card-castle-frame')
+      ?.contentDocument?.body.classList.contains('fullscreen-castle') === false`,
+    'the Search castle to exit fullscreen',
+    5000,
+  );
+  const restored = await client.evaluate(`(() => {
+    const body = document.getElementById('search-card-castle-frame')
+      ?.contentDocument?.body;
+    return {
+      rendererInstanceId: body?.dataset.rendererInstanceId || '',
+      cardCount: Number(body?.dataset.cardCount || 0),
+      focusedCardId: body?.dataset.focusedCardId || '',
+    };
+  })()`);
+  if (
+    restored.rendererInstanceId !== rendererInstanceId ||
+    restored.cardCount !== 84 ||
+    restored.focusedCardId !== requestedFocusId
+  ) {
+    throw new Error(
+      `Castle state was not preserved after fullscreen: ${JSON.stringify(restored)}`,
+    );
+  }
+  const fatalConsoleMessages = client.consoleMessages.filter((message) =>
+    ['error', 'exception', 'assert'].includes(message.level),
+  );
+  if (fatalConsoleMessages.length) {
+    throw new Error(
+      `Search castle console errors: ${JSON.stringify(fatalConsoleMessages)}`,
+    );
+  }
   console.log(JSON.stringify({
     ok: true,
     url,
     result,
-    screenshot: castleOutputPath.pathname.slice(1),
+    restored,
+    screenshots: [
+      castleOutputPath.pathname.slice(1),
+      castleFullscreenOutputPath.pathname.slice(1),
+    ],
     console: client.consoleMessages,
   }, null, 2));
 }
@@ -421,8 +563,8 @@ async function main() {
     if (!animationStarted) throw new Error('Dealer animation did not start.');
     await waitFor(
       client,
-      `document.querySelector('.dealer-3d-diagnostic')
-        ?.textContent?.includes('Animation: DEALING') === true`,
+      `document.getElementById('dealer-3d-container')
+        ?.dataset.dealerAnimation === 'dealing'`,
       'the dealer animation to enter DEALING',
       3000,
     );
@@ -437,8 +579,8 @@ async function main() {
     );
     await waitFor(
       client,
-      `document.querySelector('.dealer-3d-diagnostic')
-        ?.textContent?.includes('Animation: IDLE') === true`,
+      `document.getElementById('dealer-3d-container')
+        ?.dataset.dealerAnimation === 'idle'`,
       'the first dealer animation to finish',
       5000,
     );
