@@ -12,7 +12,7 @@ class GameStatusPanel extends StatelessWidget {
         spacing: 24,
         runSpacing: 12,
         children: [
-          _Value('Top card', state.topCard.title),
+          _Value('Top card', state.topCard.displayTitle),
           _Value('Colour', state.currentColour.name),
           _Value('Category', state.currentCategory),
           _Value('Direction', state.playDirection.name),

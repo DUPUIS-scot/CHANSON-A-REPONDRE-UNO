@@ -23,7 +23,7 @@ class DeckCarousel extends StatelessWidget {
         const SizedBox(
           height: 120,
           child: Center(
-            child: Text('Import PNG cards to create your first featured deck.'),
+            child: Text('Featured decks will appear here.'),
           ),
         )
       else

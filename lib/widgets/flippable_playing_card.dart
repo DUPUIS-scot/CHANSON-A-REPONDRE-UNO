@@ -3,13 +3,16 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../data/card_categories.dart';
 import '../theme/app_theme.dart';
+import 'category_badge.dart';
 import 'stored_image.dart';
 
 class FlippablePlayingCard extends StatefulWidget {
   const FlippablePlayingCard({
     required this.frontImagePath,
     required this.backImagePath,
+    required this.category,
     required this.isFaceUp,
     required this.isSelected,
     required this.isPlayable,
@@ -22,6 +25,7 @@ class FlippablePlayingCard extends StatefulWidget {
 
   final String frontImagePath;
   final String backImagePath;
+  final String category;
   final bool isFaceUp;
   final bool isSelected;
   final bool isPlayable;
@@ -142,17 +146,47 @@ class _FlippablePlayingCardState extends State<FlippablePlayingCard>
                               BlendMode.dst,
                             ),
                       child: showFront
-                          ? StoredImage(
-                              source: widget.frontImagePath,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, _, _) =>
-                                  const _FallbackFace(label: 'CARD'),
+                          ? Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                StoredImage(
+                                  source: widget.frontImagePath,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, _, _) =>
+                                      const _FallbackFace(label: 'CARD'),
+                                ),
+                                Positioned(
+                                  left: 6,
+                                  top: 6,
+                                  child: CategoryBadge(
+                                    category: widget.category,
+                                    compact: true,
+                                  ),
+                                ),
+                              ],
                             )
-                          : Image.asset(
-                              widget.backImagePath,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, _, _) =>
-                                  const _FallbackFace(label: 'CHanson'),
+                          : Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                Image.asset(
+                                  cardCategoryFor(widget.category).versoAsset,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, _, _) => Image.asset(
+                                    widget.backImagePath,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, _, _) =>
+                                        const _FallbackFace(label: 'CHanson'),
+                                  ),
+                                ),
+                                Positioned(
+                                  left: 6,
+                                  top: 6,
+                                  child: CategoryBadge(
+                                    category: widget.category,
+                                    compact: true,
+                                  ),
+                                ),
+                              ],
                             ),
                     ),
                   ),

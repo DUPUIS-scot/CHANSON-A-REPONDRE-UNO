@@ -25,9 +25,9 @@ class _MediumCardThumbnailState extends State<MediumCardThumbnail> {
   @override
   Widget build(BuildContext context) => Semantics(
     button: true,
-    label: 'Open linked card: ${widget.card.title}',
+    label: 'Open linked card: ${widget.card.displayTitle}',
     child: Tooltip(
-      message: widget.card.title,
+      message: widget.card.displayTitle,
       child: FocusableActionDetector(
         mouseCursor: SystemMouseCursors.click,
         onShowHoverHighlight: (value) => setState(() => hovered = value),
@@ -78,7 +78,7 @@ class _MediumCardThumbnailState extends State<MediumCardThumbnail> {
                       source: widget.card.path,
                       fit: BoxFit.contain,
                       errorBuilder: (_, _, _) => _ImageFallback(
-                        title: widget.card.title,
+                        title: widget.card.displayTitle,
                         category: widget.card.category,
                       ),
                     ),
@@ -89,7 +89,7 @@ class _MediumCardThumbnailState extends State<MediumCardThumbnail> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          widget.card.title,
+                          widget.card.displayTitle,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(fontWeight: FontWeight.w600),

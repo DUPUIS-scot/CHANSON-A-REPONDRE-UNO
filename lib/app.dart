@@ -17,13 +17,11 @@ import 'providers/journal_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/startup_video_provider.dart';
 import 'providers/auth_controller.dart';
-import 'services/deck_import_service.dart';
 import 'services/game_storage_service.dart';
 import 'services/local_storage_service.dart';
 import 'services/ai_rest_client.dart';
 import 'services/card_ai_api_service.dart';
 import 'services/navigation_guard_service.dart';
-import 'services/background_import_service.dart';
 import 'services/auth_service.dart';
 import 'services/supabase_auth_service.dart';
 import 'features/startup_media/startup_video_storage.dart';
@@ -47,14 +45,12 @@ class ChansonUnoApp extends StatefulWidget {
 
 class _ChansonUnoAppState extends State<ChansonUnoApp> {
   final storage = LocalStorageService();
-  final backgroundImporter = BackgroundImportService();
   late final settings = SettingsProvider(storage)..load();
-  late final decks = DeckProvider(storage, DeckImportService(storage))..load();
+  late final decks = DeckProvider(storage)..load();
   late final game = GameProvider(GameStorageService(storage))..load();
   late final journal = JournalProvider(storage)..load();
   late final curtains = CurtainProvider(storage)..initialize();
-  late final backgrounds = BackgroundProvider(storage, backgroundImporter)
-    ..load();
+  late final backgrounds = BackgroundProvider(storage)..load();
   late final homeExperience = HomeExperienceProvider(storage)..initialize();
   late final startupVideo = StartupVideoProvider(StartupVideoStorage(storage))
     ..initialize();
@@ -145,7 +141,6 @@ class _ChansonUnoAppState extends State<ChansonUnoApp> {
         ChangeNotifierProvider.value(value: backgrounds),
         ChangeNotifierProvider.value(value: homeExperience),
         ChangeNotifierProvider.value(value: startupVideo),
-        Provider.value(value: backgroundImporter),
         Provider.value(value: storage),
       ],
       child: Consumer2<SettingsProvider, AuthController>(

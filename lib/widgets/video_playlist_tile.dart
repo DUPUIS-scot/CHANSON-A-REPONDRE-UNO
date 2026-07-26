@@ -74,7 +74,7 @@ class _VideoPlaylistTileState extends State<VideoPlaylistTile> {
                           fit: StackFit.expand,
                           children: [
                             Image.network(
-                              'https://img.youtube.com/vi/${widget.video.videoId}/mqdefault.jpg',
+                              'https://img.youtube.com/vi/${widget.video.videoId}/hqdefault.jpg',
                               fit: BoxFit.cover,
                               semanticLabel:
                                   'Thumbnail for ${widget.video.title}',

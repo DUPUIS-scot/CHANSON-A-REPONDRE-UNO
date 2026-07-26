@@ -13,7 +13,7 @@ class DiscardPileWidget extends StatelessWidget {
   final int count;
   @override
   Widget build(BuildContext context) => Semantics(
-    label: 'Discard pile, top card ${topCard.title}',
+    label: 'Discard pile, top card ${topCard.displayTitle}',
     child: SizedBox(
       width: 92,
       child: Column(

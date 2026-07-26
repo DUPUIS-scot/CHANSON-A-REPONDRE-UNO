@@ -23,7 +23,7 @@ class _CardSelectionDialogState extends State<CardSelectionDialog> {
   @override
   Widget build(BuildContext context) {
     final cards = widget.cards
-        .where((card) => card.title.toLowerCase().contains(query.toLowerCase()))
+        .where((card) => card.displayTitle.toLowerCase().contains(query.toLowerCase()))
         .toList();
     return AlertDialog(
       title: const Text('Link cards'),
@@ -74,7 +74,7 @@ class _CardSelectionDialogState extends State<CardSelectionDialog> {
                                   children: [
                                     Expanded(
                                       child: Text(
-                                        card.title,
+                                        card.displayTitle,
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
                                       ),

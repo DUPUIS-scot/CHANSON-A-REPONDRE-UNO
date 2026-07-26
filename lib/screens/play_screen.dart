@@ -25,8 +25,10 @@ class PlayScreen extends StatefulWidget {
 class _PlayScreenState extends State<PlayScreen> {
   String? selectedCardId;
   CardImageModel? flyingCard;
+  CardImageModel? dealtCard;
   bool hideHand = false;
   bool previewOpening = false;
+  bool dealerDrawing = false;
 
   Future<void> openHandPreview(
     List<CardImageModel> cards,
@@ -104,6 +106,28 @@ class _PlayScreenState extends State<PlayScreen> {
     }
   }
 
+  Future<void> drawWithDealer() async {
+    final game = context.read<GameProvider>();
+    final state = game.state;
+    if (state == null || state.currentPlayerIndex != 0 || dealerDrawing) return;
+    final before = state.players.first.hand.map((card) => card.id).toSet();
+    setState(() => dealerDrawing = true);
+    await Future<void>.delayed(const Duration(milliseconds: 180));
+    if (!mounted) return;
+    await game.draw();
+    if (!mounted) return;
+    final after = game.state?.players.first.hand ?? const <CardImageModel>[];
+    final drawn = after.where((card) => !before.contains(card.id)).firstOrNull;
+    setState(() => dealtCard = drawn);
+    await Future<void>.delayed(const Duration(milliseconds: 520));
+    if (!mounted) return;
+    setState(() {
+      dealerDrawing = false;
+      dealtCard = null;
+      hideHand = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final game = context.watch<GameProvider>();
@@ -128,6 +152,7 @@ class _PlayScreenState extends State<PlayScreen> {
               child: SafeArea(
                 child: Stack(
                   children: [
+                    _JesterDealer(drawing: dealerDrawing),
                     LayoutBuilder(
                       builder: (context, constraints) {
                         final compact = constraints.maxHeight < 700;
@@ -162,7 +187,7 @@ class _PlayScreenState extends State<PlayScreen> {
                                             count: state.drawPile.length,
                                             onDraw:
                                                 state.currentPlayerIndex == 0
-                                                ? game.draw
+                                                ? drawWithDealer
                                                 : null,
                                           ),
                                           DiscardPileWidget(
@@ -307,12 +332,106 @@ class _PlayScreenState extends State<PlayScreen> {
                           ),
                         ),
                       ),
+                    if (dealtCard != null)
+                      Positioned.fill(
+                        child: IgnorePointer(
+                          child: TweenAnimationBuilder<double>(
+                            tween: Tween(begin: 0, end: 1),
+                            duration: const Duration(milliseconds: 520),
+                            curve: Curves.easeInOutCubic,
+                            builder: (context, value, child) => Align(
+                              alignment: Alignment(
+                                -.42 + value * .42,
+                                -.02 + value * .9,
+                              ),
+                              child: Transform.scale(
+                                scale: .75 + value * .18,
+                                child: Opacity(
+                                  opacity: .95 - value * .05,
+                                  child: child,
+                                ),
+                              ),
+                            ),
+                            child: Container(
+                              width: 76,
+                              height: 112,
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: AppTheme.brightGold,
+                                  width: 2,
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                                boxShadow: const [
+                                  BoxShadow(
+                                    color: Color(0x99FFC928),
+                                    blurRadius: 18,
+                                  ),
+                                ],
+                              ),
+                              clipBehavior: Clip.antiAlias,
+                              child: StoredImage(source: dealtCard!.imagePath),
+                            ),
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
             ),
     );
   }
+}
+
+class _JesterDealer extends StatelessWidget {
+  const _JesterDealer({required this.drawing});
+
+  final bool drawing;
+
+  @override
+  Widget build(BuildContext context) => Positioned.fill(
+    child: IgnorePointer(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final height = (constraints.maxHeight * .64).clamp(260.0, 620.0);
+          final width = (constraints.maxWidth * 1.12).clamp(640.0, 1500.0);
+          return Stack(
+            children: [
+              Positioned(
+                top: constraints.maxHeight * .01,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: AnimatedSlide(
+                    duration: const Duration(milliseconds: 260),
+                    curve: Curves.easeOutCubic,
+                    offset: drawing ? const Offset(-.035, .025) : Offset.zero,
+                    child: AnimatedScale(
+                      duration: const Duration(milliseconds: 260),
+                      scale: drawing ? 1.035 : 1,
+                      child: Opacity(
+                        opacity: .9,
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxHeight: height,
+                            maxWidth: width,
+                          ),
+                          child: Image.asset(
+                            'assets/images/puppet_dealer.png',
+                            fit: BoxFit.contain,
+                            alignment: Alignment.topCenter,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    ),
+  );
 }
 
 class _GameLauncher extends StatelessWidget {
@@ -368,7 +487,7 @@ class _GameLauncher extends StatelessWidget {
               if (decks.activeDeck == null)
                 const Padding(
                   padding: EdgeInsets.only(top: 12),
-                  child: Text('Import and select a deck before starting.'),
+                  child: Text('Select a deck before starting.'),
                 ),
             ],
           ),

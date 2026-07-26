@@ -1,6 +1,0 @@
-{
-  "AI_BACKEND_URL": "http://127.0.0.1:3000",
-  "SUPABASE_URL": "https://REAL_PROJECT_ID.supabase.co",
-  "SUPABASE_ANON_KEY": "REAL_PUBLISHABLE_KEY",
-  "SKIP_AUTH_FOR_DEVELOPMENT": "false"
-}

@@ -15,6 +15,7 @@ class CardBrowserProvider extends ChangeNotifier {
   String? deckId;
   bool isShuffling = false;
   int shuffleGeneration = 0;
+  int pageStart = 0;
   String? categoryFilter;
   String titleFilter = '';
   bool favouritesOnly = false;
@@ -30,27 +31,55 @@ class CardBrowserProvider extends ChangeNotifier {
     _sourceCards = List.unmodifiable(cards);
     selectedCardId = null;
     _applyFilters(notify: false);
-    generateRandomHand();
+    resetToFirstCards();
   }
 
-  Future<void> generateRandomHand({int count = 5}) async {
+  Future<void> generateRandomHand({int? count}) async {
     if (isShuffling) return;
     isShuffling = true;
     selectedCardId = null;
     notifyListeners();
     await Future<void>.delayed(const Duration(milliseconds: 180));
-    final shuffled = List<CardImageModel>.from(availableCards)
-      ..shuffle(_random);
-    visibleHand = List.unmodifiable(shuffled.take(count));
+    availableCards = List<CardImageModel>.unmodifiable(
+      List<CardImageModel>.from(availableCards)..shuffle(_random),
+    );
+    pageStart = 0;
+    _setVisibleHand(count: count);
     shuffleGeneration++;
     isShuffling = false;
     notifyListeners();
   }
 
-  void resetToFirstCards({int count = 5}) {
+  void resetToFirstCards({int? count}) {
     if (isShuffling) return;
     selectedCardId = null;
-    visibleHand = List.unmodifiable(availableCards.take(count));
+    pageStart = 0;
+    _applyFilters(notify: false);
+    _setVisibleHand(count: count);
+    shuffleGeneration++;
+    notifyListeners();
+  }
+
+  bool get canGoPrevious => pageStart > 0;
+  bool get canGoNext => pageStart + 5 < availableCards.length;
+  int get pageNumber => availableCards.isEmpty ? 0 : pageStart ~/ 5 + 1;
+  int get pageCount =>
+      availableCards.isEmpty ? 0 : ((availableCards.length - 1) ~/ 5) + 1;
+
+  void previousPage() {
+    if (!canGoPrevious || isShuffling) return;
+    selectedCardId = null;
+    pageStart = (pageStart - 5).clamp(0, availableCards.length).toInt();
+    _setVisibleHand();
+    shuffleGeneration++;
+    notifyListeners();
+  }
+
+  void nextPage() {
+    if (!canGoNext || isShuffling) return;
+    selectedCardId = null;
+    pageStart = (pageStart + 5).clamp(0, availableCards.length).toInt();
+    _setVisibleHand();
     shuffleGeneration++;
     notifyListeners();
   }
@@ -58,6 +87,15 @@ class CardBrowserProvider extends ChangeNotifier {
   void selectCard(String cardId) {
     if (!visibleHand.any((card) => card.id == cardId)) return;
     selectedCardId = selectedCardId == cardId ? null : cardId;
+    notifyListeners();
+  }
+
+  void focusCard(String cardId) {
+    final index = availableCards.indexWhere((card) => card.id == cardId);
+    if (index < 0) return;
+    pageStart = (index ~/ 5) * 5;
+    _setVisibleHand();
+    selectedCardId = cardId;
     notifyListeners();
   }
 
@@ -87,8 +125,11 @@ class CardBrowserProvider extends ChangeNotifier {
     titleFilter = title ?? titleFilter;
     favouritesOnly = favourites ?? favouritesOnly;
     transcribedOnly = transcribed ?? transcribedOnly;
+    pageStart = 0;
     _applyFilters(notify: false);
-    generateRandomHand();
+    _setVisibleHand();
+    shuffleGeneration++;
+    notifyListeners();
   }
 
   void _applyFilters({required bool notify}) {
@@ -96,14 +137,41 @@ class CardBrowserProvider extends ChangeNotifier {
     availableCards = List.unmodifiable(
       _sourceCards.where((card) {
         return (categoryFilter == null || card.category == categoryFilter) &&
-            (needle.isEmpty || card.title.toLowerCase().contains(needle)) &&
+            (needle.isEmpty ||
+                [
+                  card.id,
+                  card.title,
+                  card.category,
+                  card.author,
+                  card.theme,
+                  card.emotion,
+                  card.transcription ?? '',
+                  card.cleanedTranscription ?? '',
+                  ...card.tags,
+                ].join(' ').toLowerCase().contains(needle)) &&
             (!favouritesOnly || card.isFavourite) &&
             (!transcribedOnly ||
                 card.transcription != null ||
                 card.cleanedTranscription != null);
       }),
     );
+    if (pageStart >= availableCards.length) {
+      pageStart = availableCards.isEmpty
+          ? 0
+          : ((availableCards.length - 1) ~/ 5) * 5;
+    }
+    _setVisibleHand();
     if (notify) notifyListeners();
+  }
+
+  void _setVisibleHand({int? count}) {
+    final pageSize = count ?? 5;
+    visibleHand = List.unmodifiable(
+      availableCards.skip(pageStart).take(pageSize),
+    );
+    if (!visibleHand.any((card) => card.id == selectedCardId)) {
+      selectedCardId = null;
+    }
   }
 
   void refreshAfterCardMovedOrDeleted(List<CardImageModel> cards) {
@@ -116,7 +184,7 @@ class CardBrowserProvider extends ChangeNotifier {
     if (!visibleIds.every(
       (id) => availableCards.any((card) => card.id == id),
     )) {
-      generateRandomHand();
+      resetToFirstCards();
     } else {
       visibleHand = visibleHand
           .map((old) => availableCards.firstWhere((card) => card.id == old.id))

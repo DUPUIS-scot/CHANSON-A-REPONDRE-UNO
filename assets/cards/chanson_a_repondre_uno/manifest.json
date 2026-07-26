@@ -1,0 +1,538 @@
+﻿[
+    {
+        "id":  "chanson-a-repondre-uno-001",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_001.png",
+        "displayTitle":  "Card 001",
+        "source":  "bundled",
+        "sequence":  1
+    },
+    {
+        "id":  "chanson-a-repondre-uno-002",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_002.png",
+        "displayTitle":  "Card 002",
+        "source":  "bundled",
+        "sequence":  2
+    },
+    {
+        "id":  "chanson-a-repondre-uno-003",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_003.png",
+        "displayTitle":  "Card 003",
+        "source":  "bundled",
+        "sequence":  3
+    },
+    {
+        "id":  "chanson-a-repondre-uno-004",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_004.png",
+        "displayTitle":  "Card 004",
+        "source":  "bundled",
+        "sequence":  4
+    },
+    {
+        "id":  "chanson-a-repondre-uno-005",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_005.png",
+        "displayTitle":  "Card 005",
+        "source":  "bundled",
+        "sequence":  5
+    },
+    {
+        "id":  "chanson-a-repondre-uno-006",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_006.png",
+        "displayTitle":  "Card 006",
+        "source":  "bundled",
+        "sequence":  6
+    },
+    {
+        "id":  "chanson-a-repondre-uno-007",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_007.png",
+        "displayTitle":  "Card 007",
+        "source":  "bundled",
+        "sequence":  7
+    },
+    {
+        "id":  "chanson-a-repondre-uno-008",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_008.png",
+        "displayTitle":  "Card 008",
+        "source":  "bundled",
+        "sequence":  8
+    },
+    {
+        "id":  "chanson-a-repondre-uno-009",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_009.png",
+        "displayTitle":  "Card 009",
+        "source":  "bundled",
+        "sequence":  9
+    },
+    {
+        "id":  "chanson-a-repondre-uno-010",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_010.png",
+        "displayTitle":  "Card 010",
+        "source":  "bundled",
+        "sequence":  10
+    },
+    {
+        "id":  "chanson-a-repondre-uno-011",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_011.png",
+        "displayTitle":  "Card 011",
+        "source":  "bundled",
+        "sequence":  11
+    },
+    {
+        "id":  "chanson-a-repondre-uno-012",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_012.png",
+        "displayTitle":  "Card 012",
+        "source":  "bundled",
+        "sequence":  12
+    },
+    {
+        "id":  "chanson-a-repondre-uno-013",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_013.png",
+        "displayTitle":  "Card 013",
+        "source":  "bundled",
+        "sequence":  13
+    },
+    {
+        "id":  "chanson-a-repondre-uno-014",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_014.png",
+        "displayTitle":  "Card 014",
+        "source":  "bundled",
+        "sequence":  14
+    },
+    {
+        "id":  "chanson-a-repondre-uno-015",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_015.png",
+        "displayTitle":  "Card 015",
+        "source":  "bundled",
+        "sequence":  15
+    },
+    {
+        "id":  "chanson-a-repondre-uno-016",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_016.png",
+        "displayTitle":  "Card 016",
+        "source":  "bundled",
+        "sequence":  16
+    },
+    {
+        "id":  "chanson-a-repondre-uno-017",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_017.png",
+        "displayTitle":  "Card 017",
+        "source":  "bundled",
+        "sequence":  17
+    },
+    {
+        "id":  "chanson-a-repondre-uno-018",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_018.png",
+        "displayTitle":  "Card 018",
+        "source":  "bundled",
+        "sequence":  18
+    },
+    {
+        "id":  "chanson-a-repondre-uno-019",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_019.png",
+        "displayTitle":  "Card 019",
+        "source":  "bundled",
+        "sequence":  19
+    },
+    {
+        "id":  "chanson-a-repondre-uno-020",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_020.png",
+        "displayTitle":  "Card 020",
+        "source":  "bundled",
+        "sequence":  20
+    },
+    {
+        "id":  "chanson-a-repondre-uno-021",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_021.png",
+        "displayTitle":  "Card 021",
+        "source":  "bundled",
+        "sequence":  21
+    },
+    {
+        "id":  "chanson-a-repondre-uno-022",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_022.png",
+        "displayTitle":  "Card 022",
+        "source":  "bundled",
+        "sequence":  22
+    },
+    {
+        "id":  "chanson-a-repondre-uno-023",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_023.png",
+        "displayTitle":  "Card 023",
+        "source":  "bundled",
+        "sequence":  23
+    },
+    {
+        "id":  "chanson-a-repondre-uno-024",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_024.png",
+        "displayTitle":  "Card 024",
+        "source":  "bundled",
+        "sequence":  24
+    },
+    {
+        "id":  "chanson-a-repondre-uno-025",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_025.png",
+        "displayTitle":  "Card 025",
+        "source":  "bundled",
+        "sequence":  25
+    },
+    {
+        "id":  "chanson-a-repondre-uno-026",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_026.png",
+        "displayTitle":  "Card 026",
+        "source":  "bundled",
+        "sequence":  26
+    },
+    {
+        "id":  "chanson-a-repondre-uno-027",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_027.png",
+        "displayTitle":  "Card 027",
+        "source":  "bundled",
+        "sequence":  27
+    },
+    {
+        "id":  "chanson-a-repondre-uno-028",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_028.png",
+        "displayTitle":  "Card 028",
+        "source":  "bundled",
+        "sequence":  28
+    },
+    {
+        "id":  "chanson-a-repondre-uno-029",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_029.png",
+        "displayTitle":  "Card 029",
+        "source":  "bundled",
+        "sequence":  29
+    },
+    {
+        "id":  "chanson-a-repondre-uno-030",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_030.png",
+        "displayTitle":  "Card 030",
+        "source":  "bundled",
+        "sequence":  30
+    },
+    {
+        "id":  "chanson-a-repondre-uno-031",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_031.png",
+        "displayTitle":  "Card 031",
+        "source":  "bundled",
+        "sequence":  31
+    },
+    {
+        "id":  "chanson-a-repondre-uno-032",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_032.png",
+        "displayTitle":  "Card 032",
+        "source":  "bundled",
+        "sequence":  32
+    },
+    {
+        "id":  "chanson-a-repondre-uno-033",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_033.png",
+        "displayTitle":  "Card 033",
+        "source":  "bundled",
+        "sequence":  33
+    },
+    {
+        "id":  "chanson-a-repondre-uno-034",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_034.png",
+        "displayTitle":  "Card 034",
+        "source":  "bundled",
+        "sequence":  34
+    },
+    {
+        "id":  "chanson-a-repondre-uno-035",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_035.png",
+        "displayTitle":  "Card 035",
+        "source":  "bundled",
+        "sequence":  35
+    },
+    {
+        "id":  "chanson-a-repondre-uno-036",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_036.png",
+        "displayTitle":  "Card 036",
+        "source":  "bundled",
+        "sequence":  36
+    },
+    {
+        "id":  "chanson-a-repondre-uno-037",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_037.png",
+        "displayTitle":  "Card 037",
+        "source":  "bundled",
+        "sequence":  37
+    },
+    {
+        "id":  "chanson-a-repondre-uno-038",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_038.png",
+        "displayTitle":  "Card 038",
+        "source":  "bundled",
+        "sequence":  38
+    },
+    {
+        "id":  "chanson-a-repondre-uno-039",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_039.png",
+        "displayTitle":  "Card 039",
+        "source":  "bundled",
+        "sequence":  39
+    },
+    {
+        "id":  "chanson-a-repondre-uno-040",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_040.png",
+        "displayTitle":  "Card 040",
+        "source":  "bundled",
+        "sequence":  40
+    },
+    {
+        "id":  "chanson-a-repondre-uno-041",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_041.png",
+        "displayTitle":  "Card 041",
+        "source":  "bundled",
+        "sequence":  41
+    },
+    {
+        "id":  "chanson-a-repondre-uno-042",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_042.png",
+        "displayTitle":  "Card 042",
+        "source":  "bundled",
+        "sequence":  42
+    },
+    {
+        "id":  "chanson-a-repondre-uno-043",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_043.png",
+        "displayTitle":  "Card 043",
+        "source":  "bundled",
+        "sequence":  43
+    },
+    {
+        "id":  "chanson-a-repondre-uno-044",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_044.png",
+        "displayTitle":  "Card 044",
+        "source":  "bundled",
+        "sequence":  44
+    },
+    {
+        "id":  "chanson-a-repondre-uno-045",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_045.png",
+        "displayTitle":  "Card 045",
+        "source":  "bundled",
+        "sequence":  45
+    },
+    {
+        "id":  "chanson-a-repondre-uno-046",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_046.png",
+        "displayTitle":  "Card 046",
+        "source":  "bundled",
+        "sequence":  46
+    },
+    {
+        "id":  "chanson-a-repondre-uno-047",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_047.png",
+        "displayTitle":  "Card 047",
+        "source":  "bundled",
+        "sequence":  47
+    },
+    {
+        "id":  "chanson-a-repondre-uno-048",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_048.png",
+        "displayTitle":  "Card 048",
+        "source":  "bundled",
+        "sequence":  48
+    },
+    {
+        "id":  "chanson-a-repondre-uno-049",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_049.png",
+        "displayTitle":  "Card 049",
+        "source":  "bundled",
+        "sequence":  49
+    },
+    {
+        "id":  "chanson-a-repondre-uno-050",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_050.png",
+        "displayTitle":  "Card 050",
+        "source":  "bundled",
+        "sequence":  50
+    },
+    {
+        "id":  "chanson-a-repondre-uno-051",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_051.png",
+        "displayTitle":  "Card 051",
+        "source":  "bundled",
+        "sequence":  51
+    },
+    {
+        "id":  "chanson-a-repondre-uno-052",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_052.png",
+        "displayTitle":  "Card 052",
+        "source":  "bundled",
+        "sequence":  52
+    },
+    {
+        "id":  "chanson-a-repondre-uno-053",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_053.png",
+        "displayTitle":  "Card 053",
+        "source":  "bundled",
+        "sequence":  53
+    },
+    {
+        "id":  "chanson-a-repondre-uno-054",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_054.png",
+        "displayTitle":  "Card 054",
+        "source":  "bundled",
+        "sequence":  54
+    },
+    {
+        "id":  "chanson-a-repondre-uno-055",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_055.png",
+        "displayTitle":  "Card 055",
+        "source":  "bundled",
+        "sequence":  55
+    },
+    {
+        "id":  "chanson-a-repondre-uno-056",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_056.png",
+        "displayTitle":  "Card 056",
+        "source":  "bundled",
+        "sequence":  56
+    },
+    {
+        "id":  "chanson-a-repondre-uno-057",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_057.png",
+        "displayTitle":  "Card 057",
+        "source":  "bundled",
+        "sequence":  57
+    },
+    {
+        "id":  "chanson-a-repondre-uno-058",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_058.png",
+        "displayTitle":  "Card 058",
+        "source":  "bundled",
+        "sequence":  58
+    },
+    {
+        "id":  "chanson-a-repondre-uno-059",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_059.png",
+        "displayTitle":  "Card 059",
+        "source":  "bundled",
+        "sequence":  59
+    },
+    {
+        "id":  "chanson-a-repondre-uno-060",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_060.png",
+        "displayTitle":  "Card 060",
+        "source":  "bundled",
+        "sequence":  60
+    },
+    {
+        "id":  "chanson-a-repondre-uno-061",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_061.png",
+        "displayTitle":  "Card 061",
+        "source":  "bundled",
+        "sequence":  61
+    },
+    {
+        "id":  "chanson-a-repondre-uno-062",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_062.png",
+        "displayTitle":  "Card 062",
+        "source":  "bundled",
+        "sequence":  62
+    },
+    {
+        "id":  "chanson-a-repondre-uno-063",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_063.png",
+        "displayTitle":  "Card 063",
+        "source":  "bundled",
+        "sequence":  63
+    },
+    {
+        "id":  "chanson-a-repondre-uno-064",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_064.png",
+        "displayTitle":  "Card 064",
+        "source":  "bundled",
+        "sequence":  64
+    },
+    {
+        "id":  "chanson-a-repondre-uno-065",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_065.png",
+        "displayTitle":  "Card 065",
+        "source":  "bundled",
+        "sequence":  65
+    },
+    {
+        "id":  "chanson-a-repondre-uno-066",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_066.png",
+        "displayTitle":  "Card 066",
+        "source":  "bundled",
+        "sequence":  66
+    },
+    {
+        "id":  "chanson-a-repondre-uno-067",
+        "deckId":  "chanson-a-repondre-uno",
+        "assetPath":  "assets/cards/chanson_a_repondre_uno/card_067.png",
+        "displayTitle":  "Card 067",
+        "source":  "bundled",
+        "sequence":  67
+    }
+]

@@ -23,14 +23,16 @@ class GameProvider extends ChangeNotifier {
   }
 
   Future<bool> start(Deck deck, {int playerCount = 2}) async {
-    if (deck.cards.length < playerCount * 2 + 1) {
-      _message = 'This deck needs at least ${playerCount * 2 + 1} cards.';
+    const handSize = 5;
+    if (deck.cards.length < playerCount * handSize + 1) {
+      _message =
+          'This deck needs at least ${playerCount * handSize + 1} cards.';
       notifyListeners();
       return false;
     }
     final shuffled = [...deck.cards]..shuffle(Random.secure());
     final hands = List.generate(playerCount, (_) => <CardImageModel>[]);
-    for (var round = 0; round < 2; round++) {
+    for (var round = 0; round < handSize; round++) {
       for (final hand in hands) {
         hand.add(shuffled.removeLast());
       }

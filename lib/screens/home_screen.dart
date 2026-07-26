@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:video_player/video_player.dart';
 
 import '../core/app_router.dart';
+import '../providers/background_provider.dart';
 import '../providers/deck_provider.dart';
 import '../providers/game_provider.dart';
 import '../providers/home_experience_provider.dart';
@@ -11,6 +15,7 @@ import '../widgets/app_bottom_navigation.dart';
 import '../widgets/continue_progress_panel.dart';
 import '../widgets/interactive_curtain_overlay.dart';
 import '../widgets/deck_carousel.dart';
+import '../widgets/home_background_video.dart';
 import '../widgets/home_menu_card.dart';
 import '../widgets/recent_cards.dart';
 import '../widgets/home_header.dart';
@@ -25,6 +30,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  static const _homeBackgroundVideo = 'assets/videos/home_background.mp4';
   static const _menuBackgroundAsset =
       'assets/images/main_menu_background.png';
 
@@ -51,6 +57,8 @@ class _HomeScreenState extends State<HomeScreen> {
   ];
 
   bool _backgroundPrecached = false;
+  late final VideoPlayerController _backgroundController;
+  bool _backgroundReady = false;
 
   static const _items = <_HomeItem>[
     _HomeItem(
@@ -112,6 +120,24 @@ class _HomeScreenState extends State<HomeScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _backgroundController = VideoPlayerController.asset(_homeBackgroundVideo);
+    _backgroundController.initialize().then((_) async {
+      await _backgroundController.setLooping(true);
+      await _backgroundController.setVolume(0);
+      await _backgroundController.play();
+      if (mounted) setState(() => _backgroundReady = true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _backgroundController.dispose();
+    super.dispose();
+  }
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_backgroundPrecached) return;
@@ -122,6 +148,8 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final decks = context.watch<DeckProvider>();
+    final background = context.watch<BackgroundProvider>();
+    _syncBackgroundPlayback(background.mode);
     final game = context.watch<GameProvider>().state;
     final experience = context.watch<HomeExperienceProvider>();
     final homeInteractive = experience.homeInteractive;
@@ -137,14 +165,19 @@ class _HomeScreenState extends State<HomeScreen> {
         fit: StackFit.expand,
         children: [
           Positioned.fill(
-            child: Image.asset(
-              'assets/images/main_street_background.png',
-              fit: BoxFit.cover,
-              alignment: Alignment.center,
-              filterQuality: FilterQuality.high,
-              errorBuilder: (context, error, stackTrace) =>
-                  const ColoredBox(color: Color(0xFF090503)),
-            ),
+            child: background.mode == BackgroundMode.sauvage
+                ? HomeBackgroundVideo(
+                    controller: _backgroundController,
+                    ready: _backgroundReady,
+                  )
+                : Image.asset(
+                    background.imagePath,
+                    fit: BoxFit.cover,
+                    alignment: Alignment.center,
+                    filterQuality: FilterQuality.high,
+                    errorBuilder: (context, error, stackTrace) =>
+                        const ColoredBox(color: Color(0xFF090503)),
+                  ),
           ),
           IgnorePointer(
             ignoring: !homeInteractive,
@@ -261,6 +294,19 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+  }
+
+  void _syncBackgroundPlayback(BackgroundMode mode) {
+    if (!_backgroundReady || !_backgroundController.value.isInitialized) {
+      return;
+    }
+    if (mode == BackgroundMode.sauvage) {
+      if (!_backgroundController.value.isPlaying) {
+        unawaited(_backgroundController.play());
+      }
+    } else if (_backgroundController.value.isPlaying) {
+      unawaited(_backgroundController.pause());
+    }
   }
 }
 

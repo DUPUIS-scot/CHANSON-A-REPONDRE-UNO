@@ -61,7 +61,8 @@ class _PlayerHandState extends State<PlayerHand> {
     }
     return LayoutBuilder(
       builder: (context, constraints) {
-        final cardWidth = constraints.maxWidth < 500 ? 92.0 : 116.0;
+        final visibleFiveWidth = constraints.maxWidth / 3.48;
+        final cardWidth = visibleFiveWidth.clamp(86.0, 128.0);
         final cardHeight = cardWidth * 1.48;
         final step = cardWidth * .62;
         final contentWidth = cardWidth + step * (widget.cards.length - 1);
@@ -96,6 +97,7 @@ class _PlayerHandState extends State<PlayerHand> {
                     child: FlippablePlayingCard(
                       frontImagePath: widget.cards[index].imagePath,
                       backImagePath: 'assets/images/card_back.png',
+                      category: widget.cards[index].category,
                       isFaceUp: revealed.contains(widget.cards[index].id),
                       isSelected:
                           widget.selectedCardId == widget.cards[index].id,

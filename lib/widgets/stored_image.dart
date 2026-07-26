@@ -31,6 +31,9 @@ class StoredImage extends StatelessWidget {
         return _error(context, const FormatException('Invalid PNG data.'));
       }
     }
+    if (source.startsWith('assets/')) {
+      return Image.asset(source, fit: fit, errorBuilder: errorBuilder);
+    }
     if (kIsWeb) {
       return _error(context, const FileSystemException('Missing web image.'));
     }

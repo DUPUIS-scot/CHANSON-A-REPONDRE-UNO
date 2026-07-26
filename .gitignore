@@ -32,13 +32,6 @@ migrate_working_dir/
 .pub/
 /build/
 /coverage/
-/.preview/
-/codex
-.env
-**/.env
-config/local.json
-server/node_modules/
-server/dist/
 
 # Symbolication related
 app.*.symbols

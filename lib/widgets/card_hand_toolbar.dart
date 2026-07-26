@@ -9,6 +9,11 @@ class CardHandToolbar extends StatelessWidget {
     required this.onShuffle,
     required this.onReset,
     required this.onFilter,
+    required this.canGoPrevious,
+    required this.canGoNext,
+    required this.onPrevious,
+    required this.onNext,
+    required this.pageLabel,
     super.key,
   });
   final String deckName;
@@ -18,6 +23,11 @@ class CardHandToolbar extends StatelessWidget {
   final VoidCallback? onShuffle;
   final VoidCallback onReset;
   final VoidCallback onFilter;
+  final bool canGoPrevious;
+  final bool canGoNext;
+  final VoidCallback onPrevious;
+  final VoidCallback onNext;
+  final String pageLabel;
   @override
   Widget build(BuildContext context) => Wrap(
     alignment: WrapAlignment.center,
@@ -40,12 +50,23 @@ class CardHandToolbar extends StatelessWidget {
                 child: CircularProgressIndicator(strokeWidth: 2),
               )
             : const Icon(Icons.shuffle_rounded),
-        label: const Text('SHUFFLE 5 CARDS'),
+        label: const Text('SHUFFLE CARDS'),
       ),
       OutlinedButton.icon(
         onPressed: isShuffling ? null : onReset,
         icon: const Icon(Icons.restart_alt),
-        label: const Text('RESET TO FIRST 5'),
+        label: const Text('RESET ORDER'),
+      ),
+      IconButton.outlined(
+        tooltip: 'Previous five cards',
+        onPressed: isShuffling || !canGoPrevious ? null : onPrevious,
+        icon: const Icon(Icons.chevron_left),
+      ),
+      Chip(label: Text(pageLabel)),
+      IconButton.outlined(
+        tooltip: 'Next five cards',
+        onPressed: isShuffling || !canGoNext ? null : onNext,
+        icon: const Icon(Icons.chevron_right),
       ),
       IconButton.outlined(
         tooltip: 'Filters',

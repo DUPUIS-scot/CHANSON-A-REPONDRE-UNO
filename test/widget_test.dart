@@ -1,45 +1,32 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:uno_chanson_2/app.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uno_chanson_2/providers/background_provider.dart';
+import 'package:uno_chanson_2/providers/deck_provider.dart';
+import 'package:uno_chanson_2/services/local_storage_service.dart';
 
 void main() {
-  testWidgets('home screen displays every navigation option', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(
-      const ChansonUnoApp(aiBackendUrlOverride: 'https://api.test'),
-    );
+  test('permanent deck remains bundled with 67 unique cards', () {
+    final deck = DeckProvider.permanentDeck;
 
-    expect(find.text('OPEN CURTAINS'), findsOneWidget);
-    await tester.tap(find.text('OPEN CURTAINS'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 1300));
-    await tester.pump();
+    expect(deck.id, chansonARepondreUnoDeckId);
+    expect(deck.cards, hasLength(67));
+    expect(deck.cards.map((card) => card.id).toSet(), hasLength(67));
+    expect(deck.cards.first.id, 'chanson-a-repondre-uno-001');
+    expect(deck.cards.last.id, 'chanson-a-repondre-uno-067');
+    expect(deck.cards.every((card) => !card.title.endsWith('.png')), isTrue);
+  });
 
+  test('background modes are limited to the permanent video and PNG assets', () {
+    SharedPreferences.setMockInitialValues({});
     expect(
-      find.bySemanticsLabel('Chanson à Répondre application logo'),
-      findsOneWidget,
+      BackgroundMode.values,
+      const [BackgroundMode.sauvage, BackgroundMode.staticPng],
     );
-    expect(find.text('CHANSON À RÉPONDRE'), findsNothing);
-    for (final label in <String>[
-      'PLAY',
-      'CHOOSE DECK',
-      'BROWSE CARDS',
-      'SEARCH',
-      'JOURNAL',
-      'AI CHAT',
-      'RULES',
-      'SETTINGS',
-    ]) {
-      // Some destinations also appear in persistent navigation.
-      expect(find.text(label), findsWidgets);
-    }
+
+    final provider = BackgroundProvider(LocalStorageService());
+    expect(provider.mode, BackgroundMode.sauvage);
+    expect(provider.videoPath, 'assets/videos/home_background.mp4');
+    expect(provider.imagePath, 'assets/images/home_background.png');
+    expect(provider.currentFilename, 'home_background.mp4');
   });
 }

@@ -52,7 +52,7 @@ class _CardFullscreenScreenState extends State<CardFullscreenScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: Text(card.title),
+        title: Text(card.displayTitle),
         backgroundColor: Colors.black,
         actions: [
           Padding(

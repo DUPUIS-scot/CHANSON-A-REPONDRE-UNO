@@ -35,10 +35,12 @@ class HomeExperienceProvider extends ChangeNotifier {
     } on Object {
       // Invalid preferences safely use the intro defaults.
     }
-    if (skipIntroOnStartup) {
-      curtainProgress = 1;
-      stage = HomeStage.home;
-    }
+    // The deployed app must always boot into the theatrical intro: closed
+    // curtains, startup media, then the dashboard reveal. Older localStorage
+    // values may contain `skipIntro`, but honoring that here can make the live
+    // page look like a plain/static home screen after refresh.
+    curtainProgress = 0;
+    stage = HomeStage.videoIntro;
     notifyListeners();
   }
 

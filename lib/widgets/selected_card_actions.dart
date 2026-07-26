@@ -9,6 +9,7 @@ class SelectedCardActions extends StatelessWidget {
     required this.onTranscribe,
     required this.onDiscuss,
     required this.onFavourite,
+    this.onAssignToDeck,
     super.key,
   });
   final CardImageModel card;
@@ -17,6 +18,7 @@ class SelectedCardActions extends StatelessWidget {
   final VoidCallback onTranscribe;
   final VoidCallback? onDiscuss;
   final VoidCallback onFavourite;
+  final VoidCallback? onAssignToDeck;
   @override
   Widget build(BuildContext context) => Card(
     child: Padding(
@@ -24,7 +26,7 @@ class SelectedCardActions extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(card.title, style: Theme.of(context).textTheme.titleLarge),
+          Text(card.displayTitle, style: Theme.of(context).textTheme.titleLarge),
           Text(deckName),
           const SizedBox(height: 8),
           Wrap(
@@ -46,6 +48,11 @@ class SelectedCardActions extends StatelessWidget {
                 onPressed: onDiscuss,
                 icon: const Icon(Icons.smart_toy),
                 label: const Text('Discuss with AI'),
+              ),
+              OutlinedButton.icon(
+                onPressed: onAssignToDeck,
+                icon: const Icon(Icons.library_add_outlined),
+                label: const Text('Assign to deck'),
               ),
               IconButton.outlined(
                 tooltip: card.isFavourite

@@ -4,14 +4,15 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../core/app_router.dart';
+import '../data/card_categories.dart';
 import '../models/card_image_model.dart';
 import '../models/browse_hand_preview_args.dart';
 import '../providers/card_browser_provider.dart';
 import '../providers/deck_provider.dart';
 import '../theme/app_theme.dart';
+import '../widgets/browse_card_castle_scene.dart';
 import '../widgets/card_hand_toolbar.dart';
 import '../widgets/empty_deck_state.dart';
-import '../widgets/five_card_hand.dart';
 import '../widgets/home_navigation_button.dart';
 import '../widgets/selected_card_actions.dart';
 import 'browse_hand_fullscreen_screen.dart';
@@ -30,8 +31,14 @@ class _CardBrowserScreenState extends State<CardBrowserScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final deck = context.watch<DeckProvider>().activeDeck;
-    if (deck != null) browser.initializeForDeck(deck.id, deck.cards);
+    final decks = context.watch<DeckProvider>();
+    final deck = decks.activeDeck;
+    if (deck != null) {
+      browser.initializeForDeck(deck.id, deck.cards);
+      if (browser.categoryFilter == null && decks.selectedCategory != null) {
+        browser.applyFilters(category: decks.selectedCategory);
+      }
+    }
   }
 
   @override
@@ -88,8 +95,7 @@ class _CardBrowserScreenState extends State<CardBrowserScreen> {
     var title = browser.titleFilter;
     var favourites = browser.favouritesOnly;
     var transcribed = browser.transcribedOnly;
-    final categories = deck.cards.map((card) => card.category).toSet().toList()
-      ..sort();
+    final categories = cardCategories.map((category) => category.label);
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -147,20 +153,25 @@ class _CardBrowserScreenState extends State<CardBrowserScreen> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     TextButton(
-                      onPressed: () {
+                      onPressed: () async {
+                        final deckProvider = context.read<DeckProvider>();
+                        final navigator = Navigator.of(sheetContext);
                         browser.applyFilters(
                           title: '',
                           favourites: false,
                           transcribed: false,
                           clearCategory: true,
                         );
-                        Navigator.pop(sheetContext);
+                        await deckProvider.setSelectedCategory(null);
+                        navigator.pop();
                       },
                       child: const Text('Clear'),
                     ),
                     const SizedBox(width: 8),
                     FilledButton(
-                      onPressed: () {
+                      onPressed: () async {
+                        final deckProvider = context.read<DeckProvider>();
+                        final navigator = Navigator.of(sheetContext);
                         browser.applyFilters(
                           category: category,
                           title: title,
@@ -168,7 +179,8 @@ class _CardBrowserScreenState extends State<CardBrowserScreen> {
                           transcribed: transcribed,
                           clearCategory: category == null,
                         );
-                        Navigator.pop(sheetContext);
+                        await deckProvider.setSelectedCategory(category);
+                        navigator.pop();
                       },
                       child: const Text('Apply'),
                     ),
@@ -187,6 +199,44 @@ class _CardBrowserScreenState extends State<CardBrowserScreen> {
       (browser.titleFilter.isEmpty ? 0 : 1) +
       (browser.favouritesOnly ? 1 : 0) +
       (browser.transcribedOnly ? 1 : 0);
+
+  Future<void> assignSelectedCardToDeck(CardImageModel card) async {
+    final decks = context.read<DeckProvider>();
+    final targets = decks.assignableDecksFor(card);
+    if (targets.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No available custom deck can receive this card.'),
+        ),
+      );
+      return;
+    }
+
+    final targetDeckId = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => SimpleDialog(
+        title: const Text('Assign to deck'),
+        children: [
+          for (final target in targets)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(dialogContext, target.id),
+              child: Text(target.name),
+            ),
+        ],
+      ),
+    );
+    if (targetDeckId == null) return;
+
+    final assigned = await decks.assignCardToDeck(card, targetDeckId);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          assigned ? 'Card assigned to deck.' : 'Card could not be assigned.',
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -219,7 +269,8 @@ class _CardBrowserScreenState extends State<CardBrowserScreen> {
           : deck.cards.isEmpty
           ? EmptyDeckState(
               title: 'This deck is empty',
-              message: 'Import PNG cards into ${deck.name} to browse them.',
+              message:
+                  'Assign cards to ${deck.name} from the permanent library.',
               onChooseDeck: () => context.go(AppRoutes.decks),
             )
           : AnimatedBuilder(
@@ -264,6 +315,12 @@ class _CardBrowserScreenState extends State<CardBrowserScreen> {
                                 : browser.generateRandomHand,
                             onReset: browser.resetToFirstCards,
                             onFilter: showFilters,
+                            canGoPrevious: browser.canGoPrevious,
+                            canGoNext: browser.canGoNext,
+                            onPrevious: browser.previousPage,
+                            onNext: browser.nextPage,
+                            pageLabel:
+                                '${browser.pageNumber}/${browser.pageCount}',
                           ),
                           if (browser.availableCards.length < 5 &&
                               browser.availableCards.isNotEmpty)
@@ -286,15 +343,21 @@ class _CardBrowserScreenState extends State<CardBrowserScreen> {
                             )
                           else
                             Expanded(
-                              child: FiveCardHand(
-                                cards: browser.visibleHand,
+                              child: BrowseCardCastleScene(
+                                cards: browser.availableCards,
+                                visibleCards: browser.visibleHand,
+                                pageStart: browser.pageStart,
                                 deckName: deck.name,
                                 selectedCardId: browser.selectedCardId,
                                 shuffleGeneration: browser.shuffleGeneration,
-                                onCardSelected: browser.selectCard,
+                                onCardSelected: browser.focusCard,
                                 onCardOpened: open,
                                 onCardLongPressed: (index) =>
                                     openHandPreview(index, deck.name),
+                                onPrevious: browser.previousPage,
+                                onNext: browser.nextPage,
+                                canGoPrevious: browser.canGoPrevious,
+                                canGoNext: browser.canGoNext,
                               ),
                             ),
                           if (selected != null)
@@ -319,6 +382,8 @@ class _CardBrowserScreenState extends State<CardBrowserScreen> {
                                   );
                                 }
                               },
+                              onAssignToDeck: () =>
+                                  assignSelectedCardToDeck(selected),
                             ),
                         ],
                       ),

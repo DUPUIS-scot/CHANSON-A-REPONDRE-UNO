@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 
 import '../data/dj_who_videos.dart';
 import '../widgets/app_page_shell.dart';
@@ -14,6 +15,28 @@ class DjWhoVideosScreen extends StatefulWidget {
 
 class _DjWhoVideosScreenState extends State<DjWhoVideosScreen> {
   int selectedIndex = 0;
+  late final YoutubePlayerController controller;
+
+  @override
+  void initState() {
+    super.initState();
+    controller = YoutubePlayerController(
+      params: const YoutubePlayerParams(
+        showControls: true,
+        showFullscreenButton: true,
+      ),
+    );
+    controller.cuePlaylist(
+      list: djWhoVideos.map((video) => video.videoId).toList(growable: false),
+      listType: ListType.playlist,
+    );
+  }
+
+  @override
+  void dispose() {
+    controller.close();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +62,7 @@ class _DjWhoVideosScreenState extends State<DjWhoVideosScreen> {
           ),
           const SizedBox(height: 16),
           if (selected != null)
-            _VideoPreview(videoId: selected.videoId, title: selected.title)
+            _VideoPreview(controller: controller, title: selected.title)
           else
             const _EmptyPlaylist(),
           const SizedBox(height: 16),
@@ -54,7 +77,10 @@ class _DjWhoVideosScreenState extends State<DjWhoVideosScreen> {
               VideoPlaylistTile(
                 video: validVideos[index],
                 selected: index == selectedIndex,
-                onTap: () => setState(() => selectedIndex = index),
+                onTap: () {
+                  setState(() => selectedIndex = index);
+                  controller.loadVideoById(videoId: validVideos[index].videoId);
+                },
               ),
               const SizedBox(height: 10),
             ],
@@ -73,9 +99,9 @@ class _DjWhoVideosScreenState extends State<DjWhoVideosScreen> {
 }
 
 class _VideoPreview extends StatelessWidget {
-  const _VideoPreview({required this.videoId, required this.title});
+  const _VideoPreview({required this.controller, required this.title});
 
-  final String videoId;
+  final YoutubePlayerController controller;
   final String title;
 
   @override
@@ -85,23 +111,7 @@ class _VideoPreview extends StatelessWidget {
       borderRadius: BorderRadius.circular(8),
       child: AspectRatio(
         aspectRatio: 16 / 9,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            Image.network(
-              'https://img.youtube.com/vi/$videoId/hqdefault.jpg',
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => ColoredBox(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                child: const Center(child: Icon(Icons.ondemand_video)),
-              ),
-            ),
-            ColoredBox(color: Colors.black.withValues(alpha: 0.25)),
-            const Center(
-              child: Icon(Icons.play_circle_fill, size: 72),
-            ),
-          ],
-        ),
+        child: YoutubePlayer(controller: controller),
       ),
     ),
   );

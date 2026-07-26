@@ -20,12 +20,4 @@ class LocalStorageService {
     return directory;
   }
 
-  Future<String> exportData() async {
-    final preferences = await _preferences;
-    final data = <String, Object?>{};
-    for (final key in preferences.getKeys()) {
-      data[key] = preferences.get(key);
-    }
-    return jsonEncode({'version': 1, 'data': data});
-  }
 }

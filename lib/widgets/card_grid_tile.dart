@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/card_image_model.dart';
-import '../theme/app_theme.dart';
+import 'category_badge.dart';
 import 'stored_image.dart';
 
 class CardGridTile extends StatelessWidget {
@@ -30,6 +30,11 @@ class CardGridTile extends StatelessWidget {
             ),
           ),
           Positioned(
+            left: 8,
+            top: 8,
+            child: CategoryBadge(category: card.category),
+          ),
+          Positioned(
             left: 0,
             right: 0,
             bottom: 0,
@@ -41,14 +46,7 @@ class CardGridTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      card.category.toUpperCase(),
-                      style: const TextStyle(
-                        color: AppTheme.brightGold,
-                        fontSize: 11,
-                      ),
-                    ),
-                    Text(
-                      card.title,
+                      card.displayTitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),

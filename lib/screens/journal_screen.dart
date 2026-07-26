@@ -1,4 +1,3 @@
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -24,8 +23,6 @@ class _JournalScreenState extends State<JournalScreen> {
   Future<void> edit(BuildContext context, [JournalEntryModel? entry]) async {
     final text = TextEditingController(text: entry?.text);
     final linkedCardIds = <String>[...?entry?.linkedCardIds];
-    String? photo = entry?.photoPath;
-    String? voice = entry?.voicePath;
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
@@ -66,7 +63,7 @@ class _JournalScreenState extends State<JournalScreen> {
                           });
                         }
                       },
-                      icon: const Icon(Icons.add_photo_alternate_outlined),
+                      icon: const Icon(Icons.style_outlined),
                       label: Text(
                         linkedCardIds.isEmpty
                             ? 'Link cards'
@@ -91,44 +88,6 @@ class _JournalScreenState extends State<JournalScreen> {
                       }).toList(),
                     ),
                   ],
-                  Wrap(
-                    children: [
-                      TextButton.icon(
-                        onPressed: () async {
-                          final result = await FilePicker.pickFiles(
-                            type: FileType.image,
-                          );
-                          if (result != null) {
-                            setDialogState(
-                              () => photo = result.files.single.path,
-                            );
-                          }
-                        },
-                        icon: const Icon(Icons.photo),
-                        label: Text(
-                          photo == null ? 'Attach photo' : 'Photo attached',
-                        ),
-                      ),
-                      TextButton.icon(
-                        onPressed: () async {
-                          final result = await FilePicker.pickFiles(
-                            type: FileType.audio,
-                          );
-                          if (result != null) {
-                            setDialogState(
-                              () => voice = result.files.single.path,
-                            );
-                          }
-                        },
-                        icon: const Icon(Icons.mic),
-                        label: Text(
-                          voice == null
-                              ? 'Attach voice recording'
-                              : 'Recording attached',
-                        ),
-                      ),
-                    ],
-                  ),
                 ],
               ),
             ),
@@ -145,8 +104,8 @@ class _JournalScreenState extends State<JournalScreen> {
                   id: entry?.id,
                   text: text.text.trim(),
                   linkedCardIds: linkedCardIds,
-                  photoPath: photo,
-                  voicePath: voice,
+                  photoPath: entry?.photoPath,
+                  voicePath: entry?.voicePath,
                 );
                 if (dialogContext.mounted) Navigator.pop(dialogContext);
               },
@@ -349,7 +308,7 @@ class _JournalEntryCard extends StatelessWidget {
     ({String id, CardImageModel? card}) link,
   ) {
     final card = link.card;
-    if (card == null) return _MissingLinkedCard(cardId: link.id);
+    if (card == null) return const _MissingLinkedCard();
     return MediumCardThumbnail(
       card: card,
       onTap: () => context.push(AppRoutes.card(card.id)),
@@ -358,12 +317,10 @@ class _JournalEntryCard extends StatelessWidget {
 }
 
 class _MissingLinkedCard extends StatelessWidget {
-  const _MissingLinkedCard({required this.cardId});
-  final String cardId;
+  const _MissingLinkedCard();
 
   @override
   Widget build(BuildContext context) {
-    final shortId = cardId.length > 10 ? '${cardId.substring(0, 8)}...' : cardId;
     return Container(
       width: MediumCardThumbnail.width,
       height: 220,
@@ -378,8 +335,6 @@ class _MissingLinkedCard extends StatelessWidget {
           const Icon(Icons.link_off, size: 36),
           const SizedBox(height: 10),
           const Text('Linked card unavailable', textAlign: TextAlign.center),
-          const SizedBox(height: 6),
-          Text('Card ID: $shortId', textAlign: TextAlign.center),
         ],
       ),
     );

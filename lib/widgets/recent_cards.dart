@@ -47,7 +47,7 @@ class RecentCards extends StatelessWidget {
         const SizedBox(
           height: 120,
           child: Center(
-            child: Text('Recently imported cards will appear here.'),
+            child: Text('Recently viewed cards will appear here.'),
           ),
         )
       else
@@ -91,7 +91,7 @@ class RecentCards extends StatelessWidget {
                                   ),
                                 ),
                                 Text(
-                                  card.title,
+                                  card.displayTitle,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),

@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    html, body, #scene { margin:0; width:100%; height:100%; overflow:hidden; background:#050403; }
+    #hint { position:absolute; left:14px; bottom:12px; color:#ffc928; font:600 12px system-ui; opacity:.75; pointer-events:none; }
+  </style>
+</head>
+<body>
+  <div id="scene"></div>
+  <div id="hint">WebGL Castle View • drag/orbit • wheel/zoom • long press/fullscreen</div>
+  <script type="module">
+    import * as THREE from 'https://unpkg.com/three@0.165.0/build/three.module.js';
+    import { OrbitControls } from 'https://unpkg.com/three@0.165.0/examples/jsm/controls/OrbitControls.js';
+
+    const root = document.getElementById('scene');
+    const state = {
+      cards: [],
+      meshes: [],
+      cardByMesh: new Map(),
+      textures: new Map(),
+      focusedCardId: null,
+      shuffleSeed: 0,
+      targetCamera: null,
+      targetLook: null,
+      pointerDown: null,
+      disposed: false,
+    };
+
+    let scene, camera, renderer, controls, raycaster, pointer, cardsGroup;
+
+    function emit(type, payload = {}) {
+      parent.postMessage(JSON.stringify({ type, ...payload }), '*');
+    }
+
+    function init() {
+      if (!hasWebGL()) {
+        emit('rendererError', { reason: 'webgl-unavailable' });
+        return;
+      }
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x06080a);
+      scene.fog = new THREE.Fog(0x06080a, 34, 95);
+
+      camera = new THREE.PerspectiveCamera(48, root.clientWidth / root.clientHeight, 0.1, 240);
+      camera.position.set(0, 19, 42);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
+      renderer.setSize(root.clientWidth, root.clientHeight);
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      root.appendChild(renderer.domElement);
+
+      controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.07;
+      controls.minDistance = 16;
+      controls.maxDistance = 78;
+      controls.maxPolarAngle = Math.PI * 0.49;
+      controls.target.set(0, 8, 0);
+
+      raycaster = new THREE.Raycaster();
+      pointer = new THREE.Vector2();
+      cardsGroup = new THREE.Group();
+      scene.add(cardsGroup);
+
+      buildLights();
+      buildCastle();
+      installEvents();
+      animate();
+      emit('rendererReady');
+    }
+
+    function hasWebGL() {
+      try {
+        const canvas = document.createElement('canvas');
+        return !!(window.WebGLRenderingContext && (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')));
+      } catch (_) {
+        return false;
+      }
+    }
+
+    function buildLights() {
+      scene.add(new THREE.HemisphereLight(0x9fb9cf, 0x23150b, 1.15));
+      const sun = new THREE.DirectionalLight(0xffdf9a, 2.1);
+      sun.position.set(-18, 38, 28);
+      scene.add(sun);
+      for (const p of [[-12,7,16],[13,9,9],[0,12,-9],[-22,5,-4],[22,5,-4]]) {
+        const lamp = new THREE.PointLight(0xffb53d, 18, 24, 2);
+        lamp.position.set(...p);
+        scene.add(lamp);
+      }
+    }
+
+    function mat(color, rough = .9) {
+      return new THREE.MeshStandardMaterial({ color, roughness: rough, metalness: .05 });
+    }
+
+    function cube(name, x, y, z, sx, sy, sz, color = 0x4b4943) {
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), mat(color));
+      mesh.name = name;
+      mesh.position.set(x, y, z);
+      scene.add(mesh);
+      return mesh;
+    }
+
+    function buildCastle() {
+      const rock = new THREE.Mesh(new THREE.CylinderGeometry(28, 38, 15, 9), mat(0x22221f));
+      rock.position.y = -3;
+      rock.rotation.y = .22;
+      scene.add(rock);
+      const grass = new THREE.Mesh(new THREE.CylinderGeometry(26, 28, .8, 9), mat(0x27301b));
+      grass.position.y = 4.9;
+      grass.rotation.y = .22;
+      scene.add(grass);
+
+      cube('lower-wall-front', 0, 7, 15, 42, 5, 2);
+      cube('lower-wall-back', 0, 9, -16, 36, 7, 2);
+      cube('left-wall', -22, 8, 0, 2, 6, 32);
+      cube('right-wall', 22, 8, 0, 2, 6, 32);
+      cube('gatehouse', 0, 10, 17, 8, 9, 5, 0x58554d);
+      cube('lower-courtyard', 0, 5.4, 2, 32, .8, 22, 0x34312b);
+      cube('middle-terrace', -6, 12, -4, 23, 3, 16, 0x54514a);
+      cube('upper-courtyard', 5, 16, -9, 19, 3, 13, 0x504d46);
+      cube('great-hall', 5, 20, -13, 13, 9, 7, 0x625f55);
+      cube('upper-keep', -8, 22, -11, 11, 13, 10, 0x5b574f);
+
+      for (const [x, z, h] of [[-21,16,11],[21,16,11],[-21,-15,13],[21,-15,13],[-10,-20,16],[14,-20,16]]) {
+        const tower = new THREE.Mesh(new THREE.CylinderGeometry(2.8, 3.2, h, 18), mat(0x56534d));
+        tower.position.set(x, 5 + h / 2, z);
+        scene.add(tower);
+        const roof = new THREE.Mesh(new THREE.ConeGeometry(3.4, 4.5, 18), mat(0x1f252b));
+        roof.position.set(x, 5 + h + 2, z);
+        scene.add(roof);
+      }
+
+      for (let i = -18; i <= 18; i += 4) {
+        cube('battlement', i, 12.2, 16.2, 1.5, 2, 1.3, 0x615d54);
+        cube('battlement', i, 13.8, -16.2, 1.4, 2, 1.3, 0x615d54);
+      }
+      for (let i = 0; i < 9; i++) {
+        cube('stair', -15 + i * 2, 6 + i * .7, 11 - i * 2.1, 2.3, .45, 2.2, 0x3f3c35);
+      }
+    }
+
+    function anchors() {
+      const out = [];
+      const zones = [
+        ['gate', 0, 12, 18, 9, 2, 1.9],
+        ['front-wall', 0, 11, 14, 15, 1.8, 2.2],
+        ['lower-left', -15, 10, 7, 10, 1.7, 1.5],
+        ['lower-right', 15, 10, 7, 10, 1.7, 1.5],
+        ['middle-terrace', -6, 15, -3, 12, 1.8, 1.8],
+        ['upper-wall', 5, 20, -9, 13, 1.8, 1.8],
+        ['keep', -8, 27, -11, 8, 2.0, 2.0],
+        ['right-towers', 21, 14, -4, 9, 1.6, 2.2],
+        ['left-towers', -21, 14, -4, 9, 1.6, 2.2],
+      ];
+      for (const [zone, cx, cy, cz, count, dx, dz] of zones) {
+        for (let i = 0; i < count; i++) {
+          const row = Math.floor(i / 5);
+          const col = i % 5;
+          out.push({
+            id: `${zone}-${i}`,
+            zone,
+            position: [cx + (col - 2) * dx, cy + row * 2.2, cz - row * dz],
+            rotation: [0, (cx > 5 ? -0.35 : cx < -5 ? 0.35 : 0), 0],
+          });
+        }
+      }
+      return out;
+    }
+
+    function seeded(cards, seed) {
+      const copy = cards.slice();
+      let s = seed || 1;
+      for (let i = copy.length - 1; i > 0; i--) {
+        s = (s * 1664525 + 1013904223) >>> 0;
+        const j = s % (i + 1);
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function setCards(cards, focusedCardId, shuffleSeed) {
+      state.cards = cards;
+      state.focusedCardId = focusedCardId;
+      state.shuffleSeed = shuffleSeed;
+      state.meshes.forEach(m => {
+        m.geometry.dispose();
+        if (Array.isArray(m.material)) m.material.forEach(x => x.dispose()); else m.material.dispose();
+      });
+      state.meshes = [];
+      state.cardByMesh.clear();
+      cardsGroup.clear();
+
+      const cardAnchors = anchors();
+      const ordered = seeded(cards, shuffleSeed);
+      ordered.slice(0, cardAnchors.length).forEach((card, i) => addCardMesh(card, cardAnchors[i]));
+      if (focusedCardId) focusCard(focusedCardId, false);
+    }
+
+    function textureFor(card) {
+      if (state.textures.has(card.thumbnailUrl)) return state.textures.get(card.thumbnailUrl);
+      const texture = new THREE.TextureLoader().load(card.thumbnailUrl);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.anisotropy = 4;
+      state.textures.set(card.thumbnailUrl, texture);
+      return texture;
+    }
+
+    function addCardMesh(card, anchor) {
+      const h = 3.2;
+      const w = Math.max(.9, Math.min(2.5, h * (card.aspectRatio || .66)));
+      const geometry = new THREE.BoxGeometry(w, h, .08);
+      const face = new THREE.MeshStandardMaterial({ map: textureFor(card), roughness: .78 });
+      const edge = new THREE.MeshStandardMaterial({ color: 0xf3efe1, roughness: .9 });
+      const mesh = new THREE.Mesh(geometry, [edge, edge, edge, edge, face, edge]);
+      mesh.position.fromArray(anchor.position);
+      mesh.rotation.set(anchor.rotation[0], anchor.rotation[1], anchor.rotation[2]);
+      mesh.userData.card = card;
+      mesh.userData.anchor = anchor;
+      cardsGroup.add(mesh);
+      state.meshes.push(mesh);
+      state.cardByMesh.set(mesh.uuid, card);
+      if (card.id === state.focusedCardId) applyFocus(mesh);
+    }
+
+    function pick(event) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(pointer, camera);
+      const hit = raycaster.intersectObjects(state.meshes, false)[0];
+      return hit?.object;
+    }
+
+    function focusCard(cardId, animate = true) {
+      state.focusedCardId = cardId;
+      let selected = null;
+      for (const mesh of state.meshes) {
+        const on = mesh.userData.card.id === cardId;
+        mesh.scale.setScalar(on ? 1.12 : 1);
+        if (Array.isArray(mesh.material)) {
+          mesh.material.forEach((m, i) => { if (i !== 4) m.color.set(on ? 0xffc928 : 0xf3efe1); });
+        }
+        if (on) selected = mesh;
+      }
+      if (selected) {
+        const target = selected.position.clone();
+        const dir = new THREE.Vector3(0, 4, 9).applyAxisAngle(new THREE.Vector3(0,1,0), selected.rotation.y);
+        state.targetLook = target;
+        state.targetCamera = target.clone().add(dir);
+        if (!animate) {
+          camera.position.copy(state.targetCamera);
+          controls.target.copy(state.targetLook);
+        }
+      }
+    }
+
+    function applyFocus(mesh) {
+      mesh.scale.setScalar(1.12);
+    }
+
+    function installEvents() {
+      window.addEventListener('resize', resize);
+      renderer.domElement.addEventListener('pointerdown', e => {
+        state.pointerDown = { x: e.clientX, y: e.clientY, t: performance.now(), mesh: pick(e) };
+      });
+      renderer.domElement.addEventListener('pointerup', e => {
+        const down = state.pointerDown;
+        state.pointerDown = null;
+        if (!down || !down.mesh) return;
+        const dist = Math.hypot(e.clientX - down.x, e.clientY - down.y);
+        if (dist > 8) return;
+        const card = down.mesh.userData.card;
+        if (performance.now() - down.t > 520) {
+          emit('cardLongPressed', { cardId: card.id });
+        } else {
+          focusCard(card.id, true);
+          emit('cardSelected', { cardId: card.id });
+        }
+      });
+      renderer.domElement.addEventListener('dblclick', e => {
+        const mesh = pick(e);
+        if (mesh) focusCard(mesh.userData.card.id, true);
+      });
+      window.addEventListener('keydown', e => {
+        if (!['ArrowLeft','ArrowRight','a','d','A','D'].includes(e.key)) return;
+        const ids = state.meshes.map(m => m.userData.card.id);
+        if (!ids.length) return;
+        let idx = Math.max(0, ids.indexOf(state.focusedCardId));
+        idx += ['ArrowRight','d','D'].includes(e.key) ? 1 : -1;
+        idx = Math.max(0, Math.min(ids.length - 1, idx));
+        focusCard(ids[idx], true);
+        emit('cardSelected', { cardId: ids[idx] });
+      });
+      renderer.domElement.addEventListener('webglcontextlost', e => {
+        e.preventDefault();
+        emit('rendererError', { reason: 'context-lost' });
+      });
+    }
+
+    function resize() {
+      if (!renderer) return;
+      camera.aspect = root.clientWidth / root.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(root.clientWidth, root.clientHeight);
+    }
+
+    function animate() {
+      if (state.disposed) return;
+      requestAnimationFrame(animate);
+      if (state.targetCamera && state.targetLook) {
+        camera.position.lerp(state.targetCamera, .055);
+        controls.target.lerp(state.targetLook, .065);
+        if (camera.position.distanceTo(state.targetCamera) < .08) state.targetCamera = null;
+      }
+      for (const mesh of state.meshes) {
+        const toCamera = camera.position.clone();
+        toCamera.y = mesh.position.y;
+        mesh.lookAt(toCamera);
+      }
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    function dispose() {
+      state.disposed = true;
+      window.removeEventListener('resize', resize);
+      state.meshes.forEach(m => { m.geometry.dispose(); if (Array.isArray(m.material)) m.material.forEach(x => x.dispose()); else m.material.dispose(); });
+      state.textures.forEach(t => t.dispose());
+      controls?.dispose();
+      renderer?.dispose();
+    }
+
+    window.addEventListener('message', event => {
+      let data;
+      try { data = JSON.parse(event.data); } catch (_) { return; }
+      if (data.type === 'setCards') setCards(data.cards || [], data.focusedCardId, data.shuffleSeed || 0);
+      if (data.type === 'dispose') dispose();
+    });
+
+    init();
+  </script>
+</body>
+</html>

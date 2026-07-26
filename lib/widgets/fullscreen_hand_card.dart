@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../data/card_categories.dart';
 import '../models/card_image_model.dart';
+import 'category_badge.dart';
 import 'stored_image.dart';
 
 class FullscreenHandCard extends StatefulWidget {
@@ -38,7 +40,7 @@ class _FullscreenHandCardState extends State<FullscreenHandCard> {
 
   @override
   Widget build(BuildContext context) {
-    final title = widget.faceUp ? widget.card.title : 'Face-down card';
+    final title = widget.faceUp ? widget.card.displayTitle : 'Face-down card';
     return Semantics(
       label:
           'Card ${widget.position} of ${widget.total}, $title, '
@@ -63,15 +65,31 @@ class _FullscreenHandCardState extends State<FullscreenHandCard> {
                 child: AspectRatio(
                   aspectRatio: widget.card.aspectRatio,
                   child: widget.faceUp
-                      ? StoredImage(
-                          source: widget.card.imagePath,
-                          fit: BoxFit.contain,
-                          errorBuilder: (_, _, _) => const _MissingCard(),
+                      ? Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            StoredImage(
+                              source: widget.card.imagePath,
+                              fit: BoxFit.contain,
+                              errorBuilder: (_, _, _) => const _MissingCard(),
+                            ),
+                            Positioned(
+                              left: 12,
+                              top: 12,
+                              child: CategoryBadge(
+                                category: widget.card.category,
+                              ),
+                            ),
+                          ],
                         )
                       : Image.asset(
-                          'assets/images/card_back.png',
+                          cardCategoryFor(widget.card.category).versoAsset,
                           fit: BoxFit.contain,
-                          errorBuilder: (_, _, _) => const _MissingCard(),
+                          errorBuilder: (_, _, _) => Image.asset(
+                            'assets/images/card_back.png',
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, _, _) => const _MissingCard(),
+                          ),
                         ),
                 ),
               ),
