@@ -444,6 +444,7 @@
       blank,
     ]);
     card.userData.imageUrl = '';
+    card.userData.textureStatus = 'idle';
     updateCardTexture(card, imageUrl);
     return card;
   }
@@ -451,6 +452,8 @@
   function updateCardTexture(card, imageUrl) {
     if (!imageUrl || card.userData.imageUrl === imageUrl) return;
     card.userData.imageUrl = imageUrl;
+    card.userData.textureStatus = 'loading';
+    card.userData.onTextureStatus?.('loading');
     new THREE.TextureLoader().load(
       imageUrl,
       (texture) => {
@@ -461,12 +464,18 @@
           roughness: 0.62,
           metalness: 0.02,
         });
-        card.material[4] = face;
-        card.material[5] = face;
-        card.material.needsUpdate = true;
+        const edge = card.material[0];
+        card.material = [edge, edge, edge, edge, face, face];
+        face.needsUpdate = true;
+        card.userData.textureStatus = 'ready';
+        card.userData.onTextureStatus?.('ready');
       },
       undefined,
-      () => console.warn(`Unable to load dealt card texture: ${imageUrl}`),
+      () => {
+        card.userData.textureStatus = 'failed';
+        card.userData.onTextureStatus?.('failed');
+        console.warn(`Unable to load dealt card texture: ${imageUrl}`);
+      },
     );
   }
 
@@ -486,6 +495,7 @@
         webgl: 'LOADING',
         scene: 'LOADING',
         model: 'LOADING',
+        card: 'IDLE',
         animation: 'IDLE',
       };
       this.diagnostic = makeDiagnostic(host);
@@ -545,6 +555,11 @@
       });
       this.scene.add(this.puppet);
       this.card = createCard(this.materials, '');
+      this.card.userData.onTextureStatus = (status) => {
+        this.status.card = status.toUpperCase();
+        this.host.dataset.cardTexture = status;
+        this.updateDiagnostic();
+      };
       this.card.visible = false;
       this.scene.add(this.card);
 
@@ -587,6 +602,7 @@
       this.diagnostic.textContent =
         `3D DEALER\nWebGL: ${this.status.webgl}\n` +
         `Scene: ${this.status.scene}\nModel: ${this.status.model}\n` +
+        `Card: ${this.status.card}\n` +
         `Animation: ${this.status.animation}\nFPS: ${this.fps}` +
         (error ? `\n${error}` : '');
     }
