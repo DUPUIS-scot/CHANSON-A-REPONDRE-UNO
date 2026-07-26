@@ -31,7 +31,7 @@ class SettingsScreen extends StatelessWidget {
       builder: (dialogContext) => AlertDialog(
         title: const Text('Restore default background?'),
         content: const Text(
-          'The theatrical main-street image will be restored.',
+          'The bundled SAUVAGE video background will be restored.',
         ),
         actions: [
           TextButton(
@@ -268,8 +268,7 @@ class _SettingsControlCenterState extends State<_SettingsControlCenter> {
       builder: (dialogContext) => AlertDialog(
         title: const Text('Restore the bundled startup video?'),
         content: const Text(
-          'The imported startup video will be removed from the app\'s local '
-          'storage. Your original source file will not be deleted.',
+          'The bundled startup video will be restored for the app.',
         ),
         actions: [
           TextButton(
@@ -408,10 +407,7 @@ class _SettingsControlCenterState extends State<_SettingsControlCenter> {
             ListTile(
               leading: const Icon(Icons.ondemand_video_outlined),
               title: const Text('Startup Video'),
-              subtitle: Text(
-                '${startup.isImported ? 'Imported video' : 'Bundled startup video'}\n'
-                '${startup.currentFileName}',
-              ),
+              subtitle: Text(startup.currentFileName),
               isThreeLine: true,
               trailing: startup.importing
                   ? const SizedBox.square(

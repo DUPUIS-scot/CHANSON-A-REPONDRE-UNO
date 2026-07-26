@@ -13,7 +13,7 @@ class BackgroundProvider extends ChangeNotifier {
 
   BackgroundMediaType type = BackgroundMediaType.video;
   String? importedPath;
-  String currentFilename = 'home_background.mp4';
+  String currentFilename = 'Bundled SAUVAGE video';
   double darkOverlay = .28;
   bool muteVideo = true;
 
@@ -35,8 +35,11 @@ class BackgroundProvider extends ChangeNotifier {
             ? BackgroundMediaType.video
             : BackgroundMediaType.image;
         importedPath = map['path'] as String?;
-        currentFilename =
-            map['filename'] as String? ?? 'main_street_background.png';
+        currentFilename = importedPath == null
+            ? 'Bundled SAUVAGE video'
+            : type == BackgroundMediaType.video
+            ? 'Saved background video'
+            : 'Saved background image';
         darkOverlay = ((map['overlay'] as num?)?.toDouble() ?? .28).clamp(
           0,
           .6,
@@ -54,7 +57,9 @@ class BackgroundProvider extends ChangeNotifier {
     final path = await _importService.save(pending);
     type = pending.type;
     importedPath = path;
-    currentFilename = pending.name;
+    currentFilename = pending.type == BackgroundMediaType.video
+        ? 'Saved background video'
+        : 'Saved background image';
     await _persist();
     if (previous != path) await _importService.deleteIfManaged(previous);
   }
@@ -63,7 +68,7 @@ class BackgroundProvider extends ChangeNotifier {
     final previous = importedPath;
     type = BackgroundMediaType.video;
     importedPath = null;
-    currentFilename = 'home_background.mp4';
+    currentFilename = 'Bundled SAUVAGE video';
     await _persist();
     await _importService.deleteIfManaged(previous);
   }
