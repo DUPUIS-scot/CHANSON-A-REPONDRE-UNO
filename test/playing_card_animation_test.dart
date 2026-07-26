@@ -21,6 +21,7 @@ void main() {
               child: FlippablePlayingCard(
                 frontImagePath: 'assets/images/card_back.png',
                 backImagePath: 'assets/images/card_back.png',
+                category: 'Mémoire',
                 isFaceUp: faceUp,
                 isSelected: faceUp,
                 isPlayable: true,

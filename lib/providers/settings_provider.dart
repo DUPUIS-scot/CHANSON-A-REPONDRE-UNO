@@ -12,7 +12,7 @@ class SettingsProvider extends ChangeNotifier {
   double textScale = 1;
   double volume = .7;
   bool soundEnabled = true;
-  String backgroundType = 'PNG';
+  String backgroundType = 'VIDEO';
   bool revealPlayerHandOnTap = true;
   bool keepRevealedCardsFaceUp = true;
   bool hidePlayerHandAfterTurn = false;
@@ -28,7 +28,7 @@ class SettingsProvider extends ChangeNotifier {
       textScale = (map['textScale'] as num?)?.toDouble() ?? 1;
       volume = (map['volume'] as num?)?.toDouble() ?? .7;
       soundEnabled = map['soundEnabled'] as bool? ?? true;
-      backgroundType = map['backgroundType'] as String? ?? 'PNG';
+      backgroundType = map['backgroundType'] as String? ?? 'VIDEO';
       revealPlayerHandOnTap = map['revealPlayerHandOnTap'] as bool? ?? true;
       keepRevealedCardsFaceUp = map['keepRevealedCardsFaceUp'] as bool? ?? true;
       hidePlayerHandAfterTurn =
@@ -71,7 +71,7 @@ class SettingsProvider extends ChangeNotifier {
     textScale = 1;
     volume = .7;
     soundEnabled = true;
-    backgroundType = 'PNG';
+    backgroundType = 'VIDEO';
     revealPlayerHandOnTap = true;
     keepRevealedCardsFaceUp = true;
     hidePlayerHandAfterTurn = false;

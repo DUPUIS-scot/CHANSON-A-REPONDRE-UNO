@@ -9,12 +9,14 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../core/app_router.dart';
+import '../data/card_categories.dart';
 import '../models/card_image_model.dart';
 import '../models/deck_model.dart';
 import '../providers/deck_provider.dart';
 import '../services/local_storage_service.dart';
 import '../services/search_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/category_badge.dart';
 import '../widgets/search_card_castle.dart';
 import '../widgets/stored_image.dart';
 import '../widgets/webgl_card_castle_view.dart';
@@ -31,13 +33,9 @@ class SearchScreen extends StatefulWidget {
 class _SearchScreenState extends State<SearchScreen> {
   static const _storageKey = 'search_path_state_v1';
   static const _pageSize = 30;
-  static const _categories = <String>[
+  static final _categories = <String>[
     'TOUTES',
-    'CLASSIQUE',
-    'SAUVAGE',
-    'POÉSIE',
-    'CYBERPUNK',
-    'ART CONTEMPORAIN',
+    ...cardCategories.map((category) => category.label),
   ];
 
   final _controller = TextEditingController();
@@ -56,6 +54,8 @@ class _SearchScreenState extends State<SearchScreen> {
   int _visibleCount = _pageSize;
   double _savedScrollOffset = 0;
   int _gridColumns = 4;
+  int _castleFullscreenRequestId = 0;
+  _SearchViewMode? _viewBeforeCastleFullscreen;
   late LocalStorageService _storage;
 
   @override
@@ -222,10 +222,33 @@ class _SearchScreenState extends State<SearchScreen> {
     if (mounted) setState(() {});
   }
 
+  Future<void> _openCastleCardFullscreen(CardImageModel card) async {
+    if (_viewBeforeCastleFullscreen != null) {
+      setState(() {
+        _viewMode = _viewBeforeCastleFullscreen!;
+        _viewBeforeCastleFullscreen = null;
+      });
+    }
+    await _openFullscreen(card);
+  }
+
   void _viewInCastle(CardImageModel card) {
     setState(() {
+      _viewBeforeCastleFullscreen = _viewMode == _SearchViewMode.castle
+          ? null
+          : _viewMode;
       _selectedCardId = card.id;
       _viewMode = _SearchViewMode.castle;
+      _castleFullscreenRequestId += 1;
+    });
+    _schedulePersist();
+  }
+
+  void _handleCastleFullscreenChanged(bool active) {
+    if (active || _viewBeforeCastleFullscreen == null) return;
+    setState(() {
+      _viewMode = _viewBeforeCastleFullscreen!;
+      _viewBeforeCastleFullscreen = null;
     });
     _schedulePersist();
   }
@@ -363,22 +386,45 @@ class _SearchScreenState extends State<SearchScreen> {
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(16),
-          child: WebGlCardCastleView(
-            cards: all,
-            focusedCardId: _selectedCardId,
-            shuffleSeed: _shuffleSeed,
-            onCardSelected: (id) {
-              final card = all.where((item) => item.id == id).firstOrNull;
-              if (card != null) _select(card);
-            },
-            onCardOpened: (id) {
-              final card = all.where((item) => item.id == id).firstOrNull;
-              if (card != null) unawaited(_openFullscreen(card));
-            },
-            fallback: SearchCardCastle(
-              cards: visible,
-              onFullscreen: _openFullscreen,
-            ),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              WebGlCardCastleView(
+                cards: all,
+                focusedCardId: _selectedCardId,
+                shuffleSeed: _shuffleSeed,
+                activeCategory: _category,
+                fullscreenRequestId: _castleFullscreenRequestId,
+                onCardSelected: (id) {
+                  final card = all.where((item) => item.id == id).firstOrNull;
+                  if (card != null) _select(card);
+                },
+                onCardOpened: (id) {
+                  final card = all.where((item) => item.id == id).firstOrNull;
+                  if (card != null) {
+                    unawaited(_openCastleCardFullscreen(card));
+                  }
+                },
+                onCategoryChanged: _setCategory,
+                onHomeRequested: () => context.go(AppRoutes.home),
+                onFullscreenChanged: _handleCastleFullscreenChanged,
+                fallback: SearchCardCastle(
+                  cards: visible,
+                  onFullscreen: _openFullscreen,
+                ),
+              ),
+              Positioned(
+                left: 16,
+                right: 16,
+                bottom: 14,
+                child: _CastleActiveCardsHud(
+                  cards: _activeCastleCards(all),
+                  selectedCardId: _selectedCardId,
+                  onSelect: _select,
+                  onFullscreen: _openFullscreen,
+                ),
+              ),
+            ],
           ),
         ),
       );
@@ -454,6 +500,154 @@ class _SearchScreenState extends State<SearchScreen> {
       },
     );
   }
+
+  List<CardImageModel> _activeCastleCards(List<CardImageModel> cards) {
+    final focused = cards
+        .where((card) => card.id == _selectedCardId)
+        .firstOrNull;
+    return [
+      ?focused,
+      ...cards.where((card) => card.id != focused?.id),
+    ].take(5).toList(growable: false);
+  }
+}
+
+class _CastleActiveCardsHud extends StatelessWidget {
+  const _CastleActiveCardsHud({
+    required this.cards,
+    required this.selectedCardId,
+    required this.onSelect,
+    required this.onFullscreen,
+  });
+
+  final List<CardImageModel> cards;
+  final String? selectedCardId;
+  final ValueChanged<CardImageModel> onSelect;
+  final ValueChanged<CardImageModel> onFullscreen;
+
+  @override
+  Widget build(BuildContext context) => Center(
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 610),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: const Color(0xE605090D),
+          borderRadius: BorderRadius.circular(13),
+          border: Border.all(color: const Color(0xB3FFC928)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0xA0000000),
+              blurRadius: 18,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(10, 6, 10, 9),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                '5 CARTES ACTIVES',
+                style: TextStyle(
+                  color: AppTheme.brightGold,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 11,
+                  letterSpacing: 1.1,
+                ),
+              ),
+              const SizedBox(height: 5),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  for (var index = 0; index < cards.length; index++)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 3),
+                      child: Semantics(
+                        button: true,
+                        label:
+                            'Active castle card ${index + 1}, '
+                            '${cards[index].category}',
+                        child: GestureDetector(
+                          onTap: () => onSelect(cards[index]),
+                          onLongPress: () => onFullscreen(cards[index]),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 180),
+                            width: 62,
+                            height: 82,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF111820),
+                              borderRadius: BorderRadius.circular(7),
+                              border: Border.all(
+                                color: cards[index].id == selectedCardId
+                                    ? AppTheme.brightGold
+                                    : const Color(0xFF637382),
+                                width: cards[index].id == selectedCardId
+                                    ? 3
+                                    : 1,
+                              ),
+                              boxShadow: cards[index].id == selectedCardId
+                                  ? const [
+                                      BoxShadow(
+                                        color: Color(0x99FFC928),
+                                        blurRadius: 12,
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                            clipBehavior: Clip.antiAlias,
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                StoredImage(
+                                  source: cards[index].imagePath,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, _, _) => const ColoredBox(
+                                    color: Color(0xFF20150E),
+                                    child: Icon(
+                                      Icons.image_not_supported,
+                                      color: AppTheme.gold,
+                                    ),
+                                  ),
+                                ),
+                                Positioned(
+                                  left: 3,
+                                  top: 3,
+                                  child: DecoratedBox(
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xD9000000),
+                                      borderRadius: BorderRadius.circular(9),
+                                    ),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 5,
+                                        vertical: 2,
+                                      ),
+                                      child: Text(
+                                        '${index + 1}',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w900,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
 }
 
 class _SearchHeader extends StatelessWidget {
@@ -647,7 +841,7 @@ class _SearchCardTileState extends State<_SearchCardTile> {
   Widget build(BuildContext context) => Semantics(
     button: true,
     selected: widget.selected,
-    label: '${widget.card.displayTitle}, ${widget.card.category}',
+    label: '${widget.card.category} search result card',
     onTap: widget.onSelect,
     onLongPress: widget.onFullscreen,
     child: CallbackShortcuts(
@@ -686,13 +880,26 @@ class _SearchCardTileState extends State<_SearchCardTile> {
           onFocusChange: (value) => setState(() => focused = value),
           onTap: widget.onSelect,
           onLongPress: widget.onFullscreen,
-          child: StoredImage(
-            source: widget.card.imagePath,
-            fit: BoxFit.cover,
-            errorBuilder: (_, _, _) => const ColoredBox(
-              color: Color(0xFF141A20),
-              child: Center(child: Icon(Icons.broken_image_outlined)),
-            ),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              StoredImage(
+                source: widget.card.imagePath,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => const ColoredBox(
+                  color: Color(0xFF141A20),
+                  child: Center(child: Icon(Icons.broken_image_outlined)),
+                ),
+              ),
+              Positioned(
+                left: 6,
+                top: 6,
+                child: CategoryBadge(
+                  category: widget.card.category,
+                  compact: true,
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -751,16 +958,6 @@ class _SearchListRow extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      card.displayTitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 5),
                     Text(
                       card.category.toUpperCase(),
                       style: const TextStyle(
@@ -834,27 +1031,29 @@ class _SelectedCardPanel extends StatelessWidget {
               const SizedBox(height: 14),
               Expanded(
                 child: Center(
-                  child: AspectRatio(
-                    aspectRatio: card!.aspectRatio,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: StoredImage(
-                        source: card!.imagePath,
-                        fit: BoxFit.contain,
+                  child: Semantics(
+                    button: true,
+                    label:
+                        '${card!.category} card preview. '
+                        'Long press to open fullscreen.',
+                    onLongPress: onFullscreen,
+                    child: GestureDetector(
+                      onLongPress: onFullscreen,
+                      child: AspectRatio(
+                        aspectRatio: card!.aspectRatio,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: StoredImage(
+                            source: card!.imagePath,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
               const SizedBox(height: 14),
-              Text(
-                card!.displayTitle,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
               Text(
                 card!.category.toUpperCase(),
                 style: const TextStyle(
@@ -940,15 +1139,6 @@ class _MobileSelectionBar extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                card.displayTitle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
               Text(
                 card.category.toUpperCase(),
                 style: const TextStyle(

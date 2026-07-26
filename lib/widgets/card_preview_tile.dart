@@ -34,8 +34,6 @@ class CardPreviewTile extends StatelessWidget {
                     const Icon(Icons.favorite, color: AppTheme.burgundy),
                 ],
               ),
-              const SizedBox(height: 12),
-              Text(card.title, style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 8),
               Text(card.question, maxLines: 4, overflow: TextOverflow.ellipsis),
               const SizedBox(height: 14),

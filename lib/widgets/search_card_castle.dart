@@ -203,7 +203,7 @@ class _CastleCard extends StatelessWidget {
       left: left,
       bottom: bottom,
       child: Semantics(
-        label: 'Search result card ${card.title}, ${card.category}',
+        label: '${card.category} search result card',
         button: true,
         child: GestureDetector(
           onTap: () => onTap(card),

@@ -1,8 +1,5 @@
-import 'dart:io';
-
-import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
-import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/background_provider.dart';
@@ -15,7 +12,6 @@ import '../providers/auth_controller.dart';
 import '../core/app_config.dart';
 import '../core/app_router.dart';
 import '../services/background_import_service.dart';
-import '../services/local_storage_service.dart';
 import '../widgets/home_navigation_button.dart';
 import '../widgets/ai_connection_status.dart';
 import '../widgets/settings_section.dart';
@@ -28,66 +24,6 @@ import '../widgets/startup_video_viewport.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
-
-  Future<void> _pick(BuildContext context, BackgroundMediaType type) async {
-    try {
-      final service = context.read<BackgroundImportService>();
-      final pending = type == BackgroundMediaType.image
-          ? await service.pickImage()
-          : await service.pickVideo();
-      if (pending == null || !context.mounted) return;
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: const Text('Use this background?'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (pending.type == BackgroundMediaType.image)
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxHeight: 280),
-                  child: Image.memory(
-                    pending.bytes,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, _, _) =>
-                        const Icon(Icons.broken_image_outlined, size: 64),
-                  ),
-                )
-              else
-                const Icon(Icons.movie_outlined, size: 84),
-              const SizedBox(height: 12),
-              Text(pending.name, textAlign: TextAlign.center),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text('Use Background'),
-            ),
-          ],
-        ),
-      );
-      if (confirmed != true || !context.mounted) return;
-      await context.read<BackgroundProvider>().useImport(pending);
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${pending.name} is now the Home background.'),
-          ),
-        );
-      }
-    } on Object catch (error) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Background import failed: $error')),
-        );
-      }
-    }
-  }
 
   Future<void> _restore(BuildContext context) async {
     final confirmed = await showDialog<bool>(
@@ -114,43 +50,9 @@ class SettingsScreen extends StatelessWidget {
     }
   }
 
-  Future<void> _export(BuildContext context) async {
-    if (kIsWeb) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Filesystem export is unavailable in this Web build.'),
-        ),
-      );
-      return;
-    }
-    try {
-      final storage = context.read<LocalStorageService>();
-      final data = await storage.exportData();
-      final directory = await storage.appDirectory();
-      final file = File(
-        '${directory.path}/chanson_export_${DateTime.now().millisecondsSinceEpoch}.json',
-      );
-      await file.writeAsString(data);
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Exported to ${file.path}')));
-      }
-    } on Object catch (error) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Export failed: $error')));
-      }
-    }
-  }
-
   @override
-  Widget build(BuildContext context) => _SettingsControlCenter(
-    onPick: (type) => _pick(context, type),
-    onRestore: () => _restore(context),
-    onExport: () => _export(context),
-  );
+  Widget build(BuildContext context) =>
+      _SettingsControlCenter(onRestore: () => _restore(context));
 
   Widget legacyBuild(BuildContext context) {
     final background = context.watch<BackgroundProvider>();
@@ -240,18 +142,6 @@ class SettingsScreen extends StatelessWidget {
               ),
               isThreeLine: true,
             ),
-          ),
-          const SizedBox(height: 12),
-          FilledButton.icon(
-            onPressed: () => _pick(context, BackgroundMediaType.image),
-            icon: const Icon(Icons.add_photo_alternate_outlined),
-            label: const Text('Import PNG Background'),
-          ),
-          const SizedBox(height: 8),
-          FilledButton.tonalIcon(
-            onPressed: () => _pick(context, BackgroundMediaType.video),
-            icon: const Icon(Icons.video_file_outlined),
-            label: const Text('Import MP4 Background'),
           ),
           const SizedBox(height: 8),
           OutlinedButton.icon(
@@ -344,12 +234,6 @@ class SettingsScreen extends StatelessWidget {
               }
             },
           ),
-          const Divider(height: 32),
-          ListTile(
-            leading: const Icon(Icons.download_outlined),
-            title: const Text('Export Application Data'),
-            onTap: () => _export(context),
-          ),
         ],
       ),
     );
@@ -357,14 +241,8 @@ class SettingsScreen extends StatelessWidget {
 }
 
 class _SettingsControlCenter extends StatefulWidget {
-  const _SettingsControlCenter({
-    required this.onPick,
-    required this.onRestore,
-    required this.onExport,
-  });
-  final ValueChanged<BackgroundMediaType> onPick;
+  const _SettingsControlCenter({required this.onRestore});
   final VoidCallback onRestore;
-  final VoidCallback onExport;
   @override
   State<_SettingsControlCenter> createState() => _SettingsControlCenterState();
 }
@@ -383,41 +261,6 @@ class _SettingsControlCenterState extends State<_SettingsControlCenter> {
           ),
         ),
       );
-
-  Future<void> _replaceStartupVideo() async {
-    if (kIsWeb) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Browser video replacement is session-limited and is not enabled '
-            'in this build. The bundled startup video remains available.',
-          ),
-        ),
-      );
-      return;
-    }
-    final result = await FilePicker.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: const ['mp4', 'mov', 'm4v', 'webm'],
-      allowMultiple: false,
-    );
-    final selected = result?.files.single;
-    if (selected?.path == null || !mounted) return;
-    try {
-      await context.read<StartupVideoProvider>().importVideo(selected!.path!);
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Startup video updated.')));
-      }
-    } on Object catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('$error')));
-      }
-    }
-  }
 
   Future<void> _restoreStartupVideo() async {
     final confirmed = await showDialog<bool>(
@@ -557,16 +400,6 @@ class _SettingsControlCenterState extends State<_SettingsControlCenter> {
               subtitle: Text(background.currentFilename),
             ),
             SettingsActionTile(
-              title: 'Import Background PNG',
-              icon: Icons.add_photo_alternate_outlined,
-              onTap: () => widget.onPick(BackgroundMediaType.image),
-            ),
-            SettingsActionTile(
-              title: 'Import Background MP4',
-              icon: Icons.video_file_outlined,
-              onTap: () => widget.onPick(BackgroundMediaType.video),
-            ),
-            SettingsActionTile(
               title: 'Restore Default Background',
               icon: Icons.restore,
               onTap: widget.onRestore,
@@ -586,12 +419,6 @@ class _SettingsControlCenterState extends State<_SettingsControlCenter> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : null,
-            ),
-            SettingsActionTile(
-              title: 'Replace video',
-              subtitle: 'MP4, MOV, M4V, or WebM; maximum 500 MB',
-              icon: Icons.video_file_outlined,
-              onTap: startup.importing ? null : _replaceStartupVideo,
             ),
             SettingsActionTile(
               title: 'Preview',
@@ -682,57 +509,7 @@ class _SettingsControlCenterState extends State<_SettingsControlCenter> {
           ],
         ),
       if (matches(
-        'card import png jpeg webp folder zip duplicate rename filename deck assignment',
-      ))
-        SettingsSection(
-          title: 'Card Import',
-          icon: Icons.file_upload_outlined,
-          initiallyExpanded: query.isNotEmpty,
-          children: [
-            SettingsActionTile(
-              title: 'Import PNG cards',
-              icon: Icons.image_outlined,
-              onTap: () => unavailable('Card import'),
-            ),
-            SettingsActionTile(
-              title: 'Import folder',
-              icon: Icons.folder_open,
-              onTap: () => unavailable('Folder import'),
-            ),
-            SettingsActionTile(
-              title: 'Import ZIP',
-              icon: Icons.archive_outlined,
-              onTap: () => unavailable('ZIP import'),
-            ),
-            const ListTile(
-              title: Text('Supported formats'),
-              subtitle: Text('PNG, JPEG, WEBP'),
-            ),
-            SettingsToggleTile(
-              title: 'Rename imported cards',
-              value: advanced.renameImportedCards,
-              onChanged: (v) => settings.updateAdvanced(
-                advanced.copyWith(renameImportedCards: v),
-              ),
-            ),
-            SettingsToggleTile(
-              title: 'Keep original filename internally',
-              value: advanced.keepOriginalFilename,
-              onChanged: (v) => settings.updateAdvanced(
-                advanced.copyWith(keepOriginalFilename: v),
-              ),
-            ),
-            SettingsToggleTile(
-              title: 'Assign cards manually to decks',
-              value: advanced.manualDeckAssignment,
-              onChanged: (v) => settings.updateAdvanced(
-                advanced.copyWith(manualDeckAssignment: v),
-              ),
-            ),
-          ],
-        ),
-      if (matches(
-        'deck management create rename delete duplicate import export sort search statistics empty hidden',
+        'deck management create rename delete duplicate sort search statistics empty hidden',
       ))
         SettingsSection(
           title: 'Deck Management',
@@ -744,8 +521,6 @@ class _SettingsControlCenterState extends State<_SettingsControlCenter> {
               'Rename Deck',
               'Delete Deck',
               'Duplicate Deck',
-              'Import Deck',
-              'Export Deck',
               'Sort and Search Decks',
               'Deck Statistics',
             ])
@@ -966,9 +741,7 @@ class _SettingsControlCenterState extends State<_SettingsControlCenter> {
             ),
           ],
         ),
-      if (matches(
-        'chat markdown syntax typing streaming message reset export copy',
-      ))
+      if (matches('chat markdown syntax typing streaming message reset copy'))
         SettingsSection(
           title: 'Chat',
           icon: Icons.chat_bubble_outline,
@@ -1003,16 +776,9 @@ class _SettingsControlCenterState extends State<_SettingsControlCenter> {
               icon: Icons.restart_alt,
               onTap: () => unavailable('Conversation reset'),
             ),
-            SettingsActionTile(
-              title: 'Export conversation',
-              icon: Icons.download_outlined,
-              onTap: () => unavailable('Conversation export'),
-            ),
           ],
         ),
-      if (matches(
-        'storage sqlite database images cache conversation backup restore vacuum',
-      ))
+      if (matches('storage sqlite database images cache conversation vacuum'))
         SettingsSection(
           title: 'Storage',
           icon: Icons.storage_outlined,
@@ -1031,46 +797,6 @@ class _SettingsControlCenterState extends State<_SettingsControlCenter> {
               title: 'Vacuum database',
               icon: Icons.compress,
               onTap: () => unavailable('Database maintenance'),
-            ),
-            SettingsActionTile(
-              title: 'Backup database',
-              icon: Icons.backup_outlined,
-              onTap: widget.onExport,
-            ),
-            SettingsActionTile(
-              title: 'Restore database',
-              icon: Icons.restore_page_outlined,
-              onTap: () => unavailable('Database restore'),
-            ),
-          ],
-        ),
-      if (matches(
-        'export decks cards ai conversations journal settings json csv markdown zip',
-      ))
-        SettingsSection(
-          title: 'Export',
-          icon: Icons.ios_share_outlined,
-          initiallyExpanded: query.isNotEmpty,
-          children: [
-            SettingsActionTile(
-              title: 'Export Application Data (JSON)',
-              icon: Icons.download_outlined,
-              onTap: widget.onExport,
-            ),
-            for (final item in const [
-              'Export decks',
-              'Export cards',
-              'Export AI conversations',
-              'Export journal',
-            ])
-              SettingsActionTile(
-                title: item,
-                icon: Icons.file_download_outlined,
-                onTap: widget.onExport,
-              ),
-            const ListTile(
-              title: Text('Formats'),
-              subtitle: Text('JSON, CSV, Markdown, ZIP'),
             ),
           ],
         ),

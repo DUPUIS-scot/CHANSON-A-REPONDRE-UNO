@@ -110,7 +110,7 @@ class _BrowseHandFullscreenScreenState
                 Align(
                   alignment: Alignment.topCenter,
                   child: FullscreenCardToolbar(
-                    title: card.title,
+                    title: card.category.toUpperCase(),
                     favourite: card.isFavourite,
                     onClose: () => Navigator.pop(context),
                     onFavourite: () async {

@@ -61,7 +61,7 @@ class _PlayerHandState extends State<PlayerHand> {
     }
     return LayoutBuilder(
       builder: (context, constraints) {
-        final cardWidth = constraints.maxWidth < 500 ? 92.0 : 116.0;
+        final cardWidth = constraints.maxWidth < 500 ? 92.0 : 138.0;
         final cardHeight = cardWidth * 1.48;
         final step = cardWidth * .62;
         final contentWidth = cardWidth + step * (widget.cards.length - 1);
@@ -98,12 +98,16 @@ class _PlayerHandState extends State<PlayerHand> {
                     child: FlippablePlayingCard(
                       frontImagePath: widget.cards[index].imagePath,
                       backImagePath: 'assets/images/card_back.png',
+                      category: widget.cards[index].category,
                       isFaceUp: revealed.contains(widget.cards[index].id),
                       isSelected:
                           widget.selectedCardId == widget.cards[index].id,
                       isPlayable: widget.isPlayable(widget.cards[index]),
                       semanticLabel:
-                          'Card ${index + 1} of ${widget.cards.length}, ${revealed.contains(widget.cards[index].id) ? widget.cards[index].title : 'face down'}, ${widget.isPlayable(widget.cards[index]) ? 'playable' : 'unavailable'}',
+                          'Card ${index + 1} of ${widget.cards.length}, '
+                          '${widget.cards[index].category}, '
+                          '${revealed.contains(widget.cards[index].id) ? 'face up' : 'face down'}, '
+                          '${widget.isPlayable(widget.cards[index]) ? 'playable' : 'unavailable'}',
                       onTap: () => select(widget.cards[index]),
                       onLongPress: widget.onLongPressCard == null
                           ? null

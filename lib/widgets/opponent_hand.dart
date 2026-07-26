@@ -2,12 +2,16 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../data/card_categories.dart';
+import '../models/card_image_model.dart';
+
 class OpponentHand extends StatelessWidget {
-  const OpponentHand({required this.cardCount, super.key});
-  final int cardCount;
+  const OpponentHand({required this.cards, super.key});
+  final List<CardImageModel> cards;
 
   @override
   Widget build(BuildContext context) {
+    final cardCount = cards.length;
     final visible = cardCount.clamp(0, 12);
     return Semantics(
       label: 'Opponent hand, $cardCount cards, all face down',
@@ -15,8 +19,12 @@ class OpponentHand extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            'OPPONENT • $cardCount CARDS',
-            style: Theme.of(context).textTheme.labelLarge,
+            'OPPONENT · $cardCount CARDS',
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+              shadows: const [Shadow(color: Colors.black, blurRadius: 5)],
+            ),
           ),
           const SizedBox(height: 4),
           SizedBox(
@@ -38,7 +46,7 @@ class OpponentHand extends StatelessWidget {
                         ),
                         clipBehavior: Clip.antiAlias,
                         child: Image.asset(
-                          'assets/images/card_back.png',
+                          cardCategoryFor(cards[index].category).versoAsset,
                           fit: BoxFit.contain,
                           errorBuilder: (_, _, _) =>
                               const ColoredBox(color: Color(0xFF4A1E14)),

@@ -100,6 +100,8 @@ jobs:
           test -f build/web/puppet_dealer.js
           test -f build/web/vendor/three.min.js
           test -f build/web/card_castle/card_castle.html
+          test -f build/web/assets/assets/images/dj_who.png
+          test "$(find build/web/assets/assets/cards/category_versos -type f -name '*.png' | wc -l)" -eq 5
           test "$(find build/web/assets/assets/cards/final_import -type f -name '*.png' | wc -l)" -eq 84
           grep -q '<base href="/CHANSON-A-REPONDRE-UNO/">' build/web/index.html
           grep -q 'vendor/three.min.js' build/web/index.html
@@ -108,6 +110,21 @@ jobs:
           grep -q 'dealer-3d-container' build/web/main.dart.js
           grep -q 'search-card-castle' build/web/main.dart.js
           grep -q '../vendor/three.min.js' build/web/card_castle/card_castle.html
+          grep -q "data.type==='focusCard'" build/web/card_castle/card_castle.html
+          grep -q 'down.panning' build/web/card_castle/card_castle.html
+          grep -q 'CRAN 3D' build/web/card_castle/card_castle.html
+          grep -q 'rendererInstanceId' build/web/card_castle/card_castle.html
+          grep -q '5 CARTES ACTIVES' build/web/main.dart.js
+          grep -q 'fullscreenFallbackRequested' build/web/main.dart.js
+          grep -q 'C0zocqpnIpY' build/web/main.dart.js
+          grep -q '6v3YRGccqZE' build/web/main.dart.js
+          grep -q 'XT60H_iOIvQ' build/web/main.dart.js
+          grep -q 'lw4S2kb1_Ew' build/web/main.dart.js
+
+      - name: Verify Search castle runtime
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: node scripts/verify_dealer_web.mjs --search
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
