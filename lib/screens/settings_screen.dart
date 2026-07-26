@@ -31,7 +31,7 @@ class SettingsScreen extends StatelessWidget {
       builder: (dialogContext) => AlertDialog(
         title: const Text('Restore default background?'),
         content: const Text(
-          'The bundled SAUVAGE video background will be restored.',
+          'The default Edinburgh night background will be restored.',
         ),
         actions: [
           TextButton(
