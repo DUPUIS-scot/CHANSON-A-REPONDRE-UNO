@@ -15,9 +15,11 @@ import '../providers/deck_provider.dart';
 import '../services/local_storage_service.dart';
 import '../services/search_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/search_card_castle.dart';
 import '../widgets/stored_image.dart';
+import '../widgets/webgl_card_castle_view.dart';
 
-enum _SearchViewMode { grid, list }
+enum _SearchViewMode { castle, grid, list }
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -49,7 +51,7 @@ class _SearchScreenState extends State<SearchScreen> {
   String _query = '';
   String _category = 'TOUTES';
   String? _selectedCardId;
-  _SearchViewMode _viewMode = _SearchViewMode.grid;
+  _SearchViewMode _viewMode = _SearchViewMode.castle;
   int _shuffleSeed = 0;
   int _visibleCount = _pageSize;
   double _savedScrollOffset = 0;
@@ -97,9 +99,11 @@ class _SearchScreenState extends State<SearchScreen> {
             ? json['category'] as String
             : 'TOUTES';
         _selectedCardId = json['selectedCardId'] as String?;
-        _viewMode = json['viewMode'] == 'list'
-            ? _SearchViewMode.list
-            : _SearchViewMode.grid;
+        _viewMode = switch (json['viewMode']) {
+          'grid' => _SearchViewMode.grid,
+          'list' => _SearchViewMode.list,
+          _ => _SearchViewMode.castle,
+        };
         _savedScrollOffset = (json['scrollOffset'] as num?)?.toDouble() ?? 0;
         _shuffleSeed = (json['shuffleSeed'] as num?)?.toInt() ?? 0;
         _visibleCount = max(
@@ -219,8 +223,11 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   void _viewInCastle(CardImageModel card) {
-    unawaited(_persistState());
-    context.go(AppRoutes.browseCard(card.id, category: card.category));
+    setState(() {
+      _selectedCardId = card.id;
+      _viewMode = _SearchViewMode.castle;
+    });
+    _schedulePersist();
   }
 
   void _moveFocus(List<CardImageModel> cards, int index, int delta) {
@@ -351,6 +358,31 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _buildResults(List<CardImageModel> visible, List<CardImageModel> all) {
+    if (_viewMode == _SearchViewMode.castle) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: WebGlCardCastleView(
+            cards: all,
+            focusedCardId: _selectedCardId,
+            shuffleSeed: _shuffleSeed,
+            onCardSelected: (id) {
+              final card = all.where((item) => item.id == id).firstOrNull;
+              if (card != null) _select(card);
+            },
+            onCardOpened: (id) {
+              final card = all.where((item) => item.id == id).firstOrNull;
+              if (card != null) unawaited(_openFullscreen(card));
+            },
+            fallback: SearchCardCastle(
+              cards: visible,
+              onFullscreen: _openFullscreen,
+            ),
+          ),
+        ),
+      );
+    }
     if (_viewMode == _SearchViewMode.list) {
       _gridColumns = 1;
       return Scrollbar(
@@ -531,6 +563,11 @@ class _SearchHeader extends StatelessWidget {
               SegmentedButton<_SearchViewMode>(
                 showSelectedIcon: false,
                 segments: const [
+                  ButtonSegment(
+                    value: _SearchViewMode.castle,
+                    icon: Icon(Icons.castle_rounded),
+                    tooltip: '3D Castle View',
+                  ),
                   ButtonSegment(
                     value: _SearchViewMode.grid,
                     icon: Icon(Icons.grid_view_rounded),

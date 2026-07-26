@@ -10,6 +10,7 @@ class DeckTile extends StatelessWidget {
     required this.onSelect,
     required this.onRename,
     required this.onDelete,
+    this.editable = true,
     super.key,
   });
   final Deck deck;
@@ -17,6 +18,7 @@ class DeckTile extends StatelessWidget {
   final VoidCallback onSelect;
   final VoidCallback onRename;
   final VoidCallback onDelete;
+  final bool editable;
   @override
   Widget build(BuildContext context) => Card(
     clipBehavior: Clip.antiAlias,
@@ -64,14 +66,23 @@ class DeckTile extends StatelessWidget {
                     ],
                   ),
                 ),
-                PopupMenuButton<String>(
-                  onSelected: (value) =>
-                      value == 'rename' ? onRename() : onDelete(),
-                  itemBuilder: (_) => const [
-                    PopupMenuItem(value: 'rename', child: Text('Rename')),
-                    PopupMenuItem(value: 'delete', child: Text('Delete')),
-                  ],
-                ),
+                if (editable)
+                  PopupMenuButton<String>(
+                    onSelected: (value) =>
+                        value == 'rename' ? onRename() : onDelete(),
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(value: 'rename', child: Text('Rename')),
+                      PopupMenuItem(value: 'delete', child: Text('Delete')),
+                    ],
+                  )
+                else
+                  const Padding(
+                    padding: EdgeInsets.all(12),
+                    child: Tooltip(
+                      message: 'Permanent deck',
+                      child: Icon(Icons.lock_outline, size: 20),
+                    ),
+                  ),
               ],
             ),
           ),

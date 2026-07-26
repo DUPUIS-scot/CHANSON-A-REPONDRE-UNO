@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/app_constants.dart';
 import '../providers/deck_provider.dart';
 import '../services/deck_import_service.dart';
 import '../services/local_storage_service.dart';
@@ -112,6 +113,7 @@ class DeckSelectionScreen extends StatelessWidget {
                     return DeckTile(
                       deck: deck,
                       selected: deck.id == provider.activeDeckId,
+                      editable: deck.id != AppConstants.productionDeckId,
                       onSelect: () => provider.select(deck.id),
                       onRename: () async {
                         final name = await _name(

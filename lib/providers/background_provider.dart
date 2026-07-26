@@ -24,7 +24,7 @@ class BackgroundProvider extends ChangeNotifier {
   String get videoPath =>
       type == BackgroundMediaType.video && importedPath != null
       ? importedPath!
-      : 'assets/videos/background.mp4';
+      : 'assets/videos/home_background.mp4';
 
   Future<void> load() async {
     try {

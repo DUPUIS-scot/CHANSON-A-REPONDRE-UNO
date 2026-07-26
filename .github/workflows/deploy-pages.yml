@@ -99,12 +99,15 @@ jobs:
           test -f build/web/main.dart.js
           test -f build/web/puppet_dealer.js
           test -f build/web/vendor/three.min.js
-          find build/web/assets/assets/cards/final_import -type f -name '*.png' -print -quit | grep -q .
+          test -f build/web/card_castle/card_castle.html
+          test "$(find build/web/assets/assets/cards/final_import -type f -name '*.png' | wc -l)" -eq 84
           grep -q '<base href="/CHANSON-A-REPONDRE-UNO/">' build/web/index.html
           grep -q 'vendor/three.min.js' build/web/index.html
           grep -q 'puppet_dealer.js' build/web/index.html
           grep -q 'puppetDealerCreate' build/web/main.dart.js
           grep -q 'dealer-3d-container' build/web/main.dart.js
+          grep -q 'search-card-castle' build/web/main.dart.js
+          grep -q '../vendor/three.min.js' build/web/card_castle/card_castle.html
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5

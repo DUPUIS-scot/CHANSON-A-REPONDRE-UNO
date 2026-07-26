@@ -18,6 +18,10 @@ const animationOutputPath = new URL(
   '../build/dealer-animation-verification.png',
   import.meta.url,
 );
+const castleOutputPath = new URL(
+  '../build/search-castle-verification.png',
+  import.meta.url,
+);
 
 const mimeTypes = {
   '.css': 'text/css',
@@ -203,12 +207,74 @@ async function capture(client, path) {
   await writeFile(path, Buffer.from(screenshot.data, 'base64'));
 }
 
+async function verifySearchCastle(client, url) {
+  await waitFor(
+    client,
+    `document.getElementById('search-card-castle-frame')
+      ?.contentDocument?.body.dataset.rendererStatus === 'ready'`,
+    'the Search Three.js castle',
+    40000,
+  );
+  await waitFor(
+    client,
+    `Number(document.getElementById('search-card-castle-frame')
+      ?.contentDocument?.body.dataset.cardCount || 0) === 84`,
+    'all 84 stable cards to reach the castle',
+    20000,
+  );
+  await waitFor(
+    client,
+    `Number(document.getElementById('search-card-castle-frame')
+      ?.contentDocument?.body.dataset.textureCount || 0) > 0`,
+    'a permanent card texture in the castle',
+    20000,
+  );
+  const result = await client.evaluate(`(() => {
+    const frame = document.getElementById('search-card-castle-frame');
+    const body = frame?.contentDocument?.body;
+    const canvas = frame?.contentDocument?.querySelector('canvas');
+    const rect = canvas?.getBoundingClientRect();
+    return {
+      route: location.hash,
+      frame: Boolean(frame),
+      rendererStatus: body?.dataset.rendererStatus,
+      cardCount: Number(body?.dataset.cardCount || 0),
+      textureCount: Number(body?.dataset.textureCount || 0),
+      canvas: Boolean(canvas),
+      width: rect?.width || 0,
+      height: rect?.height || 0,
+    };
+  })()`);
+  if (
+    result.route !== '#/search' ||
+    !result.frame ||
+    !result.canvas ||
+    result.rendererStatus !== 'ready' ||
+    result.cardCount !== 84 ||
+    result.textureCount < 1 ||
+    result.width <= 0 ||
+    result.height <= 0
+  ) {
+    throw new Error(`Invalid Search castle result: ${JSON.stringify(result)}`);
+  }
+  await capture(client, castleOutputPath);
+  console.log(JSON.stringify({
+    ok: true,
+    url,
+    result,
+    screenshot: castleOutputPath.pathname.slice(1),
+    console: client.consoleMessages,
+  }, null, 2));
+}
+
 async function main() {
-  const requestedUrl = process.argv[2];
+  const argumentsList = process.argv.slice(2);
+  const verifySearch = argumentsList.includes('--search');
+  const requestedUrl = argumentsList.find((value) => !value.startsWith('--'));
   const server = requestedUrl ? null : await startServer();
   const url =
     requestedUrl ||
-    `http://127.0.0.1:${port}${basePath}#/play`;
+    `http://127.0.0.1:${port}${basePath}#/${verifySearch ? 'search' : 'play'}`;
   const chrome = spawn(
     chromePath,
     [
@@ -246,6 +312,16 @@ async function main() {
       `document.querySelector('flutter-view') !== null`,
       'Flutter to start',
     );
+    if (verifySearch) {
+      await client.evaluate(
+        `localStorage.removeItem('flutter.search_path_state_v1');
+         location.hash = '#/search';
+         location.reload();
+         true`,
+      );
+      await verifySearchCastle(client, url);
+      return;
+    }
     const cardPath = await seedGame(client);
     try {
       await waitFor(
@@ -345,19 +421,46 @@ async function main() {
     if (!animationStarted) throw new Error('Dealer animation did not start.');
     await waitFor(
       client,
+      `document.querySelector('.dealer-3d-diagnostic')
+        ?.textContent?.includes('Animation: DEALING') === true`,
+      'the dealer animation to enter DEALING',
+      3000,
+    );
+    let animationDiagnostic = await client.evaluate(
+      `document.querySelector('.dealer-3d-diagnostic')?.textContent || ''`,
+    );
+    await waitFor(
+      client,
       `document.getElementById('dealer-3d-container')?.dataset.cardTexture === 'ready'`,
       'the real card texture',
       15000,
     );
-    await delay(100);
-    const animationDiagnostic = await client.evaluate(
+    await waitFor(
+      client,
+      `document.querySelector('.dealer-3d-diagnostic')
+        ?.textContent?.includes('Animation: IDLE') === true`,
+      'the first dealer animation to finish',
+      5000,
+    );
+    const texturedAnimationStarted = await client.evaluate(
+      `window.puppetDealerDeal('dealer-3d-container', ${JSON.stringify(
+        textureUrl,
+      )})`,
+    );
+    if (!texturedAnimationStarted) {
+      throw new Error('Textured dealer animation did not restart.');
+    }
+    await waitFor(
+      client,
+      `document.querySelector('.dealer-3d-diagnostic')
+        ?.textContent?.includes('Animation: DEALING') === true`,
+      'the textured dealer animation',
+      3000,
+    );
+    animationDiagnostic = await client.evaluate(
       `document.querySelector('.dealer-3d-diagnostic')?.textContent || ''`,
     );
-    if (!animationDiagnostic.includes('Animation: DEALING')) {
-      throw new Error(
-        `Dealer did not enter DEALING state: ${animationDiagnostic}`,
-      );
-    }
+    await delay(100);
     await capture(client, animationOutputPath);
 
     const fatalConsoleMessages = client.consoleMessages.filter((message) => {
