@@ -34,7 +34,7 @@ class DeckTile extends StatelessWidget {
                   )
                 : StoredImage(
                     source: deck.coverPath,
-                    fit: BoxFit.cover,
+                    fit: BoxFit.contain,
                     errorBuilder: (_, _, _) =>
                         const Icon(Icons.broken_image_outlined, size: 48),
                   ),

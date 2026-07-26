@@ -55,13 +55,7 @@ class CardImageModel {
   final int? imageHeight;
 
   String get imagePath => path;
-  double get aspectRatio {
-    final width = imageWidth;
-    final height = imageHeight;
-    return width != null && height != null && width > 0 && height > 0
-        ? width / height
-        : 2 / 3;
-  }
+  double get aspectRatio => 2 / 3;
 
   factory CardImageModel.fromJson(Map<String, dynamic> json) => CardImageModel(
     id: json['id'] as String? ?? '',

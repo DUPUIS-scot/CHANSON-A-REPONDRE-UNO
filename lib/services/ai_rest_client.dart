@@ -48,7 +48,7 @@ class AiRestClient {
     required TranscriptionMode mode,
   }) async => CardTranscriptionResponse.fromJson(
     await postMultipart(
-      '/api/cards/transcribe',
+      '/api/card-transcription',
       fields: {
         'cardId': cardId,
         'deckId': deckId,
@@ -78,7 +78,7 @@ class AiRestClient {
     String category = '',
     List<String> tags = const [],
   }) async => CardChatResponse.fromJson(
-    await postJson('/api/cards/chat', {
+    await postJson('/api/chat', {
       'cardId': cardId,
       'deckId': deckId,
       'title': title,

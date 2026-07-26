@@ -9,7 +9,7 @@ class MediumCardThumbnail extends StatefulWidget {
   const MediumCardThumbnail({required this.card, required this.onTap, super.key});
 
   static const double width = 156;
-  static const double artworkAspectRatio = 0.7;
+  static const double artworkAspectRatio = 2 / 3;
 
   final CardImageModel card;
   final VoidCallback onTap;

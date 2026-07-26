@@ -15,7 +15,7 @@ class DiscardPileWidget extends StatelessWidget {
   Widget build(BuildContext context) => Semantics(
     label: 'Discard pile, top card ${topCard.title}',
     child: SizedBox(
-      width: 92,
+      width: 84,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -31,7 +31,7 @@ class DiscardPileWidget extends StatelessWidget {
             clipBehavior: Clip.antiAlias,
             child: StoredImage(
               source: topCard.imagePath,
-              fit: BoxFit.cover,
+              fit: BoxFit.contain,
               errorBuilder: (_, _, _) => const ColoredBox(
                 color: Color(0xFF521E16),
                 child: Icon(Icons.image_not_supported, color: AppTheme.gold),

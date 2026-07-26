@@ -33,7 +33,7 @@ class CardAiApiService implements CardAiService {
     if (kDebugMode) {
       debugPrint('Card transcription backend: ${_client.baseUrl}');
       debugPrint(
-        'Card transcription endpoint: ${_client.endpointUri('/api/cards/transcribe')}',
+        'Card transcription endpoint: ${_client.endpointUri('/api/card-transcription')}',
       );
       debugPrint('Card transcription request: POST multipart (web: $kIsWeb)');
     }
@@ -57,7 +57,7 @@ class CardAiApiService implements CardAiService {
     }
     return CardTranscriptionResponse.fromJson(
       await _client.postMultipart(
-        '/api/cards/transcribe',
+        '/api/card-transcription',
         fields: {
           'cardId': card.id,
           'deckId': card.deckId,
@@ -83,7 +83,7 @@ class CardAiApiService implements CardAiService {
     required CardDiscussionMode mode,
     required List<CardChatMessage> recentHistory,
   }) async => CardChatResponse.fromJson(
-    await _client.postJson('/api/cards/chat', {
+    await _client.postJson('/api/chat', {
       'cardId': card.id,
       'deckId': card.deckId,
       'cardTitle': card.title,

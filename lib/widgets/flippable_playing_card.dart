@@ -144,13 +144,13 @@ class _FlippablePlayingCardState extends State<FlippablePlayingCard>
                       child: showFront
                           ? StoredImage(
                               source: widget.frontImagePath,
-                              fit: BoxFit.cover,
+                              fit: BoxFit.contain,
                               errorBuilder: (_, _, _) =>
                                   const _FallbackFace(label: 'CARD'),
                             )
                           : Image.asset(
                               widget.backImagePath,
-                              fit: BoxFit.cover,
+                              fit: BoxFit.contain,
                               errorBuilder: (_, _, _) =>
                                   const _FallbackFace(label: 'CHanson'),
                             ),

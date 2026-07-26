@@ -1,11 +1,15 @@
 import { createClient } from '@supabase/supabase-js';
 
 let client;
+let signature;
 
-export function getSupabaseAuthClient() {
-  client ??= createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_PUBLISHABLE_KEY,
+export function getSupabaseAuthClient(environment) {
+  const nextSignature =
+    `${environment.supabaseUrl}:${environment.supabasePublishableKey}`;
+  if (!client || signature !== nextSignature) {
+    client = createClient(
+    environment.supabaseUrl,
+    environment.supabasePublishableKey,
     {
       auth: {
         persistSession: false,
@@ -13,6 +17,8 @@ export function getSupabaseAuthClient() {
         detectSessionInUrl: false,
       },
     },
-  );
+    );
+    signature = nextSignature;
+  }
   return client;
 }

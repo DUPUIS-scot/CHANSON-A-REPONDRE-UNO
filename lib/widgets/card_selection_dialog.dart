@@ -44,7 +44,7 @@ class _CardSelectionDialogState extends State<CardSelectionDialog> {
               child: GridView.builder(
                 gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                   maxCrossAxisExtent: 150,
-                  childAspectRatio: 0.62,
+                  childAspectRatio: 2 / 3,
                   crossAxisSpacing: 10,
                   mainAxisSpacing: 10,
                 ),

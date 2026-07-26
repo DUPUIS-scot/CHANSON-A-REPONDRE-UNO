@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 class StoredImage extends StatelessWidget {
   const StoredImage({
     required this.source,
-    this.fit = BoxFit.cover,
+    this.fit = BoxFit.contain,
     this.errorBuilder,
     super.key,
   });
@@ -30,6 +30,9 @@ class StoredImage extends StatelessWidget {
       } on FormatException {
         return _error(context, const FormatException('Invalid PNG data.'));
       }
+    }
+    if (source.startsWith('assets/')) {
+      return Image.asset(source, fit: fit, errorBuilder: errorBuilder);
     }
     if (kIsWeb) {
       return _error(context, const FileSystemException('Missing web image.'));

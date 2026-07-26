@@ -2,8 +2,10 @@ import 'dart:convert';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
 
+import '../core/app_constants.dart';
 import '../models/card_image_model.dart';
 import '../models/deck_model.dart';
 import '../services/deck_import_service.dart';
@@ -40,8 +42,13 @@ class DeckProvider extends ChangeNotifier {
             .map(Deck.fromJson)
             .toList();
       }
+      await _installProductionDeck();
       _activeDeckId = await _storage.read(_activeKey);
-      if (activeDeck == null) _activeDeckId = _decks.firstOrNull?.id;
+      if (activeDeck == null ||
+          _activeDeckId != AppConstants.productionDeckId) {
+        _activeDeckId = AppConstants.productionDeckId;
+      }
+      await _persist(notify: false);
     } on Object catch (error) {
       _decks = [];
       _error = 'Stored decks could not be loaded: $error';
@@ -51,13 +58,41 @@ class DeckProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _persist() async {
+  Future<void> _installProductionDeck() async {
+    final source = await rootBundle.loadString(AppConstants.cardsAsset);
+    final decoded = jsonDecode(source);
+    if (decoded is! Map<String, dynamic>) {
+      throw const FormatException('The bundled card catalog is invalid.');
+    }
+    final rawDecks = decoded['decks'];
+    if (rawDecks is! List<dynamic>) {
+      throw const FormatException('The bundled card catalog has no decks.');
+    }
+    final deck = rawDecks
+        .whereType<Map<String, dynamic>>()
+        .map(Deck.fromJson)
+        .firstWhere((deck) => deck.id == AppConstants.productionDeckId);
+    final ids = deck.cards.map((card) => card.id).toSet();
+    if (deck.cards.length != AppConstants.productionDeckSize ||
+        ids.length != AppConstants.productionDeckSize) {
+      throw FormatException(
+        'The production deck must contain exactly '
+        '${AppConstants.productionDeckSize} unique cards.',
+      );
+    }
+    _decks = [
+      deck,
+      ..._decks.where((item) => item.id != AppConstants.productionDeckId),
+    ];
+  }
+
+  Future<void> _persist({bool notify = true}) async {
     await _storage.write(
       _decksKey,
       _decks.map((deck) => deck.toJson()).toList(),
     );
     if (_activeDeckId != null) await _storage.write(_activeKey, _activeDeckId!);
-    notifyListeners();
+    if (notify) notifyListeners();
   }
 
   Future<void> select(String id) async {

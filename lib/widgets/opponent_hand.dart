@@ -31,7 +31,7 @@ class OpponentHand extends StatelessWidget {
                       angle: (index - (visible - 1) / 2) * .025,
                       child: Container(
                         width: 48,
-                        height: 64,
+                        height: 72,
                         decoration: BoxDecoration(
                           border: Border.all(color: Colors.white70),
                           borderRadius: BorderRadius.circular(5),
@@ -39,7 +39,7 @@ class OpponentHand extends StatelessWidget {
                         clipBehavior: Clip.antiAlias,
                         child: Image.asset(
                           'assets/images/card_back.png',
-                          fit: BoxFit.cover,
+                          fit: BoxFit.contain,
                           errorBuilder: (_, _, _) =>
                               const ColoredBox(color: Color(0xFF4A1E14)),
                         ),

@@ -23,7 +23,7 @@ class CardGridTile extends StatelessWidget {
           Positioned.fill(
             child: StoredImage(
               source: card.path,
-              fit: BoxFit.cover,
+              fit: BoxFit.contain,
               errorBuilder: (_, _, _) => const Center(
                 child: Icon(Icons.broken_image_outlined, size: 42),
               ),

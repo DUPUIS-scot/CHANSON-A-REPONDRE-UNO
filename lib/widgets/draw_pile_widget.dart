@@ -13,7 +13,7 @@ class DrawPileWidget extends StatelessWidget {
       onTap: onDraw,
       borderRadius: BorderRadius.circular(8),
       child: SizedBox(
-        width: 92,
+        width: 88,
         height: 132,
         child: Stack(
           children: [
@@ -32,7 +32,7 @@ class DrawPileWidget extends StatelessWidget {
                   clipBehavior: Clip.antiAlias,
                   child: Image.asset(
                     'assets/images/card_back.png',
-                    fit: BoxFit.cover,
+                    fit: BoxFit.contain,
                     errorBuilder: (_, _, _) =>
                         const Icon(Icons.style, color: AppTheme.gold),
                   ),

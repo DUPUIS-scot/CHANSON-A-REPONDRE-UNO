@@ -1,0 +1,47 @@
+name: Backend checks
+
+on:
+  pull_request:
+    paths: ["server/**", ".github/workflows/backend-checks.yml"]
+  push:
+    branches: [main]
+    paths: ["server/**", ".github/workflows/backend-checks.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - name: Confirm placeholders fail configuration
+        run: npm run check:config && exit 1 || exit 0
+      - name: Startup smoke test
+        env:
+          PORT: 3000
+          NODE_ENV: test
+          OPENAI_API_KEY: sk-safe-ci-test
+          SUPABASE_URL: https://ci-project.supabase.co
+          SUPABASE_PUBLISHABLE_KEY: sb_publishable_safe_ci_test
+          ALLOWED_ORIGINS: https://jameshpdy-dev.github.io
+        run: |
+          npm start &
+          PID=$!
+          trap "kill $PID" EXIT
+          for attempt in {1..20}; do
+            curl --fail --silent http://127.0.0.1:3000/health && exit 0
+            sleep 1
+          done
+          exit 1
