@@ -227,25 +227,61 @@ class _PlayScreenState extends State<PlayScreen> {
                                   child: Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Wrap(
-                                        alignment: WrapAlignment.center,
-                                        spacing: 22,
-                                        crossAxisAlignment:
-                                            WrapCrossAlignment.center,
-                                        children: [
-                                          DrawPileWidget(
-                                            count: state.drawPile.length,
-                                            onDraw:
-                                                state.currentPlayerIndex == 0 &&
-                                                    !dealerBusy
-                                                ? drawWithDealer
-                                                : null,
-                                          ),
-                                          DiscardPileWidget(
-                                            topCard: state.topCard,
-                                            count: state.discardPile.length,
-                                          ),
-                                        ],
+                                      Padding(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal:
+                                              constraints.maxWidth >= 720
+                                              ? 72
+                                              : 0,
+                                        ),
+                                        child: constraints.maxWidth >= 720
+                                            ? Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
+                                                children: [
+                                                  DrawPileWidget(
+                                                    count:
+                                                        state.drawPile.length,
+                                                    onDraw:
+                                                        state.currentPlayerIndex ==
+                                                                0 &&
+                                                            !dealerBusy
+                                                        ? drawWithDealer
+                                                        : null,
+                                                  ),
+                                                  DiscardPileWidget(
+                                                    topCard: state.topCard,
+                                                    count: state
+                                                        .discardPile
+                                                        .length,
+                                                  ),
+                                                ],
+                                              )
+                                            : Wrap(
+                                                alignment: WrapAlignment.center,
+                                                spacing: 22,
+                                                crossAxisAlignment:
+                                                    WrapCrossAlignment.center,
+                                                children: [
+                                                  DrawPileWidget(
+                                                    count:
+                                                        state.drawPile.length,
+                                                    onDraw:
+                                                        state.currentPlayerIndex ==
+                                                                0 &&
+                                                            !dealerBusy
+                                                        ? drawWithDealer
+                                                        : null,
+                                                  ),
+                                                  DiscardPileWidget(
+                                                    topCard: state.topCard,
+                                                    count: state
+                                                        .discardPile
+                                                        .length,
+                                                  ),
+                                                ],
+                                              ),
                                       ),
                                       const SizedBox(height: 10),
                                       Wrap(
@@ -299,8 +335,7 @@ class _PlayScreenState extends State<PlayScreen> {
                                   children: [
                                     FilledButton.icon(
                                       onPressed:
-                                          game.canPlay(selected) &&
-                                              !dealerBusy
+                                          game.canPlay(selected) && !dealerBusy
                                           ? playSelected
                                           : null,
                                       icon: const Icon(Icons.play_arrow),

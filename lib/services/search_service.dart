@@ -13,18 +13,23 @@ class SearchService {
     return decks.expand((deck) => deck.cards).where((card) {
       final haystack = [
         card.title,
-        card.path,
+        card.displayTitle,
+        card.question,
+        card.answer,
         card.author,
         card.theme,
         card.emotion,
         card.category,
         card.colour,
+        card.transcription ?? '',
+        card.cleanedTranscription ?? '',
         card.year?.toString() ?? '',
         ...card.tags,
       ].join(' ').toLowerCase();
       return (needle.isEmpty || haystack.contains(needle)) &&
           (deckId == null || card.deckId == deckId) &&
-          (category == null || card.category == category) &&
+          (category == null ||
+              card.category.toLowerCase() == category.toLowerCase()) &&
           (colour == null || card.colour == colour);
     }).toList();
   }

@@ -39,6 +39,13 @@ abstract final class AppRoutes {
   static String cardChat(String id) => '$aiChat/$id';
   static String cardAlias(String id) => '/card/$id';
   static String deck(String id) => '/deck/$id';
+  static String browseCard(String id, {String? category}) {
+    final parameters = <String, String>{'focus': id};
+    if (category != null && category.isNotEmpty) {
+      parameters['category'] = category;
+    }
+    return Uri(path: cards, queryParameters: parameters).toString();
+  }
 }
 
 abstract final class AppRouter {
@@ -66,7 +73,10 @@ abstract final class AppRouter {
       ),
       GoRoute(
         path: AppRoutes.cards,
-        builder: (_, _) => const CardBrowserScreen(),
+        builder: (_, state) => CardBrowserScreen(
+          focusCardId: state.uri.queryParameters['focus'],
+          initialCategory: state.uri.queryParameters['category'],
+        ),
         routes: [
           GoRoute(
             path: ':cardId',

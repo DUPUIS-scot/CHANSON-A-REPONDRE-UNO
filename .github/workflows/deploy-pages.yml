@@ -97,7 +97,13 @@ jobs:
           test -f build/web/404.html
           test -f build/web/flutter_bootstrap.js
           test -f build/web/main.dart.js
+          test -f build/web/puppet_dealer.js
+          test -f build/web/vendor/three.min.js
           grep -q '<base href="/CHANSON-A-REPONDRE-UNO/">' build/web/index.html
+          grep -q 'vendor/three.min.js' build/web/index.html
+          grep -q 'puppet_dealer.js' build/web/index.html
+          grep -q 'puppetDealerCreate' build/web/main.dart.js
+          grep -q 'dealer-3d-container' build/web/main.dart.js
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5

@@ -41,36 +41,52 @@ class PuppetDealerScene extends StatefulWidget {
 class _PuppetDealerSceneState extends State<PuppetDealerScene> {
   late final String _elementId;
   late final String _viewType;
+  bool _platformViewCreated = false;
 
   @override
   void initState() {
     super.initState();
     final stamp = DateTime.now().microsecondsSinceEpoch;
-    _elementId = 'puppet-dealer-$stamp';
+    _elementId = 'dealer-3d-container';
     _viewType = 'puppet-dealer-view-$stamp';
     ui_web.platformViewRegistry.registerViewFactory(_viewType, (_) {
       return html.DivElement()
         ..id = _elementId
+        ..className = 'dealer-3d-container'
+        ..setAttribute('aria-label', 'Live 3D puppet dealer')
         ..style.width = '100%'
         ..style.height = '100%'
+        ..style.position = 'relative'
         ..style.pointerEvents = 'none'
-        ..style.overflow = 'hidden';
+        ..style.overflow = 'hidden'
+        ..style.backgroundColor = 'transparent';
     });
     widget.controller.attach(
       deal: (path) => _animate(path, receive: false),
       receive: (path) => _animate(path, receive: true),
-      setQuality: (quality) =>
-          _setDealerQuality(_elementId, quality.name),
+      setQuality: (quality) => _setDealerQuality(_elementId, quality.name),
     );
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+  }
+
+  void _mountDealer(int _) {
+    if (_platformViewCreated) return;
+    _platformViewCreated = true;
+    // The platform-view callback proves Flutter created the HTML view. The
+    // JavaScript side additionally waits for it to be connected and sized.
+    Timer.run(() {
       if (mounted) _createDealer(_elementId, widget.quality.name);
     });
   }
 
   Future<void> _animate(String imagePath, {required bool receive}) async {
-    final imageUrl = Uri(
-      pathSegments: imagePath.split('/'),
-    ).toString();
+    final imageUrl = imagePath.startsWith('data:')
+        ? imagePath
+        : Uri(
+            pathSegments: [
+              if (imagePath.startsWith('assets/')) 'assets',
+              ...imagePath.split('/'),
+            ],
+          ).toString();
     if (receive) {
       _receiveCard(_elementId, imageUrl);
       await Future<void>.delayed(const Duration(milliseconds: 1650));
@@ -97,6 +113,9 @@ class _PuppetDealerSceneState extends State<PuppetDealerScene> {
 
   @override
   Widget build(BuildContext context) => IgnorePointer(
-    child: HtmlElementView(viewType: _viewType),
+    child: HtmlElementView(
+      viewType: _viewType,
+      onPlatformViewCreated: _mountDealer,
+    ),
   );
 }

@@ -65,11 +65,13 @@ class _PlayerHandState extends State<PlayerHand> {
         final cardHeight = cardWidth * 1.48;
         final step = cardWidth * .62;
         final contentWidth = cardWidth + step * (widget.cards.length - 1);
+        final handWidth = math.max(constraints.maxWidth, contentWidth);
+        final centeredOffset = math.max(0, (handWidth - contentWidth) / 2);
         return SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           reverse: contentWidth > constraints.maxWidth,
           child: SizedBox(
-            width: math.max(constraints.maxWidth, contentWidth),
+            width: handWidth,
             height: cardHeight + 42,
             child: Stack(
               clipBehavior: Clip.none,
@@ -78,7 +80,7 @@ class _PlayerHandState extends State<PlayerHand> {
                   _DealtCard(
                     key: ValueKey(widget.cards[index].id),
                     delay: Duration(milliseconds: index * 95),
-                    left: index * step,
+                    left: centeredOffset + index * step,
                     bottom: widget.selectedCardId == widget.cards[index].id
                         ? 34
                         : 8 +

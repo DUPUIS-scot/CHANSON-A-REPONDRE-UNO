@@ -42,7 +42,7 @@ class _BrowseHandCardState extends State<BrowseHandCard> {
     button: true,
     selected: widget.selected,
     label:
-        'Card ${widget.position} of ${widget.total}, ${widget.card.title}, ${widget.deckName}, ${widget.selected ? 'selected' : 'not selected'}, ${widget.card.isFavourite ? 'favourite' : 'not favourite'}, ${widget.card.transcriptionReviewed ? 'transcribed' : 'not transcribed'}. Press and hold to open the five-card full-screen viewer.',
+        'Card ${widget.position} of ${widget.total}, ${widget.card.displayTitle}, ${widget.deckName}, ${widget.selected ? 'selected' : 'not selected'}, ${widget.card.isFavourite ? 'favourite' : 'not favourite'}, ${widget.card.transcriptionReviewed ? 'transcribed' : 'not transcribed'}. Press and hold to open the five-card full-screen viewer.',
     child: FocusableActionDetector(
       mouseCursor: SystemMouseCursors.click,
       onShowHoverHighlight: (value) => setState(() => hovered = value),

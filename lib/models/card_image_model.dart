@@ -10,6 +10,8 @@ class CardImageModel {
     required this.category,
     required this.colour,
     required this.importedAt,
+    this.question = '',
+    this.answer = '',
     this.author = '',
     this.theme = '',
     this.emotion = '',
@@ -36,6 +38,8 @@ class CardImageModel {
   final String category;
   final String colour;
   final DateTime importedAt;
+  final String question;
+  final String answer;
   final String author;
   final String theme;
   final String emotion;
@@ -56,6 +60,22 @@ class CardImageModel {
 
   String get imagePath => path;
   double get aspectRatio => 2 / 3;
+  String get displayTitle {
+    final value = title.trim();
+    final looksLikeFilename =
+        value.isEmpty ||
+        value.toLowerCase().endsWith('.png') ||
+        RegExp(
+          r'^(chatgpt image|image|img)[ _-]',
+          caseSensitive: false,
+        ).hasMatch(value);
+    if (!looksLikeFilename) return value;
+    final match = RegExp(r'(\d+)$').firstMatch(id);
+    final number = int.tryParse(match?.group(1) ?? '');
+    return number == null
+        ? 'Carte'
+        : 'Carte ${number.toString().padLeft(2, '0')}';
+  }
 
   factory CardImageModel.fromJson(Map<String, dynamic> json) => CardImageModel(
     id: json['id'] as String? ?? '',
@@ -67,6 +87,8 @@ class CardImageModel {
     importedAt:
         DateTime.tryParse(json['importedAt'] as String? ?? '') ??
         DateTime.fromMillisecondsSinceEpoch(0),
+    question: json['question'] as String? ?? '',
+    answer: json['answer'] as String? ?? '',
     author: json['author'] as String? ?? '',
     theme: json['theme'] as String? ?? '',
     emotion: json['emotion'] as String? ?? '',
@@ -104,6 +126,8 @@ class CardImageModel {
     'category': category,
     'colour': colour,
     'importedAt': importedAt.toIso8601String(),
+    'question': question,
+    'answer': answer,
     'author': author,
     'theme': theme,
     'emotion': emotion,
@@ -148,6 +172,8 @@ class CardImageModel {
     category: category,
     colour: colour,
     importedAt: importedAt,
+    question: question,
+    answer: answer,
     author: author,
     theme: theme,
     emotion: emotion,

@@ -24,7 +24,10 @@ class SelectedCardActions extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(card.title, style: Theme.of(context).textTheme.titleLarge),
+          Text(
+            card.displayTitle,
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
           Text(deckName),
           const SizedBox(height: 8),
           Wrap(

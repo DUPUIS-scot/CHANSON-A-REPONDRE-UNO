@@ -17,7 +17,13 @@ import '../widgets/selected_card_actions.dart';
 import 'browse_hand_fullscreen_screen.dart';
 
 class CardBrowserScreen extends StatefulWidget {
-  const CardBrowserScreen({super.key});
+  const CardBrowserScreen({
+    this.focusCardId,
+    this.initialCategory,
+    super.key,
+  });
+  final String? focusCardId;
+  final String? initialCategory;
   @override
   State<CardBrowserScreen> createState() => _CardBrowserScreenState();
 }
@@ -26,12 +32,23 @@ class _CardBrowserScreenState extends State<CardBrowserScreen> {
   final browser = CardBrowserProvider();
   final focusNode = FocusNode();
   bool previewOpening = false;
+  String? appliedFocusCardId;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     final deck = context.watch<DeckProvider>().activeDeck;
-    if (deck != null) browser.initializeForDeck(deck.id, deck.cards);
+    if (deck != null) {
+      browser.initializeForDeck(deck.id, deck.cards);
+      if (widget.focusCardId != null &&
+          appliedFocusCardId != widget.focusCardId) {
+        appliedFocusCardId = widget.focusCardId;
+        browser.focusCard(
+          widget.focusCardId!,
+          category: widget.initialCategory,
+        );
+      }
+    }
   }
 
   @override

@@ -1,0 +1,385 @@
+import { spawn } from 'node:child_process';
+import { createServer } from 'node:http';
+import { readFile, writeFile } from 'node:fs/promises';
+import { extname, join, normalize } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const projectRoot = new URL('../', import.meta.url);
+const buildRoot = new URL('../build/web/', import.meta.url);
+const basePath = '/CHANSON-A-REPONDRE-UNO/';
+const port = 8123;
+const debugPort = 9223;
+const chromePath =
+  process.env.CHROME_PATH ||
+  'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+const profilePath = 'C:\\tmp\\chanson-dealer-chrome-profile';
+const outputPath = new URL('../build/dealer-verification.png', import.meta.url);
+const animationOutputPath = new URL(
+  '../build/dealer-animation-verification.png',
+  import.meta.url,
+);
+
+const mimeTypes = {
+  '.css': 'text/css',
+  '.html': 'text/html; charset=utf-8',
+  '.ico': 'image/x-icon',
+  '.js': 'application/javascript; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+  '.png': 'image/png',
+  '.svg': 'image/svg+xml',
+  '.wasm': 'application/wasm',
+};
+
+const delay = (milliseconds) =>
+  new Promise((resolve) => setTimeout(resolve, milliseconds));
+
+function startServer() {
+  const rootPath = normalize(fileURLToPath(buildRoot));
+  const server = createServer(async (request, response) => {
+    try {
+      const incoming = new URL(request.url, `http://127.0.0.1:${port}`);
+      let relative = incoming.pathname.startsWith(basePath)
+        ? incoming.pathname.slice(basePath.length)
+        : incoming.pathname.slice(1);
+      relative = decodeURIComponent(relative);
+      if (!relative || relative.endsWith('/')) relative += 'index.html';
+      const filePath = normalize(join(rootPath, relative));
+      if (!filePath.startsWith(rootPath)) {
+        response.writeHead(403).end('Forbidden');
+        return;
+      }
+      const contents = await readFile(filePath);
+      response.writeHead(200, {
+        'Content-Type': mimeTypes[extname(filePath)] || 'application/octet-stream',
+        'Cache-Control': 'no-store',
+      });
+      response.end(contents);
+    } catch {
+      response.writeHead(404).end('Not found');
+    }
+  });
+  return new Promise((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(port, '127.0.0.1', () => resolve(server));
+  });
+}
+
+async function waitForDebugTarget() {
+  for (let attempt = 0; attempt < 80; attempt += 1) {
+    try {
+      const response = await fetch(`http://127.0.0.1:${debugPort}/json/list`);
+      const targets = await response.json();
+      const page = targets.find((target) => target.type === 'page');
+      if (page?.webSocketDebuggerUrl) return page.webSocketDebuggerUrl;
+    } catch {
+      // Chrome is still starting.
+    }
+    await delay(250);
+  }
+  throw new Error('Chrome DevTools target did not become available.');
+}
+
+class DevTools {
+  constructor(url) {
+    this.socket = new WebSocket(url);
+    this.nextId = 1;
+    this.pending = new Map();
+    this.consoleMessages = [];
+  }
+
+  async connect() {
+    await new Promise((resolve, reject) => {
+      this.socket.addEventListener('open', resolve, { once: true });
+      this.socket.addEventListener('error', reject, { once: true });
+    });
+    this.socket.addEventListener('message', (event) => {
+      const message = JSON.parse(event.data);
+      if (message.id) {
+        const pending = this.pending.get(message.id);
+        if (!pending) return;
+        this.pending.delete(message.id);
+        if (message.error) pending.reject(new Error(message.error.message));
+        else pending.resolve(message.result);
+        return;
+      }
+      if (message.method === 'Runtime.consoleAPICalled') {
+        const values = message.params.args.map((argument) =>
+          argument.value === undefined
+            ? argument.description
+            : argument.value,
+        );
+        this.consoleMessages.push({
+          level: message.params.type,
+          values,
+        });
+      }
+      if (message.method === 'Runtime.exceptionThrown') {
+        this.consoleMessages.push({
+          level: 'exception',
+          values: [message.params.exceptionDetails.text],
+        });
+      }
+    });
+  }
+
+  send(method, params = {}) {
+    const id = this.nextId;
+    this.nextId += 1;
+    return new Promise((resolve, reject) => {
+      this.pending.set(id, { resolve, reject });
+      this.socket.send(JSON.stringify({ id, method, params }));
+    });
+  }
+
+  async evaluate(expression) {
+    const result = await this.send('Runtime.evaluate', {
+      expression,
+      awaitPromise: true,
+      returnByValue: true,
+    });
+    if (result.exceptionDetails) {
+      throw new Error(result.exceptionDetails.text);
+    }
+    return result.result.value;
+  }
+
+  close() {
+    this.socket.close();
+  }
+}
+
+async function waitFor(client, expression, description, timeout = 30000) {
+  const started = Date.now();
+  while (Date.now() - started < timeout) {
+    if (await client.evaluate(expression)) return;
+    await delay(400);
+  }
+  throw new Error(`Timed out waiting for ${description}.`);
+}
+
+async function seedGame(client) {
+  const source = await readFile(
+    new URL('assets/json/cards.json', projectRoot),
+    'utf8',
+  );
+  const catalog = JSON.parse(source.replace(/^\uFEFF/, ''));
+  const cards = catalog.decks[0].cards.slice(0, 12);
+  const state = {
+    deckId: catalog.decks[0].id,
+    topCard: cards[0],
+    currentColour: 'custom',
+    currentCategory: cards[0].category,
+    playDirection: 'clockwise',
+    drawPile: cards.slice(5),
+    discardPile: [cards[0]],
+    players: [
+      { id: 'player-0', name: 'Player 1', hand: cards.slice(1, 3) },
+      { id: 'player-1', name: 'Player 2', hand: cards.slice(3, 5) },
+    ],
+    currentPlayerIndex: 0,
+    drawRule: 'drawOneAndPass',
+    matchRule: 'colourOrCategory',
+    allowStacking: false,
+    timedTurns: false,
+    collaborativeMode: false,
+    conversationMode: false,
+    journalMode: false,
+    winnerName: null,
+  };
+  const encodedPreference = JSON.stringify(JSON.stringify(state));
+  await client.evaluate(
+    `localStorage.setItem('flutter.saved_game', ${JSON.stringify(
+      encodedPreference,
+    )}); location.hash = '#/play'; location.reload(); true`,
+  );
+  return cards[5].path;
+}
+
+async function capture(client, path) {
+  const screenshot = await client.send('Page.captureScreenshot', {
+    format: 'png',
+    captureBeyondViewport: false,
+  });
+  await writeFile(path, Buffer.from(screenshot.data, 'base64'));
+}
+
+async function main() {
+  const server = await startServer();
+  const url = `http://127.0.0.1:${port}${basePath}#/play`;
+  const chrome = spawn(
+    chromePath,
+    [
+      '--headless=new',
+      `--remote-debugging-port=${debugPort}`,
+      `--user-data-dir=${profilePath}`,
+      '--no-first-run',
+      '--disable-default-apps',
+      '--enable-unsafe-swiftshader',
+      '--use-angle=swiftshader',
+      '--window-size=1440,1000',
+      url,
+    ],
+    { stdio: 'ignore' },
+  );
+  let client;
+  try {
+    const debuggerUrl = await waitForDebugTarget();
+    client = new DevTools(debuggerUrl);
+    await client.connect();
+    await Promise.all([
+      client.send('Page.enable'),
+      client.send('Runtime.enable'),
+      client.send('Log.enable'),
+      client.send('Emulation.setDeviceMetricsOverride', {
+        width: 1440,
+        height: 1000,
+        deviceScaleFactor: 1,
+        mobile: false,
+      }),
+    ]);
+
+    await waitFor(
+      client,
+      `document.querySelector('flutter-view') !== null`,
+      'Flutter to start',
+    );
+    const cardPath = await seedGame(client);
+    try {
+      await waitFor(
+        client,
+        `document.getElementById('dealer-3d-container')?.dataset.dealerStatus === 'ready'`,
+        'the 3D dealer',
+        40000,
+      );
+    } catch (error) {
+      const debug = await client.evaluate(`(() => {
+        const host = document.getElementById('dealer-3d-container');
+        return {
+          href: location.href,
+          hash: location.hash,
+          title: document.title,
+          localStorageKeys: Object.keys(localStorage),
+          savedGameLength: localStorage.getItem('flutter.saved_game')?.length,
+          savedGamePrefix: localStorage
+            .getItem('flutter.saved_game')
+            ?.slice(0, 30),
+          flutterViews: document.querySelectorAll('flutter-view').length,
+          platformViews: document.querySelectorAll('flt-platform-view').length,
+          hostFound: Boolean(host),
+          hostStatus: host?.dataset.dealerStatus,
+          hostSize: host
+            ? [host.clientWidth, host.clientHeight]
+            : null,
+          diagnostic: host?.querySelector('.dealer-3d-diagnostic')?.textContent,
+          canvases: [...document.querySelectorAll('canvas')].map((canvas) => ({
+            id: canvas.id,
+            width: canvas.width,
+            height: canvas.height,
+          })),
+        };
+      })()`);
+      console.error('DEALER VERIFICATION DEBUG', JSON.stringify({
+        debug,
+        console: client.consoleMessages,
+      }, null, 2));
+      throw error;
+    }
+    const result = await client.evaluate(`(() => {
+      const host = document.getElementById('dealer-3d-container');
+      const canvas = host?.querySelector('canvas');
+      const rect = canvas?.getBoundingClientRect();
+      return {
+        host: Boolean(host),
+        canvas: Boolean(canvas),
+        status: host?.dataset.dealerStatus,
+        width: rect?.width || 0,
+        height: rect?.height || 0,
+        bufferWidth: canvas?.width || 0,
+        bufferHeight: canvas?.height || 0,
+        renderer: canvas?.dataset.renderer,
+        diagnostic: host?.querySelector('.dealer-3d-diagnostic')?.textContent,
+      };
+    })()`);
+    if (
+      !result.host ||
+      !result.canvas ||
+      result.status !== 'ready' ||
+      result.width <= 0 ||
+      result.height <= 0
+    ) {
+      throw new Error(`Invalid dealer result: ${JSON.stringify(result)}`);
+    }
+    // Headless Chrome changes view focus while Flutter is still laying out its
+    // root semantics node. Flutter reports that engine-only assertion during
+    // bootstrap, so retain it for diagnostics but verify the settled scene and
+    // animation against a fresh console window.
+    const bootstrapConsole = [...client.consoleMessages];
+    client.consoleMessages.length = 0;
+    await capture(client, outputPath);
+
+    const textureUrl = `assets/${cardPath}`
+      .split('/')
+      .map(encodeURIComponent)
+      .join('/');
+    const animationStarted = await client.evaluate(
+      `window.puppetDealerDeal('dealer-3d-container', ${JSON.stringify(
+        textureUrl,
+      )})`,
+    );
+    if (!animationStarted) throw new Error('Dealer animation did not start.');
+    await delay(100);
+    const animationDiagnostic = await client.evaluate(
+      `document.querySelector('.dealer-3d-diagnostic')?.textContent || ''`,
+    );
+    if (!animationDiagnostic.includes('Animation: DEALING')) {
+      throw new Error(
+        `Dealer did not enter DEALING state: ${animationDiagnostic}`,
+      );
+    }
+    await capture(client, animationOutputPath);
+
+    const fatalConsoleMessages = client.consoleMessages.filter((message) => {
+      const text = message.values.join(' ');
+      if (
+        message.level === 'warning' &&
+        /(404|cors|unable to load|failed to fetch|three is not defined|platform view)/i
+          .test(text)
+      ) {
+        return true;
+      }
+      if (!['error', 'exception', 'assert'].includes(message.level)) {
+        return false;
+      }
+      const headlessFocusAssertion =
+        text.includes('WidgetsBindingObserver.didChangeViewFocus') &&
+        text.includes('RenderSemanticsAnnotations');
+      return !headlessFocusAssertion;
+    });
+    if (fatalConsoleMessages.length) {
+      throw new Error(
+        `Browser console errors: ${JSON.stringify(fatalConsoleMessages)}`,
+      );
+    }
+    console.log(JSON.stringify({
+      ok: true,
+      url,
+      result,
+      animationDiagnostic,
+      screenshots: [
+        outputPath.pathname.slice(1),
+        animationOutputPath.pathname.slice(1),
+      ],
+      bootstrapConsole,
+      console: client.consoleMessages,
+    }, null, 2));
+  } finally {
+    client?.close();
+    chrome.kill();
+    await new Promise((resolve) => server.close(resolve));
+  }
+}
+
+main().catch((error) => {
+  console.error(error.stack || error);
+  process.exitCode = 1;
+});

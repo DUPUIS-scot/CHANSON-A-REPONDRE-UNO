@@ -2,6 +2,7 @@
   'use strict';
 
   const dealers = new Map();
+  const pendingMounts = new Map();
   const THREE = window.THREE;
 
   if (!THREE) {
@@ -14,6 +15,41 @@
   const smooth = (value) => value * value * (3 - 2 * value);
   const segment = (value, start, end) =>
     smooth(clamp((value - start) / (end - start), 0, 1));
+
+  function makeDiagnostic(host) {
+    const overlay = document.createElement('div');
+    overlay.className = 'dealer-3d-diagnostic';
+    Object.assign(overlay.style, {
+      position: 'absolute',
+      top: '8px',
+      left: '8px',
+      zIndex: '4',
+      padding: '7px 9px',
+      border: '1px solid rgba(255, 201, 40, .72)',
+      borderRadius: '6px',
+      background: 'rgba(5, 8, 12, .82)',
+      color: '#f7e7bd',
+      font: '700 10px/1.35 monospace',
+      letterSpacing: '.03em',
+      whiteSpace: 'pre',
+      pointerEvents: 'none',
+    });
+    host.appendChild(overlay);
+    return overlay;
+  }
+
+  function showFailure(host, error) {
+    const overlay = host.querySelector('.dealer-3d-diagnostic') ||
+      makeDiagnostic(host);
+    const message = error instanceof Error ? error.message : String(error);
+    overlay.style.borderColor = '#ff5f52';
+    overlay.style.color = '#ffb0a9';
+    overlay.textContent =
+      `3D DEALER\nWebGL: FAILED\nScene: FAILED\nModel: FAILED\n` +
+      `Animation: IDLE\nFPS: 0\n${message}`;
+    host.dataset.dealerStatus = 'failed';
+    console.error('3D DEALER FAILED', error);
+  }
 
   function setShadow(object, enabled) {
     object.traverse((child) => {
@@ -437,14 +473,27 @@
   class PuppetDealer {
     constructor(host, quality) {
       this.host = host;
+      this.host.dataset.dealerStatus = 'loading';
       this.quality = quality || 'medium';
       this.clock = new THREE.Clock();
       this.animation = null;
       this.pointer = new THREE.Vector2();
       this.disposed = false;
+      this.framesSinceSample = 0;
+      this.fps = 0;
+      this.lastFpsSample = performance.now();
+      this.status = {
+        webgl: 'LOADING',
+        scene: 'LOADING',
+        model: 'LOADING',
+        animation: 'IDLE',
+      };
+      this.diagnostic = makeDiagnostic(host);
+      this.updateDiagnostic();
       this.scene = new THREE.Scene();
       this.camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
-      this.camera.position.set(0, 1.2, 13.2);
+      this.camera.position.set(0, 1.2, 15.2);
+      this.camera.lookAt(0, 0.5, 0);
 
       this.renderer = new THREE.WebGLRenderer({
         alpha: true,
@@ -457,8 +506,17 @@
       this.renderer.toneMappingExposure = 1.08;
       this.renderer.domElement.style.width = '100%';
       this.renderer.domElement.style.height = '100%';
+      this.renderer.domElement.style.display = 'block';
       this.renderer.domElement.style.pointerEvents = 'none';
+      this.renderer.domElement.id = 'dealer-3d-canvas';
+      this.renderer.domElement.dataset.renderer = 'three.js';
       host.appendChild(this.renderer.domElement);
+      this.status.webgl = this.renderer.getContext() ? 'READY' : 'FAILED';
+      this.renderer.domElement.addEventListener('webglcontextlost', (event) => {
+        event.preventDefault();
+        this.status.webgl = 'FAILED';
+        this.updateDiagnostic('WebGL context lost');
+      });
 
       this.materials = {
         wood: new THREE.MeshStandardMaterial({ color: 0x8f4d22, roughness: 0.68 }),
@@ -481,6 +539,10 @@
 
       this.puppet = makePuppet(this.materials);
       this.puppet.position.set(0, 0.2, 0);
+      this.puppet.traverse((object) => {
+        object.visible = true;
+        if (object.isMesh) object.frustumCulled = false;
+      });
       this.scene.add(this.puppet);
       this.card = createCard(this.materials, '');
       this.card.visible = false;
@@ -490,12 +552,43 @@
       this.strings.forEach((string) => this.scene.add(string));
 
       this.setupLights();
+      this.status.scene = 'READY';
+      this.status.model = 'READY';
       this.setQuality(this.quality);
       this.resizeObserver = new ResizeObserver(() => this.resize());
       this.resizeObserver.observe(host);
       this.resize();
       window.addEventListener('pointermove', this.onPointerMove);
+      const bounds = new THREE.Box3().setFromObject(this.puppet);
+      const size = bounds.getSize(new THREE.Vector3());
+      const center = bounds.getCenter(new THREE.Vector3());
+      const meshCount = (() => {
+        let count = 0;
+        this.puppet.traverse((object) => {
+          if (object.isMesh) count += 1;
+        });
+        return count;
+      })();
+      this.host.dataset.dealerStatus = 'ready';
+      console.info('DEALER MODEL LOADED', {
+        meshCount,
+        boundingBoxSize: size.toArray(),
+        boundingBoxCenter: center.toArray(),
+        modelPosition: this.puppet.position.toArray(),
+        cameraPosition: this.camera.position.toArray(),
+        canvasSize: [host.clientWidth, host.clientHeight],
+      });
+      this.updateDiagnostic();
       this.render();
+    }
+
+    updateDiagnostic(error) {
+      if (!this.diagnostic) return;
+      this.diagnostic.textContent =
+        `3D DEALER\nWebGL: ${this.status.webgl}\n` +
+        `Scene: ${this.status.scene}\nModel: ${this.status.model}\n` +
+        `Animation: ${this.status.animation}\nFPS: ${this.fps}` +
+        (error ? `\n${error}` : '');
     }
 
     onPointerMove = (event) => {
@@ -542,10 +635,25 @@
       this.camera.aspect = width / height;
       const narrow = width < 720;
       this.camera.fov = narrow ? 42 : 30;
-      this.camera.position.z = narrow ? 16.2 : 15.2;
-      this.puppet.scale.setScalar(narrow ? 0.82 : 0.94);
+      this.puppet.scale.setScalar(narrow ? 0.86 : 0.98);
       this.puppet.position.y = narrow ? 0.55 : 0.2;
+      const bounds = new THREE.Box3().setFromObject(this.puppet);
+      const size = bounds.getSize(new THREE.Vector3());
+      const center = bounds.getCenter(new THREE.Vector3());
+      const verticalFov = THREE.MathUtils.degToRad(this.camera.fov);
+      const horizontalFov = 2 * Math.atan(
+        Math.tan(verticalFov / 2) * this.camera.aspect,
+      );
+      const distanceForHeight = (size.y / 2) /
+        (Math.tan(verticalFov / 2) * 0.86);
+      const distanceForWidth = (size.x / 2) /
+        (Math.tan(horizontalFov / 2) * 0.8);
+      const distance = Math.max(distanceForHeight, distanceForWidth, 5.5);
+      this.camera.position.set(center.x, center.y, center.z + distance);
+      this.camera.lookAt(center);
       this.camera.updateProjectionMatrix();
+      this.host.dataset.canvasWidth = String(width);
+      this.host.dataset.canvasHeight = String(height);
     }
 
     deal(imageUrl, direction) {
@@ -558,6 +666,8 @@
         attached: false,
         released: false,
       };
+      this.status.animation = 'DEALING';
+      this.updateDiagnostic();
       this.card.visible = true;
       this.scene.attach(this.card);
       if (this.animation.kind === 'deal') {
@@ -712,6 +822,16 @@
     render = () => {
       if (this.disposed) return;
       const time = this.clock.getElapsedTime();
+      this.framesSinceSample += 1;
+      const now = performance.now();
+      if (now - this.lastFpsSample >= 500) {
+        this.fps = Math.round(
+          (this.framesSinceSample * 1000) / (now - this.lastFpsSample),
+        );
+        this.framesSinceSample = 0;
+        this.lastFpsSample = now;
+        this.updateDiagnostic();
+      }
       if (!this.animation) {
         this.updateIdle(time);
       } else {
@@ -726,6 +846,8 @@
           this.card.visible = false;
           this.scene.attach(this.card);
           this.animation = null;
+          this.status.animation = 'IDLE';
+          this.updateDiagnostic();
         }
       }
       this.updateStrings(time);
@@ -740,13 +862,45 @@
       this.resizeObserver.disconnect();
       this.renderer.dispose();
       this.renderer.domElement.remove();
+      this.diagnostic?.remove();
     }
   }
 
   window.puppetDealerCreate = function (id, quality) {
-    const host = document.getElementById(id);
-    if (!host || dealers.has(id)) return;
-    dealers.set(id, new PuppetDealer(host, quality));
+    if (dealers.has(id) || pendingMounts.has(id)) return;
+    const started = performance.now();
+    const pending = { frame: 0, cancelled: false };
+    pendingMounts.set(id, pending);
+    console.info('3D DEALER MOUNT REQUESTED', { id, quality });
+
+    const mount = () => {
+      if (pending.cancelled || dealers.has(id)) {
+        pendingMounts.delete(id);
+        return;
+      }
+      const host = document.getElementById(id);
+      const hasSize = host && host.clientWidth > 0 && host.clientHeight > 0;
+      if (host?.isConnected && hasSize) {
+        pendingMounts.delete(id);
+        try {
+          dealers.set(id, new PuppetDealer(host, quality));
+        } catch (error) {
+          showFailure(host, error);
+        }
+        return;
+      }
+      if (performance.now() - started > 8000) {
+        pendingMounts.delete(id);
+        const error = new Error(
+          `Platform view "${id}" was not connected with a non-zero size.`,
+        );
+        if (host) showFailure(host, error);
+        else console.error('3D DEALER FAILED', error);
+        return;
+      }
+      pending.frame = requestAnimationFrame(mount);
+    };
+    pending.frame = requestAnimationFrame(mount);
   };
 
   window.puppetDealerDeal = function (id, imageUrl) {
@@ -762,6 +916,12 @@
   };
 
   window.puppetDealerDestroy = function (id) {
+    const pending = pendingMounts.get(id);
+    if (pending) {
+      pending.cancelled = true;
+      cancelAnimationFrame(pending.frame);
+      pendingMounts.delete(id);
+    }
     dealers.get(id)?.dispose();
     dealers.delete(id);
   };

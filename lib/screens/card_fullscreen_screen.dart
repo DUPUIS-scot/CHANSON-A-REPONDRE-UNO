@@ -52,7 +52,7 @@ class _CardFullscreenScreenState extends State<CardFullscreenScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: Text(card.title),
+        title: Text(card.displayTitle),
         backgroundColor: Colors.black,
         actions: [
           Padding(
@@ -65,19 +65,28 @@ class _CardFullscreenScreenState extends State<CardFullscreenScreen> {
           ),
         ],
       ),
-      body: PageView.builder(
-        controller: controller,
-        itemCount: cards.length,
-        onPageChanged: (index) => setState(() => currentIndex = index),
-        itemBuilder: (_, index) => InteractiveViewer(
-          minScale: .75,
-          maxScale: 5,
-          child: Center(
-            child: StoredImage(
-              source: cards[index].path,
-              fit: BoxFit.contain,
-              errorBuilder: (_, _, _) =>
-                  const Icon(Icons.broken_image, size: 80),
+      body: CallbackShortcuts(
+        bindings: {
+          const SingleActivator(LogicalKeyboardKey.escape): () =>
+              context.canPop() ? context.pop() : context.go(AppRoutes.cards),
+        },
+        child: Focus(
+          autofocus: true,
+          child: PageView.builder(
+            controller: controller,
+            itemCount: cards.length,
+            onPageChanged: (index) => setState(() => currentIndex = index),
+            itemBuilder: (_, index) => InteractiveViewer(
+              minScale: .75,
+              maxScale: 5,
+              child: Center(
+                child: StoredImage(
+                  source: cards[index].path,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, _, _) =>
+                      const Icon(Icons.broken_image, size: 80),
+                ),
+              ),
             ),
           ),
         ),
