@@ -86,7 +86,7 @@ class _PuppetDealerSceneState extends State<PuppetDealerScene> {
               if (imagePath.startsWith('assets/')) 'assets',
               ...imagePath.split('/'),
             ],
-          ).toString();
+          ).toString().replaceAll('%', '%25');
     if (receive) {
       _receiveCard(_elementId, imageUrl);
       await Future<void>.delayed(const Duration(milliseconds: 1650));

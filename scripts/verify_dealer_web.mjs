@@ -204,8 +204,11 @@ async function capture(client, path) {
 }
 
 async function main() {
-  const server = await startServer();
-  const url = `http://127.0.0.1:${port}${basePath}#/play`;
+  const requestedUrl = process.argv[2];
+  const server = requestedUrl ? null : await startServer();
+  const url =
+    requestedUrl ||
+    `http://127.0.0.1:${port}${basePath}#/play`;
   const chrome = spawn(
     chromePath,
     [
@@ -317,16 +320,35 @@ async function main() {
     client.consoleMessages.length = 0;
     await capture(client, outputPath);
 
-    const textureUrl = `assets/${cardPath}`
-      .split('/')
-      .map(encodeURIComponent)
-      .join('/');
+    const textureUrl = encodeURI(`assets/${cardPath}`).replaceAll('%', '%25');
+    const textureResponse = await client.evaluate(
+      `fetch(${JSON.stringify(textureUrl)}).then((response) => ({
+        ok: response.ok,
+        status: response.status,
+        contentType: response.headers.get('content-type'),
+      }))`,
+    );
+    if (
+      !textureResponse.ok ||
+      textureResponse.status !== 200 ||
+      textureResponse.contentType !== 'image/png'
+    ) {
+      throw new Error(
+        `Dealer texture is not reachable: ${JSON.stringify(textureResponse)}`,
+      );
+    }
     const animationStarted = await client.evaluate(
       `window.puppetDealerDeal('dealer-3d-container', ${JSON.stringify(
         textureUrl,
       )})`,
     );
     if (!animationStarted) throw new Error('Dealer animation did not start.');
+    await waitFor(
+      client,
+      `document.getElementById('dealer-3d-container')?.dataset.cardTexture === 'ready'`,
+      'the real card texture',
+      15000,
+    );
     await delay(100);
     const animationDiagnostic = await client.evaluate(
       `document.querySelector('.dealer-3d-diagnostic')?.textContent || ''`,
@@ -364,6 +386,7 @@ async function main() {
       ok: true,
       url,
       result,
+      textureResponse,
       animationDiagnostic,
       screenshots: [
         outputPath.pathname.slice(1),
@@ -375,7 +398,9 @@ async function main() {
   } finally {
     client?.close();
     chrome.kill();
-    await new Promise((resolve) => server.close(resolve));
+    if (server) {
+      await new Promise((resolve) => server.close(resolve));
+    }
   }
 }
 

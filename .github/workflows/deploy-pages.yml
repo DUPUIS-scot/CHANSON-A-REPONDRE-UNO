@@ -99,6 +99,7 @@ jobs:
           test -f build/web/main.dart.js
           test -f build/web/puppet_dealer.js
           test -f build/web/vendor/three.min.js
+          find build/web/assets/assets/cards/final_import -type f -name '*.png' -print -quit | grep -q .
           grep -q '<base href="/CHANSON-A-REPONDRE-UNO/">' build/web/index.html
           grep -q 'vendor/three.min.js' build/web/index.html
           grep -q 'puppet_dealer.js' build/web/index.html
