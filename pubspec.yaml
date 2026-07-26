@@ -89,6 +89,7 @@ flutter:
   assets:
     - assets/images/
     - assets/cards/final_import/
+    - assets/cards/category_versos/
     - assets/videos/
     - assets/json/cards.json
 

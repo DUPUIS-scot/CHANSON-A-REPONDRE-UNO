@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../data/card_categories.dart';
 import '../models/card_image_model.dart';
 import '../providers/deck_provider.dart';
 import '../providers/game_provider.dart';
@@ -119,7 +120,9 @@ class _PlayScreenState extends State<PlayScreen> {
     final card = state.drawPile.last;
     setState(() => dealerBusy = true);
     try {
-      await puppetController.dealToPlayer(card.imagePath);
+      await puppetController.dealToPlayer(
+        cardCategoryFor(card.category).versoAsset,
+      );
       if (mounted) await game.draw();
     } finally {
       if (mounted) setState(() => dealerBusy = false);
@@ -183,10 +186,8 @@ class _PlayScreenState extends State<PlayScreen> {
                   final narrow = constraints.maxWidth < 720;
                   final width = narrow
                       ? constraints.maxWidth
-                      : constraints.maxWidth * .48;
-                  final height = narrow
-                      ? constraints.maxHeight * .56
-                      : constraints.maxHeight * .64;
+                      : constraints.maxWidth * .72;
+                  final height = constraints.maxHeight * (narrow ? .62 : .64);
                   return Align(
                     alignment: Alignment.topCenter,
                     child: SizedBox(
@@ -201,185 +202,159 @@ class _PlayScreenState extends State<PlayScreen> {
                 },
               ),
               child: SafeArea(
-                child: Stack(
-                  children: [
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        final compact = constraints.maxHeight < 700;
-                        final player = state.players.first;
-                        final opponent = state.players.length > 1
-                            ? state.players[1]
-                            : state.players.first;
-                        final selected = player.hand
-                            .where((card) => card.id == selectedCardId)
-                            .firstOrNull;
-                        return Column(
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(56, 8, 56, 4),
-                              child: OpponentHand(
-                                cardCount: opponent.hand.length,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final narrow = constraints.maxWidth < 720;
+                    final compact = constraints.maxHeight < 700;
+                    final player = state.players.first;
+                    final opponent = state.players.length > 1
+                        ? state.players[1]
+                        : state.players.first;
+                    final selected = player.hand
+                        .where((card) => card.id == selectedCardId)
+                        .firstOrNull;
+                    final pileTop =
+                        constraints.maxHeight * (narrow ? .43 : .49);
+                    final statusTop =
+                        constraints.maxHeight * (narrow ? .61 : .65);
+                    final handHeight = compact
+                        ? 188.0
+                        : constraints.maxHeight.clamp(720, 1100) * .27;
+                    final pileInset = narrow
+                        ? 12.0
+                        : constraints.maxWidth * .14;
+                    return Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Positioned(
+                          top: 8,
+                          left: narrow ? 12 : constraints.maxWidth * .055,
+                          child: OpponentHand(cards: opponent.hand),
+                        ),
+                        Positioned(
+                          top: pileTop,
+                          left: pileInset,
+                          child: Transform.scale(
+                            scale: narrow ? .82 : 1,
+                            alignment: Alignment.topLeft,
+                            child: DrawPileWidget(
+                              count: state.drawPile.length,
+                              topCard: state.drawPile.lastOrNull,
+                              onDraw:
+                                  state.currentPlayerIndex == 0 && !dealerBusy
+                                  ? drawWithDealer
+                                  : null,
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          top: pileTop,
+                          right: pileInset,
+                          child: Transform.scale(
+                            scale: narrow ? .82 : 1,
+                            alignment: Alignment.topRight,
+                            child: DiscardPileWidget(
+                              topCard: state.topCard,
+                              count: state.discardPile.length,
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          top: statusTop,
+                          left: narrow ? 104 : 150,
+                          right: narrow ? 104 : 150,
+                          child: Wrap(
+                            alignment: WrapAlignment.center,
+                            spacing: narrow ? 5 : 10,
+                            runSpacing: 5,
+                            children: [
+                              _Status(
+                                label: 'CURRENT PLAYER',
+                                value: state
+                                    .players[state.currentPlayerIndex]
+                                    .name,
+                              ),
+                              _Status(
+                                label: 'COLOUR',
+                                value: state.currentColour.name,
+                              ),
+                              _Status(
+                                label: 'CATEGORY',
+                                value: state.currentCategory,
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (game.message != null)
+                          Positioned(
+                            top: statusTop + (narrow ? 82 : 58),
+                            left: 120,
+                            right: 120,
+                            child: Text(
+                              game.message!,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: AppTheme.brightGold,
+                                shadows: [
+                                  Shadow(color: Colors.black, blurRadius: 4),
+                                ],
                               ),
                             ),
-                            Expanded(
-                              child: Center(
-                                child: SingleChildScrollView(
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Padding(
-                                        padding: EdgeInsets.symmetric(
-                                          horizontal:
-                                              constraints.maxWidth >= 720
-                                              ? 72
-                                              : 0,
-                                        ),
-                                        child: constraints.maxWidth >= 720
-                                            ? Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment
-                                                        .spaceBetween,
-                                                children: [
-                                                  DrawPileWidget(
-                                                    count:
-                                                        state.drawPile.length,
-                                                    onDraw:
-                                                        state.currentPlayerIndex ==
-                                                                0 &&
-                                                            !dealerBusy
-                                                        ? drawWithDealer
-                                                        : null,
-                                                  ),
-                                                  DiscardPileWidget(
-                                                    topCard: state.topCard,
-                                                    count: state
-                                                        .discardPile
-                                                        .length,
-                                                  ),
-                                                ],
-                                              )
-                                            : Wrap(
-                                                alignment: WrapAlignment.center,
-                                                spacing: 22,
-                                                crossAxisAlignment:
-                                                    WrapCrossAlignment.center,
-                                                children: [
-                                                  DrawPileWidget(
-                                                    count:
-                                                        state.drawPile.length,
-                                                    onDraw:
-                                                        state.currentPlayerIndex ==
-                                                                0 &&
-                                                            !dealerBusy
-                                                        ? drawWithDealer
-                                                        : null,
-                                                  ),
-                                                  DiscardPileWidget(
-                                                    topCard: state.topCard,
-                                                    count: state
-                                                        .discardPile
-                                                        .length,
-                                                  ),
-                                                ],
-                                              ),
-                                      ),
-                                      const SizedBox(height: 10),
-                                      Wrap(
-                                        alignment: WrapAlignment.center,
-                                        spacing: 16,
-                                        runSpacing: 4,
-                                        children: [
-                                          _Status(
-                                            label: 'CURRENT PLAYER',
-                                            value: state
-                                                .players[state
-                                                    .currentPlayerIndex]
-                                                .name,
-                                          ),
-                                          _Status(
-                                            label: 'COLOUR',
-                                            value: state.currentColour.name,
-                                          ),
-                                          _Status(
-                                            label: 'CATEGORY',
-                                            value: state.currentCategory,
-                                          ),
-                                        ],
-                                      ),
-                                      if (game.message != null)
-                                        Padding(
-                                          padding: const EdgeInsets.only(
-                                            top: 6,
-                                          ),
-                                          child: Text(
-                                            game.message!,
-                                            style: const TextStyle(
-                                              color: AppTheme.brightGold,
-                                            ),
-                                          ),
-                                        ),
-                                    ],
-                                  ),
+                          ),
+                        if (selected != null)
+                          Positioned(
+                            bottom: handHeight - 12,
+                            left: 0,
+                            right: 0,
+                            child: Wrap(
+                              alignment: WrapAlignment.center,
+                              spacing: 8,
+                              children: [
+                                FilledButton.icon(
+                                  onPressed:
+                                      game.canPlay(selected) && !dealerBusy
+                                      ? playSelected
+                                      : null,
+                                  icon: const Icon(Icons.play_arrow),
+                                  label: const Text('PLAY CARD'),
                                 ),
-                              ),
+                                OutlinedButton.icon(
+                                  onPressed: !dealerBusy
+                                      ? () => setState(
+                                          () => selectedCardId = null,
+                                        )
+                                      : null,
+                                  icon: const Icon(Icons.close),
+                                  label: const Text('CANCEL'),
+                                ),
+                              ],
                             ),
-                            if (selected != null)
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 4,
-                                ),
-                                child: Wrap(
-                                  alignment: WrapAlignment.center,
-                                  spacing: 8,
-                                  children: [
-                                    FilledButton.icon(
-                                      onPressed:
-                                          game.canPlay(selected) && !dealerBusy
-                                          ? playSelected
-                                          : null,
-                                      icon: const Icon(Icons.play_arrow),
-                                      label: const Text('PLAY CARD'),
-                                    ),
-                                    OutlinedButton.icon(
-                                      onPressed: !dealerBusy
-                                          ? () => setState(
-                                              () => selectedCardId = null,
-                                            )
-                                          : null,
-                                      icon: const Icon(Icons.close),
-                                      label: const Text('CANCEL'),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            SizedBox(
-                              height: compact ? 180 : 230,
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                ),
-                                child: PlayerHand(
-                                  cards: player.hand,
-                                  selectedCardId: selectedCardId,
-                                  isPlayable: game.canPlay,
-                                  revealOnTap: settings.revealPlayerHandOnTap,
-                                  keepRevealed:
-                                      settings.keepRevealedCardsFaceUp,
-                                  hideAll: hideHand,
-                                  onSelectionChanged: (card) => setState(() {
-                                    selectedCardId = card?.id;
-                                    hideHand = false;
-                                  }),
-                                  onLongPressCard: openHandPreview,
-                                ),
-                              ),
+                          ),
+                        Positioned(
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          height: handHeight,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            child: PlayerHand(
+                              cards: player.hand,
+                              selectedCardId: selectedCardId,
+                              isPlayable: game.canPlay,
+                              revealOnTap: settings.revealPlayerHandOnTap,
+                              keepRevealed: settings.keepRevealedCardsFaceUp,
+                              hideAll: hideHand,
+                              onSelectionChanged: (card) => setState(() {
+                                selectedCardId = card?.id;
+                                hideHand = false;
+                              }),
+                              onLongPressCard: openHandPreview,
                             ),
-                          ],
-                        );
-                      },
-                    ),
-                  ],
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
             ),
@@ -440,7 +415,7 @@ class _GameLauncher extends StatelessWidget {
               if (decks.activeDeck == null)
                 const Padding(
                   padding: EdgeInsets.only(top: 12),
-                  child: Text('Import and select a deck before starting.'),
+                  child: Text('Select a deck before starting.'),
                 ),
             ],
           ),

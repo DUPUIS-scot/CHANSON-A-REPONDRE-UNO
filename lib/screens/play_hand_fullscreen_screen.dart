@@ -98,7 +98,7 @@ class _PlayHandFullscreenScreenState extends State<PlayHandFullscreenScreen> {
                 Align(
                   alignment: Alignment.topCenter,
                   child: FullscreenHandToolbar(
-                    title: widget.cards[_index].title,
+                    title: widget.cards[_index].category.toUpperCase(),
                     onClose: () => Navigator.pop(context),
                   ),
                 ),

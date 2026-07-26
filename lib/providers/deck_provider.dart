@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
 
 import '../core/app_constants.dart';
+import '../data/card_categories.dart';
 import '../models/card_image_model.dart';
 import '../models/deck_model.dart';
 import '../services/deck_import_service.dart';
@@ -78,10 +79,19 @@ class DeckProvider extends ChangeNotifier {
     if (rawDecks is! List<dynamic>) {
       throw const FormatException('The bundled card catalog has no decks.');
     }
-    final deck = rawDecks
+    final sourceDeck = rawDecks
         .whereType<Map<String, dynamic>>()
         .map(Deck.fromJson)
         .firstWhere((deck) => deck.id == AppConstants.productionDeckId);
+    final deck = sourceDeck.copyWith(
+      cards: [
+        for (var index = 0; index < sourceDeck.cards.length; index++)
+          sourceDeck.cards[index].copyWith(
+            category: cardCategoryAt(index).label,
+            colour: cardCategoryAt(index).colour,
+          ),
+      ],
+    );
     final ids = deck.cards.map((card) => card.id).toSet();
     if (deck.cards.length != AppConstants.productionDeckSize ||
         ids.length != AppConstants.productionDeckSize) {

@@ -14,8 +14,13 @@ class WebGlCardCastleView extends StatefulWidget {
     required this.cards,
     required this.focusedCardId,
     required this.shuffleSeed,
+    required this.activeCategory,
+    required this.fullscreenRequestId,
     required this.onCardSelected,
     required this.onCardOpened,
+    required this.onCategoryChanged,
+    required this.onHomeRequested,
+    required this.onFullscreenChanged,
     required this.fallback,
     super.key,
   });
@@ -23,8 +28,13 @@ class WebGlCardCastleView extends StatefulWidget {
   final List<CardImageModel> cards;
   final String? focusedCardId;
   final int shuffleSeed;
+  final String activeCategory;
+  final int fullscreenRequestId;
   final ValueChanged<String> onCardSelected;
   final ValueChanged<String> onCardOpened;
+  final ValueChanged<String> onCategoryChanged;
+  final VoidCallback onHomeRequested;
+  final ValueChanged<bool> onFullscreenChanged;
   final Widget fallback;
 
   @override
@@ -50,6 +60,9 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
       ..style.width = '100%'
       ..style.height = '100%'
       ..style.display = 'block'
+      ..setAttribute('allow', 'fullscreen')
+      ..setAttribute('allowfullscreen', 'true')
+      ..setAttribute('popover', 'manual')
       ..setAttribute('title', 'Three.js Search card castle');
     ui_web.platformViewRegistry.registerViewFactory(viewType, (_) => iframe);
     frameLoads = iframe.onLoad.listen((_) => _sendState());
@@ -59,11 +72,16 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
   @override
   void didUpdateWidget(covariant WebGlCardCastleView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (rendererReady &&
-        (oldWidget.cards != widget.cards ||
-            oldWidget.focusedCardId != widget.focusedCardId ||
-            oldWidget.shuffleSeed != widget.shuffleSeed)) {
+    if (!rendererReady) return;
+    final cardsChanged =
+        _cardFingerprint(oldWidget.cards) != _cardFingerprint(widget.cards);
+    if (cardsChanged || oldWidget.shuffleSeed != widget.shuffleSeed) {
       _sendState();
+    } else if (oldWidget.focusedCardId != widget.focusedCardId) {
+      _sendFocus();
+    }
+    if (oldWidget.fullscreenRequestId != widget.fullscreenRequestId) {
+      _requestFullscreen();
     }
   }
 
@@ -72,6 +90,7 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
     _post({'type': 'dispose'});
     frameLoads?.cancel();
     messages?.cancel();
+    _setInAppFullscreen(false);
     super.dispose();
   }
 
@@ -84,6 +103,7 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
         case 'rendererReady':
           rendererReady = true;
           _sendState();
+          if (widget.fullscreenRequestId > 0) _requestFullscreen();
         case 'rendererError':
           if (mounted) setState(() => rendererFailed = true);
         case 'cardSelected':
@@ -91,7 +111,26 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
           if (id != null) widget.onCardSelected(id);
         case 'cardLongPressed':
           final id = decoded['cardId'] as String?;
-          if (id != null) widget.onCardOpened(id);
+          if (id != null) {
+            _setInAppFullscreen(false);
+            widget.onCardOpened(id);
+          }
+        case 'categorySelected':
+          final category = decoded['category'] as String?;
+          if (category != null) widget.onCategoryChanged(category);
+        case 'homeRequested':
+          _setInAppFullscreen(false);
+          widget.onHomeRequested();
+        case 'fullscreenFallbackRequested':
+          _setInAppFullscreen(true);
+          _post({'type': 'setInAppFullscreen', 'active': true});
+        case 'fullscreenFallbackExit':
+          _setInAppFullscreen(false);
+          _post({'type': 'setInAppFullscreen', 'active': false});
+        case 'fullscreenChanged':
+          final active = decoded['active'] == true;
+          if (!active) _setInAppFullscreen(false);
+          widget.onFullscreenChanged(active);
       }
     } on FormatException {
       // Ignore unrelated window messages.
@@ -102,13 +141,15 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
     _post({
       'type': 'setCards',
       'focusedCardId': widget.focusedCardId,
+      'animateFocus': widget.focusedCardId != null,
+      'activeCategory': widget.activeCategory,
       'shuffleSeed': widget.shuffleSeed,
       'cards': widget.cards
           .map(
             (card) => {
               'id': card.id,
-              'title': card.displayTitle,
               'category': card.category,
+              'question': card.question,
               'thumbnailUrl': _assetUrl(card.imagePath),
               'aspectRatio': card.aspectRatio,
             },
@@ -116,6 +157,47 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
           .toList(),
     });
   }
+
+  void _sendFocus() {
+    _post({
+      'type': 'focusCard',
+      'cardId': widget.focusedCardId,
+      'animate': true,
+    });
+  }
+
+  void _requestFullscreen() {
+    if (!rendererReady) return;
+    _post({'type': 'enterFullscreen'});
+  }
+
+  void _setInAppFullscreen(bool active) {
+    if (active) {
+      iframe.style
+        ..position = 'fixed'
+        ..left = '0'
+        ..top = '0'
+        ..width = '100vw'
+        ..height = '100vh'
+        ..zIndex = '2147483647'
+        ..backgroundColor = '#03070c';
+    } else {
+      iframe.style
+        ..position = ''
+        ..left = ''
+        ..top = ''
+        ..width = '100%'
+        ..height = '100%'
+        ..zIndex = ''
+        ..backgroundColor = '';
+    }
+  }
+
+  String _cardFingerprint(List<CardImageModel> cards) => cards
+      .map(
+        (card) => '${card.id}\u001f${card.imagePath}\u001f${card.aspectRatio}',
+      )
+      .join('\u001e');
 
   String _assetUrl(String source) {
     if (!source.startsWith('assets/')) return source;

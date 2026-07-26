@@ -19,6 +19,9 @@
   function makeDiagnostic(host) {
     const overlay = document.createElement('div');
     overlay.className = 'dealer-3d-diagnostic';
+    const debugEnabled =
+      window.SHOW_3D_DIAGNOSTICS === true ||
+      new URLSearchParams(window.location.search).has('dealerDebug');
     Object.assign(overlay.style, {
       position: 'absolute',
       top: '8px',
@@ -33,6 +36,7 @@
       letterSpacing: '.03em',
       whiteSpace: 'pre',
       pointerEvents: 'none',
+      display: debugEnabled ? 'block' : 'none',
     });
     host.appendChild(overlay);
     return overlay;
@@ -44,6 +48,7 @@
     const message = error instanceof Error ? error.message : String(error);
     overlay.style.borderColor = '#ff5f52';
     overlay.style.color = '#ffb0a9';
+    overlay.style.display = 'block';
     overlay.textContent =
       `3D DEALER\nWebGL: FAILED\nScene: FAILED\nModel: FAILED\n` +
       `Animation: IDLE\nFPS: 0\n${message}`;
@@ -96,25 +101,111 @@
     }).center();
   }
 
+  function makeSurfaceTexture(base, accent, seed, direction) {
+    const size = 256;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const context = canvas.getContext('2d');
+    context.fillStyle = base;
+    context.fillRect(0, 0, size, size);
+    let value = seed || 37;
+    const random = () => {
+      value = (value * 16807) % 2147483647;
+      return (value - 1) / 2147483646;
+    };
+    context.globalAlpha = 0.18;
+    for (let i = 0; i < 1200; i += 1) {
+      const x = random() * size;
+      const y = random() * size;
+      const width = direction === 'wood' ? 8 + random() * 35 : 1 + random() * 4;
+      const height = direction === 'wood' ? 0.35 + random() * 1.4 : width;
+      context.fillStyle = random() > 0.48 ? accent : '#120b08';
+      context.fillRect(x, y, width, height);
+    }
+    if (direction === 'wood') {
+      context.globalAlpha = 0.22;
+      context.strokeStyle = accent;
+      context.lineWidth = 1.2;
+      for (let y = 12; y < size; y += 18 + random() * 13) {
+        context.beginPath();
+        context.moveTo(0, y);
+        for (let x = 0; x <= size; x += 16) {
+          context.lineTo(x, y + Math.sin((x + seed * 3) * 0.07) * 3.5);
+        }
+        context.stroke();
+      }
+      context.globalAlpha = 0.14;
+      context.strokeStyle = '#f2c276';
+      for (let i = 0; i < 18; i += 1) {
+        const x = random() * size;
+        context.beginPath();
+        context.moveTo(x, random() * size);
+        context.lineTo(x + random() * 34 - 17, random() * size);
+        context.stroke();
+      }
+    }
+    context.globalAlpha = 1;
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(direction === 'wood' ? 1.8 : 2.5, direction === 'wood' ? 3.5 : 2.5);
+    texture.anisotropy = 4;
+    return texture;
+  }
+
+  function taperedSegment(material, length, radiusTop, radiusBottom) {
+    return mesh(
+      new THREE.CylinderGeometry(radiusTop, radiusBottom, length, 14, 3),
+      material,
+    );
+  }
+
+  function pointSegment(object, from, to) {
+    const delta = new THREE.Vector3().subVectors(to, from);
+    object.position.copy(from).addScaledVector(delta, 0.5);
+    object.quaternion.setFromUnitVectors(
+      new THREE.Vector3(0, 1, 0),
+      delta.clone().normalize(),
+    );
+    object.scale.y = delta.length();
+    return object;
+  }
+
   function makeFinger(material, length, radius) {
     const root = new THREE.Group();
     const middle = new THREE.Group();
     const tip = new THREE.Group();
     const sectionLength = length / 3;
-    const geometry = new THREE.CapsuleGeometry(
-      radius,
-      sectionLength - radius * 1.3,
-      4,
-      7,
-    );
-    const first = mesh(geometry, material, [0, -sectionLength * 0.5, 0]);
-    const second = mesh(geometry, material, [0, -sectionLength * 0.5, 0]);
-    const third = mesh(geometry, material, [0, -sectionLength * 0.5, 0]);
+    const makeSection = (index) => {
+      const section = taperedSegment(
+        material,
+        sectionLength * 0.9,
+        radius * (0.82 - index * 0.08),
+        radius * (1 - index * 0.08),
+      );
+      section.position.y = -sectionLength * 0.48;
+      return section;
+    };
+    const first = makeSection(0);
+    const second = makeSection(1);
+    const third = makeSection(2);
     root.add(first, middle);
     middle.position.y = -sectionLength;
     middle.add(second, tip);
     tip.position.y = -sectionLength;
     tip.add(third);
+    [root, middle, tip].forEach((joint, index) => {
+      joint.add(
+        mesh(
+          new THREE.SphereGeometry(radius * (1 - index * .08), 10, 7),
+          material,
+          [0, 0, 0],
+          [1, .78, .82],
+        ),
+      );
+    });
     root.userData.joints = [root, middle, tip];
     return root;
   }
@@ -122,26 +213,31 @@
   function makeHand(material, mirrored) {
     const hand = new THREE.Group();
     const palm = mesh(
-      new THREE.CapsuleGeometry(0.34, 0.62, 6, 10),
+      new THREE.CapsuleGeometry(0.31, 0.54, 7, 12),
       material,
       [0, 0, 0],
-      [1, 1, 0.54],
+      [1, 1, 0.42],
     );
     palm.rotation.z = Math.PI;
     hand.add(palm);
 
     const fingers = [];
-    const xPositions = [-0.29, -0.1, 0.1, 0.29];
+    const xPositions = [-0.26, -0.09, 0.09, 0.26];
     xPositions.forEach((x, index) => {
-      const finger = makeFinger(material, 0.69 - Math.abs(index - 1.5) * 0.055, 0.085);
-      finger.position.set(x, -0.43, 0.02);
-      finger.rotation.z = (index - 1.5) * 0.045;
+      const finger = makeFinger(
+        material,
+        0.72 - Math.abs(index - 1.5) * 0.055,
+        0.072,
+      );
+      finger.position.set(x, -0.39, 0.025);
+      finger.rotation.z = (index - 1.5) * 0.035;
       hand.add(finger);
       fingers.push(finger);
     });
-    const thumb = makeFinger(material, 0.58, 0.1);
-    thumb.position.set(mirrored ? -0.42 : 0.42, -0.04, 0);
-    thumb.rotation.z = mirrored ? -1.0 : 1.0;
+    const thumb = makeFinger(material, 0.57, 0.082);
+    thumb.position.set(mirrored ? -0.36 : 0.36, -0.01, 0.02);
+    thumb.rotation.z = mirrored ? -1.02 : 1.02;
+    thumb.rotation.y = mirrored ? -.18 : .18;
     hand.add(thumb);
     fingers.push(thumb);
     hand.userData.fingers = fingers;
@@ -153,43 +249,46 @@
     hand.userData.fingers.forEach((finger, index) => {
       const multiplier = index === 4 ? 0.75 : 1;
       finger.userData.joints.forEach((joint, jointIndex) => {
-        joint.rotation.x = amount * multiplier * (0.45 + jointIndex * 0.22);
+        joint.rotation.x =
+          amount * multiplier * (0.38 + jointIndex * 0.26) +
+          (index < 4 ? index * .018 : 0);
       });
     });
   }
 
   function makeArm(materials, side) {
     const shoulder = new THREE.Group();
-    const upper = mesh(
-      new THREE.CapsuleGeometry(0.3, 1.05, 6, 10),
-      materials.fabric,
-      [0, -0.7, 0],
+    const sleeve = taperedSegment(materials.fabric, 1.04, .21, .31);
+    sleeve.position.y = -.62;
+    const sleeveCuff = mesh(
+      new THREE.TorusGeometry(.235, .055, 8, 18),
+      materials.ochreDark,
+      [0, -1.14, 0],
     );
-    const elbow = mesh(new THREE.SphereGeometry(0.31, 16, 12), materials.wood, [
+    sleeveCuff.rotation.x = Math.PI / 2;
+    const elbow = mesh(new THREE.SphereGeometry(0.24, 16, 12), materials.wood, [
       0,
-      -1.38,
+      -1.29,
       0,
     ]);
     const forearmPivot = new THREE.Group();
-    forearmPivot.position.y = -1.38;
-    const forearm = mesh(
-      new THREE.CapsuleGeometry(0.25, 0.95, 6, 10),
-      materials.wood,
-      [0, -0.63, 0],
-      [1, 1, 0.9],
-    );
-    const wrist = mesh(new THREE.SphereGeometry(0.23, 14, 10), materials.wood, [
+    forearmPivot.position.y = -1.29;
+    const forearm = taperedSegment(materials.wood, 1.0, .16, .235);
+    forearm.position.y = -.56;
+    forearm.scale.z = .86;
+    const wrist = mesh(new THREE.SphereGeometry(0.17, 14, 10), materials.wood, [
       0,
-      -1.25,
+      -1.08,
       0,
     ]);
     const handPivot = new THREE.Group();
-    handPivot.position.y = -1.34;
+    handPivot.position.y = -1.18;
     const hand = makeHand(materials.wood, side < 0);
     hand.rotation.z = Math.PI;
+    hand.scale.setScalar(.88);
     handPivot.add(hand);
     forearmPivot.add(forearm, wrist, handPivot);
-    shoulder.add(upper, elbow, forearmPivot);
+    shoulder.add(sleeve, sleeveCuff, elbow, forearmPivot);
     shoulder.userData.forearm = forearmPivot;
     shoulder.userData.handPivot = handPivot;
     shoulder.userData.hand = hand;
@@ -199,60 +298,143 @@
   function makeConeCap(materials) {
     const cap = new THREE.Group();
     const crown = mesh(
-      new THREE.SphereGeometry(0.86, 24, 16),
+      new THREE.SphereGeometry(0.78, 28, 18),
       materials.fabric,
-      [0, 0.02, 0],
-      [1, 0.42, 0.88],
+      [0, 0.01, -0.015],
+      [1, 0.38, 0.92],
     );
-    const horn = mesh(
-      new THREE.ConeGeometry(0.43, 1.45, 16, 5, true),
-      materials.fabric,
-      [0.34, 0.61, 0],
+    const browBand = mesh(
+      new THREE.TorusGeometry(.66, .09, 8, 32, Math.PI * 1.7),
+      materials.fabricDark,
+      [0, -.13, .04],
     );
-    horn.rotation.z = -0.55;
-    horn.rotation.x = 0.15;
-    const bell = mesh(new THREE.SphereGeometry(0.15, 14, 10), materials.gold, [
-      0.72,
-      1.16,
-      0,
+    browBand.rotation.z = Math.PI * .15;
+    const curve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(.14, .12, -.03),
+      new THREE.Vector3(.42, .28, -.03),
+      new THREE.Vector3(.55, .55, -.02),
+      new THREE.Vector3(.46, .78, .01),
+      new THREE.Vector3(.28, .88, .04),
     ]);
-    cap.add(crown, horn, bell);
+    const horn = mesh(
+      new THREE.TubeGeometry(curve, 26, .17, 10, false),
+      materials.fabric,
+    );
+    const hornTip = mesh(
+      new THREE.ConeGeometry(.17, .45, 14),
+      materials.fabricDark,
+      [.17, 1.02, .04],
+    );
+    hornTip.rotation.z = .62;
+    const bell = mesh(new THREE.SphereGeometry(0.15, 14, 10), materials.gold, [
+      .01,
+      1.18,
+      .06,
+    ]);
+    const bellCollar = mesh(
+      new THREE.TorusGeometry(.11, .026, 6, 14),
+      materials.leather,
+      [.01, 1.09, .06],
+    );
+    cap.add(crown, browBand, horn, hornTip, bellCollar, bell);
     return cap;
   }
 
   function makeCompanion(materials) {
     const group = new THREE.Group();
-    const body = mesh(new THREE.SphereGeometry(0.31, 14, 10), materials.fabricDark, [
+    const body = mesh(new THREE.SphereGeometry(0.3, 18, 12), materials.olive, [
       0,
       0,
       0,
-    ], [0.8, 1.25, 0.7]);
-    const head = mesh(new THREE.SphereGeometry(0.24, 14, 10), materials.wood, [
+    ], [0.82, 1.28, 0.7]);
+    const vest = mesh(new THREE.SphereGeometry(.28, 16, 12), materials.fabricDark, [
       0,
-      0.48,
+      .03,
+      .17,
+    ], [.7, 1.05, .32]);
+    const head = mesh(new THREE.SphereGeometry(0.28, 18, 14), materials.wood, [
       0,
-    ], [0.85, 1.15, 0.85]);
-    const nose = mesh(new THREE.ConeGeometry(0.08, 0.28, 10), materials.wood, [
+      0.51,
       0,
-      0.46,
-      0.24,
+    ], [0.82, 1.14, 0.78]);
+    const nose = mesh(new THREE.SphereGeometry(.08, 12, 8), materials.woodLight, [
+      0,
+      .45,
+      .26,
+    ], [.72, .72, 1.45]);
+    const cap = mesh(new THREE.SphereGeometry(.29, 16, 10), materials.fabric, [
+      0,
+      .76,
+      -.01,
+    ], [1, .42, .9]);
+    const hoodTip = mesh(new THREE.ConeGeometry(.12, .42, 12), materials.fabric, [
+      -.12,
+      .98,
+      0,
     ]);
-    nose.rotation.x = Math.PI / 2;
-    const cap = mesh(new THREE.ConeGeometry(0.27, 0.48, 12), materials.fabric, [
-      -0.06,
-      0.79,
-      0,
-    ]);
-    cap.rotation.z = 0.25;
-    const leftEye = mesh(new THREE.SphereGeometry(0.06, 10, 8), materials.eye, [
+    hoodTip.rotation.z = .34;
+    const leftEye = mesh(new THREE.SphereGeometry(0.065, 10, 8), materials.eye, [
       -0.085,
       0.57,
-      0.2,
+      0.215,
     ]);
     const rightEye = leftEye.clone();
     rightEye.position.x = 0.085;
-    group.add(body, head, nose, cap, leftEye, rightEye);
-    group.scale.setScalar(0.9);
+    rightEye.position.y = .55;
+    const leftPupil = mesh(new THREE.SphereGeometry(.026, 8, 6), materials.pupil, [
+      -.084, .56, .273,
+    ]);
+    const rightPupil = leftPupil.clone();
+    rightPupil.position.x = .084;
+    rightPupil.position.y = .54;
+    const eyelid = mesh(new THREE.SphereGeometry(.07, 10, 8), materials.woodLight, [
+      -.085, .61, .25,
+    ], [1.1, .4, .6]);
+    const otherEyelid = eyelid.clone();
+    otherEyelid.position.x = .085;
+    otherEyelid.position.y = .59;
+    const smile = mesh(
+      new THREE.TorusGeometry(0.1, 0.018, 6, 14, Math.PI),
+      materials.leather,
+      [0, 0.36, 0.22],
+    );
+    smile.rotation.z = Math.PI;
+    const bell = mesh(new THREE.SphereGeometry(0.065, 10, 8), materials.gold, [
+      -.2,
+      1.17,
+      0,
+    ]);
+    const arms = new THREE.Group();
+    [-1, 1].forEach((side) => {
+      const arm = taperedSegment(materials.ochre, .34, .045, .065);
+      arm.position.set(side * .25, .06, .08);
+      arm.rotation.z = side * -.72;
+      const hand = mesh(
+        new THREE.SphereGeometry(.075, 10, 8),
+        materials.woodLight,
+        [side * .39, -.07, .12],
+        [1, 1.35, .75],
+      );
+      arms.add(arm, hand);
+    });
+    group.add(
+      body,
+      vest,
+      head,
+      nose,
+      cap,
+      hoodTip,
+      leftEye,
+      rightEye,
+      leftPupil,
+      rightPupil,
+      eyelid,
+      otherEyelid,
+      smile,
+      bell,
+      arms,
+    );
+    group.scale.setScalar(1.22);
     return group;
   }
 
@@ -262,34 +444,59 @@
     puppet.add(body);
 
     const torso = mesh(
-      new THREE.CapsuleGeometry(1.05, 1.35, 8, 18),
+      new THREE.CapsuleGeometry(.88, 1.22, 9, 20),
       materials.fabric,
-      [0, -1.16, 0],
-      [1.0, 1.0, 0.62],
+      [0, -1.03, 0],
+      [1.04, 1, .68],
     );
-    const ochrePanel = mesh(
-      roundedBox(0.62, 1.85, 0.06, 0.12, materials.ochre),
+    const waist = mesh(
+      new THREE.CylinderGeometry(.66, .82, .62, 18, 2),
+      materials.olive,
+      [0, -1.88, 0],
+      [1, 1, .72],
+    );
+    const leftPanel = mesh(
+      roundedBox(.52, 1.4, .055, .18, materials.fabricDark),
+      materials.fabricDark,
+      [-.25, -1.12, .7],
+    );
+    leftPanel.rotation.z = -.04;
+    const rightPanel = mesh(
+      roundedBox(.5, 1.34, .06, .18, materials.ochre),
       materials.ochre,
-      [0.25, -1.08, 0.67],
+      [.27, -1.08, .705],
+    );
+    rightPanel.rotation.z = .055;
+    const belt = mesh(
+      new THREE.TorusGeometry(.72, .09, 8, 28, Math.PI),
+      materials.leather,
+      [0, -1.72, .14],
+      [1, 1, .68],
+    );
+    belt.rotation.x = Math.PI / 2;
+    const beltBuckle = mesh(
+      new THREE.TorusGeometry(.13, .035, 6, 16),
+      materials.gold,
+      [0, -1.72, .69],
     );
     const collar = new THREE.Group();
     for (let i = 0; i < 5; i += 1) {
       const flap = mesh(
-        new THREE.ConeGeometry(0.29, 0.7, 12),
+        new THREE.ConeGeometry(.24, .58, 12),
         i % 2 ? materials.fabricDark : materials.fabric,
-        [(i - 2) * 0.42, -0.05, 0.2 + Math.abs(i - 2) * -0.04],
+        [(i - 2) * .34, -.03, .2 + Math.abs(i - 2) * -.04],
       );
       flap.rotation.z = Math.PI;
       flap.rotation.x = -0.25;
       collar.add(flap);
       const bell = mesh(new THREE.SphereGeometry(0.1, 12, 8), materials.gold, [
-        (i - 2) * 0.42,
-        -0.42,
-        0.35,
+        (i - 2) * .34,
+        -.34,
+        .36,
       ]);
       collar.add(bell);
     }
-    body.add(torso, ochrePanel, collar);
+    body.add(torso, waist, leftPanel, rightPanel, belt, beltBuckle, collar);
 
     const neck = mesh(new THREE.CylinderGeometry(0.4, 0.47, 0.65, 16), materials.wood, [
       0,
@@ -302,29 +509,39 @@
     headPivot.position.set(0, 1.02, 0);
     body.add(headPivot);
     const face = mesh(
-      new THREE.CapsuleGeometry(0.69, 1.3, 8, 20),
+      new THREE.CapsuleGeometry(.65, 1.42, 10, 24),
       materials.wood,
-      [0, 0.33, 0],
-      [0.67, 1.26, 0.68],
+      [0, .32, 0],
+      [.62, 1.28, .72],
     );
     face.rotation.z = Math.PI;
     const nose = mesh(
-      new THREE.ConeGeometry(0.3, 1.62, 18),
+      new THREE.CylinderGeometry(.12, .205, 1.13, 18, 5),
       materials.woodLight,
-      [0, 0.18, 0.72],
-      [0.76, 1, 0.84],
+      [0, .18, .74],
+      [.82, 1, 1],
     );
-    nose.rotation.z = Math.PI;
-    nose.rotation.x = -0.13;
-    const leftEar = mesh(new THREE.ConeGeometry(0.32, 0.72, 14), materials.wood, [
-      -0.72,
+    nose.rotation.x = -.09;
+    const leftEar = mesh(new THREE.ConeGeometry(0.36, 0.84, 16), materials.wood, [
+      -0.74,
       0.55,
       0,
     ]);
     leftEar.rotation.z = Math.PI / 2;
     const rightEar = leftEar.clone();
-    rightEar.position.x = 0.72;
+    rightEar.position.x = 0.74;
     rightEar.rotation.z = -Math.PI / 2;
+    const innerEars = new THREE.Group();
+    [-1, 1].forEach((side) => {
+      innerEars.add(
+        mesh(
+          new THREE.SphereGeometry(.18, 12, 9),
+          materials.woodDark,
+          [side * .69, .55, .08],
+          [.45, 1.1, .24],
+        ),
+      );
+    });
 
     const jawPivot = new THREE.Group();
     jawPivot.position.set(0, -0.35, 0.48);
@@ -346,10 +563,17 @@
       ], [1, 0.72, 0.55]);
       const pupil = mesh(new THREE.SphereGeometry(0.065, 12, 8), materials.pupil, [
         side * 0.29,
-        0.56,
+        side < 0 ? 0.55 : 0.58,
         0.72,
       ]);
-      eyes.add(eye, pupil);
+      const lid = mesh(
+        new THREE.SphereGeometry(0.17, 16, 10),
+        materials.woodLight,
+        [side * 0.29, side < 0 ? 0.64 : 0.67, 0.675],
+        [1.08, .38, .42],
+      );
+      lid.rotation.z = side * .09;
+      eyes.add(eye, pupil, lid);
     });
     const brows = new THREE.Group();
     [-1, 1].forEach((side) => {
@@ -378,6 +602,41 @@
       [0, -0.46, 0.72],
     );
     mouth.rotation.z = Math.PI / 2;
+    const forehead = mesh(
+      new THREE.SphereGeometry(0.5, 18, 12),
+      materials.woodLight,
+      [0, 0.96, 0.16],
+      [.82, .48, .7],
+    );
+    const noseTip = mesh(
+      new THREE.SphereGeometry(0.22, 16, 12),
+      materials.woodLight,
+      [0, -.4, .87],
+      [.82, .68, 1.28],
+    );
+    const noseHook = mesh(
+      new THREE.CapsuleGeometry(.105, .24, 5, 12),
+      materials.woodLight,
+      [0, -.49, .97],
+      [.82, 1, .88],
+    );
+    noseHook.rotation.x = 1.1;
+    const chin = mesh(
+      new THREE.SphereGeometry(0.29, 16, 12),
+      materials.wood,
+      [0, -0.72, 0.38],
+      [1.25, .68, .72],
+    );
+    const templePins = new THREE.Group();
+    [-1, 1].forEach((side) => {
+      templePins.add(
+        mesh(
+          new THREE.CylinderGeometry(0.075, 0.075, 0.055, 14),
+          materials.gold,
+          [side * .5, .13, .6],
+        ),
+      );
+    });
     const cap = makeConeCap(materials);
     cap.position.y = 1.13;
     headPivot.add(
@@ -385,24 +644,41 @@
       nose,
       leftEar,
       rightEar,
+      innerEars,
       jawPivot,
       eyes,
       brows,
       cheeks,
       mouth,
+      forehead,
+      noseTip,
+      noseHook,
+      chin,
+      templePins,
       cap,
     );
 
     const leftArm = makeArm(materials, -1);
     const rightArm = makeArm(materials, 1);
-    leftArm.position.set(-1.18, -0.08, 0);
-    rightArm.position.set(1.18, -0.08, 0);
+    leftArm.position.set(-1.18, 0.42, 0);
+    rightArm.position.set(1.18, 0.48, 0);
     body.add(leftArm, rightArm);
 
     const companion = makeCompanion(materials);
-    companion.position.set(-1.16, -0.18, 0.7);
+    companion.position.set(-1.58, 0.02, 0.76);
     companion.rotation.z = 0.18;
-    body.add(companion);
+    const presentationCard = createCard(
+      materials,
+      'assets/assets/images/card_back.png',
+    );
+    presentationCard.scale.setScalar(.78);
+    presentationCard.position.set(-.7, -.42, 1.04);
+    presentationCard.rotation.set(.03, -.08, -.05);
+    const tableCard = createCard(materials, 'assets/assets/images/card_back.png');
+    tableCard.scale.setScalar(.68);
+    tableCard.position.set(1.72, -1.86, 1.0);
+    tableCard.rotation.set(-1.18, .08, -.16);
+    body.add(companion, presentationCard, tableCard);
 
     puppet.userData = {
       body,
@@ -412,12 +688,14 @@
       leftArm,
       rightArm,
       companion,
+      presentationCard,
+      tableCard,
     };
     return puppet;
   }
 
   function makeString(material) {
-    const string = mesh(new THREE.CylinderGeometry(0.012, 0.012, 1, 6), material);
+    const string = mesh(new THREE.CylinderGeometry(0.008, 0.008, 1, 6), material);
     string.frustumCulled = false;
     return string;
   }
@@ -502,8 +780,8 @@
       this.updateDiagnostic();
       this.scene = new THREE.Scene();
       this.camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
-      this.camera.position.set(0, 1.2, 15.2);
-      this.camera.lookAt(0, 0.5, 0);
+      this.camera.position.set(0, 1.65, 10.8);
+      this.camera.lookAt(0, 0.35, 0);
 
       this.renderer = new THREE.WebGLRenderer({
         alpha: true,
@@ -528,12 +806,60 @@
         this.updateDiagnostic('WebGL context lost');
       });
 
+      const honeyWood = makeSurfaceTexture('#9d5a29', '#4a2414', 41, 'wood');
+      const lightWood = makeSurfaceTexture('#c0803f', '#61331a', 73, 'wood');
+      const darkWood = makeSurfaceTexture('#5b301c', '#26120c', 97, 'wood');
+      const burgundy = makeSurfaceTexture('#681a25', '#270a10', 113, 'cloth');
+      const deepBurgundy = makeSurfaceTexture('#351018', '#140508', 131, 'cloth');
+      const ochre = makeSurfaceTexture('#c98b22', '#70420d', 149, 'cloth');
+      const olive = makeSurfaceTexture('#4c5228', '#20230f', 167, 'cloth');
       this.materials = {
-        wood: new THREE.MeshStandardMaterial({ color: 0x8f4d22, roughness: 0.68 }),
-        woodLight: new THREE.MeshStandardMaterial({ color: 0xc47a32, roughness: 0.62 }),
-        fabric: new THREE.MeshStandardMaterial({ color: 0x641b26, roughness: 0.76 }),
-        fabricDark: new THREE.MeshStandardMaterial({ color: 0x350f19, roughness: 0.8 }),
-        ochre: new THREE.MeshStandardMaterial({ color: 0xd49317, roughness: 0.72 }),
+        wood: new THREE.MeshStandardMaterial({
+          map: honeyWood,
+          bumpMap: honeyWood,
+          bumpScale: .025,
+          roughness: .54,
+        }),
+        woodLight: new THREE.MeshStandardMaterial({
+          map: lightWood,
+          bumpMap: lightWood,
+          bumpScale: .022,
+          roughness: .5,
+        }),
+        woodDark: new THREE.MeshStandardMaterial({
+          map: darkWood,
+          bumpMap: darkWood,
+          bumpScale: .02,
+          roughness: .62,
+        }),
+        fabric: new THREE.MeshStandardMaterial({
+          map: burgundy,
+          bumpMap: burgundy,
+          bumpScale: .012,
+          roughness: .74,
+        }),
+        fabricDark: new THREE.MeshStandardMaterial({
+          map: deepBurgundy,
+          bumpMap: deepBurgundy,
+          bumpScale: .012,
+          roughness: .8,
+        }),
+        ochre: new THREE.MeshStandardMaterial({
+          map: ochre,
+          bumpMap: ochre,
+          bumpScale: .01,
+          roughness: .7,
+        }),
+        ochreDark: new THREE.MeshStandardMaterial({
+          color: 0x6f4518,
+          roughness: .72,
+        }),
+        olive: new THREE.MeshStandardMaterial({
+          map: olive,
+          bumpMap: olive,
+          bumpScale: .01,
+          roughness: .76,
+        }),
         leather: new THREE.MeshStandardMaterial({ color: 0x21100c, roughness: 0.66 }),
         gold: new THREE.MeshStandardMaterial({
           color: 0xf4af17,
@@ -542,13 +868,18 @@
         }),
         eye: new THREE.MeshStandardMaterial({ color: 0xf1e5c9, roughness: 0.4 }),
         pupil: new THREE.MeshStandardMaterial({ color: 0x160b08, roughness: 0.4 }),
-        string: new THREE.MeshBasicMaterial({ color: 0x8c724e }),
+        string: new THREE.MeshBasicMaterial({
+          color: 0xc2a274,
+          transparent: true,
+          opacity: 0.12,
+          depthWrite: false,
+        }),
         cardEdge: new THREE.MeshStandardMaterial({ color: 0xe7d4ad, roughness: 0.52 }),
         cardBack: new THREE.MeshStandardMaterial({ color: 0x7d1b16, roughness: 0.7 }),
       };
 
       this.puppet = makePuppet(this.materials);
-      this.puppet.position.set(0, 0.2, 0);
+      this.puppet.position.set(0, -0.12, 0);
       this.puppet.traverse((object) => {
         object.visible = true;
         if (object.isMesh) object.frustumCulled = false;
@@ -563,7 +894,7 @@
       this.card.visible = false;
       this.scene.add(this.card);
 
-      this.strings = Array.from({ length: 5 }, () => makeString(this.materials.string));
+      this.strings = Array.from({ length: 4 }, () => makeString(this.materials.string));
       this.strings.forEach((string) => this.scene.add(string));
 
       this.setupLights();
@@ -650,23 +981,11 @@
       this.renderer.setSize(width, height, false);
       this.camera.aspect = width / height;
       const narrow = width < 720;
-      this.camera.fov = narrow ? 42 : 30;
-      this.puppet.scale.setScalar(narrow ? 0.86 : 0.98);
-      this.puppet.position.y = narrow ? 0.55 : 0.2;
-      const bounds = new THREE.Box3().setFromObject(this.puppet);
-      const size = bounds.getSize(new THREE.Vector3());
-      const center = bounds.getCenter(new THREE.Vector3());
-      const verticalFov = THREE.MathUtils.degToRad(this.camera.fov);
-      const horizontalFov = 2 * Math.atan(
-        Math.tan(verticalFov / 2) * this.camera.aspect,
-      );
-      const distanceForHeight = (size.y / 2) /
-        (Math.tan(verticalFov / 2) * 0.86);
-      const distanceForWidth = (size.x / 2) /
-        (Math.tan(horizontalFov / 2) * 0.8);
-      const distance = Math.max(distanceForHeight, distanceForWidth, 5.5);
-      this.camera.position.set(center.x, center.y, center.z + distance);
-      this.camera.lookAt(center);
+      this.camera.fov = narrow ? 36 : 30;
+      this.puppet.scale.setScalar(narrow ? .92 : 1.1);
+      this.puppet.position.y = narrow ? .28 : -.12;
+      this.camera.position.set(0, narrow ? 1.5 : 1.65, narrow ? 11.3 : 10.8);
+      this.camera.lookAt(0, narrow ? .45 : .35, 0);
       this.camera.updateProjectionMatrix();
       this.host.dataset.canvasWidth = String(width);
       this.host.dataset.canvasHeight = String(height);
@@ -674,6 +993,7 @@
 
     deal(imageUrl, direction) {
       if (this.animation) return false;
+      this.puppet.userData.presentationCard.visible = false;
       updateCardTexture(this.card, imageUrl);
       this.animation = {
         kind: direction === 'receive' ? 'receive' : 'deal',
@@ -683,6 +1003,7 @@
         released: false,
       };
       this.status.animation = 'DEALING';
+      this.host.dataset.dealerAnimation = 'dealing';
       this.updateDiagnostic();
       this.card.visible = true;
       this.scene.attach(this.card);
@@ -715,10 +1036,11 @@
       data.head.rotation.x = clamp(this.pointer.y * 0.11, -0.08, 0.08);
       data.jaw.rotation.x = 0.03 + Math.max(0, Math.sin(time * 0.8)) * 0.025;
       data.companion.rotation.z = 0.18 + Math.sin(time * 1.1) * 0.035;
-      this.setArmPose(data.leftArm, -0.28, -0.08, -0.25, 0.18, 0.08, -0.16);
-      this.setArmPose(data.rightArm, -0.36, 0.08, 0.62, -0.12, -0.08, -0.1);
-      curlHand(data.leftArm.userData.hand, 0.34);
-      curlHand(data.rightArm.userData.hand, 0.28);
+      data.head.rotation.z = -.035 + Math.sin(time * .48) * .012;
+      this.setArmPose(data.leftArm, -0.66, -0.18, 1.88, 0.28, -0.36, -0.2);
+      this.setArmPose(data.rightArm, 0.48, 0.14, -0.5, -0.2, 0.1, -0.05);
+      curlHand(data.leftArm.userData.hand, 0.72);
+      curlHand(data.rightArm.userData.hand, 0.48);
     }
 
     updateDeal(progress) {
@@ -818,10 +1140,9 @@
         data.head,
         data.leftArm,
         data.rightArm,
-        data.leftArm.userData.handPivot,
         data.rightArm.userData.handPivot,
       ];
-      const anchors = [-0.55, -1.3, 1.3, -2.1, 2.1];
+      const anchors = [-0.5, -1.42, 1.34, 2.05];
       targets.forEach((target, index) => {
         const to = new THREE.Vector3();
         target.getWorldPosition(to);
@@ -861,8 +1182,10 @@
         if (progress >= 1) {
           this.card.visible = false;
           this.scene.attach(this.card);
+          this.puppet.userData.presentationCard.visible = true;
           this.animation = null;
           this.status.animation = 'IDLE';
+          this.host.dataset.dealerAnimation = 'idle';
           this.updateDiagnostic();
         }
       }

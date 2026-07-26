@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 
+import '../data/card_categories.dart';
 import '../models/card_image_model.dart';
 import '../models/deck_model.dart';
 import '../models/game_state_model.dart';
@@ -18,19 +19,61 @@ class GameProvider extends ChangeNotifier {
   bool get hasSavedGame => _state != null;
 
   Future<void> load() async {
-    _state = await _storage.load();
+    final loaded = await _storage.load();
+    _state = loaded == null ? null : _normalizeCategories(loaded);
+    final state = _state;
+    if (state != null &&
+        state.players.any((player) => player.hand.length < 5) &&
+        state.drawPile.isNotEmpty) {
+      final drawPile = [...state.drawPile];
+      final players = <PlayerModel>[];
+      for (final player in state.players) {
+        final hand = [...player.hand];
+        while (hand.length < 5 && drawPile.isNotEmpty) {
+          hand.add(drawPile.removeLast());
+        }
+        players.add(player.copyWith(hand: hand));
+      }
+      _state = state.copyWith(drawPile: drawPile, players: players);
+      await _save();
+    }
     notifyListeners();
   }
 
+  GameStateModel _normalizeCategories(GameStateModel state) {
+    CardImageModel normalize(CardImageModel card) {
+      final category = cardCategoryForStableCard(card.id, card.category);
+      return card.copyWith(
+        category: category.label,
+        colour: category.colour,
+      );
+    }
+
+    final top = normalize(state.topCard);
+    return state.copyWith(
+      topCard: top,
+      currentCategory: top.category,
+      drawPile: state.drawPile.map(normalize).toList(),
+      discardPile: state.discardPile.map(normalize).toList(),
+      players: [
+        for (final player in state.players)
+          player.copyWith(hand: player.hand.map(normalize).toList()),
+      ],
+    );
+  }
+
   Future<bool> start(Deck deck, {int playerCount = 2}) async {
-    if (deck.cards.length < playerCount * 2 + 1) {
-      _message = 'This deck needs at least ${playerCount * 2 + 1} cards.';
+    const initialHandSize = 5;
+    if (deck.cards.length < playerCount * initialHandSize + 1) {
+      _message =
+          'This deck needs at least '
+          '${playerCount * initialHandSize + 1} cards.';
       notifyListeners();
       return false;
     }
     final shuffled = [...deck.cards]..shuffle(Random.secure());
     final hands = List.generate(playerCount, (_) => <CardImageModel>[]);
-    for (var round = 0; round < 2; round++) {
+    for (var round = 0; round < initialHandSize; round++) {
       for (final hand in hands) {
         hand.add(shuffled.removeLast());
       }

@@ -7,8 +7,13 @@ class WebGlCardCastleView extends StatelessWidget {
     required this.cards,
     required this.focusedCardId,
     required this.shuffleSeed,
+    required this.activeCategory,
+    required this.fullscreenRequestId,
     required this.onCardSelected,
     required this.onCardOpened,
+    required this.onCategoryChanged,
+    required this.onHomeRequested,
+    required this.onFullscreenChanged,
     required this.fallback,
     super.key,
   });
@@ -16,8 +21,13 @@ class WebGlCardCastleView extends StatelessWidget {
   final List<CardImageModel> cards;
   final String? focusedCardId;
   final int shuffleSeed;
+  final String activeCategory;
+  final int fullscreenRequestId;
   final ValueChanged<String> onCardSelected;
   final ValueChanged<String> onCardOpened;
+  final ValueChanged<String> onCategoryChanged;
+  final VoidCallback onHomeRequested;
+  final ValueChanged<bool> onFullscreenChanged;
   final Widget fallback;
 
   @override

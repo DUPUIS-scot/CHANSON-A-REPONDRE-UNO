@@ -11,16 +11,16 @@ class BackgroundProvider extends ChangeNotifier {
   final BackgroundImportService _importService;
   static const _key = 'background_settings';
 
-  BackgroundMediaType type = BackgroundMediaType.image;
+  BackgroundMediaType type = BackgroundMediaType.video;
   String? importedPath;
-  String currentFilename = 'main_street_background.png';
+  String currentFilename = 'home_background.mp4';
   double darkOverlay = .28;
   bool muteVideo = true;
 
   String get imagePath =>
       type == BackgroundMediaType.image && importedPath != null
       ? importedPath!
-      : 'assets/images/main_street_background.png';
+      : 'assets/images/home_background.png';
   String get videoPath =>
       type == BackgroundMediaType.video && importedPath != null
       ? importedPath!
@@ -61,9 +61,9 @@ class BackgroundProvider extends ChangeNotifier {
 
   Future<void> restoreDefault() async {
     final previous = importedPath;
-    type = BackgroundMediaType.image;
+    type = BackgroundMediaType.video;
     importedPath = null;
-    currentFilename = 'main_street_background.png';
+    currentFilename = 'home_background.mp4';
     await _persist();
     await _importService.deleteIfManaged(previous);
   }

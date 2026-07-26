@@ -1,4 +1,8 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uno_chanson_2/app.dart';
+import 'package:uno_chanson_2/core/app_router.dart';
 import 'package:uno_chanson_2/models/card_image_model.dart';
 import 'package:uno_chanson_2/models/deck_model.dart';
 import 'package:uno_chanson_2/providers/card_browser_provider.dart';
@@ -64,6 +68,50 @@ void main() {
       expect(browser.categoryFilter, 'Sauvage');
       expect(browser.selectedCardId, 'final-84-03');
       expect(browser.visibleHand.first.id, 'final-84-03');
+    });
+
+    testWidgets('Grid, Castle, and List switching preserves Search state', (
+      tester,
+    ) async {
+      SharedPreferences.setMockInitialValues({});
+      await tester.pumpWidget(
+        const ChansonUnoApp(aiBackendUrlOverride: 'https://api.test'),
+      );
+      await tester.pump(const Duration(seconds: 2));
+      AppRouter.router.go(AppRoutes.search);
+      await tester.pumpAndSettle();
+
+      String selectedMode() {
+        final widget = tester.widget<Widget>(
+          find.byWidgetPredicate((widget) => widget is SegmentedButton),
+        );
+        final control = widget as SegmentedButton;
+        return control.selected.single.toString();
+      }
+
+      expect(selectedMode(), contains('castle'));
+
+      await tester.enterText(find.byType(TextField), 'lumiere');
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.byIcon(Icons.grid_view_rounded));
+      await tester.pumpAndSettle();
+      expect(selectedMode(), contains('grid'));
+
+      await tester.tap(find.byIcon(Icons.castle_rounded));
+      await tester.pumpAndSettle();
+      expect(selectedMode(), contains('castle'));
+
+      await tester.tap(find.byIcon(Icons.view_list_rounded));
+      await tester.pumpAndSettle();
+      expect(selectedMode(), contains('list'));
+
+      await tester.tap(find.byIcon(Icons.castle_rounded));
+      await tester.pumpAndSettle();
+      expect(selectedMode(), contains('castle'));
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).controller?.text,
+        'lumiere',
+      );
     });
   });
 }

@@ -36,7 +36,7 @@ class _CardSelectionDialogState extends State<CardSelectionDialog> {
               onChanged: (value) => setState(() => query = value),
               decoration: const InputDecoration(
                 prefixIcon: Icon(Icons.search),
-                labelText: 'Search cards by title',
+                labelText: 'Search cards',
               ),
             ),
             const SizedBox(height: 12),
@@ -74,8 +74,8 @@ class _CardSelectionDialogState extends State<CardSelectionDialog> {
                                   children: [
                                     Expanded(
                                       child: Text(
-                                        card.title,
-                                        maxLines: 2,
+                                        card.category,
+                                        maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                     ),

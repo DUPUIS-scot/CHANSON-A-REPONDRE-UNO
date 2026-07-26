@@ -11,7 +11,7 @@ class BackgroundWidget extends StatefulWidget {
     required this.type,
     this.imagePath = 'assets/images/main_street_background.png',
     this.videoPath = 'assets/videos/background.mp4',
-    this.fallbackImagePath = 'assets/images/background.png',
+    this.fallbackImagePath = 'assets/images/home_background.png',
     this.muted = true,
     super.key,
   });

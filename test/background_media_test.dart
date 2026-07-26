@@ -54,7 +54,7 @@ void main() {
     final storage = LocalStorageService();
     final first = SettingsProvider(storage);
     await first.load();
-    expect(first.backgroundType, 'PNG');
+    expect(first.backgroundType, 'VIDEO');
     await first.update(background: 'MP4');
     expect(first.backgroundType, 'MP4');
 

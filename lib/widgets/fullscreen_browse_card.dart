@@ -22,7 +22,7 @@ class FullscreenBrowseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Semantics(
     label:
-        'Card $position of $total, ${card.displayTitle}, $deckName, '
+        'Card $position of $total, ${card.category}, '
         '${card.isFavourite ? 'favourite' : 'not favourite'}, '
         '${card.transcription == null && card.cleanedTranscription == null ? 'not transcribed' : 'transcribed'}',
     child: ZoomableCardView(
