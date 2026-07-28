@@ -30,9 +30,6 @@
     body.fullscreen-castle #fullscreen-controls{display:flex}
     body.fullscreen-castle #enter-fullscreen{display:none}
     body.fullscreen-castle #navigation{opacity:.62}
-    #focused-summary{display:flex;align-items:center;gap:7px;max-width:210px;padding:5px 8px;border:1px solid #b77d0c;border-radius:8px;background:#05090dee;color:#fff}
-    #focused-summary img{width:34px;height:48px;object-fit:contain;border-radius:3px}
-    #focused-summary span{max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     @media(max-width:720px){
       #navigation{width:auto;max-width:104px;opacity:.82}
       #navigation span:nth-of-type(n+3){display:none}
@@ -54,15 +51,6 @@
     <button id="enter-fullscreen" type="button">⛶ PLEIN ÉCRAN 3D</button>
     <div id="fullscreen-controls">
       <button id="exit-fullscreen" type="button">✕ QUITTER</button>
-      <button id="castle-home" type="button">⌂ ACCUEIL</button>
-      <select id="castle-category" aria-label="Catégorie"></select>
-      <button id="previous-card" type="button">←</button>
-      <div id="focused-summary">
-        <img id="focused-thumbnail" alt="">
-        <span id="focused-title">Aucune carte</span>
-      </div>
-      <button id="open-focused-card" type="button">AGRANDIR</button>
-      <button id="next-card" type="button">→</button>
     </div>
   </div>
   <script src="../vendor/three.min.js"></script>
@@ -515,7 +503,6 @@
       seeded(cards,shuffleSeed).slice(0,points.length).forEach((card,index)=>addCard(card,points[index]));
       document.body.dataset.meshCount=String(state.meshes.length);
       updateVisibleCards(focusedCardId);
-      updateCategoryControl();
       if(focusedCardId) focusCard(focusedCardId,animateFocus);
       pumpTextures();
     }
@@ -598,7 +585,6 @@
         });
         if(active) selected=mesh;
       });
-      updateFocusedSummary(selected?.userData.card || null);
       if(!selected) return;
       const look=selected.position.clone();
       const cameraTarget=look.clone()
@@ -618,33 +604,6 @@
       pointer.y=-((event.clientY-rect.top)/rect.height)*2+1;
       raycaster.setFromCamera(pointer,camera);
       return raycaster.intersectObjects(state.meshes,false)[0]?.object;
-    }
-
-    function updateCategoryControl() {
-      const control=document.getElementById('castle-category');
-      const categories=['TOUTES',...new Set(state.cards.map(card=>card.category.toUpperCase()))];
-      control.replaceChildren(...categories.map(category=>{
-        const option=document.createElement('option');
-        option.value=category;option.textContent=category;
-        option.selected=category===state.activeCategory;
-        return option;
-      }));
-    }
-
-    function updateFocusedSummary(card) {
-      document.getElementById('focused-title').textContent=card?.category||'Aucune carte';
-      const thumbnail=document.getElementById('focused-thumbnail');
-      thumbnail.src=card?.thumbnailUrl||'';
-      thumbnail.alt=card?`${card.category} card`:'';
-    }
-
-    function moveCardFocus(delta) {
-      const ids=state.meshes.map(mesh=>mesh.userData.card.id);
-      if(!ids.length)return;
-      let index=Math.max(0,ids.indexOf(state.focusedCardId));
-      index=(index+delta+ids.length)%ids.length;
-      focusCard(ids[index],true);
-      emit('cardSelected',{cardId:ids[index]});
     }
 
     function setFullscreenUi(active) {
@@ -826,15 +785,6 @@
         void exitCastleFullscreen();setTimeout(()=>emit('djWhoRequested'),60);
       });
       document.getElementById('exit-fullscreen').addEventListener('click',exitCastleFullscreen);
-      document.getElementById('castle-home').addEventListener('click',()=>{
-        void exitCastleFullscreen();setTimeout(()=>emit('homeRequested'),60);
-      });
-      document.getElementById('castle-category').addEventListener('change',event=>{
-        emit('categorySelected',{category:event.target.value});
-      });
-      document.getElementById('previous-card').addEventListener('click',()=>moveCardFocus(-1));
-      document.getElementById('next-card').addEventListener('click',()=>moveCardFocus(1));
-      document.getElementById('open-focused-card').addEventListener('click',openFocusedCard);
       document.addEventListener('fullscreenchange',()=>{
         setFullscreenUi(Boolean(document.fullscreenElement));
       });

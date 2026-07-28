@@ -72,7 +72,7 @@ void main() {
       expect(browser.visibleHand.first.id, 'final-84-03');
     });
 
-    testWidgets('Grid, Castle, and List switching preserves Search state', (
+    testWidgets('Search exposes the castle only and preserves query state', (
       tester,
     ) async {
       SharedPreferences.setMockInitialValues({});
@@ -83,34 +83,13 @@ void main() {
       AppRouter.router.go(AppRoutes.search);
       await tester.pumpAndSettle();
 
-      String selectedMode() {
-        final widget = tester.widget<Widget>(
-          find.byWidgetPredicate((widget) => widget is SegmentedButton),
-        );
-        final control = widget as SegmentedButton;
-        return control.selected.single.toString();
-      }
-
-      expect(selectedMode(), contains('castle'));
       expect(find.text('DJ WHO'), findsOneWidget);
+      expect(find.byType(SegmentedButton), findsNothing);
+      expect(find.byIcon(Icons.grid_view_rounded), findsNothing);
+      expect(find.byIcon(Icons.view_list_rounded), findsNothing);
 
       await tester.enterText(find.byType(TextField), 'lumiere');
       await tester.pump(const Duration(milliseconds: 300));
-      await tester.tap(find.byIcon(Icons.grid_view_rounded));
-      await tester.pumpAndSettle();
-      expect(selectedMode(), contains('grid'));
-
-      await tester.tap(find.byIcon(Icons.castle_rounded));
-      await tester.pumpAndSettle();
-      expect(selectedMode(), contains('castle'));
-
-      await tester.tap(find.byIcon(Icons.view_list_rounded));
-      await tester.pumpAndSettle();
-      expect(selectedMode(), contains('list'));
-
-      await tester.tap(find.byIcon(Icons.castle_rounded));
-      await tester.pumpAndSettle();
-      expect(selectedMode(), contains('castle'));
       expect(
         tester.widget<TextField>(find.byType(TextField)).controller?.text,
         'lumiere',
@@ -121,6 +100,9 @@ void main() {
       final castle = File(
         'web/card_castle/card_castle.html',
       ).readAsStringSync();
+      final searchScreen = File(
+        'lib/screens/search_screen.dart',
+      ).readAsStringSync();
       final backdrop = File('assets/images/search_castle_background.png');
       expect(castle, contains("emit('cardLongPressed',{cardId})"));
       expect(castle, contains("emit('djWhoRequested')"));
@@ -129,6 +111,16 @@ void main() {
       expect(castle, contains('buildSaltireFlag'));
       expect(castle, contains('bridgeLantern'));
       expect(castle, contains('updateVisibleCards'));
+      expect(castle, contains('id="exit-fullscreen"'));
+      expect(castle, isNot(contains('id="castle-category"')));
+      expect(castle, isNot(contains('id="focused-summary"')));
+      expect(castle, isNot(contains('id="previous-card"')));
+      expect(castle, isNot(contains('id="next-card"')));
+      expect(castle, isNot(contains('id="castle-home"')));
+      expect(searchScreen, isNot(contains('_SearchViewMode')));
+      expect(searchScreen, isNot(contains('SegmentedButton')));
+      expect(searchScreen, isNot(contains('_SearchCardTile')));
+      expect(searchScreen, isNot(contains('_SearchListRow')));
       expect(backdrop.existsSync(), isTrue);
       expect(backdrop.lengthSync(), 2709365);
       expect(castle, isNot(contains('id="hint"')));
