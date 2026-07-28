@@ -21,13 +21,10 @@ function positiveInteger(value, fallback, name, problems) {
 export function parseEnvironment(source, { allowTestValues = false } = {}) {
   const problems = [];
   const nodeEnvironment = (source.NODE_ENV || 'development').trim();
-  const openaiApiKey = (source.OPENAI_API_KEY || '').trim();
   const supabaseUrl = (source.SUPABASE_URL || '').trim();
   const supabasePublishableKey = (source.SUPABASE_PUBLISHABLE_KEY || '').trim();
-
-  if (!openaiApiKey || placeholderPattern.test(openaiApiKey)) {
-    problems.push('OPENAI_API_KEY is missing or contains a placeholder');
-  }
+  const supabaseServiceRoleKey = (source.SUPABASE_SERVICE_ROLE_KEY || '').trim();
+  const credentialEncryptionKey = (source.CREDENTIAL_ENCRYPTION_KEY || '').trim();
 
   let parsedSupabaseUrl;
   try {
@@ -54,6 +51,23 @@ export function parseEnvironment(source, { allowTestValues = false } = {}) {
     /service[_-]?role|sb_secret_/i.test(supabasePublishableKey)
   ) {
     problems.push('SUPABASE_PUBLISHABLE_KEY is missing or invalid');
+  }
+  if (
+    (!supabaseServiceRoleKey.startsWith('eyJ') &&
+      !supabaseServiceRoleKey.startsWith('sb_secret_') &&
+      !(allowTestValues && supabaseServiceRoleKey === 'test-service-role-key')) ||
+    /publishable|anon/i.test(supabaseServiceRoleKey)
+  ) {
+    problems.push('SUPABASE_SERVICE_ROLE_KEY is missing or invalid');
+  }
+  let decodedEncryptionKey;
+  try {
+    decodedEncryptionKey = Buffer.from(credentialEncryptionKey, 'base64');
+  } catch {
+    decodedEncryptionKey = null;
+  }
+  if (!decodedEncryptionKey || decodedEncryptionKey.length !== 32) {
+    problems.push('CREDENTIAL_ENCRYPTION_KEY must be a base64-encoded 32-byte key');
   }
 
   const allowedOrigins = (source.ALLOWED_ORIGINS || '')
@@ -101,10 +115,11 @@ export function parseEnvironment(source, { allowTestValues = false } = {}) {
   return Object.freeze({
     port,
     nodeEnvironment,
-    openaiApiKey,
     openaiModel: (source.OPENAI_MODEL || 'gpt-4o-mini').trim(),
     supabaseUrl,
     supabasePublishableKey,
+    supabaseServiceRoleKey,
+    credentialEncryptionKey,
     allowedOrigins,
     requestTimeoutMs,
     maxRequestBodyBytes,

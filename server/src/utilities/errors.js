@@ -12,7 +12,11 @@ export function mapUpstreamError(error) {
     return new AppError(504, 'UPSTREAM_TIMEOUT', 'The AI service took too long to respond.');
   }
   if (error?.status === 401) {
-    return new AppError(502, 'OPENAI_AUTHENTICATION_FAILED', 'The AI service is not configured correctly.');
+    return new AppError(
+      502,
+      'OPENAI_AUTHENTICATION_FAILED',
+      'OpenAI connection failed. Replace or reconnect your API key.',
+    );
   }
   if (error?.status === 429) {
     return new AppError(429, 'OPENAI_RATE_LIMITED', 'The AI service is temporarily busy. Try again later.');

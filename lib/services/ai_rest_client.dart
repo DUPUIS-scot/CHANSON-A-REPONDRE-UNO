@@ -149,6 +149,44 @@ class AiRestClient {
     );
   }
 
+  Future<Map<String, dynamic>> putJson(
+    String path,
+    Map<String, dynamic> body, {
+    Duration timeout = const Duration(seconds: 60),
+  }) async {
+    final uri = _uri(path);
+    _logRequest('PUT', uri);
+    return _decode(
+      await _runAuthenticated(
+        (authHeaders) => _client.put(
+          uri,
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            ...authHeaders,
+          },
+          body: jsonEncode(body),
+        ),
+        timeout,
+      ),
+    );
+  }
+
+  Future<void> delete(
+    String path, {
+    Duration timeout = const Duration(seconds: 30),
+  }) async {
+    final uri = _uri(path);
+    _logRequest('DELETE', uri);
+    final response = await _runAuthenticated(
+      (headers) => _client.delete(uri, headers: headers),
+      timeout,
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      _decode(response);
+    }
+  }
+
   Future<Map<String, dynamic>> postMultipart(
     String path, {
     required Map<String, String> fields,

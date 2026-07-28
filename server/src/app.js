@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 
 import { createAiRouter } from './routes/ai.js';
+import { createProfileRouter } from './routes/profile.js';
 import { AppError } from './utilities/errors.js';
 
 const safeRequestId = /^[A-Za-z0-9._:-]{1,128}$/;
@@ -39,7 +40,7 @@ export function createApp(environment, dependencies = {}) {
       if (!origin || allowedOrigins.has(origin)) return callback(null, true);
       return callback(new AppError(403, 'CORS_ORIGIN_DENIED', 'This origin is not allowed.'));
     },
-    methods: ['GET', 'POST', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'],
     exposedHeaders: ['X-Request-ID'],
     credentials: false,
@@ -53,7 +54,7 @@ export function createApp(environment, dependencies = {}) {
   }));
   app.get('/ready', (_request, response) => response.json({
     status: 'ready',
-    configuration: { openai: true, supabase: true },
+    configuration: { byok: true, supabase: true },
   }));
 
   const aiLimiter = rateLimit({
@@ -72,6 +73,7 @@ export function createApp(environment, dependencies = {}) {
       });
     },
   });
+  app.use(createProfileRouter(environment, dependencies));
   app.use(createAiRouter(environment, { ...dependencies, aiLimiter }));
 
   app.use((_request, _response, next) => {

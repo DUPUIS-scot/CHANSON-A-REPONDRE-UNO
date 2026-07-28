@@ -2,7 +2,7 @@ import express from 'express';
 import multer from 'multer';
 
 import { createRequireAuthenticatedUser } from '../middleware/requireAuthenticatedUser.js';
-import { getOpenAiClient } from '../services/openai-client.js';
+import { UserOpenAiService } from '../services/user-openai.js';
 import { AppError, mapUpstreamError } from '../utilities/errors.js';
 
 const imageMimeTypes = new Set(['image/png', 'image/jpeg', 'image/webp']);
@@ -10,7 +10,9 @@ const supportedRoles = new Set(['user', 'assistant']);
 
 export function createAiRouter(environment, dependencies = {}) {
   const router = express.Router();
-  const openai = dependencies.openai || getOpenAiClient(environment);
+  const userOpenAi =
+    dependencies.userOpenAiService ||
+    new UserOpenAiService(environment, dependencies);
   const authenticate = createRequireAuthenticatedUser(
     environment,
     dependencies.authClient,
@@ -44,6 +46,7 @@ export function createAiRouter(environment, dependencies = {}) {
       const timer = setTimeout(() => controller.abort(), environment.requestTimeoutMs);
       let result;
       try {
+        const openai = await userOpenAi.clientFor(request.authUser.id);
         result = await openai.responses.create({
           model: environment.openaiModel,
           input: [{
@@ -119,6 +122,7 @@ export function createAiRouter(environment, dependencies = {}) {
       const timer = setTimeout(() => controller.abort(), environment.requestTimeoutMs);
       let result;
       try {
+        const openai = await userOpenAi.clientFor(request.authUser.id);
         result = await openai.responses.create({
           model: environment.openaiModel,
           instructions,

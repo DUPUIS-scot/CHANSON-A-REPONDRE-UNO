@@ -32,9 +32,10 @@ jobs:
         env:
           PORT: 3000
           NODE_ENV: test
-          OPENAI_API_KEY: sk-safe-ci-test
           SUPABASE_URL: https://ci-project.supabase.co
           SUPABASE_PUBLISHABLE_KEY: sb_publishable_safe_ci_test
+          SUPABASE_SERVICE_ROLE_KEY: sb_secret_safe_ci_test
+          CREDENTIAL_ENCRYPTION_KEY: BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc=
           ALLOWED_ORIGINS: https://jameshpdy-dev.github.io
         run: |
           npm start &
