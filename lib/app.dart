@@ -17,6 +17,7 @@ import 'providers/journal_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/startup_video_provider.dart';
 import 'providers/auth_controller.dart';
+import 'providers/openai_connection_controller.dart';
 import 'services/deck_import_service.dart';
 import 'services/game_storage_service.dart';
 import 'services/local_storage_service.dart';
@@ -26,6 +27,7 @@ import 'services/navigation_guard_service.dart';
 import 'services/background_import_service.dart';
 import 'services/auth_service.dart';
 import 'services/supabase_auth_service.dart';
+import 'services/openai_profile_service.dart';
 import 'features/startup_media/startup_video_storage.dart';
 import 'theme/app_theme.dart';
 import 'screens/configuration_error_screen.dart';
@@ -59,6 +61,8 @@ class _ChansonUnoAppState extends State<ChansonUnoApp> {
   late final startupVideo = StartupVideoProvider(StartupVideoStorage(storage))
     ..initialize();
   late final CardAiProvider cardAi;
+  late final AiRestClient aiClient;
+  late final OpenAiConnectionController openAiConnection;
   late final AuthService authService;
   late final AuthController auth;
 
@@ -90,12 +94,17 @@ class _ChansonUnoAppState extends State<ChansonUnoApp> {
               widget.aiBackendUrlOverride == null) ||
           widget.authenticationInitializationError != null),
     );
+    aiClient = AiRestClient(
+      baseUrl: effectiveBackendUrl,
+      authService: authService,
+    );
+    openAiConnection = OpenAiConnectionController(
+      OpenAiProfileService(aiClient),
+      auth,
+    );
     cardAi = CardAiProvider(
       service: CardAiApiService(
-        client: AiRestClient(
-          baseUrl: effectiveBackendUrl,
-          authService: authService,
-        ),
+        client: aiClient,
       ),
       decks: decks,
       localStorage: storage,
@@ -141,6 +150,7 @@ class _ChansonUnoAppState extends State<ChansonUnoApp> {
         ChangeNotifierProvider.value(value: game),
         ChangeNotifierProvider.value(value: journal),
         ChangeNotifierProvider.value(value: cardAi),
+        ChangeNotifierProvider.value(value: openAiConnection),
         ChangeNotifierProvider.value(value: curtains),
         ChangeNotifierProvider.value(value: backgrounds),
         ChangeNotifierProvider.value(value: homeExperience),

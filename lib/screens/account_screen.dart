@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../core/app_config.dart';
 import '../core/app_router.dart';
 import '../providers/auth_controller.dart';
 import '../providers/card_ai_provider.dart';
+import '../providers/openai_connection_controller.dart';
 import '../services/external_chatgpt_service.dart';
 import '../services/protected_ai_guard.dart';
 import '../widgets/configuration_status_row.dart';
@@ -57,11 +59,14 @@ class _AccountScreenState extends State<AccountScreen> {
   final email = TextEditingController();
   final password = TextEditingController();
   final confirmation = TextEditingController();
+  final openAiSectionKey = GlobalKey();
   bool registering = false;
   bool rememberMe = false;
   bool obscure = true;
   bool healthRequested = false;
   bool openingChatGpt = false;
+  bool openAiFocusRequested = false;
+  String? openAiStatusUserId;
   String? localMessage;
 
   @override
@@ -72,6 +77,28 @@ class _AccountScreenState extends State<AccountScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) context.read<CardAiProvider>().testConnection();
     });
+    if (widget.arguments?.focusOpenAi == true && !openAiFocusRequested) {
+      openAiFocusRequested = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final sectionContext = openAiSectionKey.currentContext;
+        if (sectionContext != null) {
+          Scrollable.ensureVisible(
+            sectionContext,
+            duration: const Duration(milliseconds: 350),
+            alignment: 0.08,
+          );
+        }
+      });
+    }
+    final currentUserId = context.watch<AuthController>().user?.id;
+    if (currentUserId != null && currentUserId != openAiStatusUserId) {
+      openAiStatusUserId = currentUserId;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) context.read<OpenAiConnectionController>().refresh();
+      });
+    } else if (currentUserId == null) {
+      openAiStatusUserId = null;
+    }
   }
 
   @override
@@ -108,7 +135,9 @@ class _AccountScreenState extends State<AccountScreen> {
         registering = false;
         localMessage = null;
       });
-      if (widget.arguments != null && context.canPop()) {
+      if (widget.arguments != null &&
+          !widget.arguments!.focusOpenAi &&
+          context.canPop()) {
         context.pop(true);
       }
     } else if (registering &&
@@ -126,8 +155,10 @@ class _AccountScreenState extends State<AccountScreen> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthController>();
     final ai = context.watch<CardAiProvider>();
+    final openAi = context.watch<OpenAiConnectionController>();
     final backendOnline = ai.connectionAvailable;
-    final protectedAi = auth.canUseProtectedAi && backendOnline;
+    final protectedAi =
+        auth.canUseProtectedAi && backendOnline && openAi.connected;
 
     return Scaffold(
       backgroundColor: _stageBlack,
@@ -185,7 +216,15 @@ class _AccountScreenState extends State<AccountScreen> {
                                 const SizedBox(height: 4),
                                 auth.user == null
                                     ? _authPanel(auth)
-                                    : _signedInPanel(auth, backendOnline),
+                                    : _signedInPanel(
+                                        auth,
+                                        backendOnline && openAi.connected,
+                                      ),
+                                const SizedBox(height: 14),
+                                KeyedSubtree(
+                                  key: openAiSectionKey,
+                                  child: _openAiPanel(auth, openAi),
+                                ),
                                 const SizedBox(height: 14),
                                 _statusPanel(auth, ai, protectedAi),
                                 const SizedBox(height: 14),
@@ -455,6 +494,264 @@ class _AccountScreenState extends State<AccountScreen> {
         ],
       ),
     );
+  }
+
+  Widget _openAiPanel(
+    AuthController auth,
+    OpenAiConnectionController connection,
+  ) => _ProfilePanel(
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'AI ACCOUNT',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            color: _stageIvory,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const Divider(height: 28, color: Color(0x99DCC79B)),
+        if (auth.user == null) ...[
+          const Text(
+            'Sign in to your Chanson à Répondre UNO account before connecting OpenAI.',
+            style: TextStyle(color: _stageIvory),
+          ),
+          const SizedBox(height: 14),
+          _OutlinedGoldButton(
+            onPressed: () => Scrollable.ensureVisible(
+              formKey.currentContext!,
+              duration: const Duration(milliseconds: 300),
+            ),
+            icon: Icons.login,
+            label: 'SIGN IN',
+          ),
+        ] else ...[
+          Row(
+            children: [
+              Icon(
+                connection.connected
+                    ? Icons.check_circle
+                    : Icons.radio_button_unchecked,
+                color: connection.connected ? _stageGold : _stageBeige,
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'OpenAI API',
+                  style: TextStyle(
+                    color: _stageIvory,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Text(
+                connection.connected ? 'Connected' : 'Not connected',
+                style: const TextStyle(
+                  color: _stageIvory,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          if (connection.status.maskedKey != null) ...[
+            const SizedBox(height: 14),
+            const Text(
+              'Credential',
+              style: TextStyle(color: _stageBeige, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 4),
+            SelectableText(
+              connection.status.maskedKey!,
+              style: const TextStyle(
+                color: _stageIvory,
+                fontFamily: 'monospace',
+              ),
+            ),
+          ],
+          const SizedBox(height: 14),
+          const Text(
+            'AI requests use your own OpenAI API account.\n\n'
+            'OpenAI API usage and billing are managed through your OpenAI Platform account.\n\n'
+            'OpenAI API access is separate from a ChatGPT subscription. '
+            'A ChatGPT Plus subscription is not itself an API credential.',
+            style: TextStyle(color: _stageIvory, height: 1.35),
+          ),
+          if (connection.connected) ...[
+            const SizedBox(height: 12),
+            const Text(
+              'Used for:\n• AI transcription\n• ASK AI\n• AI analysis',
+              style: TextStyle(color: _stageIvory, height: 1.45),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Your OpenAI API key is stored encrypted by the backend and is never displayed again after connection.',
+              style: TextStyle(color: _stageBeige, fontSize: 13),
+            ),
+          ],
+          if (connection.message != null) ...[
+            const SizedBox(height: 12),
+            _InlineNotice(text: connection.message!),
+          ],
+          if (connection.error != null) ...[
+            const SizedBox(height: 12),
+            _InlineNotice(
+              isError: true,
+              text:
+                  '${connection.error}\n\nCheck your API key and API account configuration.',
+            ),
+          ],
+          const SizedBox(height: 16),
+          if (!connection.connected)
+            _PrimaryGoldButton(
+              onPressed: connection.loading
+                  ? null
+                  : () => _showOpenAiCredentialDialog(connection),
+              icon: Icons.link,
+              loading: connection.loading,
+              label: 'CONNECT OPENAI',
+            )
+          else ...[
+            _PrimaryGoldButton(
+              onPressed: connection.loading
+                  ? null
+                  : connection.testConnection,
+              icon: Icons.network_check,
+              loading: connection.loading,
+              label: 'TEST CONNECTION',
+            ),
+            const SizedBox(height: 10),
+            _OutlinedGoldButton(
+              onPressed: connection.loading
+                  ? null
+                  : () => _showOpenAiCredentialDialog(
+                      connection,
+                      replacing: true,
+                    ),
+              icon: Icons.key,
+              label: 'REPLACE KEY',
+            ),
+            const SizedBox(height: 10),
+            _OutlinedGoldButton(
+              onPressed: connection.loading
+                  ? null
+                  : () => _confirmDisconnect(connection),
+              icon: Icons.link_off,
+              label: 'DISCONNECT',
+            ),
+          ],
+        ],
+      ],
+    ),
+  );
+
+  Future<void> _showOpenAiCredentialDialog(
+    OpenAiConnectionController connection, {
+    bool replacing = false,
+  }) async {
+    final keyController = TextEditingController();
+    var obscureKey = true;
+    final submitted = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(replacing ? 'REPLACE OPENAI API KEY' : 'CONNECT OPENAI API'),
+          content: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text(
+                    'Connect your own OpenAI API access to use:\n\n'
+                    '• AI card transcription\n'
+                    '• card analysis\n'
+                    '• ASK AI\n'
+                    '• AI tools\n\n'
+                    'Your OpenAI API usage is billed through your own OpenAI API account.',
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: keyController,
+                    obscureText: obscureKey,
+                    enableSuggestions: false,
+                    autocorrect: false,
+                    decoration: InputDecoration(
+                      labelText: 'OpenAI API Key',
+                      hintText: 'sk-................................',
+                      suffixIcon: IconButton(
+                        tooltip: obscureKey ? 'Show key' : 'Hide key',
+                        onPressed: () =>
+                            setDialogState(() => obscureKey = !obscureKey),
+                        icon: Icon(
+                          obscureKey ? Icons.visibility_off : Icons.visibility,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: () => launchUrl(
+                        Uri.parse('https://platform.openai.com/api-keys'),
+                        mode: LaunchMode.externalApplication,
+                      ),
+                      icon: const Icon(Icons.open_in_new),
+                      label: const Text('GET OPENAI API KEY'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('CANCEL'),
+            ),
+            FilledButton(
+              onPressed: () =>
+                  Navigator.pop(dialogContext, keyController.text.trim().isNotEmpty),
+              child: Text(replacing ? 'REPLACE' : 'CONNECT'),
+            ),
+          ],
+        ),
+      ),
+    );
+    final plaintext = keyController.text;
+    keyController.clear();
+    keyController.dispose();
+    if (submitted != true || plaintext.trim().isEmpty || !mounted) return;
+    await connection.connect(plaintext, replace: replacing);
+  }
+
+  Future<void> _confirmDisconnect(
+    OpenAiConnectionController connection,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Disconnect OpenAI?'),
+        content: const Text(
+          'AI transcription and ASK AI will be unavailable until you connect an OpenAI API key again.\n\n'
+          'Saved card transcriptions and card metadata will be preserved.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('CANCEL'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('DISCONNECT'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) await connection.disconnect();
   }
 
   Widget _statusPanel(
