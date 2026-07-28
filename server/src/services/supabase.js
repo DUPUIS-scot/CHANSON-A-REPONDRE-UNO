@@ -2,6 +2,8 @@ import { createClient } from '@supabase/supabase-js';
 
 let client;
 let signature;
+let adminClient;
+let adminSignature;
 
 export function getSupabaseAuthClient(environment) {
   const nextSignature =
@@ -21,4 +23,24 @@ export function getSupabaseAuthClient(environment) {
     signature = nextSignature;
   }
   return client;
+}
+
+export function getSupabaseAdminClient(environment) {
+  const nextSignature =
+    `${environment.supabaseUrl}:${environment.supabaseServiceRoleKey}`;
+  if (!adminClient || adminSignature !== nextSignature) {
+    adminClient = createClient(
+      environment.supabaseUrl,
+      environment.supabaseServiceRoleKey,
+      {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+          detectSessionInUrl: false,
+        },
+      },
+    );
+    adminSignature = nextSignature;
+  }
+  return adminClient;
 }
