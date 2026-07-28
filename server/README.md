@@ -4,7 +4,7 @@ This server provides authenticated per-user OpenAI API connection for the
 Flutter Profile path. It does not use or accept one shared developer OpenAI
 key. Each AI request resolves the verified UNO user's encrypted credential.
 
-Requires Node.js 20 LTS or newer. On Windows, install the current Node.js LTS release and restart the terminal, then verify `node --version` and `npm --version`.
+Requires Node.js 22 LTS or newer. On Windows, install the current Node.js LTS release and restart the terminal, then verify `node --version` and `npm --version`.
 
 ```powershell
 Copy-Item .env.example .env

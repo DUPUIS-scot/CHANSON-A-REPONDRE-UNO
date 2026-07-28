@@ -109,7 +109,7 @@ flutter run -d windows `
   --dart-define=SKIP_AUTH_FOR_DEVELOPMENT=false
 ```
 
-The backend requires Node.js 20 LTS or newer. On Windows, install the current Node.js LTS release, restart the terminal, and confirm:
+The backend requires Node.js 22 LTS or newer. On Windows, install the current Node.js LTS release, restart the terminal, and confirm:
 
 ```powershell
 node --version
