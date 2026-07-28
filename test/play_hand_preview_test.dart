@@ -18,13 +18,11 @@ CardImageModel card(int index) => CardImageModel(
 );
 
 void main() {
-  testWidgets('tap selects while long press opens the same ordered hand', (
+  testWidgets('tap selects while long press reveals only the held card', (
     tester,
   ) async {
     final cards = List.generate(5, card);
     CardImageModel? selected;
-    List<CardImageModel>? preview;
-    int? initialIndex;
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
@@ -35,12 +33,6 @@ void main() {
               selectedCardId: null,
               isPlayable: (_) => true,
               onSelectionChanged: (value) => selected = value,
-              revealOnTap: true,
-              keepRevealed: true,
-              onLongPressCard: (value, _, index) {
-                preview = value;
-                initialIndex = index;
-              },
             ),
           ),
         ),
@@ -51,10 +43,14 @@ void main() {
     final thirdCard = tester.widget<FlippablePlayingCard>(third);
     thirdCard.onTap();
     expect(selected?.id, 'card-2');
-    expect(preview, isNull);
+    expect(thirdCard.isFaceUp, isFalse);
     thirdCard.onLongPress!();
-    expect(preview!.map((item) => item.id), cards.map((item) => item.id));
-    expect(initialIndex, 2);
+    await tester.pump(const Duration(milliseconds: 450));
+    final updated = tester.widgetList<FlippablePlayingCard>(
+      find.byType(FlippablePlayingCard),
+    );
+    expect(updated.elementAt(2).isFaceUp, isTrue);
+    expect(updated.where((card) => card.isFaceUp), hasLength(1));
   });
 
   testWidgets('viewer starts on held card, pages, and closes with Escape', (

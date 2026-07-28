@@ -76,8 +76,6 @@ void main() {
             selectedCardId: null,
             isPlayable: (_) => true,
             onSelectionChanged: (_) {},
-            revealOnTap: true,
-            keepRevealed: true,
           ),
         ),
       ),
@@ -155,6 +153,10 @@ void main() {
       ),
       findsOneWidget,
     );
+    expect(
+      tester.widget<AspectRatio>(find.byType(AspectRatio)).aspectRatio,
+      closeTo(2 / 3, .0001),
+    );
     expect(find.byType(StoredImage), findsNothing);
 
     await tester.pumpWidget(
@@ -198,9 +200,46 @@ void main() {
     }
     expect(
       game.state!.players.expand((player) => player.hand),
-      everyElement(predicate<CardImageModel>((card) {
-        return isKnownCardCategory(card.category);
-      })),
+      everyElement(
+        predicate<CardImageModel>((card) {
+          return isKnownCardCategory(card.category);
+        }),
+      ),
     );
+  });
+
+  test('playing and drawing never grow the active hand beyond five', () async {
+    SharedPreferences.setMockInitialValues({});
+    final cards = List.generate(
+      20,
+      (index) => CardImageModel(
+        id: 'fixed-hand-$index',
+        deckId: 'deck',
+        title: 'Internal title $index',
+        path: 'assets/images/card_back.png',
+        category: 'SAUVAGE',
+        colour: 'black',
+        importedAt: DateTime(2026),
+      ),
+    );
+    final game = GameProvider(GameStorageService(LocalStorageService()));
+    addTearDown(game.dispose);
+    expect(
+      await game.start(Deck(id: 'deck', name: 'Deck', cards: cards)),
+      isTrue,
+    );
+
+    final playedCard = game.state!.players.first.hand.first;
+    final drawCount = game.state!.drawPile.length;
+    expect(await game.play(playedCard), isTrue);
+
+    expect(game.state!.players.first.hand, hasLength(5));
+    expect(game.state!.discardPile.last.id, playedCard.id);
+    expect(game.state!.topCard.id, playedCard.id);
+    expect(game.state!.drawPile, hasLength(drawCount - 1));
+
+    final currentPlayer = game.state!.currentPlayerIndex;
+    await game.draw();
+    expect(game.state!.players[currentPlayer].hand, hasLength(5));
   });
 }

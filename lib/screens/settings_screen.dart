@@ -105,7 +105,9 @@ class SettingsScreen extends StatelessWidget {
               ListTile(
                 title: const Text('Supabase client key'),
                 trailing: Text(
-                  AppConfig.isValidSupabaseClientKey(AppConfig.supabaseClientKey)
+                  AppConfig.isValidSupabaseClientKey(
+                        AppConfig.supabaseClientKey,
+                      )
                       ? 'Configured'
                       : 'Missing or placeholder',
                 ),
@@ -505,35 +507,6 @@ class _SettingsControlCenterState extends State<_SettingsControlCenter> {
           ],
         ),
       if (matches(
-        'deck management create rename delete duplicate sort search statistics empty hidden',
-      ))
-        SettingsSection(
-          title: 'Deck Management',
-          icon: Icons.style_outlined,
-          initiallyExpanded: query.isNotEmpty,
-          children: [
-            for (final item in const [
-              'Create Deck',
-              'Rename Deck',
-              'Delete Deck',
-              'Duplicate Deck',
-              'Sort and Search Decks',
-              'Deck Statistics',
-            ])
-              SettingsActionTile(
-                title: item,
-                icon: Icons.chevron_right,
-                onTap: () => unavailable(item),
-              ),
-            ListTile(
-              title: const Text('Cards per deck'),
-              trailing: Text(
-                '${context.watch<DeckProvider>().cards.length} total',
-              ),
-            ),
-          ],
-        ),
-      if (matches(
         'browse cards hand shuffle preview long press fullscreen zoom hero scroll',
       ))
         SettingsSection(
@@ -541,14 +514,6 @@ class _SettingsControlCenterState extends State<_SettingsControlCenter> {
           icon: Icons.view_carousel_outlined,
           initiallyExpanded: query.isNotEmpty,
           children: [
-            SettingsDropdownTile<int>(
-              title: 'Default hand size',
-              value: advanced.defaultHandSize,
-              items: const {3: '3', 5: '5', 7: '7', 10: '10'},
-              onChanged: (v) => settings.updateAdvanced(
-                advanced.copyWith(defaultHandSize: v),
-              ),
-            ),
             SettingsToggleTile(
               title: 'Preview on long press',
               value: advanced.previewOnLongPress,

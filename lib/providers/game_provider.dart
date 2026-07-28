@@ -20,33 +20,36 @@ class GameProvider extends ChangeNotifier {
 
   Future<void> load() async {
     final loaded = await _storage.load();
-    _state = loaded == null ? null : _normalizeCategories(loaded);
-    final state = _state;
-    if (state != null &&
-        state.players.any((player) => player.hand.length < 5) &&
-        state.drawPile.isNotEmpty) {
-      final drawPile = [...state.drawPile];
-      final players = <PlayerModel>[];
-      for (final player in state.players) {
-        final hand = [...player.hand];
-        while (hand.length < 5 && drawPile.isNotEmpty) {
-          hand.add(drawPile.removeLast());
-        }
-        players.add(player.copyWith(hand: hand));
-      }
-      _state = state.copyWith(drawPile: drawPile, players: players);
+    _state = loaded == null
+        ? null
+        : _rebalanceHands(_normalizeCategories(loaded));
+    if (_state != null) {
       await _save();
     }
     notifyListeners();
   }
 
+  GameStateModel _rebalanceHands(GameStateModel state) {
+    final drawPile = [...state.drawPile];
+    final players = <PlayerModel>[];
+    for (final player in state.players) {
+      final hand = [...player.hand];
+      if (hand.length > 5) {
+        drawPile.addAll(hand.sublist(5));
+        hand.removeRange(5, hand.length);
+      }
+      while (hand.length < 5 && drawPile.isNotEmpty) {
+        hand.add(drawPile.removeLast());
+      }
+      players.add(player.copyWith(hand: hand));
+    }
+    return state.copyWith(drawPile: drawPile, players: players);
+  }
+
   GameStateModel _normalizeCategories(GameStateModel state) {
     CardImageModel normalize(CardImageModel card) {
       final category = cardCategoryForStableCard(card.id, card.category);
-      return card.copyWith(
-        category: category.label,
-        colour: category.colour,
-      );
+      return card.copyWith(category: category.label, colour: category.colour);
     }
 
     final top = normalize(state.topCard);
@@ -138,6 +141,10 @@ class GameProvider extends ChangeNotifier {
     final players = [...state.players];
     final player = players[state.currentPlayerIndex];
     final hand = [...player.hand]..removeWhere((item) => item.id == card.id);
+    final drawPile = [...state.drawPile];
+    if (hand.length < 5 && drawPile.isNotEmpty) {
+      hand.add(drawPile.removeLast());
+    }
     players[state.currentPlayerIndex] = player.copyWith(hand: hand);
     final isWild =
         card.category.toLowerCase() == 'sauvage' ||
@@ -152,6 +159,7 @@ class GameProvider extends ChangeNotifier {
           ? (wildCategory ?? state.currentCategory)
           : card.category,
       discardPile: [...state.discardPile, card],
+      drawPile: drawPile,
       players: players,
       currentPlayerIndex: next,
       winnerName: hand.isEmpty && !state.collaborativeMode ? player.name : null,
@@ -182,10 +190,16 @@ class GameProvider extends ChangeNotifier {
     }
     final players = [...state.players];
     final player = players[state.currentPlayerIndex];
+    if (player.hand.length >= 5) {
+      _message = '${player.name} already has 5 cards.';
+      notifyListeners();
+      return;
+    }
     final hand = [...player.hand];
     do {
       hand.add(drawPile.removeLast());
     } while (state.drawRule == DrawRule.drawUntilPlayable &&
+        hand.length < 5 &&
         drawPile.isNotEmpty &&
         !canPlay(hand.last));
     players[state.currentPlayerIndex] = player.copyWith(hand: hand);
