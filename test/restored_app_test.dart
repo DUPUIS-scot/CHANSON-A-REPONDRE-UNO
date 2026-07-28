@@ -98,6 +98,8 @@ void main() {
         expect(castle, contains("data.type==='focusCard'"));
         expect(castle, contains('down.panning'));
         expect(castle, contains('document.body.dataset.cardCount'));
+        expect(castle, contains('search_castle_background.png'));
+        expect(castle, contains('document.body.dataset.visibleMeshCount'));
       },
     );
 

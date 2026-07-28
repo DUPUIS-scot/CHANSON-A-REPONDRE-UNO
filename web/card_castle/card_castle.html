@@ -4,19 +4,41 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <style>
-    html,body,#scene{margin:0;width:100%;height:100%;overflow:hidden;background:#03070c}
-    #scene canvas{display:block;touch-action:none}
-    #navigation{position:absolute;z-index:2;padding:8px 11px;border:1px solid #8d6e12;border-radius:8px;background:#05090ddd;color:#ffc928;font:700 11px/1.45 system-ui;pointer-events:none;box-shadow:0 8px 24px #000a}
+    html,body,#scene{margin:0;width:100%;height:100%;overflow:hidden;background:#020711}
+    #scene{
+      background-image:
+        linear-gradient(180deg,rgba(2,8,18,.08),rgba(2,7,14,.18) 55%,rgba(1,4,8,.58)),
+        url("../assets/assets/images/search_castle_background.png");
+      background-size:cover;
+      background-position:50% 50%;
+      background-repeat:no-repeat;
+    }
+    #scene::after{
+      content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+      background:
+        radial-gradient(circle at 16% 13%,rgba(170,207,235,.13),transparent 24%),
+        linear-gradient(90deg,rgba(0,5,13,.22),transparent 24%,transparent 76%,rgba(0,5,13,.22));
+      mix-blend-mode:screen;
+    }
+    #scene canvas{position:relative;z-index:1;display:block;touch-action:none}
+    #navigation{position:absolute;z-index:5;padding:7px 10px;border:1px solid #8d6e12aa;border-radius:8px;background:#030914c4;color:#ffc928;font:700 10px/1.42 system-ui;pointer-events:none;box-shadow:0 8px 24px #0009;backdrop-filter:blur(5px)}
     #navigation{left:12px;top:12px;width:132px}
     #navigation span{display:block;color:#cbd6df;font-weight:500}
-    #castle-controls{position:absolute;z-index:4;right:12px;top:12px;display:flex;gap:7px;align-items:flex-start;font:700 11px system-ui}
+    #castle-controls{position:absolute;z-index:5;right:12px;top:12px;display:flex;gap:7px;align-items:flex-start;font:700 11px system-ui}
     #castle-controls button,#castle-controls select{border:1px solid #b77d0c;border-radius:7px;background:#071019ee;color:#ffc928;padding:8px 10px;font:inherit;cursor:pointer}
     #fullscreen-controls{display:none;gap:7px;align-items:center}
     body.fullscreen-castle #fullscreen-controls{display:flex}
     body.fullscreen-castle #enter-fullscreen{display:none}
+    body.fullscreen-castle #navigation{opacity:.62}
     #focused-summary{display:flex;align-items:center;gap:7px;max-width:210px;padding:5px 8px;border:1px solid #b77d0c;border-radius:8px;background:#05090dee;color:#fff}
     #focused-summary img{width:34px;height:48px;object-fit:contain;border-radius:3px}
     #focused-summary span{max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    @media(max-width:720px){
+      #navigation{width:auto;max-width:104px;opacity:.82}
+      #navigation span:nth-of-type(n+3){display:none}
+      #castle-controls{right:7px;top:7px;gap:4px}
+      #castle-controls button,#castle-controls select{padding:7px 8px}
+    }
   </style>
 </head>
 <body>
@@ -53,7 +75,8 @@
       shuffleSeed: 0, disposed: false, pointerDown: null, dragging: false,
       targetLook: null, targetCamera: null, loadQueue: [], activeLoads: 0,
       touches: new Map(), pinch: null, activeCategory: 'TOUTES',
-      fullscreenActive: false, fallbackElements: null, lastFrame: 0
+      fullscreenActive: false, fallbackElements: null, lastFrame: 0,
+      lanterns: [], clouds: [], mists: [], flags: [], lastBackdropFrame: 0
     };
     let scene, camera, renderer, raycaster, pointer, cardGroup, materials;
     const keys=new Set();
@@ -69,10 +92,14 @@
         return;
       }
       scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x05070a);
-      scene.fog = new THREE.Fog(0x05070a,38,105);
+      scene.background = null;
+      scene.fog = new THREE.FogExp2(0x071522,.011);
       camera = new THREE.PerspectiveCamera(48,1,.1,240);
-      renderer = new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
+      renderer = new THREE.WebGLRenderer({
+        antialias:true,alpha:true,premultipliedAlpha:false,
+        powerPreference:'high-performance'
+      });
+      renderer.setClearColor(0x000000,0);
       renderer.setPixelRatio(Math.min(devicePixelRatio || 1,1.6));
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.toneMapping=THREE.ACESFilmicToneMapping;
@@ -90,6 +117,7 @@
       buildCastle();
       document.body.dataset.rendererInstanceId=
         `castle-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      document.body.dataset.referenceBackground='search_castle_background.png';
       document.body.dataset.sceneObjectCount=String(scene.children.length);
       installEvents();
       resize();
@@ -144,15 +172,15 @@
 
     function buildMaterials() {
       materials={
-        stone:new THREE.MeshStandardMaterial({map:proceduralTexture('stone'),color:0xa7a69a,roughness:.93,metalness:.02}),
-        stoneDark:new THREE.MeshStandardMaterial({map:proceduralTexture('stone'),color:0x575b58,roughness:.98}),
-        rock:new THREE.MeshStandardMaterial({map:proceduralTexture('rock'),color:0x535754,roughness:1}),
-        grass:new THREE.MeshStandardMaterial({map:proceduralTexture('grass'),color:0x66724a,roughness:1}),
-        slate:new THREE.MeshStandardMaterial({map:proceduralTexture('slate'),color:0x4a5967,roughness:.82,metalness:.08}),
-        path:new THREE.MeshStandardMaterial({color:0x71634c,roughness:1}),
+        stone:new THREE.MeshStandardMaterial({map:proceduralTexture('stone'),color:0x74808a,roughness:.93,metalness:.02}),
+        stoneDark:new THREE.MeshStandardMaterial({map:proceduralTexture('stone'),color:0x35434d,roughness:.98}),
+        rock:new THREE.MeshStandardMaterial({map:proceduralTexture('rock'),color:0x26323a,roughness:1}),
+        grass:new THREE.MeshStandardMaterial({map:proceduralTexture('grass'),color:0x273b32,roughness:1}),
+        slate:new THREE.MeshStandardMaterial({map:proceduralTexture('slate'),color:0x263a4d,roughness:.82,metalness:.08}),
+        path:new THREE.MeshStandardMaterial({map:proceduralTexture('stone'),color:0x4d5355,roughness:1}),
         wood:new THREE.MeshStandardMaterial({color:0x3d2117,roughness:.88}),
         gold:new THREE.MeshStandardMaterial({color:0xd99a21,emissive:0x3a1a00,roughness:.4,metalness:.36}),
-        window:new THREE.MeshStandardMaterial({color:0xffb13b,emissive:0xff6a00,emissiveIntensity:2.6,roughness:.45}),
+        window:new THREE.MeshStandardMaterial({color:0xffc05c,emissive:0xff7900,emissiveIntensity:3.1,roughness:.4}),
         door:new THREE.MeshStandardMaterial({color:0x160c08,roughness:1}),
       };
     }
@@ -222,28 +250,61 @@
       instances.castShadow=true;instances.receiveShadow=true;scene.add(instances);
     }
 
+    function atmosphericTexture(kind) {
+      const canvas=document.createElement('canvas');
+      canvas.width=512;canvas.height=160;
+      const ctx=canvas.getContext('2d');
+      const clouds=kind==='cloud';
+      for(let i=0;i<(clouds?16:22);i++){
+        const x=(i*83)%540-14,y=35+(i*47)%85;
+        const radius=clouds?65+(i%4)*20:85+(i%3)*28;
+        const gradient=ctx.createRadialGradient(x,y,0,x,y,radius);
+        gradient.addColorStop(0,clouds?'rgba(145,175,196,.24)':'rgba(118,151,165,.12)');
+        gradient.addColorStop(.55,clouds?'rgba(78,104,126,.11)':'rgba(76,111,126,.07)');
+        gradient.addColorStop(1,'rgba(18,33,46,0)');
+        ctx.fillStyle=gradient;
+        ctx.fillRect(x-radius,y-radius,radius*2,radius*2);
+      }
+      const texture=new THREE.CanvasTexture(canvas);
+      texture.colorSpace=THREE.SRGBColorSpace;
+      texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
+      return texture;
+    }
+
     function buildAtmosphere() {
-      const sky=new THREE.Mesh(
-        new THREE.SphereGeometry(150,24,16),
-        new THREE.ShaderMaterial({
-          side:THREE.BackSide,
-          uniforms:{top:{value:new THREE.Color(0x173958)},bottom:{value:new THREE.Color(0x03070d)}},
-          vertexShader:'varying float h;void main(){h=normalize(position).y;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
-          fragmentShader:'varying float h;uniform vec3 top;uniform vec3 bottom;void main(){gl_FragColor=vec4(mix(bottom,top,smoothstep(-.2,.8,h)),1.0);}'
-        })
-      );
-      scene.add(sky);
-      const moon=new THREE.Mesh(
-        new THREE.SphereGeometry(3.2,20,14),
-        new THREE.MeshBasicMaterial({color:0xb7c9dc})
-      );
-      moon.position.set(-48,48,-75);scene.add(moon);
+      const cloudTexture=atmosphericTexture('cloud');
+      [-58,-66].forEach((z,index)=>{
+        const cloud=new THREE.Mesh(
+          new THREE.PlaneGeometry(104,34),
+          new THREE.MeshBasicMaterial({
+            map:cloudTexture,transparent:true,opacity:index?0.11:0.16,
+            depthWrite:false,side:THREE.DoubleSide,color:0x9bb3c6
+          })
+        );
+        cloud.position.set(index?-18:20,35-index*9,z);
+        cloud.userData={originX:cloud.position.x,speed:index?.16:.1,span:62};
+        scene.add(cloud);state.clouds.push(cloud);
+      });
+      const mistTexture=atmosphericTexture('mist');
+      [[0,6,27,48,13,.12],[-10,12,4,58,12,.08],[8,18,-11,50,10,.07]]
+        .forEach(([x,y,z,width,height,opacity],index)=>{
+          const mist=new THREE.Mesh(
+            new THREE.PlaneGeometry(width,height),
+            new THREE.MeshBasicMaterial({
+              map:mistTexture,transparent:true,opacity,depthWrite:false,
+              side:THREE.DoubleSide,color:0x9bb6c3
+            })
+          );
+          mist.position.set(x,y,z);
+          mist.userData={baseOpacity:opacity,phase:index*1.7};
+          scene.add(mist);state.mists.push(mist);
+        });
     }
 
     function buildLights() {
-      scene.add(new THREE.HemisphereLight(0x8bb7d8,0x15100d,1.9));
-      scene.add(new THREE.AmbientLight(0x405b72,.68));
-      const moon=new THREE.DirectionalLight(0xbfd7ed,3.25);
+      scene.add(new THREE.HemisphereLight(0x789fc2,0x07090b,1.45));
+      scene.add(new THREE.AmbientLight(0x29445e,.52));
+      const moon=new THREE.DirectionalLight(0xbddaf2,3.6);
       moon.position.set(-28,48,34);moon.castShadow=true;
       moon.shadow.mapSize.set(1536,1536);
       moon.shadow.camera.left=-45;moon.shadow.camera.right=45;
@@ -251,12 +312,62 @@
       scene.add(moon);
       [[0,8,20],[-13,10,14],[13,10,14],[-7,17,6],[7,20,-4],[-12,25,-9]]
         .forEach(([x,y,z],index)=>{
-          const lamp=new THREE.PointLight(0xff9a32,index===0?55:28,19,2);
+          const lamp=new THREE.PointLight(0xffa23c,index===0?58:31,21,2);
           lamp.position.set(x,y,z);scene.add(lamp);
+          lamp.userData={
+            baseIntensity:lamp.intensity,
+            phase:index*1.37,
+            speed:1.7+(index%3)*.22
+          };
+          state.lanterns.push(lamp);
           architecturalMesh(
             new THREE.SphereGeometry(.16,8,6),materials.window,[x,y,z]
           );
         });
+    }
+
+    function bridgeLantern(x,z,index) {
+      architecturalMesh(
+        new THREE.CylinderGeometry(.08,.12,3.5,8),
+        materials.wood,[x,7.35,z]
+      );
+      const glow=architecturalMesh(
+        new THREE.SphereGeometry(.25,8,6),materials.window,[x,9.05,z]
+      );
+      glow.castShadow=false;
+      const light=new THREE.PointLight(0xff9b35,24,14,2);
+      light.position.set(x,9.05,z);scene.add(light);
+      light.userData={baseIntensity:24,phase:index*1.91,speed:2.15};
+      state.lanterns.push(light);
+    }
+
+    function saltireTexture() {
+      const canvas=document.createElement('canvas');
+      canvas.width=256;canvas.height=144;
+      const ctx=canvas.getContext('2d');
+      ctx.fillStyle='#16406f';ctx.fillRect(0,0,256,144);
+      ctx.strokeStyle='#f0f3f4';ctx.lineWidth=18;
+      ctx.beginPath();ctx.moveTo(-10,-8);ctx.lineTo(266,152);
+      ctx.moveTo(266,-8);ctx.lineTo(-10,152);ctx.stroke();
+      const texture=new THREE.CanvasTexture(canvas);
+      texture.colorSpace=THREE.SRGBColorSpace;
+      return texture;
+    }
+
+    function buildSaltireFlag() {
+      const geometry=new THREE.PlaneGeometry(3.8,2.15,12,2);
+      const flag=new THREE.Mesh(
+        geometry,
+        new THREE.MeshStandardMaterial({
+          map:saltireTexture(),side:THREE.DoubleSide,roughness:.82,
+          emissive:0x061226,emissiveIntensity:.18
+        })
+      );
+      flag.position.set(-4.7,35.7,-9.9);
+      flag.userData.basePositions=Float32Array.from(
+        geometry.attributes.position.array
+      );
+      scene.add(flag);state.flags.push(flag);
     }
 
     function buildCastle() {
@@ -292,11 +403,28 @@
       box(0,10.7,18.6,9,11,5,materials.stone);
       tower(-5,17.7,13,2.7,false);tower(5,17.7,13,2.7,false);
       box(0,8.5,21.15,3.3,6.2,.35,materials.door);
+      architecturalMesh(
+        new THREE.TorusGeometry(2.25,.42,9,30,Math.PI),
+        materials.stoneDark,[0,11.35,21.42]
+      );
+      for(let x=-1.35;x<=1.36;x+=.45){
+        box(x,8.55,21.55,.08,5.3,.12,materials.gold);
+      }
+      for(let y=7;y<=10.4;y+=.85){
+        box(0,y,21.56,3,.07,.13,materials.gold);
+      }
       warmWindow(-2.25,12.4,21.2,.55,1.4);
       warmWindow(2.25,12.4,21.2,.55,1.4);
       battlements(0,16.75,18.6,9,'x');
 
-      box(0,5.7,25,8,.7,11,materials.path);
+      box(0,5.65,30,9,.85,21,materials.path);
+      wall(-5.15,7.05,30,1.1,2.35,21,'z',materials.stoneDark);
+      wall(5.15,7.05,30,1.1,2.35,21,'z',materials.stoneDark);
+      [-1,1].forEach((side,sideIndex)=>{
+        [22.5,30,37.5].forEach((z,index)=>{
+          bridgeLantern(side*4.15,z,sideIndex*3+index);
+        });
+      });
       stairs(-12,6,15,15,4.2,-1);
       stairs(12,6,-2,17,4.2,-1);
 
@@ -321,29 +449,40 @@
       for(let x=-10;x<=8;x+=4)warmWindow(x,25,-4.7,.5,1.2);
       warmWindow(-7,28.5,-4.7,.65,1.5);
       box(-7,34,-10,.16,5,.16,materials.wood);
-      const flag=box(-5.6,35.2,-9.95,2.8,1.45,.08,materials.gold);
-      flag.rotation.z=-.08;
+      buildSaltireFlag();
     }
 
     function anchors() {
       const out=[];
-      const row=(x1,x2,y,z,count,normal=[0,0,1])=>{
+      const row=(x1,x2,y,z,count,normal=[0,0,1],zone='wall')=>{
         for(let i=0;i<count;i++){
           const t=count===1?.5:i/(count-1);
-          out.push({position:[x1+(x2-x1)*t,y,z],normal});
+          out.push({position:[x1+(x2-x1)*t,y,z],normal,zone});
         }
       };
-      row(-18.5,18.5,9.3,19.52,15);
-      row(-15.5,15.5,7.1,13.2,12);
-      row(-13.2,11.2,14.4,9.08,15);
-      row(-9.5,10.5,20.2,1.78,12);
-      for(let i=0;i<10;i++){
-        out.push({position:[-23.15,9+i%2*3,-9+i*2.35],normal:[-1,0,0]});
+      for(let i=0;i<5;i++){
+        const z=22+i*3.85;
+        out.push({position:[-5.76,8.9,z],normal:[-1,0,0],zone:'bridge'});
+        out.push({position:[5.76,8.9,z],normal:[1,0,0],zone:'bridge'});
       }
-      for(let i=0;i<10;i++){
-        out.push({position:[23.15,9+i%2*3,-9+i*2.35],normal:[1,0,0]});
+      [-4.25,-3.35,3.35,4.25].forEach(x=>{
+        out.push({position:[x,11.15,21.22],normal:[0,0,1],zone:'gate'});
+      });
+      row(-18.5,18.5,10.2,19.52,14,[0,0,1],'outer-wall');
+      row(-14.8,14.8,7.35,13.18,12,[0,0,1],'courtyard');
+      row(-13,11,14.55,9.08,14,[0,0,1],'terrace');
+      row(-9.5,10.5,20.2,1.78,12,[0,0,1],'inner-keep');
+      for(let i=0;i<6;i++){
+        out.push({
+          position:[-23.15,9.4+(i%2)*3,-8+i*4],
+          normal:[-1,0,0],zone:'west-battlement'
+        });
+        out.push({
+          position:[23.15,9.4+(i%2)*3,-8+i*4],
+          normal:[1,0,0],zone:'east-battlement'
+        });
       }
-      row(-14,11,27.5,-4.72,10);
+      row(-12,8,27.6,-4.72,6,[0,0,1],'upper-keep');
       return out;
     }
 
@@ -375,6 +514,7 @@
       const points=anchors();
       seeded(cards,shuffleSeed).slice(0,points.length).forEach((card,index)=>addCard(card,points[index]));
       document.body.dataset.meshCount=String(state.meshes.length);
+      updateVisibleCards(focusedCardId);
       updateCategoryControl();
       if(focusedCardId) focusCard(focusedCardId,animateFocus);
       pumpTextures();
@@ -390,10 +530,26 @@
       const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,.08),[edge,edge,edge,edge,face,edge]);
       mesh.position.fromArray(anchor.position);
       mesh.userData.card=card;
+      mesh.userData.zone=anchor.zone;
       mesh.userData.anchorNormal=new THREE.Vector3().fromArray(anchor.normal||[0,0,1]);
       mesh.castShadow=true;
       cardGroup.add(mesh); state.meshes.push(mesh);
       state.loadQueue.push({mesh,card});
+    }
+
+    function updateVisibleCards(focusedCardId) {
+      const visiblePerZone=28;
+      const focusedIndex=Math.max(
+        0,state.meshes.findIndex(mesh=>mesh.userData.card.id===focusedCardId)
+      );
+      const start=Math.floor(focusedIndex/visiblePerZone)*visiblePerZone;
+      state.meshes.forEach((mesh,index)=>{
+        mesh.visible=index>=start&&index<start+visiblePerZone;
+      });
+      document.body.dataset.visibleMeshCount=String(
+        state.meshes.filter(mesh=>mesh.visible).length
+      );
+      document.body.dataset.visibleZoneStart=String(start);
     }
 
     function pumpTextures() {
@@ -427,6 +583,7 @@
 
     function focusCard(cardId,animate=true) {
       state.focusedCardId=cardId;
+      updateVisibleCards(cardId);
       document.body.dataset.focusedCardId=cardId || '';
       document.body.dataset.focusMode=animate?'animated':'immediate';
       document.body.dataset.focusSettled=animate?'false':'true';
@@ -759,7 +916,42 @@
         }
         updateOrbit();
       }
+      const seconds=now*.001;
+      state.clouds.forEach((cloud,index)=>{
+        cloud.position.x=cloud.userData.originX+
+          Math.sin(seconds*cloud.userData.speed+index*2.4)*8;
+      });
+      state.mists.forEach(mist=>{
+        mist.material.opacity=mist.userData.baseOpacity*
+          (.82+Math.sin(seconds*.23+mist.userData.phase)*.18);
+      });
+      state.lanterns.forEach(light=>{
+        const flicker=
+          Math.sin(seconds*light.userData.speed+light.userData.phase)*.055+
+          Math.sin(seconds*5.3+light.userData.phase)*.025;
+        light.intensity=light.userData.baseIntensity*(1+flicker);
+      });
+      state.flags.forEach(flag=>{
+        const positions=flag.geometry.attributes.position;
+        const base=flag.userData.basePositions;
+        for(let i=0;i<positions.count;i++){
+          const baseX=base[i*3],baseY=base[i*3+1];
+          const influence=Math.max(0,Math.min(1,(baseX+1.9)/3.8));
+          positions.setXYZ(
+            i,baseX,baseY,
+            Math.sin(seconds*1.55+baseX*2.25+baseY*.6)*.18*influence
+          );
+        }
+        positions.needsUpdate=true;
+      });
+      if(now-state.lastBackdropFrame>90){
+        state.lastBackdropFrame=now;
+        const backgroundX=50+Math.sin(orbit.yaw)*1.35;
+        const backgroundY=50+(orbit.pitch-.31)*1.8;
+        root.style.backgroundPosition=`${backgroundX}% ${backgroundY}%`;
+      }
       state.meshes.forEach(mesh=>{
+        if(!mesh.visible)return;
         const target=camera.position.clone();target.y=mesh.position.y;mesh.lookAt(target);
       });
       renderer.render(scene,camera);

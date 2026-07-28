@@ -117,12 +117,20 @@ void main() {
       );
     });
 
-    test('castle keeps long-press support without the bottom hint bar', () {
+    test('castle keeps interaction while using the Edinburgh backdrop', () {
       final castle = File(
         'web/card_castle/card_castle.html',
       ).readAsStringSync();
+      final backdrop = File('assets/images/search_castle_background.png');
       expect(castle, contains("emit('cardLongPressed',{cardId})"));
       expect(castle, contains("emit('djWhoRequested')"));
+      expect(castle, contains('search_castle_background.png'));
+      expect(castle, contains('new THREE.FogExp2'));
+      expect(castle, contains('buildSaltireFlag'));
+      expect(castle, contains('bridgeLantern'));
+      expect(castle, contains('updateVisibleCards'));
+      expect(backdrop.existsSync(), isTrue);
+      expect(backdrop.lengthSync(), 2709365);
       expect(castle, isNot(contains('id="hint"')));
       expect(castle, isNot(contains('#hint')));
     });
