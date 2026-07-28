@@ -13,6 +13,7 @@ class WebGlCardCastleView extends StatelessWidget {
     required this.onCardOpened,
     required this.onCategoryChanged,
     required this.onHomeRequested,
+    required this.onDjWhoRequested,
     required this.onFullscreenChanged,
     required this.fallback,
     super.key,
@@ -27,6 +28,7 @@ class WebGlCardCastleView extends StatelessWidget {
   final ValueChanged<String> onCardOpened;
   final ValueChanged<String> onCategoryChanged;
   final VoidCallback onHomeRequested;
+  final VoidCallback onDjWhoRequested;
   final ValueChanged<bool> onFullscreenChanged;
   final Widget fallback;
 

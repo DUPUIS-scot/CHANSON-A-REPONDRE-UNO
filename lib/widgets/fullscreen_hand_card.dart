@@ -63,7 +63,7 @@ class _FullscreenHandCardState extends State<FullscreenHandCard> {
               child: Hero(
                 tag: 'play-hand-card-${widget.card.id}',
                 child: AspectRatio(
-                  aspectRatio: widget.card.aspectRatio,
+                  aspectRatio: widget.faceUp ? widget.card.aspectRatio : 2 / 3,
                   child: widget.faceUp
                       ? Stack(
                           fit: StackFit.expand,

@@ -20,6 +20,7 @@ class WebGlCardCastleView extends StatefulWidget {
     required this.onCardOpened,
     required this.onCategoryChanged,
     required this.onHomeRequested,
+    required this.onDjWhoRequested,
     required this.onFullscreenChanged,
     required this.fallback,
     super.key,
@@ -34,6 +35,7 @@ class WebGlCardCastleView extends StatefulWidget {
   final ValueChanged<String> onCardOpened;
   final ValueChanged<String> onCategoryChanged;
   final VoidCallback onHomeRequested;
+  final VoidCallback onDjWhoRequested;
   final ValueChanged<bool> onFullscreenChanged;
   final Widget fallback;
 
@@ -121,6 +123,9 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
         case 'homeRequested':
           _setInAppFullscreen(false);
           widget.onHomeRequested();
+        case 'djWhoRequested':
+          _setInAppFullscreen(false);
+          widget.onDjWhoRequested();
         case 'fullscreenFallbackRequested':
           _setInAppFullscreen(true);
           _post({'type': 'setInAppFullscreen', 'active': true});

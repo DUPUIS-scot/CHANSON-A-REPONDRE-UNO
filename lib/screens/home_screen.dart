@@ -65,7 +65,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _HomeItem(
       Icons.style_rounded,
       'Choose Deck',
-      'Sélectionner, créer ou gérer vos decks de cartes.',
+      'Utiliser le deck permanent et ses cinq catégories.',
       AppRoutes.decks,
       Color(0xFFE9B52F),
     ),

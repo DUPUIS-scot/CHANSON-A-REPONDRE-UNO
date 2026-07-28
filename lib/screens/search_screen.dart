@@ -407,6 +407,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 },
                 onCategoryChanged: _setCategory,
                 onHomeRequested: () => context.go(AppRoutes.home),
+                onDjWhoRequested: () => context.go(AppRoutes.djWhoVideos),
                 onFullscreenChanged: _handleCastleFullscreenChanged,
                 fallback: SearchCardCastle(
                   cards: visible,
@@ -718,6 +719,12 @@ class _SearchHeader extends StatelessWidget {
                 tooltip: 'Accueil',
                 onPressed: () => context.go(AppRoutes.home),
                 icon: const Icon(Icons.home_rounded),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
+                onPressed: () => context.go(AppRoutes.djWhoVideos),
+                icon: const Icon(Icons.queue_music_rounded),
+                label: const Text('DJ WHO'),
               ),
             ],
           ),

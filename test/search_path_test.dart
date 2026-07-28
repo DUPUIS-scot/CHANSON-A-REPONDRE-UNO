@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -90,6 +92,7 @@ void main() {
       }
 
       expect(selectedMode(), contains('castle'));
+      expect(find.text('DJ WHO'), findsOneWidget);
 
       await tester.enterText(find.byType(TextField), 'lumiere');
       await tester.pump(const Duration(milliseconds: 300));
@@ -112,6 +115,16 @@ void main() {
         tester.widget<TextField>(find.byType(TextField)).controller?.text,
         'lumiere',
       );
+    });
+
+    test('castle keeps long-press support without the bottom hint bar', () {
+      final castle = File(
+        'web/card_castle/card_castle.html',
+      ).readAsStringSync();
+      expect(castle, contains("emit('cardLongPressed',{cardId})"));
+      expect(castle, contains("emit('djWhoRequested')"));
+      expect(castle, isNot(contains('id="hint"')));
+      expect(castle, isNot(contains('#hint')));
     });
   });
 }

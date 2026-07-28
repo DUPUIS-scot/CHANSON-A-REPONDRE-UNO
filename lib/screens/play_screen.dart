@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../data/card_categories.dart';
@@ -16,7 +15,6 @@ import '../widgets/opponent_hand.dart';
 import '../widgets/player_hand.dart';
 import '../widgets/puppet_dealer_controller.dart';
 import '../widgets/puppet_dealer_scene.dart';
-import 'play_hand_fullscreen_screen.dart';
 
 class PlayScreen extends StatefulWidget {
   const PlayScreen({super.key});
@@ -28,52 +26,9 @@ class _PlayScreenState extends State<PlayScreen> {
   String? selectedCardId;
   CardImageModel? flyingCard;
   bool hideHand = false;
-  bool previewOpening = false;
   bool dealerBusy = false;
   PuppetQuality puppetQuality = PuppetQuality.medium;
   final PuppetDealerController puppetController = PuppetDealerController();
-
-  Future<void> openHandPreview(
-    List<CardImageModel> cards,
-    List<bool> faceUp,
-    int initialIndex,
-  ) async {
-    if (previewOpening || cards.isEmpty) return;
-    previewOpening = true;
-    try {
-      try {
-        await HapticFeedback.selectionClick();
-      } on Object {
-        // Haptics are optional and unsupported on some desktop platforms.
-      }
-      if (!mounted) return;
-      final reducedMotion = MediaQuery.disableAnimationsOf(context);
-      await Navigator.of(context).push<void>(
-        PageRouteBuilder<void>(
-          transitionDuration: reducedMotion
-              ? Duration.zero
-              : const Duration(milliseconds: 320),
-          reverseTransitionDuration: reducedMotion
-              ? Duration.zero
-              : const Duration(milliseconds: 280),
-          pageBuilder: (_, _, _) => PlayHandFullscreenScreen(
-            cards: cards,
-            faceUp: faceUp,
-            initialIndex: initialIndex,
-          ),
-          transitionsBuilder: (_, animation, _, child) => FadeTransition(
-            opacity: animation,
-            child: ScaleTransition(
-              scale: Tween(begin: .96, end: 1.0).animate(animation),
-              child: child,
-            ),
-          ),
-        ),
-      );
-    } finally {
-      previewOpening = false;
-    }
-  }
 
   Future<void> playSelected() async {
     final game = context.read<GameProvider>();
@@ -133,7 +88,6 @@ class _PlayScreenState extends State<PlayScreen> {
   Widget build(BuildContext context) {
     final game = context.watch<GameProvider>();
     final decks = context.watch<DeckProvider>();
-    final settings = context.watch<SettingsProvider>();
     final state = game.state;
     return Scaffold(
       backgroundColor: const Color(0xFF130D0B),
@@ -241,7 +195,9 @@ class _PlayScreenState extends State<PlayScreen> {
                               count: state.drawPile.length,
                               topCard: state.drawPile.lastOrNull,
                               onDraw:
-                                  state.currentPlayerIndex == 0 && !dealerBusy
+                                  state.currentPlayerIndex == 0 &&
+                                      player.hand.length < 5 &&
+                                      !dealerBusy
                                   ? drawWithDealer
                                   : null,
                             ),
@@ -341,14 +297,11 @@ class _PlayScreenState extends State<PlayScreen> {
                               cards: player.hand,
                               selectedCardId: selectedCardId,
                               isPlayable: game.canPlay,
-                              revealOnTap: settings.revealPlayerHandOnTap,
-                              keepRevealed: settings.keepRevealedCardsFaceUp,
                               hideAll: hideHand,
                               onSelectionChanged: (card) => setState(() {
                                 selectedCardId = card?.id;
                                 hideHand = false;
                               }),
-                              onLongPressCard: openHandPreview,
                             ),
                           ),
                         ),

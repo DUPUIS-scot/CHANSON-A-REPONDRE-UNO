@@ -6,8 +6,7 @@
   <style>
     html,body,#scene{margin:0;width:100%;height:100%;overflow:hidden;background:#03070c}
     #scene canvas{display:block;touch-action:none}
-    #hint,#navigation{position:absolute;z-index:2;padding:8px 11px;border:1px solid #8d6e12;border-radius:8px;background:#05090ddd;color:#ffc928;font:700 11px/1.45 system-ui;pointer-events:none;box-shadow:0 8px 24px #000a}
-    #hint{left:12px;bottom:116px}
+    #navigation{position:absolute;z-index:2;padding:8px 11px;border:1px solid #8d6e12;border-radius:8px;background:#05090ddd;color:#ffc928;font:700 11px/1.45 system-ui;pointer-events:none;box-shadow:0 8px 24px #000a}
     #navigation{left:12px;top:12px;width:132px}
     #navigation span{display:block;color:#cbd6df;font-weight:500}
     #castle-controls{position:absolute;z-index:4;right:12px;top:12px;display:flex;gap:7px;align-items:flex-start;font:700 11px system-ui}
@@ -29,6 +28,7 @@
     <span>WASD / flèches · visite</span>
   </div>
   <div id="castle-controls">
+    <button id="castle-dj-who" type="button">DJ WHO</button>
     <button id="enter-fullscreen" type="button">⛶ PLEIN ÉCRAN 3D</button>
     <div id="fullscreen-controls">
       <button id="exit-fullscreen" type="button">✕ QUITTER</button>
@@ -43,7 +43,6 @@
       <button id="next-card" type="button">→</button>
     </div>
   </div>
-  <div id="hint">Château 3D • glisser : tourner • Maj/clic droit : déplacer • molette : zoomer • appui long : plein écran</div>
   <script src="../vendor/three.min.js"></script>
   <script>
   (() => {
@@ -666,6 +665,9 @@
       },{passive:false});
       canvas.addEventListener('contextmenu',event=>event.preventDefault());
       document.getElementById('enter-fullscreen').addEventListener('click',enterCastleFullscreen);
+      document.getElementById('castle-dj-who').addEventListener('click',()=>{
+        void exitCastleFullscreen();setTimeout(()=>emit('djWhoRequested'),60);
+      });
       document.getElementById('exit-fullscreen').addEventListener('click',exitCastleFullscreen);
       document.getElementById('castle-home').addEventListener('click',()=>{
         void exitCastleFullscreen();setTimeout(()=>emit('homeRequested'),60);

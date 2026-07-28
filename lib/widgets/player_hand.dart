@@ -11,9 +11,6 @@ class PlayerHand extends StatefulWidget {
     required this.selectedCardId,
     required this.isPlayable,
     required this.onSelectionChanged,
-    required this.revealOnTap,
-    required this.keepRevealed,
-    this.onLongPressCard,
     this.hideAll = false,
     super.key,
   });
@@ -21,10 +18,6 @@ class PlayerHand extends StatefulWidget {
   final String? selectedCardId;
   final bool Function(CardImageModel card) isPlayable;
   final ValueChanged<CardImageModel?> onSelectionChanged;
-  final bool revealOnTap;
-  final bool keepRevealed;
-  final void Function(List<CardImageModel> cards, List<bool> faceUp, int index)?
-  onLongPressCard;
   final bool hideAll;
 
   @override
@@ -45,13 +38,16 @@ class _PlayerHandState extends State<PlayerHand> {
   void select(CardImageModel card) {
     final alreadySelected = widget.selectedCardId == card.id;
     if (alreadySelected) {
-      if (!widget.keepRevealed) revealed.remove(card.id);
       widget.onSelectionChanged(null);
     } else {
-      if (widget.revealOnTap) revealed.add(card.id);
       widget.onSelectionChanged(card);
     }
     setState(() {});
+  }
+
+  void reveal(CardImageModel card) {
+    if (revealed.contains(card.id)) return;
+    setState(() => revealed.add(card.id));
   }
 
   @override
@@ -62,7 +58,7 @@ class _PlayerHandState extends State<PlayerHand> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final cardWidth = constraints.maxWidth < 500 ? 92.0 : 138.0;
-        final cardHeight = cardWidth * 1.48;
+        final cardHeight = cardWidth * 1.5;
         final step = cardWidth * .62;
         final contentWidth = cardWidth + step * (widget.cards.length - 1);
         final handWidth = math.max(constraints.maxWidth, contentWidth);
@@ -109,17 +105,7 @@ class _PlayerHandState extends State<PlayerHand> {
                           '${revealed.contains(widget.cards[index].id) ? 'face up' : 'face down'}, '
                           '${widget.isPlayable(widget.cards[index]) ? 'playable' : 'unavailable'}',
                       onTap: () => select(widget.cards[index]),
-                      onLongPress: widget.onLongPressCard == null
-                          ? null
-                          : () => widget.onLongPressCard!(
-                              List<CardImageModel>.unmodifiable(widget.cards),
-                              List<bool>.unmodifiable(
-                                widget.cards
-                                    .map((card) => revealed.contains(card.id))
-                                    .toList(),
-                              ),
-                              index,
-                            ),
+                      onLongPress: () => reveal(widget.cards[index]),
                     ),
                   ),
               ],

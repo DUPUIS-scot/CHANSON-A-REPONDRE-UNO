@@ -100,6 +100,37 @@ void main() {
         expect(castle, contains('document.body.dataset.cardCount'));
       },
     );
+
+    test('Deck and Settings expose no deck import or hand-size controls', () {
+      final deckScreen = File(
+        'lib/screens/deck_selection_screen.dart',
+      ).readAsStringSync();
+      final settingsScreen = File(
+        'lib/screens/settings_screen.dart',
+      ).readAsStringSync();
+
+      expect(deckScreen, isNot(contains('DeckImportService')));
+      expect(deckScreen, isNot(contains('pickPngFiles')));
+      expect(deckScreen, isNot(contains('Import PNG deck')));
+      expect(deckScreen, isNot(contains('Create deck')));
+      expect(settingsScreen, isNot(contains('Deck Management')));
+      expect(settingsScreen, isNot(contains('Default hand size')));
+    });
+
+    test('startup video viewport retains real 360-degree rotation', () {
+      final viewport = File(
+        'lib/widgets/startup_video_viewport.dart',
+      ).readAsStringSync();
+      final homeViewport = File(
+        'lib/widgets/home_3d_video_viewport.dart',
+      ).readAsStringSync();
+
+      expect(viewport, contains('rotation.value * math.pi * 2'));
+      expect(viewport, contains('..rotateY(angle)'));
+      expect(viewport, contains('VideoPlayer(controller)'));
+      expect(viewport, contains('VideoBackFace'));
+      expect(homeViewport, contains('StartupVideoViewport'));
+    });
   });
 }
 
