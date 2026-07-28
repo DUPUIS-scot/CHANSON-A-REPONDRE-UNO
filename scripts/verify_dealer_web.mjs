@@ -338,8 +338,21 @@ async function verifySearchCastle(client, url) {
         ? getComputedStyle(frame.contentDocument.getElementById('scene'))
             .backgroundImage.includes('search_castle_background.png')
         : false,
+      minimalFullscreenControls: frame?.contentDocument
+        ? Boolean(frame.contentDocument.getElementById('exit-fullscreen')) &&
+          Boolean(frame.contentDocument.getElementById('castle-dj-who')) &&
+          Boolean(frame.contentDocument.getElementById('navigation')) &&
+          !['castle-home', 'castle-category', 'previous-card', 'next-card',
+            'focused-summary', 'open-focused-card']
+            .some((id) => frame.contentDocument.getElementById(id))
+        : false,
+      searchChromeAtViewportBottom: document
+        .elementsFromPoint(innerWidth / 2, innerHeight - 24)
+        .some((element) => element.textContent?.includes('5 CARTES ACTIVES')),
       width: rect?.width || 0,
       height: rect?.height || 0,
+      viewportWidth: innerWidth,
+      viewportHeight: innerHeight,
     };
   })()`);
   if (
@@ -360,9 +373,11 @@ async function verifySearchCastle(client, url) {
     !result.fullscreen ||
     !result.threeLoaded ||
     !result.backdrop ||
+    !result.minimalFullscreenControls ||
+    result.searchChromeAtViewportBottom ||
     result.framePath !== `${basePath}card_castle/card_castle.html` ||
-    result.width <= 0 ||
-    result.height <= 0
+    Math.abs(result.width - result.viewportWidth) > 2 ||
+    Math.abs(result.height - result.viewportHeight) > 2
   ) {
     throw new Error(`Invalid Search castle result: ${JSON.stringify(result)}`);
   }

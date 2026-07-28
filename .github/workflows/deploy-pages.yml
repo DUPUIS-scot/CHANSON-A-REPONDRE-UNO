@@ -118,6 +118,12 @@ jobs:
           grep -q 'search_castle_background.png' build/web/card_castle/card_castle.html
           grep -q 'buildSaltireFlag' build/web/card_castle/card_castle.html
           grep -q 'updateVisibleCards' build/web/card_castle/card_castle.html
+          ! grep -q 'id="castle-category"' build/web/card_castle/card_castle.html
+          ! grep -q 'id="focused-summary"' build/web/card_castle/card_castle.html
+          ! grep -q 'id="previous-card"' build/web/card_castle/card_castle.html
+          ! grep -q 'id="next-card"' build/web/card_castle/card_castle.html
+          ! grep -q '_SearchViewMode' lib/screens/search_screen.dart
+          ! grep -q 'SegmentedButton' lib/screens/search_screen.dart
           grep -q '5 CARTES ACTIVES' build/web/main.dart.js
           grep -q 'fullscreenFallbackRequested' build/web/main.dart.js
           grep -q 'C0zocqpnIpY' build/web/main.dart.js

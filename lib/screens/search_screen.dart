@@ -3,8 +3,6 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart' show ScrollCacheExtent;
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
@@ -16,12 +14,9 @@ import '../providers/deck_provider.dart';
 import '../services/local_storage_service.dart';
 import '../services/search_service.dart';
 import '../theme/app_theme.dart';
-import '../widgets/category_badge.dart';
 import '../widgets/search_card_castle.dart';
 import '../widgets/stored_image.dart';
 import '../widgets/webgl_card_castle_view.dart';
-
-enum _SearchViewMode { castle, grid, list }
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -32,30 +27,21 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> {
   static const _storageKey = 'search_path_state_v1';
-  static const _pageSize = 30;
   static final _categories = <String>[
     'TOUTES',
     ...cardCategories.map((category) => category.label),
   ];
 
   final _controller = TextEditingController();
-  final _scrollController = ScrollController();
   final _search = SearchService();
-  final Map<String, FocusNode> _cardFocusNodes = {};
-  final Map<String, GlobalKey> _cardKeys = {};
   Timer? _debounce;
   Timer? _persistDebounce;
   bool _restored = false;
   String _query = '';
   String _category = 'TOUTES';
   String? _selectedCardId;
-  _SearchViewMode _viewMode = _SearchViewMode.castle;
   int _shuffleSeed = 0;
-  int _visibleCount = _pageSize;
-  double _savedScrollOffset = 0;
-  int _gridColumns = 4;
   int _castleFullscreenRequestId = 0;
-  _SearchViewMode? _viewBeforeCastleFullscreen;
   late LocalStorageService _storage;
 
   @override
@@ -69,21 +55,11 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   @override
-  void initState() {
-    super.initState();
-    _scrollController.addListener(_handleScroll);
-  }
-
-  @override
   void dispose() {
     _debounce?.cancel();
     _persistDebounce?.cancel();
     unawaited(_persistState());
     _controller.dispose();
-    _scrollController.dispose();
-    for (final node in _cardFocusNodes.values) {
-      node.dispose();
-    }
     super.dispose();
   }
 
@@ -99,26 +75,7 @@ class _SearchScreenState extends State<SearchScreen> {
             ? json['category'] as String
             : 'TOUTES';
         _selectedCardId = json['selectedCardId'] as String?;
-        _viewMode = switch (json['viewMode']) {
-          'grid' => _SearchViewMode.grid,
-          'list' => _SearchViewMode.list,
-          _ => _SearchViewMode.castle,
-        };
-        _savedScrollOffset = (json['scrollOffset'] as num?)?.toDouble() ?? 0;
         _shuffleSeed = (json['shuffleSeed'] as num?)?.toInt() ?? 0;
-        _visibleCount = max(
-          _pageSize,
-          (json['visibleCount'] as num?)?.toInt() ?? _pageSize,
-        );
-      });
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted || !_scrollController.hasClients) return;
-        _scrollController.jumpTo(
-          _savedScrollOffset.clamp(
-            0,
-            _scrollController.position.maxScrollExtent,
-          ),
-        );
       });
     } on Object {
       // Ignore stale state from older app versions.
@@ -126,17 +83,11 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Future<void> _persistState() async {
-    final offset = _scrollController.hasClients
-        ? _scrollController.offset
-        : _savedScrollOffset;
     await _storage.write(_storageKey, {
       'query': _query,
       'category': _category,
       'selectedCardId': _selectedCardId,
-      'viewMode': _viewMode.name,
-      'scrollOffset': offset,
       'shuffleSeed': _shuffleSeed,
-      'visibleCount': _visibleCount,
     });
   }
 
@@ -148,23 +99,11 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  void _handleScroll() {
-    _savedScrollOffset = _scrollController.offset;
-    if (_scrollController.position.extentAfter < 600) {
-      setState(() => _visibleCount += _pageSize);
-    }
-    _schedulePersist();
-  }
-
   void _onQueryChanged(String value) {
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 250), () {
       if (!mounted) return;
-      setState(() {
-        _query = value;
-        _visibleCount = _pageSize;
-      });
-      _jumpToTop();
+      setState(() => _query = value);
       _schedulePersist();
     });
   }
@@ -172,21 +111,9 @@ class _SearchScreenState extends State<SearchScreen> {
   void _setCategory(String value) {
     setState(() {
       _category = value;
-      _visibleCount = _pageSize;
       _selectedCardId = null;
     });
-    _jumpToTop();
     _schedulePersist();
-  }
-
-  void _jumpToTop() {
-    if (_scrollController.hasClients) {
-      _scrollController.animateTo(
-        0,
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOut,
-      );
-    }
   }
 
   List<CardImageModel> _results(List<Deck> decks) {
@@ -205,9 +132,7 @@ class _SearchScreenState extends State<SearchScreen> {
   void _shuffle() {
     setState(() {
       _shuffleSeed = Random().nextInt(0x7fffffff) + 1;
-      _visibleCount = _pageSize;
     });
-    _jumpToTop();
     _schedulePersist();
   }
 
@@ -223,55 +148,19 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Future<void> _openCastleCardFullscreen(CardImageModel card) async {
-    if (_viewBeforeCastleFullscreen != null) {
-      setState(() {
-        _viewMode = _viewBeforeCastleFullscreen!;
-        _viewBeforeCastleFullscreen = null;
-      });
-    }
     await _openFullscreen(card);
   }
 
   void _viewInCastle(CardImageModel card) {
     setState(() {
-      _viewBeforeCastleFullscreen = _viewMode == _SearchViewMode.castle
-          ? null
-          : _viewMode;
       _selectedCardId = card.id;
-      _viewMode = _SearchViewMode.castle;
       _castleFullscreenRequestId += 1;
     });
     _schedulePersist();
   }
 
   void _handleCastleFullscreenChanged(bool active) {
-    if (active || _viewBeforeCastleFullscreen == null) return;
-    setState(() {
-      _viewMode = _viewBeforeCastleFullscreen!;
-      _viewBeforeCastleFullscreen = null;
-    });
     _schedulePersist();
-  }
-
-  void _moveFocus(List<CardImageModel> cards, int index, int delta) {
-    if (cards.isEmpty) return;
-    final next = (index + delta).clamp(0, cards.length - 1);
-    final card = cards[next];
-    if (next >= _visibleCount) {
-      setState(() => _visibleCount = next + _pageSize);
-    }
-    _select(card);
-    _cardFocusNodes[card.id]?.requestFocus();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final target = _cardKeys[card.id]?.currentContext;
-      if (target != null) {
-        Scrollable.ensureVisible(
-          target,
-          duration: const Duration(milliseconds: 160),
-          alignment: .2,
-        );
-      }
-    });
   }
 
   @override
@@ -281,7 +170,6 @@ class _SearchScreenState extends State<SearchScreen> {
     final selected = results
         .where((card) => card.id == _selectedCardId)
         .firstOrNull;
-    final visible = results.take(_visibleCount).toList(growable: false);
 
     return Scaffold(
       backgroundColor: const Color(0xFF05080C),
@@ -299,14 +187,9 @@ class _SearchScreenState extends State<SearchScreen> {
               _SearchHeader(
                 controller: _controller,
                 selectedCategory: _category,
-                viewMode: _viewMode,
                 onQueryChanged: _onQueryChanged,
                 onCategoryChanged: _setCategory,
                 onShuffle: results.isEmpty ? null : _shuffle,
-                onViewModeChanged: (mode) {
-                  setState(() => _viewMode = mode);
-                  _schedulePersist();
-                },
                 categories: _categories,
               ),
               Expanded(
@@ -339,7 +222,7 @@ class _SearchScreenState extends State<SearchScreen> {
                               Expanded(
                                 child: results.isEmpty
                                     ? const _EmptyResults()
-                                    : _buildResults(visible, results),
+                                    : _buildCastle(results),
                               ),
                             ],
                           ),
@@ -380,127 +263,53 @@ class _SearchScreenState extends State<SearchScreen> {
     return '$count RÉSULTATS POUR “${_query.trim().toUpperCase()}”';
   }
 
-  Widget _buildResults(List<CardImageModel> visible, List<CardImageModel> all) {
-    if (_viewMode == _SearchViewMode.castle) {
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              WebGlCardCastleView(
-                cards: all,
-                focusedCardId: _selectedCardId,
-                shuffleSeed: _shuffleSeed,
-                activeCategory: _category,
-                fullscreenRequestId: _castleFullscreenRequestId,
-                onCardSelected: (id) {
-                  final card = all.where((item) => item.id == id).firstOrNull;
-                  if (card != null) _select(card);
-                },
-                onCardOpened: (id) {
-                  final card = all.where((item) => item.id == id).firstOrNull;
-                  if (card != null) {
-                    unawaited(_openCastleCardFullscreen(card));
-                  }
-                },
-                onCategoryChanged: _setCategory,
-                onHomeRequested: () => context.go(AppRoutes.home),
-                onDjWhoRequested: () => context.go(AppRoutes.djWhoVideos),
-                onFullscreenChanged: _handleCastleFullscreenChanged,
-                fallback: SearchCardCastle(
-                  cards: visible,
-                  onFullscreen: _openFullscreen,
-                ),
-              ),
-              Positioned(
-                left: 16,
-                right: 16,
-                bottom: 14,
-                child: _CastleActiveCardsHud(
-                  cards: _activeCastleCards(all),
-                  selectedCardId: _selectedCardId,
-                  onSelect: _select,
-                  onFullscreen: _openFullscreen,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-    if (_viewMode == _SearchViewMode.list) {
-      _gridColumns = 1;
-      return Scrollbar(
-        controller: _scrollController,
-        child: ListView.separated(
-          controller: _scrollController,
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-          itemCount: visible.length,
-          separatorBuilder: (_, _) => const SizedBox(height: 8),
-          itemBuilder: (context, index) => _SearchListRow(
-            key: _cardKeys.putIfAbsent(visible[index].id, GlobalKey.new),
-            card: visible[index],
-            selected: visible[index].id == _selectedCardId,
-            focusNode: _cardFocusNodes.putIfAbsent(
-              visible[index].id,
-              FocusNode.new,
-            ),
-            onSelect: () => _select(visible[index]),
-            onFullscreen: () => _openFullscreen(visible[index]),
-            onMove: (delta) => _moveFocus(all, index, delta),
-          ),
-        ),
-      );
-    }
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        _gridColumns = constraints.maxWidth >= 900
-            ? 5
-            : constraints.maxWidth >= 680
-            ? 4
-            : constraints.maxWidth >= 430
-            ? 3
-            : 2;
-        return Scrollbar(
-          controller: _scrollController,
-          child: GridView.builder(
-            controller: _scrollController,
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-            scrollCacheExtent: const ScrollCacheExtent.pixels(700),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: _gridColumns,
-              crossAxisSpacing: 14,
-              mainAxisSpacing: 14,
-              childAspectRatio: 2 / 3,
-            ),
-            itemCount: visible.length,
-            itemBuilder: (context, index) => _SearchCardTile(
-              key: _cardKeys.putIfAbsent(visible[index].id, GlobalKey.new),
-              card: visible[index],
-              selected: visible[index].id == _selectedCardId,
-              focusNode: _cardFocusNodes.putIfAbsent(
-                visible[index].id,
-                FocusNode.new,
-              ),
-              onSelect: () => _select(visible[index]),
-              onFullscreen: () => _openFullscreen(visible[index]),
-              onMove: (delta) => _moveFocus(
-                all,
-                index,
-                delta < -1
-                    ? -_gridColumns
-                    : delta > 1
-                    ? _gridColumns
-                    : delta,
-              ),
+  Widget _buildCastle(List<CardImageModel> cards) => Padding(
+    padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+    child: ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          WebGlCardCastleView(
+            cards: cards,
+            focusedCardId: _selectedCardId,
+            shuffleSeed: _shuffleSeed,
+            activeCategory: _category,
+            fullscreenRequestId: _castleFullscreenRequestId,
+            onCardSelected: (id) {
+              final card = cards.where((item) => item.id == id).firstOrNull;
+              if (card != null) _select(card);
+            },
+            onCardOpened: (id) {
+              final card = cards.where((item) => item.id == id).firstOrNull;
+              if (card != null) {
+                unawaited(_openCastleCardFullscreen(card));
+              }
+            },
+            onCategoryChanged: _setCategory,
+            onHomeRequested: () => context.go(AppRoutes.home),
+            onDjWhoRequested: () => context.go(AppRoutes.djWhoVideos),
+            onFullscreenChanged: _handleCastleFullscreenChanged,
+            fallback: SearchCardCastle(
+              cards: cards,
+              onFullscreen: _openFullscreen,
             ),
           ),
-        );
-      },
-    );
-  }
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: 14,
+            child: _CastleActiveCardsHud(
+              cards: _activeCastleCards(cards),
+              selectedCardId: _selectedCardId,
+              onSelect: _select,
+              onFullscreen: _openFullscreen,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 
   List<CardImageModel> _activeCastleCards(List<CardImageModel> cards) {
     final focused = cards
@@ -655,21 +464,17 @@ class _SearchHeader extends StatelessWidget {
   const _SearchHeader({
     required this.controller,
     required this.selectedCategory,
-    required this.viewMode,
     required this.onQueryChanged,
     required this.onCategoryChanged,
     required this.onShuffle,
-    required this.onViewModeChanged,
     required this.categories,
   });
 
   final TextEditingController controller;
   final String selectedCategory;
-  final _SearchViewMode viewMode;
   final ValueChanged<String> onQueryChanged;
   final ValueChanged<String> onCategoryChanged;
   final VoidCallback? onShuffle;
-  final ValueChanged<_SearchViewMode> onViewModeChanged;
   final List<String> categories;
 
   @override
@@ -760,29 +565,6 @@ class _SearchHeader extends StatelessWidget {
                     ? const Text('SHUFFLE')
                     : const SizedBox.shrink(),
               ),
-              const SizedBox(width: 8),
-              SegmentedButton<_SearchViewMode>(
-                showSelectedIcon: false,
-                segments: const [
-                  ButtonSegment(
-                    value: _SearchViewMode.castle,
-                    icon: Icon(Icons.castle_rounded),
-                    tooltip: '3D Castle View',
-                  ),
-                  ButtonSegment(
-                    value: _SearchViewMode.grid,
-                    icon: Icon(Icons.grid_view_rounded),
-                    tooltip: 'Grid View',
-                  ),
-                  ButtonSegment(
-                    value: _SearchViewMode.list,
-                    icon: Icon(Icons.view_list_rounded),
-                    tooltip: 'List View',
-                  ),
-                ],
-                selected: {viewMode},
-                onSelectionChanged: (value) => onViewModeChanged(value.first),
-              ),
             ],
           ),
           const SizedBox(height: 10),
@@ -815,182 +597,6 @@ class _SearchHeader extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    ),
-  );
-}
-
-class _SearchCardTile extends StatefulWidget {
-  const _SearchCardTile({
-    required this.card,
-    required this.selected,
-    required this.focusNode,
-    required this.onSelect,
-    required this.onFullscreen,
-    required this.onMove,
-    super.key,
-  });
-  final CardImageModel card;
-  final bool selected;
-  final FocusNode focusNode;
-  final VoidCallback onSelect;
-  final VoidCallback onFullscreen;
-  final ValueChanged<int> onMove;
-
-  @override
-  State<_SearchCardTile> createState() => _SearchCardTileState();
-}
-
-class _SearchCardTileState extends State<_SearchCardTile> {
-  bool focused = false;
-
-  @override
-  Widget build(BuildContext context) => Semantics(
-    button: true,
-    selected: widget.selected,
-    label: '${widget.card.category} search result card',
-    onTap: widget.onSelect,
-    onLongPress: widget.onFullscreen,
-    child: CallbackShortcuts(
-      bindings: {
-        const SingleActivator(LogicalKeyboardKey.arrowLeft): () =>
-            widget.onMove(-1),
-        const SingleActivator(LogicalKeyboardKey.arrowRight): () =>
-            widget.onMove(1),
-        const SingleActivator(LogicalKeyboardKey.arrowUp): () =>
-            widget.onMove(-2),
-        const SingleActivator(LogicalKeyboardKey.arrowDown): () =>
-            widget.onMove(2),
-        const SingleActivator(LogicalKeyboardKey.keyF): widget.onFullscreen,
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: widget.selected || focused
-                ? AppTheme.brightGold
-                : const Color(0xFF50616D),
-            width: widget.selected
-                ? 3
-                : focused
-                ? 2
-                : 1,
-          ),
-          boxShadow: widget.selected
-              ? const [BoxShadow(color: Color(0x99FFC928), blurRadius: 16)]
-              : null,
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          focusNode: widget.focusNode,
-          onFocusChange: (value) => setState(() => focused = value),
-          onTap: widget.onSelect,
-          onLongPress: widget.onFullscreen,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              StoredImage(
-                source: widget.card.imagePath,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => const ColoredBox(
-                  color: Color(0xFF141A20),
-                  child: Center(child: Icon(Icons.broken_image_outlined)),
-                ),
-              ),
-              Positioned(
-                left: 6,
-                top: 6,
-                child: CategoryBadge(
-                  category: widget.card.category,
-                  compact: true,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    ),
-  );
-}
-
-class _SearchListRow extends StatelessWidget {
-  const _SearchListRow({
-    required this.card,
-    required this.selected,
-    required this.focusNode,
-    required this.onSelect,
-    required this.onFullscreen,
-    required this.onMove,
-    super.key,
-  });
-  final CardImageModel card;
-  final bool selected;
-  final FocusNode focusNode;
-  final VoidCallback onSelect;
-  final VoidCallback onFullscreen;
-  final ValueChanged<int> onMove;
-
-  @override
-  Widget build(BuildContext context) => CallbackShortcuts(
-    bindings: {
-      const SingleActivator(LogicalKeyboardKey.arrowUp): () => onMove(-1),
-      const SingleActivator(LogicalKeyboardKey.arrowDown): () => onMove(1),
-    },
-    child: Material(
-      color: selected ? const Color(0xFF332A0D) : const Color(0xCC111820),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-        side: BorderSide(
-          color: selected ? AppTheme.brightGold : const Color(0xFF425461),
-          width: selected ? 2 : 1,
-        ),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        focusNode: focusNode,
-        onTap: onSelect,
-        onLongPress: onFullscreen,
-        child: SizedBox(
-          height: 96,
-          child: Row(
-            children: [
-              AspectRatio(
-                aspectRatio: card.aspectRatio,
-                child: StoredImage(source: card.imagePath, fit: BoxFit.cover),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      card.category.toUpperCase(),
-                      style: const TextStyle(
-                        color: AppTheme.brightGold,
-                        fontSize: 12,
-                      ),
-                    ),
-                    if (card.question.isNotEmpty)
-                      Text(
-                        card.question,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: Color(0xFFAFBBC4)),
-                      ),
-                  ],
-                ),
-              ),
-              IconButton(
-                tooltip: 'Ouvrir en plein écran',
-                onPressed: onFullscreen,
-                icon: const Icon(Icons.fullscreen_rounded),
-              ),
-              const SizedBox(width: 6),
-            ],
-          ),
-        ),
       ),
     ),
   );
