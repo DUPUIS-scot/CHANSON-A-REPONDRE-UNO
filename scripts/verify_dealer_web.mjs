@@ -245,9 +245,11 @@ async function verifySearchCastle(client, url) {
   await waitFor(
     client,
     `Number(document.getElementById('search-card-castle-frame')
-      ?.contentDocument?.body.dataset.textureCount || 0) === 84`,
-    'all permanent card textures in the castle',
-    20000,
+      ?.contentDocument?.body.dataset.textureCount || 0) >=
+      Number(document.getElementById('search-card-castle-frame')
+      ?.contentDocument?.body.dataset.visibleMeshCount || 0)`,
+    'every visible castle card texture',
+    30000,
   );
   await capture(client, castleOutputPath);
   client.consoleMessages.length = 0;
@@ -321,7 +323,9 @@ async function verifySearchCastle(client, url) {
       rendererStatus: body?.dataset.rendererStatus,
       cardCount: Number(body?.dataset.cardCount || 0),
       meshCount: Number(body?.dataset.meshCount || 0),
+      visibleMeshCount: Number(body?.dataset.visibleMeshCount || 0),
       textureCount: Number(body?.dataset.textureCount || 0),
+      referenceBackground: body?.dataset.referenceBackground || '',
       focusedCardId: body?.dataset.focusedCardId || '',
       focusMode: body?.dataset.focusMode || '',
       rendererInstanceId: body?.dataset.rendererInstanceId || '',
@@ -330,6 +334,10 @@ async function verifySearchCastle(client, url) {
       threeLoaded: Boolean(frame?.contentWindow?.THREE),
       framePath: frame ? new URL(frame.src).pathname : '',
       canvas: Boolean(canvas),
+      backdrop: frame?.contentDocument
+        ? getComputedStyle(frame.contentDocument.getElementById('scene'))
+            .backgroundImage.includes('search_castle_background.png')
+        : false,
       width: rect?.width || 0,
       height: rect?.height || 0,
     };
@@ -341,13 +349,17 @@ async function verifySearchCastle(client, url) {
     result.rendererStatus !== 'ready' ||
     result.cardCount !== 84 ||
     result.meshCount !== 84 ||
-    result.textureCount < 1 ||
+    result.visibleMeshCount < 1 ||
+    result.visibleMeshCount > 28 ||
+    result.textureCount < result.visibleMeshCount ||
+    result.referenceBackground !== 'search_castle_background.png' ||
     result.focusedCardId !== requestedFocusId ||
     result.focusMode !== 'animated' ||
     result.rendererInstanceId !== rendererInstanceId ||
     result.sceneObjectCount < 40 ||
     !result.fullscreen ||
     !result.threeLoaded ||
+    !result.backdrop ||
     result.framePath !== `${basePath}card_castle/card_castle.html` ||
     result.width <= 0 ||
     result.height <= 0

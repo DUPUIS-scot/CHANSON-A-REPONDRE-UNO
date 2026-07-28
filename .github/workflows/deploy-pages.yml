@@ -101,6 +101,7 @@ jobs:
           test -f build/web/vendor/three.min.js
           test -f build/web/card_castle/card_castle.html
           test -f build/web/assets/assets/images/dj_who.png
+          test -f build/web/assets/assets/images/search_castle_background.png
           test "$(find build/web/assets/assets/cards/category_versos -type f -name '*.png' | wc -l)" -eq 5
           test "$(find build/web/assets/assets/cards/final_import -type f -name '*.png' | wc -l)" -eq 84
           grep -q '<base href="/CHANSON-A-REPONDRE-UNO/">' build/web/index.html
@@ -114,6 +115,9 @@ jobs:
           grep -q 'down.panning' build/web/card_castle/card_castle.html
           grep -q 'CRAN 3D' build/web/card_castle/card_castle.html
           grep -q 'rendererInstanceId' build/web/card_castle/card_castle.html
+          grep -q 'search_castle_background.png' build/web/card_castle/card_castle.html
+          grep -q 'buildSaltireFlag' build/web/card_castle/card_castle.html
+          grep -q 'updateVisibleCards' build/web/card_castle/card_castle.html
           grep -q '5 CARTES ACTIVES' build/web/main.dart.js
           grep -q 'fullscreenFallbackRequested' build/web/main.dart.js
           grep -q 'C0zocqpnIpY' build/web/main.dart.js
