@@ -161,21 +161,10 @@ class _AccountScreenState extends State<AccountScreen> {
         auth.canUseProtectedAi && backendOnline && openAi.connected;
 
     return Scaffold(
-      backgroundColor: _stageBlack,
+      backgroundColor: Colors.transparent,
       body: Stack(
         fit: StackFit.expand,
         children: [
-          const DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [_stageBlack, Color(0xFF0D0906)],
-              ),
-            ),
-          ),
-          const _CurtainSide(alignment: Alignment.centerLeft),
-          const _CurtainSide(alignment: Alignment.centerRight),
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(32, 18, 32, 24),
@@ -283,7 +272,8 @@ class _AccountScreenState extends State<AccountScreen> {
             if (message != null) ...[
               const SizedBox(height: 14),
               _InlineNotice(
-                isError: message.contains('Invalid') ||
+                isError:
+                    message.contains('Invalid') ||
                     message.contains('Incorrect') ||
                     message.contains('configured') ||
                     message.contains('unavailable'),
@@ -467,7 +457,9 @@ class _AccountScreenState extends State<AccountScreen> {
           ),
           const SizedBox(height: 18),
           _PrimaryGoldButton(
-            onPressed: backendOnline ? () => context.go(AppRoutes.aiChat) : null,
+            onPressed: backendOnline
+                ? () => context.go(AppRoutes.aiChat)
+                : null,
             icon: Icons.smart_toy_outlined,
             label: 'OPEN AI CHAT',
           ),
@@ -613,9 +605,7 @@ class _AccountScreenState extends State<AccountScreen> {
             )
           else ...[
             _PrimaryGoldButton(
-              onPressed: connection.loading
-                  ? null
-                  : connection.testConnection,
+              onPressed: connection.loading ? null : connection.testConnection,
               icon: Icons.network_check,
               loading: connection.loading,
               label: 'TEST CONNECTION',
@@ -656,7 +646,9 @@ class _AccountScreenState extends State<AccountScreen> {
       barrierDismissible: false,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: Text(replacing ? 'REPLACE OPENAI API KEY' : 'CONNECT OPENAI API'),
+          title: Text(
+            replacing ? 'REPLACE OPENAI API KEY' : 'CONNECT OPENAI API',
+          ),
           content: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 520),
             child: SingleChildScrollView(
@@ -713,8 +705,10 @@ class _AccountScreenState extends State<AccountScreen> {
               child: const Text('CANCEL'),
             ),
             FilledButton(
-              onPressed: () =>
-                  Navigator.pop(dialogContext, keyController.text.trim().isNotEmpty),
+              onPressed: () => Navigator.pop(
+                dialogContext,
+                keyController.text.trim().isNotEmpty,
+              ),
               child: Text(replacing ? 'REPLACE' : 'CONNECT'),
             ),
           ],
@@ -728,9 +722,7 @@ class _AccountScreenState extends State<AccountScreen> {
     await connection.connect(plaintext, replace: replacing);
   }
 
-  Future<void> _confirmDisconnect(
-    OpenAiConnectionController connection,
-  ) async {
+  Future<void> _confirmDisconnect(OpenAiConnectionController connection) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -831,9 +823,10 @@ class _AccountScreenState extends State<AccountScreen> {
             ),
             ConfigurationStatusRow(
               label: 'Supabase client key',
-              status: AppConfig.isValidSupabaseClientKey(
-                AppConfig.supabaseClientKey,
-              )
+              status:
+                  AppConfig.isValidSupabaseClientKey(
+                    AppConfig.supabaseClientKey,
+                  )
                   ? 'Configured'
                   : 'Missing or placeholder',
               isValid: AppConfig.isValidSupabaseClientKey(
@@ -852,7 +845,8 @@ class _AccountScreenState extends State<AccountScreen> {
                   : AppConfig.hasAuthConfiguration
                   ? 'Ready'
                   : 'Missing',
-              isValid: AppConfig.hasAuthConfiguration &&
+              isValid:
+                  AppConfig.hasAuthConfiguration &&
                   auth.mode != AuthenticationMode.configurationError,
             ),
             const SizedBox(height: 8),
@@ -959,36 +953,6 @@ class _AccountScreenState extends State<AccountScreen> {
       });
     }
   }
-}
-
-class _CurtainSide extends StatelessWidget {
-  const _CurtainSide({required this.alignment});
-
-  final Alignment alignment;
-
-  @override
-  Widget build(BuildContext context) => IgnorePointer(
-    child: LayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        if (width < 560) return const SizedBox.shrink();
-        final curtainWidth = width < 900 ? 92.0 : 210.0;
-        return Align(
-          alignment: alignment,
-          child: SizedBox(
-            width: curtainWidth,
-            height: double.infinity,
-            child: Image.asset(
-              'assets/images/closed_curtains.png',
-              fit: BoxFit.cover,
-              alignment: alignment,
-              opacity: const AlwaysStoppedAnimation(0.86),
-            ),
-          ),
-        );
-      },
-    ),
-  );
 }
 
 class _ProfilePanel extends StatelessWidget {

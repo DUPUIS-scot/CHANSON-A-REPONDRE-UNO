@@ -54,13 +54,13 @@ abstract final class AppTheme {
       useMaterial3: true,
       brightness: Brightness.dark,
       colorScheme: colorScheme,
-      scaffoldBackgroundColor: darkLeather,
+      scaffoldBackgroundColor: Colors.transparent,
       canvasColor: darkLeather,
       textTheme: textTheme,
       splashFactory: InkRipple.splashFactory,
       appBarTheme: const AppBarTheme(
         centerTitle: false,
-        backgroundColor: darkLeather,
+        backgroundColor: Color(0xCC100C08),
         foregroundColor: parchment,
         surfaceTintColor: Colors.transparent,
       ),
@@ -109,7 +109,7 @@ abstract final class AppTheme {
 
   static ThemeData get light => dark.copyWith(
     brightness: Brightness.light,
-    scaffoldBackgroundColor: const Color(0xFFF5F0E5),
+    scaffoldBackgroundColor: Colors.transparent,
     colorScheme: ColorScheme.fromSeed(
       seedColor: gold,
       brightness: Brightness.light,

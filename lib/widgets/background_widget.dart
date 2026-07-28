@@ -9,9 +9,9 @@ enum BackgroundType { image, video }
 class BackgroundWidget extends StatefulWidget {
   const BackgroundWidget({
     required this.type,
-    this.imagePath = 'assets/images/main_street_background.png',
+    this.imagePath = 'assets/images/default_background.png',
     this.videoPath = 'assets/videos/background.mp4',
-    this.fallbackImagePath = 'assets/images/home_background.png',
+    this.fallbackImagePath = 'assets/images/default_background.png',
     this.muted = true,
     super.key,
   });

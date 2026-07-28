@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter/widgets.dart';
-import 'package:path/path.dart' as path;
 import 'package:video_player/video_player.dart';
 
 import '../features/startup_media/startup_video_source.dart';
@@ -26,7 +25,7 @@ class StartupVideoProvider extends ChangeNotifier with WidgetsBindingObserver {
   bool get isImported => source is FileStartupVideoSource;
   String get currentFileName => switch (source) {
     AssetStartupVideoSource() => 'Bundled startup video',
-    FileStartupVideoSource(:final file) => path.basename(file.path),
+    FileStartupVideoSource() => 'Saved startup video',
   };
 
   Future<void> initialize() async {
@@ -108,8 +107,8 @@ class StartupVideoProvider extends ChangeNotifier with WidgetsBindingObserver {
           const AssetStartupVideoSource(StartupVideoStorage.bundledAsset),
         );
         error =
-            'The imported startup video was missing or invalid. '
-            'The bundled video was restored.';
+            'The saved startup video was unavailable. '
+            'The bundled startup video was restored.';
       } else {
         loading = false;
         error = 'Unable to load the selected startup video.';

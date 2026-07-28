@@ -31,7 +31,7 @@ class SettingsScreen extends StatelessWidget {
       builder: (dialogContext) => AlertDialog(
         title: const Text('Restore default background?'),
         content: const Text(
-          'The theatrical main-street image will be restored.',
+          'The default Edinburgh night background will be restored.',
         ),
         actions: [
           TextButton(
@@ -105,7 +105,9 @@ class SettingsScreen extends StatelessWidget {
               ListTile(
                 title: const Text('Supabase client key'),
                 trailing: Text(
-                  AppConfig.isValidSupabaseClientKey(AppConfig.supabaseClientKey)
+                  AppConfig.isValidSupabaseClientKey(
+                        AppConfig.supabaseClientKey,
+                      )
                       ? 'Configured'
                       : 'Missing or placeholder',
                 ),
@@ -268,8 +270,7 @@ class _SettingsControlCenterState extends State<_SettingsControlCenter> {
       builder: (dialogContext) => AlertDialog(
         title: const Text('Restore the bundled startup video?'),
         content: const Text(
-          'The imported startup video will be removed from the app\'s local '
-          'storage. Your original source file will not be deleted.',
+          'The bundled startup video will be restored for the app.',
         ),
         actions: [
           TextButton(
@@ -404,14 +405,20 @@ class _SettingsControlCenterState extends State<_SettingsControlCenter> {
               icon: Icons.restore,
               onTap: widget.onRestore,
             ),
+            SettingsActionTile(
+              title: 'Use bundled SAUVAGE video',
+              icon: Icons.movie_outlined,
+              onTap:
+                  background.type == BackgroundMediaType.video &&
+                      background.importedPath == null
+                  ? null
+                  : background.useBundledVideo,
+            ),
             const Divider(),
             ListTile(
               leading: const Icon(Icons.ondemand_video_outlined),
               title: const Text('Startup Video'),
-              subtitle: Text(
-                '${startup.isImported ? 'Imported video' : 'Bundled startup video'}\n'
-                '${startup.currentFileName}',
-              ),
+              subtitle: Text(startup.currentFileName),
               isThreeLine: true,
               trailing: startup.importing
                   ? const SizedBox.square(

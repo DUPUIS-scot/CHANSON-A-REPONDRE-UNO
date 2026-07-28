@@ -136,10 +136,10 @@ class _PlayScreenState extends State<PlayScreen> {
     final settings = context.watch<SettingsProvider>();
     final state = game.state;
     return Scaffold(
-      backgroundColor: const Color(0xFF130D0B),
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Play'),
-        backgroundColor: const Color(0xFF130D0B),
+        backgroundColor: const Color(0xCC130D0B),
         actions: [
           PopupMenuButton<PuppetQuality>(
             initialValue: puppetQuality,

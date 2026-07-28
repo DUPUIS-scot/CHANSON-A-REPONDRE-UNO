@@ -284,14 +284,14 @@ class _SearchScreenState extends State<SearchScreen> {
     final visible = results.take(_visibleCount).toList(growable: false);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF05080C),
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: DecoratedBox(
           decoration: const BoxDecoration(
             gradient: RadialGradient(
               center: Alignment.topCenter,
               radius: 1.3,
-              colors: [Color(0xFF102130), Color(0xFF05080C)],
+              colors: [Color(0xB3102130), Color(0x9905080C)],
             ),
           ),
           child: Column(

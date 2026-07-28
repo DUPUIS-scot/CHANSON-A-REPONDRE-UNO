@@ -26,7 +26,9 @@ abstract final class AppRoutes {
   static const home = '/home';
   static const play = '/play';
   static const decks = '/decks';
+  static const deckSelection = '/deck-selection';
   static const cards = '/cards';
+  static const browse = '/browse';
   static const search = '/search';
   static const journal = '/journal';
   static const aiChat = '/ai-chat';
@@ -71,9 +73,14 @@ abstract final class AppRouter {
       GoRoute(path: AppRoutes.home, builder: (_, _) => const HomeScreen()),
       GoRoute(path: AppRoutes.play, builder: (_, _) => const PlayScreen()),
       GoRoute(
+        path: AppRoutes.deckSelection,
+        redirect: (_, _) => AppRoutes.decks,
+      ),
+      GoRoute(
         path: AppRoutes.decks,
         builder: (_, _) => const DeckSelectionScreen(),
       ),
+      GoRoute(path: AppRoutes.browse, redirect: (_, _) => AppRoutes.cards),
       GoRoute(
         path: AppRoutes.cards,
         builder: (_, state) => CardBrowserScreen(

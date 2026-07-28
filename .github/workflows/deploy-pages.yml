@@ -100,6 +100,7 @@ jobs:
           test -f build/web/puppet_dealer.js
           test -f build/web/vendor/three.min.js
           test -f build/web/card_castle/card_castle.html
+          test -f build/web/assets/assets/images/default_background.png
           test -f build/web/assets/assets/images/dj_who.png
           test "$(find build/web/assets/assets/cards/category_versos -type f -name '*.png' | wc -l)" -eq 5
           test "$(find build/web/assets/assets/cards/final_import -type f -name '*.png' | wc -l)" -eq 84

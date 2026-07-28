@@ -228,13 +228,39 @@ async function capture(client, path) {
 }
 
 async function verifySearchCastle(client, url) {
-  await waitFor(
-    client,
-    `document.getElementById('search-card-castle-frame')
-      ?.contentDocument?.body.dataset.rendererStatus === 'ready'`,
-    'the Search Three.js castle',
-    40000,
-  );
+  try {
+    await waitFor(
+      client,
+      `document.getElementById('search-card-castle-frame')
+        ?.contentDocument?.body.dataset.rendererStatus === 'ready'`,
+      'the Search Three.js castle',
+      40000,
+    );
+  } catch (error) {
+    const debug = await client.evaluate(`(() => {
+      const frame = document.getElementById('search-card-castle-frame');
+      const body = frame?.contentDocument?.body;
+      return {
+        href: location.href,
+        hash: location.hash,
+        title: document.title,
+        flutterViews: document.querySelectorAll('flutter-view').length,
+        platformViews: document.querySelectorAll('flt-platform-view').length,
+        frameFound: Boolean(frame),
+        framePath: frame ? new URL(frame.src).pathname : '',
+        frameReadyState: frame?.contentDocument?.readyState || '',
+        rendererStatus: body?.dataset.rendererStatus || '',
+        bodyText: body?.innerText?.slice(0, 200) || '',
+        threeLoaded: Boolean(frame?.contentWindow?.THREE),
+        canvasFound: Boolean(frame?.contentDocument?.querySelector('canvas')),
+      };
+    })()`);
+    console.error(
+      'SEARCH CASTLE VERIFICATION DEBUG',
+      JSON.stringify({debug, console: client.consoleMessages}, null, 2),
+    );
+    throw error;
+  }
   await waitFor(
     client,
     `Number(document.getElementById('search-card-castle-frame')

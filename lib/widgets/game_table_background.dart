@@ -10,7 +10,6 @@ class GameTableBackground extends StatelessWidget {
   Widget build(BuildContext context) => Stack(
     fit: StackFit.expand,
     children: [
-      const ColoredBox(color: Color(0xFF071412)),
       CustomPaint(painter: _TablePainter()),
       ?stageLayer,
       child,
@@ -29,7 +28,7 @@ class _TablePainter extends CustomPainter {
         ..shader = const RadialGradient(
           center: Alignment(.05, -.2),
           radius: 1.15,
-          colors: [Color(0xFF123B36), Color(0xFF08241F), Color(0xFF03100F)],
+          colors: [Color(0x66123B36), Color(0x5508241F), Color(0x4403100F)],
           stops: [0, .58, 1],
         ).createShader(stageRect),
     );
@@ -55,9 +54,6 @@ class _TablePainter extends CustomPainter {
       }
     }
 
-    _paintCurtain(canvas, size, true);
-    _paintCurtain(canvas, size, false);
-
     final tableTop = size.height * .53;
     final tableRect = Rect.fromLTWH(
       0,
@@ -71,16 +67,16 @@ class _TablePainter extends CustomPainter {
         ..shader = const LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF6E351A), Color(0xFF3A170C)],
+          colors: [Color(0xCC6E351A), Color(0xDD3A170C)],
         ).createShader(tableRect),
     );
     canvas.drawRect(
       Rect.fromLTWH(0, tableTop, size.width, 7),
-      Paint()..color = const Color(0xFFC07A32),
+      Paint()..color = const Color(0xDDC07A32),
     );
     canvas.drawRect(
       Rect.fromLTWH(0, tableTop + 7, size.width, 7),
-      Paint()..color = const Color(0xFF271008),
+      Paint()..color = const Color(0xDD271008),
     );
 
     final grain = Paint()
@@ -105,65 +101,6 @@ class _TablePainter extends CustomPainter {
           colors: [Colors.transparent, Color(0xA8000000)],
           stops: [.55, 1],
         ).createShader(stageRect),
-    );
-  }
-
-  void _paintCurtain(Canvas canvas, Size size, bool left) {
-    final side = left ? 1.0 : -1.0;
-    final edge = left ? 0.0 : size.width;
-    final inner = size.width * (left ? .19 : .81);
-    final path = Path()
-      ..moveTo(edge, 0)
-      ..lineTo(inner, 0)
-      ..cubicTo(
-        inner - side * size.width * .02,
-        size.height * .15,
-        inner - side * size.width * .05,
-        size.height * .31,
-        inner - side * size.width * .035,
-        size.height * .47,
-      )
-      ..cubicTo(
-        inner - side * size.width * .07,
-        size.height * .52,
-        edge + side * size.width * .025,
-        size.height * .58,
-        edge,
-        size.height * .64,
-      )
-      ..close();
-    canvas.drawPath(
-      path,
-      Paint()
-        ..shader = const LinearGradient(
-          colors: [
-            Color(0xFF280408),
-            Color(0xFF741619),
-            Color(0xFF3A080D),
-            Color(0xFF8B211E),
-            Color(0xFF210307),
-          ],
-        ).createShader(path.getBounds()),
-    );
-    final fold = Paint()
-      ..color = const Color(0x887E241F)
-      ..strokeWidth = size.width * .012
-      ..strokeCap = StrokeCap.round;
-    for (var i = 1; i <= 4; i++) {
-      final x = edge + side * size.width * (.025 + i * .027);
-      canvas.drawLine(
-        Offset(x, 0),
-        Offset(x + side * 15, size.height * .48),
-        fold,
-      );
-    }
-    final ropeY = size.height * .37;
-    canvas.drawLine(
-      Offset(edge, ropeY - 12),
-      Offset(edge + side * size.width * .13, ropeY + 8),
-      Paint()
-        ..color = const Color(0xFFD79A2A)
-        ..strokeWidth = 5,
     );
   }
 

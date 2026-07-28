@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uno_chanson_2/providers/background_provider.dart';
 import 'package:uno_chanson_2/providers/settings_provider.dart';
+import 'package:uno_chanson_2/core/app_router.dart';
+import 'package:uno_chanson_2/services/background_import_service.dart';
 import 'package:uno_chanson_2/services/local_storage_service.dart';
 import 'package:uno_chanson_2/widgets/background_widget.dart';
 
@@ -15,7 +18,16 @@ void main() {
     await tester.pump();
     final image = tester.widget<Image>(find.byType(Image).first);
     expect(image.fit, BoxFit.cover);
+    expect(
+      (image.image as AssetImage).assetName,
+      BackgroundProvider.defaultImageAsset,
+    );
     expect(tester.takeException(), isNull);
+  });
+
+  test('public background route aliases remain available', () {
+    expect(AppRoutes.browse, '/browse');
+    expect(AppRoutes.deckSelection, '/deck-selection');
   });
 
   testWidgets('missing PNG displays a safe placeholder', (tester) async {
@@ -54,12 +66,80 @@ void main() {
     final storage = LocalStorageService();
     final first = SettingsProvider(storage);
     await first.load();
-    expect(first.backgroundType, 'VIDEO');
+    expect(first.backgroundType, 'IMAGE');
     await first.update(background: 'MP4');
     expect(first.backgroundType, 'MP4');
 
     final restored = SettingsProvider(storage);
     await restored.load();
     expect(restored.backgroundType, 'MP4');
+  });
+
+  test('fresh background provider starts with Edinburgh image', () async {
+    SharedPreferences.setMockInitialValues({});
+    final background = BackgroundProvider(
+      LocalStorageService(),
+      BackgroundImportService(),
+    );
+    addTearDown(background.dispose);
+
+    await background.load();
+
+    expect(background.type, BackgroundMediaType.image);
+    expect(background.imagePath, BackgroundProvider.defaultImageAsset);
+    expect(background.videoPath, BackgroundProvider.defaultVideoAsset);
+    expect(background.currentFilename, BackgroundProvider.defaultImageLabel);
+  });
+
+  test('saved video preference still wins over fresh default', () async {
+    SharedPreferences.setMockInitialValues({
+      'background_settings':
+          '{"type":"video","path":null,"filename":"legacy","overlay":0.28,"muteVideo":true}',
+    });
+    final background = BackgroundProvider(
+      LocalStorageService(),
+      BackgroundImportService(),
+    );
+    addTearDown(background.dispose);
+
+    await background.load();
+
+    expect(background.type, BackgroundMediaType.video);
+    expect(background.videoPath, BackgroundProvider.defaultVideoAsset);
+    expect(background.currentFilename, BackgroundProvider.defaultVideoLabel);
+  });
+
+  test('bundled video remains selectable and persists', () async {
+    SharedPreferences.setMockInitialValues({});
+    final storage = LocalStorageService();
+    final first = BackgroundProvider(storage, BackgroundImportService());
+    addTearDown(first.dispose);
+    await first.load();
+
+    await first.useBundledVideo();
+
+    final restored = BackgroundProvider(storage, BackgroundImportService());
+    addTearDown(restored.dispose);
+    await restored.load();
+    expect(restored.type, BackgroundMediaType.video);
+    expect(restored.importedPath, isNull);
+    expect(restored.videoPath, BackgroundProvider.defaultVideoAsset);
+  });
+
+  test('restoring after a video selection returns to Edinburgh', () async {
+    SharedPreferences.setMockInitialValues({});
+    final background = BackgroundProvider(
+      LocalStorageService(),
+      BackgroundImportService(),
+    );
+    addTearDown(background.dispose);
+    await background.load();
+    await background.useBundledVideo();
+
+    await background.restoreDefault();
+
+    expect(background.type, BackgroundMediaType.image);
+    expect(background.importedPath, isNull);
+    expect(background.imagePath, BackgroundProvider.defaultImageAsset);
   });
 }

@@ -32,6 +32,7 @@ import 'features/startup_media/startup_video_storage.dart';
 import 'theme/app_theme.dart';
 import 'screens/configuration_error_screen.dart';
 import 'widgets/development_auth_banner.dart';
+import 'widgets/background_widget.dart';
 
 class ChansonUnoApp extends StatefulWidget {
   const ChansonUnoApp({
@@ -103,9 +104,7 @@ class _ChansonUnoAppState extends State<ChansonUnoApp> {
       auth,
     );
     cardAi = CardAiProvider(
-      service: CardAiApiService(
-        client: aiClient,
-      ),
+      service: CardAiApiService(client: aiClient),
       decks: decks,
       localStorage: storage,
     );
@@ -204,7 +203,7 @@ class _ChansonUnoAppState extends State<ChansonUnoApp> {
                             data: MediaQuery.of(context).copyWith(
                               textScaler: TextScaler.linear(settings.textScale),
                             ),
-                            child: child!,
+                            child: _GlobalBackground(child: child!),
                           ),
                         ),
                       ),
@@ -213,6 +212,37 @@ class _ChansonUnoAppState extends State<ChansonUnoApp> {
                 ),
               ),
       ),
+    );
+  }
+}
+
+class _GlobalBackground extends StatelessWidget {
+  const _GlobalBackground({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final background = context.watch<BackgroundProvider>();
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        BackgroundWidget(
+          type: background.type == BackgroundMediaType.video
+              ? BackgroundType.video
+              : BackgroundType.image,
+          imagePath: background.imagePath,
+          videoPath: background.videoPath,
+          fallbackImagePath: BackgroundProvider.defaultImageAsset,
+          muted: background.muteVideo,
+        ),
+        IgnorePointer(
+          child: ColoredBox(
+            color: Colors.black.withValues(alpha: background.darkOverlay),
+          ),
+        ),
+        child,
+      ],
     );
   }
 }

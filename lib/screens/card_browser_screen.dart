@@ -17,11 +17,7 @@ import '../widgets/selected_card_actions.dart';
 import 'browse_hand_fullscreen_screen.dart';
 
 class CardBrowserScreen extends StatefulWidget {
-  const CardBrowserScreen({
-    this.focusCardId,
-    this.initialCategory,
-    super.key,
-  });
+  const CardBrowserScreen({this.focusCardId, this.initialCategory, super.key});
   final String? focusCardId;
   final String? initialCategory;
   @override
@@ -210,7 +206,7 @@ class _CardBrowserScreenState extends State<CardBrowserScreen> {
     final decks = context.watch<DeckProvider>();
     final deck = decks.activeDeck;
     return Scaffold(
-      backgroundColor: const Color(0xFF090806),
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         leading: IconButton(
           tooltip: 'Back',
