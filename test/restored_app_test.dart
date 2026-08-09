@@ -91,13 +91,24 @@ void main() {
         final castle = File(
           'web/card_castle/card_castle.html',
         ).readAsStringSync();
-        expect(castle, contains('../vendor/three.min.js'));
+        expect(castle, contains('../vendor/three.module.js'));
+        expect(castle, contains('assets/assets/models/search_castle.glb'));
+        expect(castle, contains("from '../vendor/GLTFLoader.js'"));
         expect(castle, isNot(contains('unpkg.com')));
         expect(castle, contains('cardLongPressed'));
         expect(castle, contains('cardSelected'));
         expect(castle, contains("data.type==='focusCard'"));
         expect(castle, contains('down.panning'));
         expect(castle, contains('document.body.dataset.cardCount'));
+        expect(castle, isNot(contains('id="hint"')));
+        expect(castle, isNot(contains('id="navigation"')));
+
+        final bridge = File(
+          'lib/widgets/webgl_card_castle_view_web.dart',
+        ).readAsStringSync();
+        expect(bridge, contains("'rectoUrl'"));
+        expect(bridge, contains("'versoUrl'"));
+        expect(bridge, contains("'tags'"));
       },
     );
   });

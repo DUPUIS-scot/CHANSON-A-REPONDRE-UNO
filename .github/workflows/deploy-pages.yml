@@ -104,6 +104,7 @@ jobs:
           test -f build/web/vendor/GLTFLoader.js
           test -f build/web/utils/BufferGeometryUtils.js
           test -f build/web/assets/assets/models/jester_player.glb
+          test -f build/web/assets/assets/models/search_castle.glb
           test -f build/web/card_castle/card_castle.html
           test -f build/web/assets/assets/images/default_background.png
           test -f build/web/assets/assets/images/dj_who.png
@@ -117,12 +118,13 @@ jobs:
           grep -q 'puppetDealerCreate' build/web/main.dart.js
           grep -q 'dealer-3d-container' build/web/main.dart.js
           grep -q 'search-card-castle' build/web/main.dart.js
-          grep -q '../vendor/three.min.js' build/web/card_castle/card_castle.html
+          grep -q '../vendor/three.module.js' build/web/card_castle/card_castle.html
+          grep -q 'assets/assets/models/search_castle.glb' build/web/card_castle/card_castle.html
+          grep -q "from '../vendor/GLTFLoader.js'" build/web/card_castle/card_castle.html
           grep -q "data.type==='focusCard'" build/web/card_castle/card_castle.html
           grep -q 'down.panning' build/web/card_castle/card_castle.html
-          grep -q 'CRAN 3D' build/web/card_castle/card_castle.html
           grep -q 'rendererInstanceId' build/web/card_castle/card_castle.html
-          grep -q '5 CARTES ACTIVES' build/web/main.dart.js
+          grep -q 'DJ Who' build/web/main.dart.js
           grep -q 'fullscreenFallbackRequested' build/web/main.dart.js
           grep -q 'C0zocqpnIpY' build/web/main.dart.js
           grep -q '6v3YRGccqZE' build/web/main.dart.js

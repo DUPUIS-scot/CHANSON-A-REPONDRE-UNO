@@ -386,45 +386,29 @@ class _SearchScreenState extends State<SearchScreen> {
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(16),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              WebGlCardCastleView(
-                cards: all,
-                focusedCardId: _selectedCardId,
-                shuffleSeed: _shuffleSeed,
-                activeCategory: _category,
-                fullscreenRequestId: _castleFullscreenRequestId,
-                onCardSelected: (id) {
-                  final card = all.where((item) => item.id == id).firstOrNull;
-                  if (card != null) _select(card);
-                },
-                onCardOpened: (id) {
-                  final card = all.where((item) => item.id == id).firstOrNull;
-                  if (card != null) {
-                    unawaited(_openCastleCardFullscreen(card));
-                  }
-                },
-                onCategoryChanged: _setCategory,
-                onHomeRequested: () => context.go(AppRoutes.home),
-                onFullscreenChanged: _handleCastleFullscreenChanged,
-                fallback: SearchCardCastle(
-                  cards: visible,
-                  onFullscreen: _openFullscreen,
-                ),
-              ),
-              Positioned(
-                left: 16,
-                right: 16,
-                bottom: 14,
-                child: _CastleActiveCardsHud(
-                  cards: _activeCastleCards(all),
-                  selectedCardId: _selectedCardId,
-                  onSelect: _select,
-                  onFullscreen: _openFullscreen,
-                ),
-              ),
-            ],
+          child: WebGlCardCastleView(
+            cards: all,
+            focusedCardId: _selectedCardId,
+            shuffleSeed: _shuffleSeed,
+            activeCategory: _category,
+            fullscreenRequestId: _castleFullscreenRequestId,
+            onCardSelected: (id) {
+              final card = all.where((item) => item.id == id).firstOrNull;
+              if (card != null) _select(card);
+            },
+            onCardOpened: (id) {
+              final card = all.where((item) => item.id == id).firstOrNull;
+              if (card != null) {
+                unawaited(_openCastleCardFullscreen(card));
+              }
+            },
+            onCategoryChanged: _setCategory,
+            onHomeRequested: () => context.go(AppRoutes.home),
+            onFullscreenChanged: _handleCastleFullscreenChanged,
+            fallback: SearchCardCastle(
+              cards: visible,
+              onFullscreen: _openFullscreen,
+            ),
           ),
         ),
       );
@@ -500,154 +484,6 @@ class _SearchScreenState extends State<SearchScreen> {
       },
     );
   }
-
-  List<CardImageModel> _activeCastleCards(List<CardImageModel> cards) {
-    final focused = cards
-        .where((card) => card.id == _selectedCardId)
-        .firstOrNull;
-    return [
-      ?focused,
-      ...cards.where((card) => card.id != focused?.id),
-    ].take(5).toList(growable: false);
-  }
-}
-
-class _CastleActiveCardsHud extends StatelessWidget {
-  const _CastleActiveCardsHud({
-    required this.cards,
-    required this.selectedCardId,
-    required this.onSelect,
-    required this.onFullscreen,
-  });
-
-  final List<CardImageModel> cards;
-  final String? selectedCardId;
-  final ValueChanged<CardImageModel> onSelect;
-  final ValueChanged<CardImageModel> onFullscreen;
-
-  @override
-  Widget build(BuildContext context) => Center(
-    child: ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 610),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: const Color(0xE605090D),
-          borderRadius: BorderRadius.circular(13),
-          border: Border.all(color: const Color(0xB3FFC928)),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0xA0000000),
-              blurRadius: 18,
-              spreadRadius: 2,
-            ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(10, 6, 10, 9),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                '5 CARTES ACTIVES',
-                style: TextStyle(
-                  color: AppTheme.brightGold,
-                  fontWeight: FontWeight.w900,
-                  fontSize: 11,
-                  letterSpacing: 1.1,
-                ),
-              ),
-              const SizedBox(height: 5),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  for (var index = 0; index < cards.length; index++)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 3),
-                      child: Semantics(
-                        button: true,
-                        label:
-                            'Active castle card ${index + 1}, '
-                            '${cards[index].category}',
-                        child: GestureDetector(
-                          onTap: () => onSelect(cards[index]),
-                          onLongPress: () => onFullscreen(cards[index]),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 180),
-                            width: 62,
-                            height: 82,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF111820),
-                              borderRadius: BorderRadius.circular(7),
-                              border: Border.all(
-                                color: cards[index].id == selectedCardId
-                                    ? AppTheme.brightGold
-                                    : const Color(0xFF637382),
-                                width: cards[index].id == selectedCardId
-                                    ? 3
-                                    : 1,
-                              ),
-                              boxShadow: cards[index].id == selectedCardId
-                                  ? const [
-                                      BoxShadow(
-                                        color: Color(0x99FFC928),
-                                        blurRadius: 12,
-                                      ),
-                                    ]
-                                  : null,
-                            ),
-                            clipBehavior: Clip.antiAlias,
-                            child: Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                StoredImage(
-                                  source: cards[index].imagePath,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, _, _) => const ColoredBox(
-                                    color: Color(0xFF20150E),
-                                    child: Icon(
-                                      Icons.image_not_supported,
-                                      color: AppTheme.gold,
-                                    ),
-                                  ),
-                                ),
-                                Positioned(
-                                  left: 3,
-                                  top: 3,
-                                  child: DecoratedBox(
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xD9000000),
-                                      borderRadius: BorderRadius.circular(9),
-                                    ),
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 5,
-                                        vertical: 2,
-                                      ),
-                                      child: Text(
-                                        '${index + 1}',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w900,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    ),
-  );
 }
 
 class _SearchHeader extends StatelessWidget {
@@ -714,6 +550,12 @@ class _SearchHeader extends StatelessWidget {
                   ],
                 ),
               ),
+              IconButton.outlined(
+                tooltip: 'DJ Who',
+                onPressed: () => context.go(AppRoutes.djWhoVideos),
+                icon: const Icon(Icons.queue_music_rounded),
+              ),
+              const SizedBox(width: 8),
               IconButton.outlined(
                 tooltip: 'Accueil',
                 onPressed: () => context.go(AppRoutes.home),

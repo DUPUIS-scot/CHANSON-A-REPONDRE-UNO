@@ -7,6 +7,7 @@ import 'dart:ui_web' as ui_web;
 
 import 'package:flutter/material.dart';
 
+import '../data/card_categories.dart';
 import '../models/card_image_model.dart';
 
 class WebGlCardCastleView extends StatefulWidget {
@@ -148,8 +149,20 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
           .map(
             (card) => {
               'id': card.id,
+              'deckId': card.deckId,
+              'title': card.displayTitle,
               'category': card.category,
+              'colour': card.colour,
               'question': card.question,
+              'answer': card.answer,
+              'author': card.author,
+              'theme': card.theme,
+              'emotion': card.emotion,
+              'tags': card.tags,
+              'year': card.year,
+              'isFavourite': card.isFavourite,
+              'rectoUrl': _assetUrl(card.imagePath),
+              'versoUrl': _assetUrl(cardCategoryFor(card.category).versoAsset),
               'thumbnailUrl': _assetUrl(card.imagePath),
               'aspectRatio': card.aspectRatio,
             },
@@ -195,7 +208,10 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
 
   String _cardFingerprint(List<CardImageModel> cards) => cards
       .map(
-        (card) => '${card.id}\u001f${card.imagePath}\u001f${card.aspectRatio}',
+        (card) =>
+            '${card.id}\u001f${card.imagePath}\u001f${card.category}'
+            '\u001f${card.displayTitle}\u001f${card.tags.join(',')}'
+            '\u001f${card.aspectRatio}',
       )
       .join('\u001e');
 

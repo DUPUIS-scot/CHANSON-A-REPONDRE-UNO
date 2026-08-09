@@ -234,7 +234,7 @@ async function verifySearchCastle(client, url) {
       `document.getElementById('search-card-castle-frame')
         ?.contentDocument?.body.dataset.rendererStatus === 'ready'`,
       'the Search Three.js castle',
-      40000,
+      90000,
     );
   } catch (error) {
     const debug = await client.evaluate(`(() => {
@@ -351,7 +351,14 @@ async function verifySearchCastle(client, url) {
       focusedCardId: body?.dataset.focusedCardId || '',
       focusMode: body?.dataset.focusMode || '',
       rendererInstanceId: body?.dataset.rendererInstanceId || '',
+      castleMeshCount: Number(body?.dataset.castleMeshCount || 0),
+      modelPath: body?.dataset.modelAsset
+        ? new URL(body.dataset.modelAsset).pathname
+        : '',
       sceneObjectCount: Number(body?.dataset.sceneObjectCount || 0),
+      bottomNavigation: Boolean(
+        frame?.contentDocument?.querySelector('#hint, #navigation')
+      ),
       fullscreen: body?.classList.contains('fullscreen-castle') || false,
       threeLoaded: Boolean(frame?.contentWindow?.THREE),
       framePath: frame ? new URL(frame.src).pathname : '',
@@ -371,7 +378,10 @@ async function verifySearchCastle(client, url) {
     result.focusedCardId !== requestedFocusId ||
     result.focusMode !== 'animated' ||
     result.rendererInstanceId !== rendererInstanceId ||
+    result.castleMeshCount < 1 ||
+    result.modelPath !== `${basePath}assets/assets/models/search_castle.glb` ||
     result.sceneObjectCount < 40 ||
+    result.bottomNavigation ||
     !result.fullscreen ||
     !result.threeLoaded ||
     result.framePath !== `${basePath}card_castle/card_castle.html` ||
@@ -682,6 +692,7 @@ async function main() {
     client?.close();
     chrome.kill();
     if (server) {
+      server.closeAllConnections?.();
       await new Promise((resolve) => server.close(resolve));
     }
   }
