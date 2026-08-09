@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uno_chanson_2/providers/background_provider.dart';
-import 'package:uno_chanson_2/providers/settings_provider.dart';
 import 'package:uno_chanson_2/core/app_router.dart';
 import 'package:uno_chanson_2/services/background_import_service.dart';
 import 'package:uno_chanson_2/services/local_storage_service.dart';
@@ -59,20 +58,6 @@ void main() {
     await tester.pump();
     expect(find.textContaining('Unsupported video format'), findsOneWidget);
     expect(find.byType(Image), findsOneWidget);
-  });
-
-  test('background selection switches and persists after restart', () async {
-    SharedPreferences.setMockInitialValues({});
-    final storage = LocalStorageService();
-    final first = SettingsProvider(storage);
-    await first.load();
-    expect(first.backgroundType, 'IMAGE');
-    await first.update(background: 'MP4');
-    expect(first.backgroundType, 'MP4');
-
-    final restored = SettingsProvider(storage);
-    await restored.load();
-    expect(restored.backgroundType, 'MP4');
   });
 
   test('fresh background provider starts with Edinburgh image', () async {

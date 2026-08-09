@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/app_constants.dart';
 import '../models/deck_model.dart';
 import '../models/game_state_model.dart';
 import '../theme/app_theme.dart';
@@ -34,11 +35,13 @@ class ContinuePanel extends StatelessWidget {
         builder: (context, constraints) {
           final compact = constraints.maxWidth < 600;
           final cover = SizedBox(
-            width: 92,
             height: 116,
-            child: deck.coverPath.isEmpty
-                ? const Icon(Icons.style, size: 54, color: AppTheme.gold)
-                : StoredImage(source: deck.coverPath),
+            child: AspectRatio(
+              aspectRatio: cardAspectRatio,
+              child: deck.coverPath.isEmpty
+                  ? const Icon(Icons.style, size: 54, color: AppTheme.gold)
+                  : StoredImage(source: deck.coverPath, fit: BoxFit.contain),
+            ),
           );
           final details = Expanded(
             child: Column(

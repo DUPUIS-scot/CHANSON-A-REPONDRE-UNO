@@ -13,7 +13,7 @@ class BackgroundProvider extends ChangeNotifier {
   static const defaultImageAsset = 'assets/images/default_background.png';
   static const defaultVideoAsset = 'assets/videos/home_background.mp4';
   static const defaultImageLabel = 'Default Edinburgh image';
-  static const defaultVideoLabel = 'Bundled SAUVAGE video';
+  static const defaultVideoLabel = 'Bundled Home video';
 
   BackgroundMediaType type = BackgroundMediaType.image;
   String? importedPath;

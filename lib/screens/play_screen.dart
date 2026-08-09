@@ -432,12 +432,17 @@ class _GameLauncher extends StatelessWidget {
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 initialValue: decks.activeDeckId,
+                isExpanded: true,
                 decoration: const InputDecoration(labelText: 'Active deck'),
                 items: decks.decks
                     .map(
                       (deck) => DropdownMenuItem(
                         value: deck.id,
-                        child: Text('${deck.name} (${deck.cards.length})'),
+                        child: Text(
+                          '${deck.name} (${deck.cards.length})',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     )
                     .toList(),

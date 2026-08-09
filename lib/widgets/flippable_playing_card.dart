@@ -5,13 +5,11 @@ import 'package:flutter/services.dart';
 
 import '../data/card_categories.dart';
 import '../theme/app_theme.dart';
-import 'category_badge.dart';
 import 'stored_image.dart';
 
 class FlippablePlayingCard extends StatefulWidget {
   const FlippablePlayingCard({
     required this.frontImagePath,
-    required this.backImagePath,
     required this.category,
     required this.isFaceUp,
     required this.isSelected,
@@ -25,7 +23,6 @@ class FlippablePlayingCard extends StatefulWidget {
   });
 
   final String frontImagePath;
-  final String backImagePath;
   final String category;
   final bool isFaceUp;
   final bool isSelected;
@@ -78,7 +75,7 @@ class _FlippablePlayingCardState extends State<FlippablePlayingCard>
     button: true,
     enabled: !widget.disabled,
     label: widget.semanticLabel,
-    hint: 'Tap to flip and select. Hold to open fullscreen.',
+    hint: 'Tap to select. Press and hold to flip.',
     onLongPress: widget.disabled ? null : widget.onLongPress,
     child: FocusableActionDetector(
       enabled: !widget.disabled,
@@ -150,33 +147,19 @@ class _FlippablePlayingCardState extends State<FlippablePlayingCard>
                               Colors.transparent,
                               BlendMode.dst,
                             ),
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          if (showFront)
-                            StoredImage(
+                      child: showFront
+                          ? StoredImage(
                               source: widget.frontImagePath,
                               fit: BoxFit.contain,
                               errorBuilder: (_, _, _) =>
                                   const _FallbackFace(label: 'CARD'),
                             )
-                          else
-                            Image.asset(
+                          : Image.asset(
                               cardCategoryFor(widget.category).versoAsset,
                               fit: BoxFit.contain,
                               errorBuilder: (_, _, _) =>
                                   const _FallbackFace(label: 'CHanson'),
                             ),
-                          Positioned(
-                            left: 6,
-                            top: 6,
-                            child: CategoryBadge(
-                              category: widget.category,
-                              compact: true,
-                            ),
-                          ),
-                        ],
-                      ),
                     ),
                   ),
                 );

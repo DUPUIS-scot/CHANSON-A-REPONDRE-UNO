@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../core/app_router.dart';
+import '../core/app_constants.dart';
 import '../data/card_categories.dart';
 import '../models/card_image_model.dart';
 import '../models/deck_model.dart';
@@ -16,7 +17,6 @@ import '../providers/deck_provider.dart';
 import '../services/local_storage_service.dart';
 import '../services/search_service.dart';
 import '../theme/app_theme.dart';
-import '../widgets/category_badge.dart';
 import '../widgets/search_card_castle.dart';
 import '../widgets/stored_image.dart';
 import '../widgets/webgl_card_castle_view.dart';
@@ -223,13 +223,23 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Future<void> _openCastleCardFullscreen(CardImageModel card) async {
-    if (_viewBeforeCastleFullscreen != null) {
-      setState(() {
-        _viewMode = _viewBeforeCastleFullscreen!;
-        _viewBeforeCastleFullscreen = null;
-      });
-    }
-    await _openFullscreen(card);
+    // Keep the WebGL platform view mounted and do not call `_select` here:
+    // changing focusedCardId would animate the castle camera before the card
+    // opens. The exact search result is passed directly to the modal instead
+    // of being looked up in the currently selected deck.
+    _viewBeforeCastleFullscreen = null;
+    await showGeneralDialog<void>(
+      context: context,
+      barrierColor: Colors.black87,
+      barrierDismissible: false,
+      barrierLabel: 'Fullscreen card',
+      transitionDuration: const Duration(milliseconds: 180),
+      pageBuilder: (_, _, _) => _CastleCardFullscreen(card: card),
+      transitionBuilder: (_, animation, _, child) => FadeTransition(
+        opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+        child: child,
+      ),
+    );
   }
 
   void _viewInCastle(CardImageModel card) {
@@ -458,7 +468,7 @@ class _SearchScreenState extends State<SearchScreen> {
               crossAxisCount: _gridColumns,
               crossAxisSpacing: 14,
               mainAxisSpacing: 14,
-              childAspectRatio: 2 / 3,
+              childAspectRatio: cardAspectRatio,
             ),
             itemCount: visible.length,
             itemBuilder: (context, index) => _SearchCardTile(
@@ -610,11 +620,17 @@ class _SearchHeader extends StatelessWidget {
                 selected: {viewMode},
                 onSelectionChanged: (value) => onViewModeChanged(value.first),
               );
-              final shuffle = FilledButton.tonalIcon(
-                onPressed: onShuffle,
-                icon: const Icon(Icons.shuffle_rounded),
-                label: compact ? const Text('Shuffle') : const Text('SHUFFLE'),
-              );
+              final Widget shuffle = compact
+                  ? IconButton.filledTonal(
+                      tooltip: 'Shuffle cards',
+                      onPressed: onShuffle,
+                      icon: const Icon(Icons.shuffle_rounded),
+                    )
+                  : FilledButton.tonalIcon(
+                      onPressed: onShuffle,
+                      icon: const Icon(Icons.shuffle_rounded),
+                      label: const Text('SHUFFLE'),
+                    );
               if (compact) {
                 return Column(
                   children: [
@@ -640,7 +656,7 @@ class _SearchHeader extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           SizedBox(
-            height: 38,
+            height: 48,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: categories.length,
@@ -740,26 +756,13 @@ class _SearchCardTileState extends State<_SearchCardTile> {
           onFocusChange: (value) => setState(() => focused = value),
           onTap: widget.onSelect,
           onLongPress: widget.onFullscreen,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              StoredImage(
-                source: widget.card.imagePath,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => const ColoredBox(
-                  color: Color(0xFF141A20),
-                  child: Center(child: Icon(Icons.broken_image_outlined)),
-                ),
-              ),
-              Positioned(
-                left: 6,
-                top: 6,
-                child: CategoryBadge(
-                  category: widget.card.category,
-                  compact: true,
-                ),
-              ),
-            ],
+          child: StoredImage(
+            source: widget.card.imagePath,
+            fit: BoxFit.contain,
+            errorBuilder: (_, _, _) => const ColoredBox(
+              color: Color(0xFF141A20),
+              child: Center(child: Icon(Icons.broken_image_outlined)),
+            ),
           ),
         ),
       ),
@@ -810,7 +813,7 @@ class _SearchListRow extends StatelessWidget {
             children: [
               AspectRatio(
                 aspectRatio: card.aspectRatio,
-                child: StoredImage(source: card.imagePath, fit: BoxFit.cover),
+                child: StoredImage(source: card.imagePath, fit: BoxFit.contain),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -990,7 +993,7 @@ class _MobileSelectionBar extends StatelessWidget {
           width: 38,
           child: AspectRatio(
             aspectRatio: card.aspectRatio,
-            child: StoredImage(source: card.imagePath, fit: BoxFit.cover),
+            child: StoredImage(source: card.imagePath, fit: BoxFit.contain),
           ),
         ),
         const SizedBox(width: 10),
@@ -1014,9 +1017,10 @@ class _MobileSelectionBar extends StatelessWidget {
           onPressed: onFullscreen,
           icon: const Icon(Icons.fullscreen_rounded),
         ),
-        FilledButton(
+        IconButton.filled(
+          tooltip: 'View card in castle',
           onPressed: onViewInCastle,
-          child: const Icon(Icons.castle_rounded),
+          icon: const Icon(Icons.castle_rounded),
         ),
       ],
     ),
@@ -1038,6 +1042,113 @@ class _EmptyResults extends StatelessWidget {
           style: TextStyle(color: Color(0xFFB7C2CA)),
         ),
       ],
+    ),
+  );
+}
+
+class _CastleCardFullscreen extends StatelessWidget {
+  const _CastleCardFullscreen({required this.card});
+
+  final CardImageModel card;
+
+  void _close(BuildContext context) => Navigator.of(context).pop();
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: Colors.black,
+    child: SafeArea(
+      child: CallbackShortcuts(
+        bindings: {
+          const SingleActivator(LogicalKeyboardKey.escape): () =>
+              _close(context),
+        },
+        child: Focus(
+          autofocus: true,
+          child: Column(
+            children: [
+              SizedBox(
+                height: 64,
+                child: Row(
+                  children: [
+                    IconButton(
+                      tooltip: 'Close fullscreen card',
+                      onPressed: () => _close(context),
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            card.displayTitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          Text(
+                            card.category.toUpperCase(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: AppTheme.brightGold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    const horizontalPadding = 16.0;
+                    const verticalPadding = 12.0;
+                    final availableWidth = max(
+                      0.0,
+                      constraints.maxWidth - horizontalPadding * 2,
+                    );
+                    final availableHeight = max(
+                      0.0,
+                      constraints.maxHeight - verticalPadding * 2,
+                    );
+                    final width = min(
+                      availableWidth,
+                      availableHeight * card.aspectRatio,
+                    );
+                    final height = width / card.aspectRatio;
+                    return Center(
+                      child: SizedBox(
+                        width: width,
+                        height: height,
+                        child: Semantics(
+                          image: true,
+                          label:
+                              '${card.displayTitle}, ${card.category}, front',
+                          child: StoredImage(
+                            source: card.imagePath,
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, _, _) => const Center(
+                              child: Icon(Icons.broken_image, size: 80),
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     ),
   );
 }

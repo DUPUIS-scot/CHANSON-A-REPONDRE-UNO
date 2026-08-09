@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/app_constants.dart';
 import '../data/card_categories.dart';
 import '../models/card_image_model.dart';
 import '../theme/app_theme.dart';
@@ -25,46 +26,48 @@ class DrawPileWidget extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
           child: SizedBox(
             width: 88,
-            height: 132,
-            child: Stack(
-              children: [
-                for (var offset = 6; offset >= 0; offset -= 3)
+            child: AspectRatio(
+              aspectRatio: cardAspectRatio,
+              child: Stack(
+                children: [
+                  for (var offset = 6; offset >= 0; offset -= 3)
+                    Positioned(
+                      left: offset.toDouble(),
+                      top: offset.toDouble(),
+                      right: (6 - offset).toDouble(),
+                      bottom: (6 - offset).toDouble(),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppTheme.gold),
+                          color: const Color(0xFF24140E),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: Image.asset(
+                          topCard == null
+                              ? 'assets/images/card_back.png'
+                              : cardCategoryFor(topCard!.category).versoAsset,
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, _, _) =>
+                              const Icon(Icons.style, color: AppTheme.gold),
+                        ),
+                      ),
+                    ),
                   Positioned(
-                    left: offset.toDouble(),
-                    top: offset.toDouble(),
-                    right: (6 - offset).toDouble(),
-                    bottom: (6 - offset).toDouble(),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppTheme.gold),
-                        color: const Color(0xFF24140E),
-                      ),
-                      clipBehavior: Clip.antiAlias,
-                      child: Image.asset(
-                        topCard == null
-                            ? 'assets/images/card_back.png'
-                            : cardCategoryFor(topCard!.category).versoAsset,
-                        fit: BoxFit.contain,
-                        errorBuilder: (_, _, _) =>
-                            const Icon(Icons.style, color: AppTheme.gold),
+                    bottom: 8,
+                    left: 0,
+                    right: 0,
+                    child: Text(
+                      '$count',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
                     ),
                   ),
-                Positioned(
-                  bottom: 8,
-                  left: 0,
-                  right: 0,
-                  child: Text(
-                    '$count',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

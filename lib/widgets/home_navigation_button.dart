@@ -60,8 +60,8 @@ class _HomeNavigationButtonState extends State<HomeNavigationButton> {
         AppRouter.router.routeInformationProvider.value.uri.path;
     final isDjWhoActive = currentPath == AppRoutes.djWhoVideos;
 
-    final showLabel = MediaQuery.sizeOf(context).width >= 600;
-    final djWidth = showLabel ? 112.0 : 48.0;
+    final showLabel = MediaQuery.sizeOf(context).width >= 900;
+    final djWidth = showLabel ? 152.0 : 48.0;
     return SizedBox(
       width: 48 + 8 + djWidth,
       height: 48,
@@ -118,7 +118,8 @@ class _HomeControl extends StatelessWidget {
         onFocusChange: onFocus,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
-          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+          width: 48,
+          height: 48,
           decoration: BoxDecoration(
             color: hovered ? const Color(0xDD33210F) : const Color(0xAA100C08),
             shape: BoxShape.circle,
@@ -176,7 +177,7 @@ class _DjWhoControl extends StatelessWidget {
         child: Focus(
           onFocusChange: onFocus,
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
+            duration: Duration.zero,
             width: width,
             height: 48,
             decoration: BoxDecoration(

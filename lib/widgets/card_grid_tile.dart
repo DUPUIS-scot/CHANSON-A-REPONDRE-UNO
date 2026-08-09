@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/app_constants.dart';
 import '../models/card_image_model.dart';
 import '../theme/app_theme.dart';
 import 'stored_image.dart';
@@ -18,49 +19,47 @@ class CardGridTile extends StatelessWidget {
     clipBehavior: Clip.antiAlias,
     child: InkWell(
       onTap: onTap,
-      child: Stack(
+      child: Column(
         children: [
-          Positioned.fill(
-            child: StoredImage(
-              source: card.path,
-              fit: BoxFit.contain,
-              errorBuilder: (_, _, _) => const Center(
-                child: Icon(Icons.broken_image_outlined, size: 42),
-              ),
-            ),
-          ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: ColoredBox(
-              color: const Color(0xD9000000),
-              child: Padding(
-                padding: const EdgeInsets.all(10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      card.category.toUpperCase(),
-                      style: const TextStyle(
-                        color: AppTheme.brightGold,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
+          Expanded(
+            child: Center(
+              child: AspectRatio(
+                aspectRatio: cardAspectRatio,
+                child: StoredImage(
+                  source: card.path,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, _, _) => const Center(
+                    child: Icon(Icons.broken_image_outlined, size: 42),
+                  ),
                 ),
               ),
             ),
           ),
-          Positioned(
-            right: 4,
-            top: 4,
-            child: IconButton.filledTonal(
-              tooltip: card.isFavourite ? 'Remove favourite' : 'Add favourite',
-              onPressed: onFavourite,
-              icon: Icon(
-                card.isFavourite ? Icons.favorite : Icons.favorite_border,
-              ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 4, 4, 4),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    card.category.toUpperCase(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppTheme.brightGold,
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  tooltip: card.isFavourite
+                      ? 'Remove favourite'
+                      : 'Add favourite',
+                  onPressed: onFavourite,
+                  icon: Icon(
+                    card.isFavourite ? Icons.favorite : Icons.favorite_border,
+                  ),
+                ),
+              ],
             ),
           ),
         ],

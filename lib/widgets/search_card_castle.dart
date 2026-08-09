@@ -4,6 +4,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../core/app_constants.dart';
 import '../models/card_image_model.dart';
 import '../theme/app_theme.dart';
 import 'stored_image.dart';
@@ -230,7 +231,7 @@ class _CastleCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
                 child: SizedBox(
                   width: width,
-                  height: width * 1.5,
+                  height: width / cardAspectRatio,
                   child: StoredImage(
                     source: card.imagePath,
                     fit: BoxFit.contain,

@@ -1,5 +1,6 @@
 import 'card_chat_message.dart';
 import 'card_transcription_result.dart';
+import '../core/app_constants.dart';
 
 class CardImageModel {
   const CardImageModel({
@@ -59,7 +60,7 @@ class CardImageModel {
   final int? imageHeight;
 
   String get imagePath => path;
-  double get aspectRatio => 2 / 3;
+  double get aspectRatio => cardAspectRatio;
   String get displayTitle {
     final value = title.trim();
     final looksLikeFilename =

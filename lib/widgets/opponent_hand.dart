@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../core/app_constants.dart';
 import '../data/card_categories.dart';
 import '../models/card_image_model.dart';
 
@@ -37,19 +38,23 @@ class OpponentHand extends StatelessWidget {
                     left: index * 22,
                     child: Transform.rotate(
                       angle: (index - (visible - 1) / 2) * .025,
-                      child: Container(
+                      child: SizedBox(
                         width: 48,
-                        height: 72,
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.white70),
-                          borderRadius: BorderRadius.circular(5),
-                        ),
-                        clipBehavior: Clip.antiAlias,
-                        child: Image.asset(
-                          cardCategoryFor(cards[index].category).versoAsset,
-                          fit: BoxFit.contain,
-                          errorBuilder: (_, _, _) =>
-                              const ColoredBox(color: Color(0xFF4A1E14)),
+                        child: AspectRatio(
+                          aspectRatio: cardAspectRatio,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.white70),
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                            clipBehavior: Clip.antiAlias,
+                            child: Image.asset(
+                              cardCategoryFor(cards[index].category).versoAsset,
+                              fit: BoxFit.contain,
+                              errorBuilder: (_, _, _) =>
+                                  const ColoredBox(color: Color(0xFF4A1E14)),
+                            ),
+                          ),
                         ),
                       ),
                     ),

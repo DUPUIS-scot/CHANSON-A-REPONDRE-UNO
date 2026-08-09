@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uno_chanson_2/providers/home_experience_provider.dart';
+import 'package:uno_chanson_2/providers/background_provider.dart';
+import 'package:uno_chanson_2/services/background_import_service.dart';
 import 'package:uno_chanson_2/services/local_storage_service.dart';
 
 void main() {
@@ -49,5 +51,14 @@ void main() {
     final restored = HomeExperienceProvider(storage);
     await restored.initialize();
     expect(restored.backgroundMode, HomeBackgroundMode.sauvage);
+
+    final globalBackground = BackgroundProvider(
+      storage,
+      BackgroundImportService(),
+    );
+    addTearDown(globalBackground.dispose);
+    await globalBackground.load();
+    expect(globalBackground.type, BackgroundMediaType.image);
+    expect(globalBackground.imagePath, BackgroundProvider.defaultImageAsset);
   });
 }

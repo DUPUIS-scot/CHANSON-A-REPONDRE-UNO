@@ -1,3 +1,6 @@
+/// Canonical geometry for every physical card surface in the application.
+const double cardAspectRatio = 2 / 3;
+
 abstract final class AppConstants {
   static const appName = 'Chanson à Répondre UNO!';
   static const backgroundAsset = 'assets/images/default_background.png';

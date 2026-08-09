@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/app_constants.dart';
 import '../models/deck_model.dart';
 import '../theme/app_theme.dart';
 import 'stored_image.dart';
@@ -36,7 +37,7 @@ class DeckCarousel extends StatelessWidget {
             itemBuilder: (_, index) {
               final deck = decks[index];
               return SizedBox(
-                width: 138,
+                width: 100,
                 child: Card(
                   clipBehavior: Clip.antiAlias,
                   child: InkWell(
@@ -44,27 +45,30 @@ class DeckCarousel extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Expanded(
+                        AspectRatio(
+                          aspectRatio: cardAspectRatio,
                           child: deck.coverPath.isEmpty
                               ? const Icon(
                                   Icons.style,
                                   size: 44,
                                   color: AppTheme.gold,
                                 )
-                              : StoredImage(source: deck.coverPath),
+                              : StoredImage(
+                                  source: deck.coverPath,
+                                  fit: BoxFit.contain,
+                                ),
                         ),
                         Padding(
-                          padding: const EdgeInsets.all(8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 3,
+                          ),
                           child: Column(
                             children: [
                               Text(
                                 deck.name,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                              ),
-                              Text(
-                                '${deck.cards.length} cards',
-                                style: Theme.of(context).textTheme.bodySmall,
                               ),
                             ],
                           ),
@@ -88,14 +92,16 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Row(
     children: [
-      Text(
-        title,
-        style: Theme.of(
-          context,
-        ).textTheme.titleMedium?.copyWith(color: AppTheme.gold),
+      Expanded(
+        child: Text(
+          title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(color: AppTheme.gold),
+        ),
       ),
-      const SizedBox(width: 16),
-      const Expanded(child: Divider(color: AppTheme.gold)),
       TextButton.icon(
         onPressed: onViewAll,
         label: const Text('VIEW ALL'),

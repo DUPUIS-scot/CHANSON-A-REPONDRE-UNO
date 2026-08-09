@@ -13,7 +13,6 @@ class SettingsProvider extends ChangeNotifier {
   double textScale = 1;
   double volume = .7;
   bool soundEnabled = true;
-  String backgroundType = 'IMAGE';
   bool keepRevealedCardsFaceUp = true;
   bool hidePlayerHandAfterTurn = false;
   int get maxPlayerHandSize => AppConstants.maxPlayerHandSize;
@@ -29,7 +28,6 @@ class SettingsProvider extends ChangeNotifier {
       textScale = (map['textScale'] as num?)?.toDouble() ?? 1;
       volume = (map['volume'] as num?)?.toDouble() ?? .7;
       soundEnabled = map['soundEnabled'] as bool? ?? true;
-      backgroundType = map['backgroundType'] as String? ?? 'IMAGE';
       keepRevealedCardsFaceUp = map['keepRevealedCardsFaceUp'] as bool? ?? true;
       hidePlayerHandAfterTurn =
           map['hidePlayerHandAfterTurn'] as bool? ?? false;
@@ -48,7 +46,6 @@ class SettingsProvider extends ChangeNotifier {
     double? scale,
     double? audioVolume,
     bool? sound,
-    String? background,
     bool? keepRevealed,
     bool? hideAfterTurn,
   }) async {
@@ -57,7 +54,6 @@ class SettingsProvider extends ChangeNotifier {
     textScale = scale ?? textScale;
     volume = audioVolume ?? volume;
     soundEnabled = sound ?? soundEnabled;
-    backgroundType = background ?? backgroundType;
     keepRevealedCardsFaceUp = keepRevealed ?? keepRevealedCardsFaceUp;
     hidePlayerHandAfterTurn = hideAfterTurn ?? hidePlayerHandAfterTurn;
     await _persist();
@@ -69,7 +65,6 @@ class SettingsProvider extends ChangeNotifier {
     textScale = 1;
     volume = .7;
     soundEnabled = true;
-    backgroundType = 'IMAGE';
     keepRevealedCardsFaceUp = true;
     hidePlayerHandAfterTurn = false;
     advanced = const AppSettings();
@@ -88,7 +83,6 @@ class SettingsProvider extends ChangeNotifier {
       'textScale': textScale,
       'volume': volume,
       'soundEnabled': soundEnabled,
-      'backgroundType': backgroundType,
       'keepRevealedCardsFaceUp': keepRevealedCardsFaceUp,
       'hidePlayerHandAfterTurn': hidePlayerHandAfterTurn,
       'advanced': advanced.toJson(),

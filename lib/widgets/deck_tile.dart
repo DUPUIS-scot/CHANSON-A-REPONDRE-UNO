@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/app_constants.dart';
 import '../models/deck_model.dart';
 import '../theme/app_theme.dart';
 import 'stored_image.dart';
@@ -34,11 +35,16 @@ class DeckTile extends StatelessWidget {
                     size: 52,
                     color: AppTheme.gold,
                   )
-                : StoredImage(
-                    source: deck.coverPath,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, _, _) =>
-                        const Icon(Icons.broken_image_outlined, size: 48),
+                : Center(
+                    child: AspectRatio(
+                      aspectRatio: cardAspectRatio,
+                      child: StoredImage(
+                        source: deck.coverPath,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, _, _) =>
+                            const Icon(Icons.broken_image_outlined, size: 48),
+                      ),
+                    ),
                   ),
           ),
           Padding(

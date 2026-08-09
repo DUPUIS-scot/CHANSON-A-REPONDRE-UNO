@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../core/app_constants.dart';
 import '../models/card_image_model.dart';
 import 'flippable_playing_card.dart';
 
@@ -52,11 +53,6 @@ class _PlayerHandState extends State<PlayerHand> {
     widget.onRevealedChanged(Set<String>.unmodifiable(revealed));
   }
 
-  void handleCardTap(CardImageModel card) {
-    flip(card);
-    select(card);
-  }
-
   @override
   Widget build(BuildContext context) {
     if (widget.cards.isEmpty) {
@@ -70,7 +66,7 @@ class _PlayerHandState extends State<PlayerHand> {
           preferredWidth,
           math.max(72.0, constraints.maxWidth / fitFactor),
         );
-        final cardHeight = cardWidth * 3 / 2;
+        final cardHeight = cardWidth / cardAspectRatio;
         final step = cardWidth * .62;
         final contentWidth = cardWidth + step * (widget.cards.length - 1);
         final handWidth = math.max(constraints.maxWidth, contentWidth);
@@ -105,7 +101,6 @@ class _PlayerHandState extends State<PlayerHand> {
                     height: cardHeight,
                     child: FlippablePlayingCard(
                       frontImagePath: widget.cards[index].imagePath,
-                      backImagePath: 'assets/images/card_back.png',
                       category: widget.cards[index].category,
                       isFaceUp: widget.revealedCardIds.contains(
                         widget.cards[index].id,
@@ -118,8 +113,9 @@ class _PlayerHandState extends State<PlayerHand> {
                           '${widget.cards[index].category}, '
                           '${widget.revealedCardIds.contains(widget.cards[index].id) ? 'face up' : 'face down'}, '
                           '${widget.isPlayable(widget.cards[index]) ? 'playable' : 'unavailable'}',
-                      onTap: () => handleCardTap(widget.cards[index]),
-                      onLongPress: widget.onFullscreenCard == null
+                      onTap: () => select(widget.cards[index]),
+                      onLongPress: () => flip(widget.cards[index]),
+                      onDoubleTap: widget.onFullscreenCard == null
                           ? null
                           : () => widget.onFullscreenCard!(
                               widget.cards[index].id,

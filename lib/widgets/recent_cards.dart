@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/app_constants.dart';
 import '../models/card_image_model.dart';
 import '../theme/app_theme.dart';
 import 'stored_image.dart';
@@ -26,14 +27,16 @@ class RecentCards extends StatelessWidget {
     children: [
       Row(
         children: [
-          Text(
-            'RECENT CARDS',
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(color: AppTheme.gold),
+          Expanded(
+            child: Text(
+              'RECENT CARDS',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(color: AppTheme.gold),
+            ),
           ),
-          const SizedBox(width: 16),
-          const Expanded(child: Divider(color: AppTheme.gold)),
           TextButton.icon(
             onPressed: onViewAll,
             label: const Text('VIEW ALL'),
@@ -59,44 +62,43 @@ class RecentCards extends StatelessWidget {
             separatorBuilder: (_, _) => const SizedBox(width: 10),
             itemBuilder: (_, index) {
               final card = cards[index];
-              return Container(
-                width: 132,
-                decoration: BoxDecoration(
-                  border: Border.all(color: _accent(card.colour)),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () => onCardTap(card),
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        StoredImage(source: card.path),
-                        Align(
-                          alignment: Alignment.bottomCenter,
-                          child: Container(
-                            width: double.infinity,
-                            color: const Color(0xD9000000),
-                            padding: const EdgeInsets.all(8),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  card.category.toUpperCase(),
-                                  style: TextStyle(
-                                    color: _accent(card.colour),
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
+              return SizedBox(
+                width: 100,
+                child: Column(
+                  children: [
+                    Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                      clipBehavior: Clip.antiAlias,
+                      child: InkWell(
+                        onTap: () => onCardTap(card),
+                        child: AspectRatio(
+                          aspectRatio: cardAspectRatio,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              border: Border.all(color: _accent(card.colour)),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: StoredImage(
+                              source: card.path,
+                              fit: BoxFit.contain,
                             ),
                           ),
                         ),
-                      ],
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 6),
+                    Text(
+                      card.category.toUpperCase(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: _accent(card.colour),
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
               );
             },

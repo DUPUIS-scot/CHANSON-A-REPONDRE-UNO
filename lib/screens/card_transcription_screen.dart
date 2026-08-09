@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../core/app_constants.dart';
 import '../core/app_router.dart';
 import '../models/card_image_model.dart';
 import '../providers/card_ai_provider.dart';
@@ -124,7 +125,10 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
           Center(
             child: SizedBox(
               height: 260,
-              child: StoredImage(source: card.path, fit: BoxFit.contain),
+              child: AspectRatio(
+                aspectRatio: cardAspectRatio,
+                child: StoredImage(source: card.path, fit: BoxFit.contain),
+              ),
             ),
           ),
           const SizedBox(height: 16),

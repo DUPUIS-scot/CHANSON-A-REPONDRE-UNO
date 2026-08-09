@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/app_constants.dart';
 import '../models/card_image_model.dart';
 import '../theme/app_theme.dart';
 import 'stored_image.dart';
@@ -19,22 +20,24 @@ class DiscardPileWidget extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            height: 126,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppTheme.brightGold, width: 2),
-              boxShadow: const [
-                BoxShadow(color: Color(0x66FFC928), blurRadius: 12),
-              ],
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: StoredImage(
-              source: topCard.imagePath,
-              fit: BoxFit.contain,
-              errorBuilder: (_, _, _) => const ColoredBox(
-                color: Color(0xFF521E16),
-                child: Icon(Icons.image_not_supported, color: AppTheme.gold),
+          AspectRatio(
+            aspectRatio: cardAspectRatio,
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppTheme.brightGold, width: 2),
+                boxShadow: const [
+                  BoxShadow(color: Color(0x66FFC928), blurRadius: 12),
+                ],
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: StoredImage(
+                source: topCard.imagePath,
+                fit: BoxFit.contain,
+                errorBuilder: (_, _, _) => const ColoredBox(
+                  color: Color(0xFF521E16),
+                  child: Icon(Icons.image_not_supported, color: AppTheme.gold),
+                ),
               ),
             ),
           ),

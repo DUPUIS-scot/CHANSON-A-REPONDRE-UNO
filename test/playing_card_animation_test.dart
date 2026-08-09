@@ -29,7 +29,6 @@ void main() {
               height: 180,
               child: FlippablePlayingCard(
                 frontImagePath: 'assets/images/card_back.png',
-                backImagePath: 'assets/images/card_back.png',
                 category: 'Mémoire',
                 isFaceUp: faceUp,
                 isSelected: faceUp,
@@ -104,7 +103,6 @@ void main() {
             height: 180,
             child: FlippablePlayingCard(
               frontImagePath: 'assets/images/card_back.png',
-              backImagePath: 'assets/images/card_back.png',
               category: category.label,
               isFaceUp: false,
               isSelected: false,
@@ -126,6 +124,46 @@ void main() {
         findsOneWidget,
       );
     }
+  });
+
+  testWidgets('permanent play artwork uses the shared 2:3 contained surface', (
+    tester,
+  ) async {
+    final card = CardImageModel(
+      id: 'ratio-card',
+      deckId: 'deck',
+      title: 'Ratio card',
+      path: 'assets/images/card_back.png',
+      category: 'CLASSIQUE',
+      colour: 'red',
+      importedAt: DateTime(2026),
+    );
+
+    expect(card.aspectRatio, cardAspectRatio);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SizedBox(
+          width: 120,
+          child: AspectRatio(
+            aspectRatio: cardAspectRatio,
+            child: FlippablePlayingCard(
+              frontImagePath: card.imagePath,
+              category: card.category,
+              isFaceUp: true,
+              isSelected: false,
+              isPlayable: true,
+              onTap: () {},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(
+      tester.widget<StoredImage>(find.byType(StoredImage)).fit,
+      BoxFit.contain,
+    );
+    expect(find.byType(AspectRatio), findsOneWidget);
   });
 
   testWidgets('play fullscreen shows verso when down and recto when up', (

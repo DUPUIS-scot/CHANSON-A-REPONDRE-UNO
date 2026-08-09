@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../data/card_categories.dart';
 import '../models/card_image_model.dart';
-import 'category_badge.dart';
 import 'stored_image.dart';
 
 class FullscreenHandCard extends StatefulWidget {
@@ -65,22 +64,10 @@ class _FullscreenHandCardState extends State<FullscreenHandCard> {
                 child: AspectRatio(
                   aspectRatio: widget.card.aspectRatio,
                   child: widget.faceUp
-                      ? Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            StoredImage(
-                              source: widget.card.imagePath,
-                              fit: BoxFit.contain,
-                              errorBuilder: (_, _, _) => const _MissingCard(),
-                            ),
-                            Positioned(
-                              left: 12,
-                              top: 12,
-                              child: CategoryBadge(
-                                category: widget.card.category,
-                              ),
-                            ),
-                          ],
+                      ? StoredImage(
+                          source: widget.card.imagePath,
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, _, _) => const _MissingCard(),
                         )
                       : Image.asset(
                           cardCategoryFor(widget.card.category).versoAsset,

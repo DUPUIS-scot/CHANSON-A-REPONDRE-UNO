@@ -44,7 +44,7 @@ class DeckSelectionScreen extends StatelessWidget {
                           final compact =
                               constraints.maxWidth < AppTheme.tabletBreakpoint;
                           final artwork = AspectRatio(
-                            aspectRatio: 2 / 3,
+                            aspectRatio: cardAspectRatio,
                             child: StoredImage(
                               source: deck.coverPath,
                               fit: BoxFit.contain,

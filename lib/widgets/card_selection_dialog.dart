@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/app_constants.dart';
 import '../models/card_image_model.dart';
 import 'stored_image.dart';
 
@@ -44,7 +45,7 @@ class _CardSelectionDialogState extends State<CardSelectionDialog> {
               child: GridView.builder(
                 gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                   maxCrossAxisExtent: 150,
-                  childAspectRatio: 2 / 3,
+                  childAspectRatio: cardAspectRatio,
                   crossAxisSpacing: 10,
                   mainAxisSpacing: 10,
                 ),
@@ -52,47 +53,31 @@ class _CardSelectionDialogState extends State<CardSelectionDialog> {
                 itemBuilder: (context, index) {
                   final card = cards[index];
                   final checked = selected.contains(card.id);
-                  return Card(
-                    clipBehavior: Clip.antiAlias,
-                    child: InkWell(
-                      onTap: () => setState(
-                        () => checked
-                            ? selected.remove(card.id)
-                            : selected.add(card.id),
+                  return Semantics(
+                    button: true,
+                    selected: checked,
+                    label: '${card.category} card',
+                    child: Card(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(
+                          color: checked
+                              ? Theme.of(context).colorScheme.primary
+                              : Colors.transparent,
+                          width: checked ? 4 : 0,
+                        ),
                       ),
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          StoredImage(source: card.path, fit: BoxFit.contain),
-                          Align(
-                            alignment: Alignment.bottomCenter,
-                            child: ColoredBox(
-                              color: const Color(0xDD000000),
-                              child: Padding(
-                                padding: const EdgeInsets.all(8),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        card.category,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    Checkbox(
-                                      value: checked,
-                                      onChanged: (_) => setState(
-                                        () => checked
-                                            ? selected.remove(card.id)
-                                            : selected.add(card.id),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+                      clipBehavior: Clip.antiAlias,
+                      child: InkWell(
+                        onTap: () => setState(
+                          () => checked
+                              ? selected.remove(card.id)
+                              : selected.add(card.id),
+                        ),
+                        child: StoredImage(
+                          source: card.path,
+                          fit: BoxFit.contain,
+                        ),
                       ),
                     ),
                   );

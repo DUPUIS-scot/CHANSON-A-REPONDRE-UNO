@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../core/app_constants.dart';
 import '../providers/card_ai_provider.dart';
 import '../providers/auth_controller.dart';
 import '../core/app_router.dart';
@@ -203,8 +204,13 @@ class _AiChatScreenState extends State<AiChatScreen> {
                     children: [
                       SizedBox(
                         width: 72,
-                        height: 96,
-                        child: StoredImage(source: card.path),
+                        child: AspectRatio(
+                          aspectRatio: cardAspectRatio,
+                          child: StoredImage(
+                            source: card.path,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(

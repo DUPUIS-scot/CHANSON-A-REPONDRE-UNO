@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../providers/background_provider.dart';
 import '../providers/card_ai_provider.dart';
 import '../providers/home_experience_provider.dart';
 import '../providers/settings_provider.dart';
-import '../services/background_import_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_page_shell.dart';
 import '../widgets/settings_section.dart';
@@ -15,31 +13,6 @@ import '../widgets/settings_toggle_tile.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
-
-  Future<void> _restoreBackground(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Restore default background?'),
-        content: const Text(
-          'This restores the bundled Edinburgh night background.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Restore'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true && context.mounted) {
-      await context.read<BackgroundProvider>().restoreDefault();
-    }
-  }
 
   Future<void> _resetSettings(BuildContext context) async {
     final confirmed = await showDialog<bool>(
@@ -69,7 +42,6 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsProvider>();
-    final background = context.watch<BackgroundProvider>();
     final home = context.watch<HomeExperienceProvider>();
     final ai = context.watch<CardAiProvider>();
     final advanced = settings.advanced;
@@ -136,23 +108,6 @@ class SettingsScreen extends StatelessWidget {
                           HomeBackgroundMode.sauvage: 'SAUVAGE',
                         },
                         onChanged: home.setBackgroundMode,
-                      ),
-                      ListTile(
-                        leading: Icon(
-                          background.type == BackgroundMediaType.video
-                              ? Icons.movie_outlined
-                              : Icons.image_outlined,
-                        ),
-                        title: const Text('Current background'),
-                        subtitle: Text(background.currentFilename),
-                      ),
-                      ListTile(
-                        leading: const Icon(Icons.restore_rounded),
-                        title: const Text('Restore bundled background'),
-                        subtitle: const Text(
-                          'Return to the original Edinburgh night artwork.',
-                        ),
-                        onTap: () => _restoreBackground(context),
                       ),
                       SettingsToggleTile(
                         title: 'Auto-open curtain after the intro',
@@ -225,18 +180,10 @@ class SettingsScreen extends StatelessWidget {
                         value: ai.aiEnabled,
                         onChanged: ai.setAiEnabled,
                       ),
-                      ListTile(
-                        leading: Icon(
-                          ai.isConfigured
-                              ? Icons.check_circle_outline
-                              : Icons.info_outline,
-                        ),
-                        title: Text(
-                          ai.isConfigured
-                              ? 'Service configured'
-                              : 'Service not configured',
-                        ),
-                        subtitle: const Text(
+                      const ListTile(
+                        leading: Icon(Icons.privacy_tip_outlined),
+                        title: Text('Privacy'),
+                        subtitle: Text(
                           'Card content is sent only after you provide consent.',
                         ),
                       ),

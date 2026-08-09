@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../core/app_constants.dart';
 import '../models/card_image_model.dart';
 import '../theme/app_theme.dart';
 import 'stored_image.dart';
@@ -13,7 +14,6 @@ class MediumCardThumbnail extends StatefulWidget {
   });
 
   static const double width = 156;
-  static const double artworkAspectRatio = 2 / 3;
 
   final CardImageModel card;
   final VoidCallback onTap;
@@ -77,7 +77,7 @@ class _MediumCardThumbnailState extends State<MediumCardThumbnail> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 AspectRatio(
-                  aspectRatio: MediumCardThumbnail.artworkAspectRatio,
+                  aspectRatio: cardAspectRatio,
                   child: StoredImage(
                     source: widget.card.path,
                     fit: BoxFit.contain,
