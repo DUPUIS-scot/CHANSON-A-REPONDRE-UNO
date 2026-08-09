@@ -25,17 +25,18 @@ class GameProvider extends ChangeNotifier {
     final state = _state;
     if (state != null &&
         state.players.any(
-          (player) => player.hand.length != AppConstants.playHandSize,
+          (player) => player.hand.length != AppConstants.maxPlayerHandSize,
         )) {
       final drawPile = [...state.drawPile];
       final players = <PlayerModel>[];
       for (final player in state.players) {
         final hand = [...player.hand];
-        if (hand.length > AppConstants.playHandSize) {
-          drawPile.addAll(hand.sublist(AppConstants.playHandSize));
-          hand.removeRange(AppConstants.playHandSize, hand.length);
+        if (hand.length > AppConstants.maxPlayerHandSize) {
+          drawPile.addAll(hand.sublist(AppConstants.maxPlayerHandSize));
+          hand.removeRange(AppConstants.maxPlayerHandSize, hand.length);
         }
-        while (hand.length < AppConstants.playHandSize && drawPile.isNotEmpty) {
+        while (hand.length < AppConstants.maxPlayerHandSize &&
+            drawPile.isNotEmpty) {
           hand.add(drawPile.removeLast());
         }
         players.add(player.copyWith(hand: hand));
@@ -66,16 +67,16 @@ class GameProvider extends ChangeNotifier {
   }
 
   Future<bool> start(Deck deck, {int playerCount = 2}) async {
-    if (deck.cards.length < playerCount * AppConstants.playHandSize + 1) {
+    if (deck.cards.length < playerCount * AppConstants.maxPlayerHandSize + 1) {
       _message =
           'This deck needs at least '
-          '${playerCount * AppConstants.playHandSize + 1} cards.';
+          '${playerCount * AppConstants.maxPlayerHandSize + 1} cards.';
       notifyListeners();
       return false;
     }
     final shuffled = [...deck.cards]..shuffle(Random.secure());
     final hands = List.generate(playerCount, (_) => <CardImageModel>[]);
-    for (var round = 0; round < AppConstants.playHandSize; round++) {
+    for (var round = 0; round < AppConstants.maxPlayerHandSize; round++) {
       for (final hand in hands) {
         hand.add(shuffled.removeLast());
       }
@@ -184,7 +185,7 @@ class GameProvider extends ChangeNotifier {
     }
     final players = [...state.players];
     final player = players[state.currentPlayerIndex];
-    if (player.hand.length >= AppConstants.playHandSize) {
+    if (player.hand.length >= AppConstants.maxPlayerHandSize) {
       _message = 'The Play hand already contains five cards.';
       notifyListeners();
       return;
@@ -193,7 +194,7 @@ class GameProvider extends ChangeNotifier {
     do {
       hand.add(drawPile.removeLast());
     } while (state.drawRule == DrawRule.drawUntilPlayable &&
-        hand.length < AppConstants.playHandSize &&
+        hand.length < AppConstants.maxPlayerHandSize &&
         drawPile.isNotEmpty &&
         !canPlay(hand.last));
     players[state.currentPlayerIndex] = player.copyWith(hand: hand);

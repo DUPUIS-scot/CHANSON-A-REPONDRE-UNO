@@ -18,6 +18,7 @@ class FlippablePlayingCard extends StatefulWidget {
     required this.isPlayable,
     required this.onTap,
     this.onLongPress,
+    this.onDoubleTap,
     this.semanticLabel,
     this.disabled = false,
     super.key,
@@ -32,6 +33,7 @@ class FlippablePlayingCard extends StatefulWidget {
   final bool disabled;
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
+  final VoidCallback? onDoubleTap;
   final String? semanticLabel;
 
   @override
@@ -76,6 +78,8 @@ class _FlippablePlayingCardState extends State<FlippablePlayingCard>
     button: true,
     enabled: !widget.disabled,
     label: widget.semanticLabel,
+    hint: 'Tap to select. Hold to flip. Double-tap to open fullscreen.',
+    onLongPress: widget.disabled ? null : widget.onLongPress,
     child: FocusableActionDetector(
       enabled: !widget.disabled,
       mouseCursor: widget.disabled
@@ -97,6 +101,7 @@ class _FlippablePlayingCardState extends State<FlippablePlayingCard>
       child: GestureDetector(
         onTap: handleActivate,
         onLongPress: widget.disabled ? null : widget.onLongPress,
+        onDoubleTap: widget.disabled ? null : widget.onDoubleTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           decoration: BoxDecoration(

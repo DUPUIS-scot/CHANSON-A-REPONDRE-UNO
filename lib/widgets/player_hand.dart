@@ -14,7 +14,7 @@ class PlayerHand extends StatefulWidget {
     required this.revealedCardIds,
     required this.onRevealedChanged,
     required this.keepRevealed,
-    this.onLongPressCard,
+    this.onFullscreenCard,
     super.key,
   });
   final List<CardImageModel> cards;
@@ -24,7 +24,7 @@ class PlayerHand extends StatefulWidget {
   final Set<String> revealedCardIds;
   final ValueChanged<Set<String>> onRevealedChanged;
   final bool keepRevealed;
-  final ValueChanged<String>? onLongPressCard;
+  final ValueChanged<String>? onFullscreenCard;
 
   @override
   State<PlayerHand> createState() => _PlayerHandState();
@@ -32,14 +32,22 @@ class PlayerHand extends StatefulWidget {
 
 class _PlayerHandState extends State<PlayerHand> {
   void select(CardImageModel card) {
-    final revealed = {...widget.revealedCardIds};
     final alreadySelected = widget.selectedCardId == card.id;
     if (alreadySelected) {
-      if (!widget.keepRevealed) revealed.remove(card.id);
       widget.onSelectionChanged(null);
     } else {
-      revealed.add(card.id);
       widget.onSelectionChanged(card);
+    }
+  }
+
+  void flip(CardImageModel card) {
+    final revealed = widget.keepRevealed
+        ? {...widget.revealedCardIds}
+        : <String>{};
+    if (widget.revealedCardIds.contains(card.id)) {
+      revealed.remove(card.id);
+    } else {
+      revealed.add(card.id);
     }
     widget.onRevealedChanged(Set<String>.unmodifiable(revealed));
   }
@@ -51,7 +59,12 @@ class _PlayerHandState extends State<PlayerHand> {
     }
     return LayoutBuilder(
       builder: (context, constraints) {
-        final cardWidth = constraints.maxWidth < 500 ? 92.0 : 138.0;
+        final preferredWidth = constraints.maxWidth < 500 ? 92.0 : 138.0;
+        final fitFactor = 1 + .62 * (widget.cards.length - 1);
+        final cardWidth = math.min(
+          preferredWidth,
+          math.max(72.0, constraints.maxWidth / fitFactor),
+        );
         final cardHeight = cardWidth * 1.48;
         final step = cardWidth * .62;
         final contentWidth = cardWidth + step * (widget.cards.length - 1);
@@ -101,10 +114,12 @@ class _PlayerHandState extends State<PlayerHand> {
                           '${widget.revealedCardIds.contains(widget.cards[index].id) ? 'face up' : 'face down'}, '
                           '${widget.isPlayable(widget.cards[index]) ? 'playable' : 'unavailable'}',
                       onTap: () => select(widget.cards[index]),
-                      onLongPress: widget.onLongPressCard == null
+                      onLongPress: () => flip(widget.cards[index]),
+                      onDoubleTap: widget.onFullscreenCard == null
                           ? null
-                          : () =>
-                                widget.onLongPressCard!(widget.cards[index].id),
+                          : () => widget.onFullscreenCard!(
+                              widget.cards[index].id,
+                            ),
                     ),
                   ),
               ],
@@ -149,21 +164,26 @@ class _DealtCardState extends State<_DealtCard> {
   }
 
   @override
-  Widget build(BuildContext context) => AnimatedPositioned(
-    duration: const Duration(milliseconds: 420),
-    curve: Curves.easeOutBack,
-    left: dealt ? widget.left : MediaQuery.sizeOf(context).width / 2,
-    bottom: dealt ? widget.bottom : 150,
-    width: widget.width,
-    height: widget.height,
-    child: AnimatedScale(
-      scale: dealt ? 1 : .35,
-      duration: const Duration(milliseconds: 420),
-      child: AnimatedRotation(
-        turns: dealt ? widget.rotation / (2 * math.pi) : .2,
-        duration: const Duration(milliseconds: 420),
-        child: widget.child,
+  Widget build(BuildContext context) {
+    final duration = MediaQuery.disableAnimationsOf(context)
+        ? Duration.zero
+        : const Duration(milliseconds: 420);
+    return AnimatedPositioned(
+      duration: duration,
+      curve: Curves.easeOutBack,
+      left: dealt ? widget.left : MediaQuery.sizeOf(context).width / 2,
+      bottom: dealt ? widget.bottom : 150,
+      width: widget.width,
+      height: widget.height,
+      child: AnimatedScale(
+        scale: dealt ? 1 : .35,
+        duration: duration,
+        child: AnimatedRotation(
+          turns: dealt ? widget.rotation / (2 * math.pi) : .2,
+          duration: duration,
+          child: widget.child,
+        ),
       ),
-    ),
-  );
+    );
+  }
 }

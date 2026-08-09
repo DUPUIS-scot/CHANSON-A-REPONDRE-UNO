@@ -34,7 +34,7 @@ class _SearchScreenState extends State<SearchScreen> {
   static const _storageKey = 'search_path_state_v1';
   static const _pageSize = 30;
   static final _categories = <String>[
-    'TOUTES',
+    'ALL',
     ...cardCategories.map((category) => category.label),
   ];
 
@@ -47,7 +47,7 @@ class _SearchScreenState extends State<SearchScreen> {
   Timer? _persistDebounce;
   bool _restored = false;
   String _query = '';
-  String _category = 'TOUTES';
+  String _category = 'ALL';
   String? _selectedCardId;
   _SearchViewMode _viewMode = _SearchViewMode.castle;
   int _shuffleSeed = 0;
@@ -97,7 +97,7 @@ class _SearchScreenState extends State<SearchScreen> {
         _controller.text = _query;
         _category = _categories.contains(json['category'])
             ? json['category'] as String
-            : 'TOUTES';
+            : 'ALL';
         _selectedCardId = json['selectedCardId'] as String?;
         _viewMode = switch (json['viewMode']) {
           'grid' => _SearchViewMode.grid,
@@ -190,7 +190,7 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   List<CardImageModel> _results(List<Deck> decks) {
-    final category = _category == 'TOUTES' ? null : _category;
+    final category = _category == 'ALL' ? null : _category;
     final cards = _search.cards(
       decks: decks,
       query: _query,
@@ -362,7 +362,9 @@ class _SearchScreenState extends State<SearchScreen> {
                   },
                 ),
               ),
-              if (MediaQuery.sizeOf(context).width < 980 && selected != null)
+              if (MediaQuery.sizeOf(context).width < 980 &&
+                  selected != null &&
+                  _viewMode != _SearchViewMode.castle)
                 _MobileSelectionBar(
                   card: selected,
                   onFullscreen: () => _openFullscreen(selected),
@@ -376,8 +378,8 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   String _resultLabel(int count) {
-    if (_query.trim().isEmpty) return '$count RÉSULTATS';
-    return '$count RÉSULTATS POUR “${_query.trim().toUpperCase()}”';
+    if (_query.trim().isEmpty) return '$count RESULTS';
+    return '$count RESULTS FOR “${_query.trim().toUpperCase()}”';
   }
 
   Widget _buildResults(List<CardImageModel> visible, List<CardImageModel> all) {
@@ -535,7 +537,7 @@ class _SearchHeader extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'RECHERCHE',
+                      'SEARCH',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 24,
@@ -544,7 +546,7 @@ class _SearchHeader extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'Trouvez vos cartes',
+                      'Explore the permanent collection',
                       style: TextStyle(color: Color(0xFF9EB4C5)),
                     ),
                   ],
@@ -557,46 +559,36 @@ class _SearchHeader extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               IconButton.outlined(
-                tooltip: 'Accueil',
+                tooltip: 'Return to Home',
                 onPressed: () => context.go(AppRoutes.home),
                 icon: const Icon(Icons.home_rounded),
               ),
             ],
           ),
           const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: controller,
-                  onChanged: onQueryChanged,
-                  textInputAction: TextInputAction.search,
-                  decoration: InputDecoration(
-                    hintText: 'Rechercher une carte…',
-                    prefixIcon: const Icon(Icons.search_rounded),
-                    suffixIcon: controller.text.isEmpty
-                        ? null
-                        : IconButton(
-                            tooltip: 'Effacer la recherche',
-                            onPressed: () {
-                              controller.clear();
-                              onQueryChanged('');
-                            },
-                            icon: const Icon(Icons.close_rounded),
-                          ),
-                  ),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 620;
+              final field = TextField(
+                controller: controller,
+                onChanged: onQueryChanged,
+                textInputAction: TextInputAction.search,
+                decoration: InputDecoration(
+                  hintText: 'Search cards…',
+                  prefixIcon: const Icon(Icons.search_rounded),
+                  suffixIcon: controller.text.isEmpty
+                      ? null
+                      : IconButton(
+                          tooltip: 'Clear search',
+                          onPressed: () {
+                            controller.clear();
+                            onQueryChanged('');
+                          },
+                          icon: const Icon(Icons.close_rounded),
+                        ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              FilledButton.tonalIcon(
-                onPressed: onShuffle,
-                icon: const Icon(Icons.shuffle_rounded),
-                label: MediaQuery.sizeOf(context).width >= 620
-                    ? const Text('SHUFFLE')
-                    : const SizedBox.shrink(),
-              ),
-              const SizedBox(width: 8),
-              SegmentedButton<_SearchViewMode>(
+              );
+              final modes = SegmentedButton<_SearchViewMode>(
                 showSelectedIcon: false,
                 segments: const [
                   ButtonSegment(
@@ -617,8 +609,34 @@ class _SearchHeader extends StatelessWidget {
                 ],
                 selected: {viewMode},
                 onSelectionChanged: (value) => onViewModeChanged(value.first),
-              ),
-            ],
+              );
+              final shuffle = FilledButton.tonalIcon(
+                onPressed: onShuffle,
+                icon: const Icon(Icons.shuffle_rounded),
+                label: compact ? const Text('Shuffle') : const Text('SHUFFLE'),
+              );
+              if (compact) {
+                return Column(
+                  children: [
+                    field,
+                    const SizedBox(height: AppTheme.spaceSm),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [shuffle, modes],
+                    ),
+                  ],
+                );
+              }
+              return Row(
+                children: [
+                  Expanded(child: field),
+                  const SizedBox(width: AppTheme.spaceSm),
+                  shuffle,
+                  const SizedBox(width: AppTheme.spaceSm),
+                  modes,
+                ],
+              );
+            },
           ),
           const SizedBox(height: 10),
           SizedBox(
@@ -858,7 +876,7 @@ class _SelectedCardPanel extends StatelessWidget {
               Spacer(),
               Center(
                 child: Text(
-                  'Sélectionnez une carte\npour afficher ses détails.',
+                  'Select a card to view its details.',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Color(0xFF9EADB8)),
                 ),
@@ -907,7 +925,7 @@ class _SelectedCardPanel extends StatelessWidget {
               const SizedBox(height: 10),
               Text(
                 card!.question.isEmpty
-                    ? 'Question non renseignée'
+                    ? 'No question provided'
                     : card!.question,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
@@ -915,20 +933,20 @@ class _SelectedCardPanel extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               const Text(
-                'Clic court : sélectionner\nClic long : plein écran',
+                'Click: select\nLong click: fullscreen',
                 style: TextStyle(color: Color(0xFF91A2AF), fontSize: 12),
               ),
               const SizedBox(height: 12),
               OutlinedButton.icon(
                 onPressed: onFullscreen,
                 icon: const Icon(Icons.fullscreen_rounded),
-                label: const Text('PLEIN ÉCRAN'),
+                label: const Text('FULLSCREEN'),
               ),
               const SizedBox(height: 8),
               FilledButton.icon(
                 onPressed: onViewInCastle,
                 icon: const Icon(Icons.castle_rounded),
-                label: const Text('VOIR DANS LE CHÂTEAU'),
+                label: const Text('VIEW IN CASTLE'),
               ),
             ],
           ),
@@ -940,7 +958,7 @@ class _PanelTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const Text(
-    'CARTE SÉLECTIONNÉE',
+    'SELECTED CARD',
     style: TextStyle(
       color: AppTheme.brightGold,
       fontWeight: FontWeight.w900,
@@ -992,7 +1010,7 @@ class _MobileSelectionBar extends StatelessWidget {
           ),
         ),
         IconButton(
-          tooltip: 'Plein écran',
+          tooltip: 'Open fullscreen',
           onPressed: onFullscreen,
           icon: const Icon(Icons.fullscreen_rounded),
         ),
@@ -1016,7 +1034,7 @@ class _EmptyResults extends StatelessWidget {
         Icon(Icons.search_off_rounded, size: 54, color: Color(0xFF718391)),
         SizedBox(height: 10),
         Text(
-          'Aucune carte ne correspond à cette recherche.',
+          'No cards match this search.',
           style: TextStyle(color: Color(0xFFB7C2CA)),
         ),
       ],

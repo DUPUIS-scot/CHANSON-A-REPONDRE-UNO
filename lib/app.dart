@@ -202,6 +202,10 @@ class _ChansonUnoAppState extends State<ChansonUnoApp> {
                           child: MediaQuery(
                             data: MediaQuery.of(context).copyWith(
                               textScaler: TextScaler.linear(settings.textScale),
+                              disableAnimations:
+                                  MediaQuery.disableAnimationsOf(context) ||
+                                  !settings.advanced.animationsEnabled ||
+                                  settings.advanced.reducedMotion,
                             ),
                             child: _GlobalBackground(child: child!),
                           ),

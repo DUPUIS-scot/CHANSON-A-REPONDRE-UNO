@@ -13,18 +13,16 @@ class OpenAiProfileService {
 
   Future<OpenAiConnectionStatus> connect(String apiKey) async =>
       OpenAiConnectionStatus.fromJson(
-        await _client.postJson(
-          '/api/profile/openai-credential',
-          {'apiKey': apiKey},
-        ),
+        await _client.postJson('/api/profile/openai-credential', {
+          'apiKey': apiKey,
+        }),
       );
 
   Future<OpenAiConnectionStatus> replace(String apiKey) async =>
       OpenAiConnectionStatus.fromJson(
-        await _client.putJson(
-          '/api/profile/openai-credential',
-          {'apiKey': apiKey},
-        ),
+        await _client.putJson('/api/profile/openai-credential', {
+          'apiKey': apiKey,
+        }),
       );
 
   Future<String> test() async =>
@@ -32,6 +30,5 @@ class OpenAiProfileService {
           as String? ??
       'OpenAI connection successful.';
 
-  Future<void> disconnect() =>
-      _client.delete('/api/profile/openai-credential');
+  Future<void> disconnect() => _client.delete('/api/profile/openai-credential');
 }

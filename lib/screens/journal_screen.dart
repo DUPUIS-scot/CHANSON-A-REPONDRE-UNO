@@ -85,9 +85,8 @@ class _JournalScreenState extends State<JournalScreen> {
                                 ? 'Unavailable card'
                                 : card.category.toUpperCase(),
                           ),
-                          onDeleted: () => setDialogState(
-                            () => linkedCardIds.remove(id),
-                          ),
+                          onDeleted: () =>
+                              setDialogState(() => linkedCardIds.remove(id)),
                         );
                       }).toList(),
                     ),
@@ -255,7 +254,10 @@ class _JournalEntryCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(entry.text, style: Theme.of(context).textTheme.bodyLarge),
+                      Text(
+                        entry.text,
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
                       const SizedBox(height: 8),
                       Text(
                         'Created ${entry.createdAt.toLocal()}\n'
@@ -291,14 +293,17 @@ class _JournalEntryCard extends StatelessWidget {
                     scrollDirection: Axis.horizontal,
                     itemCount: links.length,
                     separatorBuilder: (_, _) => const SizedBox(width: 16),
-                    itemBuilder: (_, index) => _linkedCard(context, links[index]),
+                    itemBuilder: (_, index) =>
+                        _linkedCard(context, links[index]),
                   ),
                 )
               else
                 Wrap(
                   spacing: 16,
                   runSpacing: 16,
-                  children: links.map((link) => _linkedCard(context, link)).toList(),
+                  children: links
+                      .map((link) => _linkedCard(context, link))
+                      .toList(),
                 ),
             ],
           ],

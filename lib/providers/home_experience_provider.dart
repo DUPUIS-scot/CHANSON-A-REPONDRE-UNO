@@ -6,6 +6,8 @@ import '../services/local_storage_service.dart';
 
 enum HomeStage { videoIntro, curtainOpening, home }
 
+enum HomeBackgroundMode { defaultMode, sauvage }
+
 class HomeExperienceProvider extends ChangeNotifier {
   HomeExperienceProvider(this._storage);
   final LocalStorageService _storage;
@@ -20,6 +22,7 @@ class HomeExperienceProvider extends ChangeNotifier {
   bool targetOpen = false;
   bool autoOpenAfterPlayback = false;
   bool skipIntroOnStartup = false;
+  HomeBackgroundMode backgroundMode = HomeBackgroundMode.defaultMode;
   int orientationResetToken = 0;
 
   bool get homeInteractive => curtainProgress >= .95 && stage == HomeStage.home;
@@ -31,6 +34,10 @@ class HomeExperienceProvider extends ChangeNotifier {
         final map = jsonDecode(source) as Map<String, dynamic>;
         autoOpenAfterPlayback = map['autoOpen'] as bool? ?? false;
         skipIntroOnStartup = map['skipIntro'] as bool? ?? false;
+        backgroundMode =
+            map['backgroundMode'] == HomeBackgroundMode.sauvage.name
+            ? HomeBackgroundMode.sauvage
+            : HomeBackgroundMode.defaultMode;
       }
     } on Object {
       // Invalid preferences safely use the intro defaults.
@@ -143,10 +150,16 @@ class HomeExperienceProvider extends ChangeNotifier {
     await _persist();
   }
 
+  Future<void> setBackgroundMode(HomeBackgroundMode value) async {
+    backgroundMode = value;
+    await _persist();
+  }
+
   Future<void> _persist() async {
     await _storage.write(_key, {
       'autoOpen': autoOpenAfterPlayback,
       'skipIntro': skipIntroOnStartup,
+      'backgroundMode': backgroundMode.name,
     });
     notifyListeners();
   }

@@ -37,7 +37,7 @@ void main() {
     addTearDown(router.dispose);
     await tester.pumpWidget(MaterialApp.router(routerConfig: router));
 
-    await tester.tap(find.text('DECKS'));
+    await tester.tap(find.text('DECK'));
     await tester.pumpAndSettle();
     expect(router.state.uri.path, AppRoutes.decks);
 
@@ -55,7 +55,7 @@ void main() {
 
     router.go(AppRoutes.home);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('PLUS'));
+    await tester.tap(find.text('MORE'));
     await tester.pumpAndSettle();
     expect(find.text('Search'), findsOneWidget);
     expect(find.text('AI Chat'), findsOneWidget);

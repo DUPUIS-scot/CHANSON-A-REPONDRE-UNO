@@ -73,8 +73,8 @@ class AppBottomNavigation extends StatelessWidget {
     selectedIndex: selectedIndex,
     onDestinationSelected: (index) => select(context, index),
     destinations: const [
-      NavigationDestination(icon: Icon(Icons.home_rounded), label: 'ACCUEIL'),
-      NavigationDestination(icon: Icon(Icons.style_rounded), label: 'DECKS'),
+      NavigationDestination(icon: Icon(Icons.home_rounded), label: 'HOME'),
+      NavigationDestination(icon: Icon(Icons.style_rounded), label: 'DECK'),
       NavigationDestination(
         icon: Icon(Icons.play_circle_fill, size: 40),
         label: 'PLAY',
@@ -82,7 +82,7 @@ class AppBottomNavigation extends StatelessWidget {
       NavigationDestination(icon: Icon(Icons.book_rounded), label: 'JOURNAL'),
       NavigationDestination(
         icon: Icon(Icons.more_horiz_rounded),
-        label: 'PLUS',
+        label: 'MORE',
       ),
     ],
   );

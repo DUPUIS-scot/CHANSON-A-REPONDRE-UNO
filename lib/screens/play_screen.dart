@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../data/card_categories.dart';
+import '../core/app_constants.dart';
 import '../models/card_image_model.dart';
 import '../providers/deck_provider.dart';
 import '../providers/game_provider.dart';
@@ -123,9 +124,8 @@ class _PlayScreenState extends State<PlayScreen> {
     final game = context.read<GameProvider>();
     final state = game.state;
     if (dealerBusy || state == null || state.drawPile.isEmpty) return;
-    final settings = context.read<SettingsProvider>();
     if (state.players[state.currentPlayerIndex].hand.length >=
-        settings.playHandSize) {
+        AppConstants.maxPlayerHandSize) {
       return;
     }
     final card = state.drawPile.last;
@@ -201,11 +201,19 @@ class _PlayScreenState extends State<PlayScreen> {
           : GameTableBackground(
               stageLayer: LayoutBuilder(
                 builder: (context, constraints) {
-                  final narrow = constraints.maxWidth < 720;
+                  final narrow =
+                      constraints.maxWidth < AppTheme.tabletBreakpoint;
+                  final short = constraints.maxHeight < 620;
                   final width = narrow
                       ? constraints.maxWidth
                       : constraints.maxWidth * .72;
-                  final height = constraints.maxHeight * (narrow ? .62 : .64);
+                  final height =
+                      constraints.maxHeight *
+                      (short
+                          ? .48
+                          : narrow
+                          ? .58
+                          : .64);
                   return Align(
                     alignment: Alignment.topCenter,
                     child: SizedBox(
@@ -222,7 +230,8 @@ class _PlayScreenState extends State<PlayScreen> {
               child: SafeArea(
                 child: LayoutBuilder(
                   builder: (context, constraints) {
-                    final narrow = constraints.maxWidth < 720;
+                    final narrow =
+                        constraints.maxWidth < AppTheme.tabletBreakpoint;
                     final compact = constraints.maxHeight < 700;
                     final player = state.players.first;
                     final opponent = state.players.length > 1
@@ -231,13 +240,25 @@ class _PlayScreenState extends State<PlayScreen> {
                     final selected = player.hand
                         .where((card) => card.id == selectedCardId)
                         .firstOrNull;
-                    final pileTop =
-                        constraints.maxHeight * (narrow ? .43 : .49);
-                    final statusTop =
-                        constraints.maxHeight * (narrow ? .61 : .65);
                     final handHeight = compact
-                        ? 188.0
-                        : constraints.maxHeight.clamp(720, 1100) * .27;
+                        ? (constraints.maxHeight * .31).clamp(150.0, 188.0)
+                        : (constraints.maxHeight * .27).clamp(188.0, 260.0);
+                    final pileTop =
+                        (constraints.maxHeight * (narrow ? .36 : .46)).clamp(
+                          88.0,
+                          (constraints.maxHeight - handHeight - 142).clamp(
+                            88.0,
+                            double.infinity,
+                          ),
+                        );
+                    final statusTop =
+                        (constraints.maxHeight * (narrow ? .56 : .63)).clamp(
+                          150.0,
+                          (constraints.maxHeight - handHeight - 58).clamp(
+                            150.0,
+                            double.infinity,
+                          ),
+                        );
                     final pileInset = narrow
                         ? 12.0
                         : constraints.maxWidth * .14;
@@ -261,7 +282,8 @@ class _PlayScreenState extends State<PlayScreen> {
                               onDraw:
                                   state.currentPlayerIndex == 0 &&
                                       !dealerBusy &&
-                                      player.hand.length < settings.playHandSize
+                                      player.hand.length <
+                                          AppConstants.maxPlayerHandSize
                                   ? drawWithDealer
                                   : null,
                             ),
@@ -281,8 +303,8 @@ class _PlayScreenState extends State<PlayScreen> {
                         ),
                         Positioned(
                           top: statusTop,
-                          left: narrow ? 104 : 150,
-                          right: narrow ? 104 : 150,
+                          left: narrow ? AppTheme.spaceSm : 150,
+                          right: narrow ? AppTheme.spaceSm : 150,
                           child: Wrap(
                             alignment: WrapAlignment.center,
                             spacing: narrow ? 5 : 10,
@@ -308,8 +330,8 @@ class _PlayScreenState extends State<PlayScreen> {
                         if (game.message != null)
                           Positioned(
                             top: statusTop + (narrow ? 82 : 58),
-                            left: 120,
-                            right: 120,
+                            left: AppTheme.spaceMd,
+                            right: AppTheme.spaceMd,
                             child: Text(
                               game.message!,
                               textAlign: TextAlign.center,
@@ -359,7 +381,7 @@ class _PlayScreenState extends State<PlayScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 12),
                             child: PlayerHand(
                               cards: player.hand
-                                  .take(settings.playHandSize)
+                                  .take(AppConstants.maxPlayerHandSize)
                                   .toList(growable: false),
                               selectedCardId: selectedCardId,
                               isPlayable: game.canPlay,
@@ -373,7 +395,7 @@ class _PlayScreenState extends State<PlayScreen> {
                               onSelectionChanged: (card) => setState(() {
                                 selectedCardId = card?.id;
                               }),
-                              onLongPressCard: openHandPreview,
+                              onFullscreenCard: openHandPreview,
                             ),
                           ),
                         ),

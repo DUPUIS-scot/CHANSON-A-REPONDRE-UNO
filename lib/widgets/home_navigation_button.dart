@@ -56,7 +56,8 @@ class _HomeNavigationButtonState extends State<HomeNavigationButton> {
 
   @override
   Widget build(BuildContext context) {
-    final currentPath = AppRouter.router.routeInformationProvider.value.uri.path;
+    final currentPath =
+        AppRouter.router.routeInformationProvider.value.uri.path;
     final isDjWhoActive = currentPath == AppRoutes.djWhoVideos;
 
     final showLabel = MediaQuery.sizeOf(context).width >= 600;
@@ -65,27 +66,27 @@ class _HomeNavigationButtonState extends State<HomeNavigationButton> {
       width: 48 + 8 + djWidth,
       height: 48,
       child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _HomeControl(
-              hovered: hovered,
-              focused: focused,
-              onHover: (value) => setState(() => hovered = value),
-              onFocus: (value) => setState(() => focused = value),
-              onPressed: navigateHome,
-            ),
-            const SizedBox(width: 8),
-            _DjWhoControl(
-              active: isDjWhoActive,
-              hovered: djHovered,
-              focused: djFocused,
-              showLabel: showLabel,
-              width: djWidth,
-              onHover: (value) => setState(() => djHovered = value),
-              onFocus: (value) => setState(() => djFocused = value),
-              onPressed: () => context.go(AppRoutes.djWhoVideos),
-            ),
-          ],
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _HomeControl(
+            hovered: hovered,
+            focused: focused,
+            onHover: (value) => setState(() => hovered = value),
+            onFocus: (value) => setState(() => focused = value),
+            onPressed: navigateHome,
+          ),
+          const SizedBox(width: 8),
+          _DjWhoControl(
+            active: isDjWhoActive,
+            hovered: djHovered,
+            focused: djFocused,
+            showLabel: showLabel,
+            width: djWidth,
+            onHover: (value) => setState(() => djHovered = value),
+            onFocus: (value) => setState(() => djFocused = value),
+            onPressed: () => context.go(AppRoutes.djWhoVideos),
+          ),
+        ],
       ),
     );
   }

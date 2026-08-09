@@ -34,6 +34,7 @@ class _HomeMenuCardState extends State<HomeMenuCard> {
 
   @override
   Widget build(BuildContext context) {
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
     return Semantics(
       button: true,
       label: '${widget.title}. ${widget.description}',
@@ -46,11 +47,15 @@ class _HomeMenuCardState extends State<HomeMenuCard> {
               : hovered
               ? 1.018
               : 1,
-          duration: const Duration(milliseconds: 150),
+          duration: reduceMotion
+              ? Duration.zero
+              : const Duration(milliseconds: 150),
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
+            duration: reduceMotion
+                ? Duration.zero
+                : const Duration(milliseconds: 180),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
               border: Border.all(
                 color: hovered ? AppTheme.brightGold : AppTheme.gold,
                 width: hovered ? 1.8 : 1.1,
@@ -66,7 +71,7 @@ class _HomeMenuCardState extends State<HomeMenuCard> {
             ),
             child: Material(
               color: Colors.transparent,
-              borderRadius: BorderRadius.circular(7),
+              borderRadius: BorderRadius.circular(AppTheme.radiusMedium - 1),
               clipBehavior: Clip.antiAlias,
               child: Stack(
                 fit: StackFit.expand,
@@ -74,7 +79,9 @@ class _HomeMenuCardState extends State<HomeMenuCard> {
                   IgnorePointer(
                     child: AnimatedScale(
                       scale: hovered ? 1.04 : 1,
-                      duration: const Duration(milliseconds: 180),
+                      duration: reduceMotion
+                          ? Duration.zero
+                          : const Duration(milliseconds: 180),
                       curve: Curves.easeOut,
                       child: Image.asset(
                         widget.backgroundAsset,
@@ -100,7 +107,7 @@ class _HomeMenuCardState extends State<HomeMenuCard> {
                     splashColor: widget.accent.withValues(alpha: .24),
                     focusColor: AppTheme.gold.withValues(alpha: .14),
                     child: Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(AppTheme.spaceMd),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [

@@ -19,7 +19,7 @@ CardImageModel card(int index) => CardImageModel(
 );
 
 void main() {
-  testWidgets('touch long press opens exact card without flipping it', (
+  testWidgets('tap selects, hold flips, and double-tap opens fullscreen', (
     tester,
   ) async {
     final cards = List.generate(5, card);
@@ -44,7 +44,7 @@ void main() {
                     ..addAll(ids);
                 }),
                 keepRevealed: true,
-                onLongPressCard: (cardId) => previewCardId = cardId,
+                onFullscreenCard: (cardId) => previewCardId = cardId,
               ),
             ),
           ),
@@ -56,22 +56,30 @@ void main() {
     await tester.longPress(held);
     await tester.pumpAndSettle();
 
-    expect(previewCardId, 'card-4');
+    expect(previewCardId, isNull);
     expect(selected, isNull);
-    expect(revealed, isEmpty);
-    expect(tester.widget<FlippablePlayingCard>(held).isFaceUp, isFalse);
+    expect(revealed, {'card-4'});
+    expect(tester.widget<FlippablePlayingCard>(held).isFaceUp, isTrue);
 
     await tester.tap(held);
+    await tester.pump(kDoubleTapTimeout);
     await tester.pumpAndSettle();
     expect(selected?.id, 'card-4');
     expect(revealed, {'card-4'});
     expect(tester.widget<FlippablePlayingCard>(held).isFaceUp, isTrue);
 
     await tester.tap(held);
+    await tester.pump(kDoubleTapTimeout);
     await tester.pumpAndSettle();
     expect(selected, isNull);
     expect(revealed, {'card-4'});
     expect(tester.widget<FlippablePlayingCard>(held).isFaceUp, isTrue);
+
+    await tester.tap(held);
+    await tester.pump(kDoubleTapMinTime);
+    await tester.tap(held);
+    await tester.pumpAndSettle();
+    expect(previewCardId, 'card-4');
   });
 
   testWidgets('desktop mouse long-click does not also trigger tap', (

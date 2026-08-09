@@ -37,4 +37,17 @@ void main() {
     expect(provider.stage, HomeStage.videoIntro);
     expect(provider.curtainProgress, 0);
   });
+
+  test('Home background mode defaults and persists independently', () async {
+    final storage = LocalStorageService();
+    final first = HomeExperienceProvider(storage);
+    await first.initialize();
+    expect(first.backgroundMode, HomeBackgroundMode.defaultMode);
+
+    await first.setBackgroundMode(HomeBackgroundMode.sauvage);
+
+    final restored = HomeExperienceProvider(storage);
+    await restored.initialize();
+    expect(restored.backgroundMode, HomeBackgroundMode.sauvage);
+  });
 }

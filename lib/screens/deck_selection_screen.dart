@@ -1,161 +1,164 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+
 import '../core/app_constants.dart';
+import '../core/app_router.dart';
 import '../providers/deck_provider.dart';
-import '../services/deck_import_service.dart';
-import '../services/local_storage_service.dart';
-import '../widgets/deck_tile.dart';
-import '../widgets/home_navigation_button.dart';
+import '../theme/app_theme.dart';
+import '../widgets/app_page_shell.dart';
+import '../widgets/stored_image.dart';
 
 class DeckSelectionScreen extends StatelessWidget {
   const DeckSelectionScreen({super.key});
 
-  Future<void> _importDeck(BuildContext context) async {
-    try {
-      final importer = DeckImportService(context.read<LocalStorageService>());
-      final files = await importer.pickPngFiles();
-      if (files == null || !context.mounted) return;
-      final name = await _name(context, 'Name imported deck');
-      if (name == null || !context.mounted) return;
-      await context.read<DeckProvider>().import(name, files);
-    } on Object catch (error) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('$error')));
-      }
-    }
-  }
-
-  Future<String?> _name(
-    BuildContext context,
-    String title, [
-    String initial = '',
-  ]) async {
-    final controller = TextEditingController(text: initial);
-    return showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: const InputDecoration(labelText: 'Deck name'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<DeckProvider>();
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Choose Deck'),
-        actions: [
-          IconButton(
-            tooltip: 'Create empty deck',
-            onPressed: () async {
-              final name = await _name(context, 'Create deck');
-              if (name != null && context.mounted) {
-                await context.read<DeckProvider>().create(name);
-              }
-            },
-            icon: const Icon(Icons.add),
-          ),
-          const Padding(
-            padding: EdgeInsets.only(right: 8),
-            child: HomeNavigationButton(),
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _importDeck(context),
-        icon: const Icon(Icons.file_upload_outlined),
-        label: const Text('Import PNG deck'),
-      ),
-      body: provider.loading
-          ? const Center(child: CircularProgressIndicator())
-          : provider.decks.isEmpty
-          ? const Center(
-              child: Text('No decks yet. Create one or import PNG cards.'),
+    final deck = provider.decks
+        .where((item) => item.id == AppConstants.productionDeckId)
+        .firstOrNull;
+
+    return AppPageShell(
+      title: 'Choose Deck',
+      child: provider.loading
+          ? Center(
+              child: Semantics(
+                label: 'Loading the permanent deck',
+                child: const CircularProgressIndicator(),
+              ),
             )
-          : LayoutBuilder(
-              builder: (context, constraints) {
-                final columns = constraints.maxWidth >= 1000
-                    ? 4
-                    : constraints.maxWidth >= 650
-                    ? 3
-                    : constraints.maxWidth >= 420
-                    ? 2
-                    : 1;
-                return GridView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
-                  itemCount: provider.decks.length,
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: columns,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
-                    childAspectRatio: 1.15,
-                  ),
-                  itemBuilder: (context, index) {
-                    final deck = provider.decks[index];
-                    return DeckTile(
-                      deck: deck,
-                      selected: deck.id == provider.activeDeckId,
-                      editable: deck.id != AppConstants.productionDeckId,
-                      onSelect: () => provider.select(deck.id),
-                      onRename: () async {
-                        final name = await _name(
-                          context,
-                          'Rename deck',
-                          deck.name,
-                        );
-                        if (name != null && context.mounted) {
-                          await provider.rename(deck.id, name);
-                        }
-                      },
-                      onDelete: () async {
-                        final confirmed =
-                            await showDialog<bool>(
-                              context: context,
-                              builder: (context) => AlertDialog(
-                                title: const Text('Delete deck?'),
-                                content: Text(
-                                  'Delete ${deck.name} and all of its imported files?',
+          : deck == null
+          ? const _MissingDeckState()
+          : Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(AppTheme.spaceLg),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 720),
+                  child: Card(
+                    clipBehavior: Clip.antiAlias,
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppTheme.spaceLg),
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final compact =
+                              constraints.maxWidth < AppTheme.tabletBreakpoint;
+                          final artwork = AspectRatio(
+                            aspectRatio: 2 / 3,
+                            child: StoredImage(
+                              source: deck.coverPath,
+                              fit: BoxFit.contain,
+                              errorBuilder: (_, _, _) => const ColoredBox(
+                                color: AppTheme.darkLeather,
+                                child: Center(
+                                  child: Icon(
+                                    Icons.style_rounded,
+                                    size: 72,
+                                    color: AppTheme.gold,
+                                  ),
                                 ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () =>
-                                        Navigator.pop(context, false),
-                                    child: const Text('Cancel'),
-                                  ),
-                                  FilledButton(
-                                    onPressed: () =>
-                                        Navigator.pop(context, true),
-                                    child: const Text('Delete'),
-                                  ),
-                                ],
                               ),
-                            ) ??
-                            false;
-                        if (confirmed) await provider.delete(deck.id);
-                      },
-                    );
-                  },
-                );
-              },
+                            ),
+                          );
+                          final details = Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: compact
+                                ? CrossAxisAlignment.center
+                                : CrossAxisAlignment.start,
+                            children: [
+                              const Icon(
+                                Icons.lock_outline_rounded,
+                                color: AppTheme.brightGold,
+                              ),
+                              const SizedBox(height: AppTheme.spaceSm),
+                              Text(
+                                deck.name,
+                                textAlign: compact
+                                    ? TextAlign.center
+                                    : TextAlign.start,
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.headlineSmall,
+                              ),
+                              const SizedBox(height: AppTheme.spaceSm),
+                              Text(
+                                '${deck.cards.length} permanent cards',
+                                style: Theme.of(context).textTheme.bodyLarge,
+                              ),
+                              const SizedBox(height: AppTheme.spaceMd),
+                              const Text(
+                                'The curated built-in collection used throughout Play, Browse Cards, and Search.',
+                                textAlign: TextAlign.start,
+                              ),
+                              const SizedBox(height: AppTheme.spaceLg),
+                              FilledButton.icon(
+                                onPressed: () async {
+                                  await provider.select(deck.id);
+                                  if (context.mounted) {
+                                    context.go(AppRoutes.cards);
+                                  }
+                                },
+                                icon: const Icon(Icons.menu_book_rounded),
+                                label: const Text('Browse Cards'),
+                              ),
+                            ],
+                          );
+                          if (compact) {
+                            return Column(
+                              children: [
+                                SizedBox(height: 280, child: artwork),
+                                const SizedBox(height: AppTheme.spaceLg),
+                                details,
+                              ],
+                            );
+                          }
+                          return SizedBox(
+                            height: 420,
+                            child: Row(
+                              children: [
+                                SizedBox(width: 250, child: artwork),
+                                const SizedBox(width: AppTheme.spaceXl),
+                                Expanded(child: details),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ),
     );
   }
+}
+
+class _MissingDeckState extends StatelessWidget {
+  const _MissingDeckState();
+
+  @override
+  Widget build(BuildContext context) => Center(
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 420),
+      child: const Padding(
+        padding: EdgeInsets.all(AppTheme.spaceLg),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.style_outlined, size: 56, color: AppTheme.gold),
+            SizedBox(height: AppTheme.spaceMd),
+            Text(
+              'The permanent deck could not be loaded.',
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: AppTheme.spaceSm),
+            Text(
+              'Reload the application. Your saved game and preferences will remain available.',
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }

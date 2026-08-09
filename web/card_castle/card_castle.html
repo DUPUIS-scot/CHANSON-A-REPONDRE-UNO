@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -24,19 +24,19 @@
 </head>
 <body data-renderer-status="loading">
   <div id="scene"></div>
-  <div id="loading">CHARGEMENT DU CHÂTEAU 3D…</div>
+  <div id="loading">LOADING 3D CASTLE…</div>
   <div id="castle-controls">
-    <button id="enter-fullscreen" type="button">⛶ PLEIN ÉCRAN 3D</button>
+    <button id="enter-fullscreen" type="button">⛶ FULLSCREEN 3D</button>
     <div id="fullscreen-controls">
-      <button id="exit-fullscreen" type="button">✕ QUITTER</button>
-      <button id="castle-home" type="button">⌂ ACCUEIL</button>
-      <select id="castle-category" aria-label="Catégorie"></select>
+      <button id="exit-fullscreen" type="button">✕ EXIT</button>
+      <button id="castle-home" type="button">⌂ HOME</button>
+      <select id="castle-category" aria-label="Category"></select>
       <button id="previous-card" type="button">←</button>
       <div id="focused-summary">
         <img id="focused-thumbnail" alt="">
-        <span id="focused-title">Aucune carte</span>
+        <span id="focused-title">No card selected</span>
       </div>
-      <button id="open-focused-card" type="button">AGRANDIR</button>
+      <button id="open-focused-card" type="button">OPEN CARD</button>
       <button id="next-card" type="button">→</button>
     </div>
   </div>
@@ -58,7 +58,7 @@
     cards: [], meshes: [], textures: new Map(), focusedCardId: null,
     shuffleSeed: 0, disposed: false, pointerDown: null, dragging: false,
     targetLook: null, targetCamera: null, loadQueue: [], activeLoads: 0,
-    touches: new Map(), pinch: null, activeCategory: 'TOUTES',
+    touches: new Map(), pinch: null, activeCategory: 'ALL',
     fullscreenActive: false, fallbackElements: null, lastFrame: 0,
     frame: 0, visible: true, ready: false, generation: 0,
     surfaceAnchors: [], longPressTimer: 0,
@@ -308,7 +308,7 @@
     state.meshes=[];state.loadQueue=[];state.activeLoads=0;
   }
 
-  function setCards(cards,focusedCardId,shuffleSeed,animateFocus=false,activeCategory='TOUTES') {
+  function setCards(cards,focusedCardId,shuffleSeed,animateFocus=false,activeCategory='ALL') {
     state.cards=cards;state.focusedCardId=focusedCardId;state.shuffleSeed=shuffleSeed;
     state.activeCategory=activeCategory;
     document.body.dataset.cardCount=String(cards.length);
@@ -452,7 +452,7 @@
 
   function updateCategoryControl() {
     const control=document.getElementById('castle-category');
-    const categories=['TOUTES',...new Set(state.cards.map(card=>card.category.toUpperCase()))];
+    const categories=['ALL',...new Set(state.cards.map(card=>card.category.toUpperCase()))];
     control.replaceChildren(...categories.map(category=>{
       const option=document.createElement('option');
       option.value=category;option.textContent=category;
@@ -461,7 +461,7 @@
   }
 
   function updateFocusedSummary(card) {
-    document.getElementById('focused-title').textContent=card?.title||card?.category||'Aucune carte';
+    document.getElementById('focused-title').textContent=card?.title||card?.category||'No card selected';
     const thumbnail=document.getElementById('focused-thumbnail');
     thumbnail.src=card?.rectoUrl||card?.thumbnailUrl||'';
     thumbnail.alt=card?`${card.title||card.category}`:'';
@@ -710,7 +710,7 @@
   listen(window,'message',event=>{
     if(event.origin!==location.origin||typeof event.data!=='string')return;
     let data;try{data=JSON.parse(event.data)}catch(_){return}
-    if(data.type==='setCards')setCards(data.cards||[],data.focusedCardId,data.shuffleSeed||0,data.animateFocus===true,data.activeCategory||'TOUTES');
+    if(data.type==='setCards')setCards(data.cards||[],data.focusedCardId,data.shuffleSeed||0,data.animateFocus===true,data.activeCategory||'ALL');
     if(data.type==='focusCard')focusCard(data.cardId||'',data.animate!==false);
     if(data.type==='enterFullscreen')enterCastleFullscreen();
     if(data.type==='exitFullscreen')exitCastleFullscreen();

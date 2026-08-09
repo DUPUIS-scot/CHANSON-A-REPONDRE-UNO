@@ -7,7 +7,6 @@ import '../core/app_router.dart';
 import '../providers/deck_provider.dart';
 import '../providers/card_ai_provider.dart';
 import '../widgets/stored_image.dart';
-import '../widgets/home_navigation_button.dart';
 
 class CardFullscreenScreen extends StatefulWidget {
   const CardFullscreenScreen({required this.cardId, super.key});
@@ -43,7 +42,29 @@ class _CardFullscreenScreenState extends State<CardFullscreenScreen> {
     final cards = context.watch<DeckProvider>().cards;
     final ai = context.watch<CardAiProvider>();
     if (cards.isEmpty) {
-      return const Scaffold(body: Center(child: Text('Card not found.')));
+      return Scaffold(
+        backgroundColor: Colors.black,
+        appBar: AppBar(
+          backgroundColor: Colors.black,
+          leading: IconButton(
+            tooltip: 'Close fullscreen card',
+            onPressed: _close,
+            icon: const Icon(Icons.close_rounded),
+          ),
+          title: const Text('Card unavailable'),
+        ),
+        body: const SafeArea(
+          child: Center(
+            child: Padding(
+              padding: EdgeInsets.all(24),
+              child: Text(
+                'This card could not be found. Close this view and choose another card.',
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+        ),
+      );
     }
     if (currentIndex >= cards.length) currentIndex = cards.length - 1;
     final card = cards[currentIndex];
@@ -66,10 +87,6 @@ class _CardFullscreenScreenState extends State<CardFullscreenScreen> {
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: Chip(label: Text(status)),
-          ),
-          const Padding(
-            padding: EdgeInsets.only(right: 8),
-            child: HomeNavigationButton(),
           ),
         ],
       ),

@@ -16,7 +16,7 @@ class SettingsProvider extends ChangeNotifier {
   String backgroundType = 'IMAGE';
   bool keepRevealedCardsFaceUp = true;
   bool hidePlayerHandAfterTurn = false;
-  int get playHandSize => AppConstants.playHandSize;
+  int get maxPlayerHandSize => AppConstants.maxPlayerHandSize;
   AppSettings advanced = const AppSettings();
   Future<void> load() async {
     try {

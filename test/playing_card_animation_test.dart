@@ -57,7 +57,7 @@ void main() {
     tester,
   ) async {
     final cards = List.generate(
-      AppConstants.playHandSize,
+      AppConstants.maxPlayerHandSize,
       (index) => CardImageModel(
         id: 'c$index',
         deckId: 'deck',
@@ -87,7 +87,7 @@ void main() {
     );
     expect(
       find.byType(FlippablePlayingCard),
-      findsNWidgets(AppConstants.playHandSize),
+      findsNWidgets(AppConstants.maxPlayerHandSize),
     );
     await tester.pump(const Duration(milliseconds: 800));
     expect(tester.takeException(), isNull);
@@ -200,7 +200,7 @@ void main() {
     expect(started, isTrue);
     expect(game.state!.players, hasLength(2));
     for (final player in game.state!.players) {
-      expect(player.hand, hasLength(AppConstants.playHandSize));
+      expect(player.hand, hasLength(AppConstants.maxPlayerHandSize));
     }
     expect(
       game.state!.players.expand((player) => player.hand),
@@ -235,7 +235,7 @@ void main() {
 
     expect(
       game.state!.players.first.hand,
-      hasLength(AppConstants.playHandSize),
+      hasLength(AppConstants.maxPlayerHandSize),
     );
     expect(game.state!.drawPile, hasLength(drawPileLength));
     expect(game.message, 'The Play hand already contains five cards.');
@@ -245,7 +245,7 @@ void main() {
     final settings = SettingsProvider(LocalStorageService());
     addTearDown(settings.dispose);
 
-    expect(settings.playHandSize, AppConstants.playHandSize);
-    expect(settings.playHandSize, 5);
+    expect(settings.maxPlayerHandSize, AppConstants.maxPlayerHandSize);
+    expect(settings.maxPlayerHandSize, 5);
   });
 }

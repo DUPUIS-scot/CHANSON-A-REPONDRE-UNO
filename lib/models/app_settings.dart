@@ -15,7 +15,6 @@ class AppSettings {
     this.renameImportedCards = true,
     this.keepOriginalFilename = true,
     this.manualDeckAssignment = true,
-    this.defaultHandSize = 5,
     this.previewOnLongPress = true,
     this.fullscreenZoom = true,
     this.maximumZoom = 5,
@@ -56,7 +55,6 @@ class AppSettings {
   final bool renameImportedCards;
   final bool keepOriginalFilename;
   final bool manualDeckAssignment;
-  final int defaultHandSize;
   final bool previewOnLongPress;
   final bool fullscreenZoom;
   final double maximumZoom;
@@ -97,7 +95,6 @@ class AppSettings {
     renameImportedCards: json['renameImportedCards'] as bool? ?? true,
     keepOriginalFilename: json['keepOriginalFilename'] as bool? ?? true,
     manualDeckAssignment: json['manualDeckAssignment'] as bool? ?? true,
-    defaultHandSize: (json['defaultHandSize'] as num?)?.toInt() ?? 5,
     previewOnLongPress: json['previewOnLongPress'] as bool? ?? true,
     fullscreenZoom: json['fullscreenZoom'] as bool? ?? true,
     maximumZoom: (json['maximumZoom'] as num?)?.toDouble() ?? 5,
@@ -139,7 +136,6 @@ class AppSettings {
     'renameImportedCards': renameImportedCards,
     'keepOriginalFilename': keepOriginalFilename,
     'manualDeckAssignment': manualDeckAssignment,
-    'defaultHandSize': defaultHandSize,
     'previewOnLongPress': previewOnLongPress,
     'fullscreenZoom': fullscreenZoom,
     'maximumZoom': maximumZoom,
@@ -181,7 +177,6 @@ class AppSettings {
     bool? renameImportedCards,
     bool? keepOriginalFilename,
     bool? manualDeckAssignment,
-    int? defaultHandSize,
     bool? previewOnLongPress,
     bool? fullscreenZoom,
     double? maximumZoom,
@@ -221,7 +216,6 @@ class AppSettings {
     renameImportedCards: renameImportedCards ?? this.renameImportedCards,
     keepOriginalFilename: keepOriginalFilename ?? this.keepOriginalFilename,
     manualDeckAssignment: manualDeckAssignment ?? this.manualDeckAssignment,
-    defaultHandSize: defaultHandSize ?? this.defaultHandSize,
     previewOnLongPress: previewOnLongPress ?? this.previewOnLongPress,
     fullscreenZoom: fullscreenZoom ?? this.fullscreenZoom,
     maximumZoom: maximumZoom ?? this.maximumZoom,
