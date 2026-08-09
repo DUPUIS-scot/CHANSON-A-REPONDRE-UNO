@@ -9,6 +9,9 @@ const MODEL_URL = new URL(
   'assets/assets/models/jester_player.glb',
   document.baseURI,
 ).href;
+// Tripo exports this puppet facing +X. The Play camera is on +Z, so keep the
+// asset-axis correction isolated from scene-space deal and idle movement.
+const MODEL_FACING_Y = -Math.PI / 2;
 
 const clamp01 = (value) => Math.max(0, Math.min(1, value));
 const smooth = (value) => {
@@ -67,12 +70,15 @@ class JesterDealer {
     this.animation = null;
     this.clock = new THREE.Clock();
     this.modelRoot = new THREE.Group();
+    this.puppetRoot = new THREE.Group();
+    this.puppetRoot.rotation.y = MODEL_FACING_Y;
+    this.modelRoot.add(this.puppetRoot);
     this.scene = new THREE.Scene();
     this.scene.add(this.modelRoot);
 
     this.camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
     this.camera.position.set(0, 0.15, 9.4);
-    this.camera.lookAt(0, -0.15, 0);
+    this.camera.lookAt(0, 0.65, 0);
 
     this.renderer = new THREE.WebGLRenderer({
       alpha: true,
@@ -148,7 +154,7 @@ class JesterDealer {
         this.model.position.sub(center);
         const scale = 6.25 / Math.max(size.y, 0.001);
         this.model.scale.setScalar(scale);
-        this.modelRoot.add(this.model);
+        this.puppetRoot.add(this.model);
 
         if (gltf.animations.length) {
           this.mixer = new THREE.AnimationMixer(this.model);
@@ -161,6 +167,7 @@ class JesterDealer {
         this.host.dataset.dealerStatus = 'ready';
         this.host.dataset.modelAsset = MODEL_URL;
         this.host.dataset.modelAnimations = String(gltf.animations.length);
+        this.host.dataset.modelFacingAngle = String(MODEL_FACING_Y);
         this.resume();
       },
       (event) => {
@@ -205,7 +212,7 @@ class JesterDealer {
     const narrow = width < 720;
     this.camera.fov = narrow ? 38 : 30;
     this.camera.position.set(0, narrow ? 0.05 : 0.15, narrow ? 10.6 : 9.4);
-    this.camera.lookAt(0, narrow ? -0.25 : -0.15, 0);
+    this.camera.lookAt(0, narrow ? 0.55 : 0.65, 0);
     this.modelRoot.scale.setScalar(narrow ? 0.88 : 1);
     this.modelRoot.position.y = narrow ? 0.3 : 0;
     this.camera.updateProjectionMatrix();
