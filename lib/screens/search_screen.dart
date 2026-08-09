@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
@@ -148,7 +149,22 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Future<void> _openCastleCardFullscreen(CardImageModel card) async {
-    await _openFullscreen(card);
+    // Keep the WebGL platform view mounted and do not call `_select` here:
+    // changing focusedCardId would animate the castle camera before the card
+    // opens. Pass the exact search result directly to the modal instead of
+    // looking it up in the currently selected deck.
+    await showGeneralDialog<void>(
+      context: context,
+      barrierColor: Colors.black87,
+      barrierDismissible: false,
+      barrierLabel: 'Fullscreen card',
+      transitionDuration: const Duration(milliseconds: 180),
+      pageBuilder: (_, _, _) => _CastleCardFullscreen(card: card),
+      transitionBuilder: (_, animation, _, child) => FadeTransition(
+        opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+        child: child,
+      ),
+    );
   }
 
   void _viewInCastle(CardImageModel card) {
@@ -791,6 +807,113 @@ class _EmptyResults extends StatelessWidget {
           style: TextStyle(color: Color(0xFFB7C2CA)),
         ),
       ],
+    ),
+  );
+}
+
+class _CastleCardFullscreen extends StatelessWidget {
+  const _CastleCardFullscreen({required this.card});
+
+  final CardImageModel card;
+
+  void _close(BuildContext context) => Navigator.of(context).pop();
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: Colors.black,
+    child: SafeArea(
+      child: CallbackShortcuts(
+        bindings: {
+          const SingleActivator(LogicalKeyboardKey.escape): () =>
+              _close(context),
+        },
+        child: Focus(
+          autofocus: true,
+          child: Column(
+            children: [
+              SizedBox(
+                height: 64,
+                child: Row(
+                  children: [
+                    IconButton(
+                      tooltip: 'Close fullscreen card',
+                      onPressed: () => _close(context),
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            card.displayTitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          Text(
+                            card.category.toUpperCase(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: AppTheme.brightGold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    const horizontalPadding = 16.0;
+                    const verticalPadding = 12.0;
+                    final availableWidth = max(
+                      0.0,
+                      constraints.maxWidth - horizontalPadding * 2,
+                    );
+                    final availableHeight = max(
+                      0.0,
+                      constraints.maxHeight - verticalPadding * 2,
+                    );
+                    final width = min(
+                      availableWidth,
+                      availableHeight * card.aspectRatio,
+                    );
+                    final height = width / card.aspectRatio;
+                    return Center(
+                      child: SizedBox(
+                        width: width,
+                        height: height,
+                        child: Semantics(
+                          image: true,
+                          label:
+                              '${card.displayTitle}, ${card.category}, front',
+                          child: StoredImage(
+                            source: card.imagePath,
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, _, _) => const Center(
+                              child: Icon(Icons.broken_image, size: 80),
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     ),
   );
 }
