@@ -25,7 +25,7 @@ class DrawPileWidget extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
           child: SizedBox(
             width: 88,
-            height: 124,
+            height: 132,
             child: Stack(
               children: [
                 for (var offset = 6; offset >= 0; offset -= 3)

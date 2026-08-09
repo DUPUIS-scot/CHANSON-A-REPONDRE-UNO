@@ -19,7 +19,7 @@ CardImageModel card(int index) => CardImageModel(
 );
 
 void main() {
-  testWidgets('tap selects, hold flips, and double-tap opens fullscreen', (
+  testWidgets('tap flips and selects while hold opens without flipping', (
     tester,
   ) async {
     final cards = List.generate(5, card);
@@ -56,30 +56,24 @@ void main() {
     await tester.longPress(held);
     await tester.pumpAndSettle();
 
-    expect(previewCardId, isNull);
+    expect(previewCardId, 'card-4');
     expect(selected, isNull);
-    expect(revealed, {'card-4'});
-    expect(tester.widget<FlippablePlayingCard>(held).isFaceUp, isTrue);
+    expect(revealed, isEmpty);
+    expect(tester.widget<FlippablePlayingCard>(held).isFaceUp, isFalse);
 
+    previewCardId = null;
     await tester.tap(held);
-    await tester.pump(kDoubleTapTimeout);
     await tester.pumpAndSettle();
     expect(selected?.id, 'card-4');
     expect(revealed, {'card-4'});
     expect(tester.widget<FlippablePlayingCard>(held).isFaceUp, isTrue);
 
-    await tester.tap(held);
-    await tester.pump(kDoubleTapTimeout);
-    await tester.pumpAndSettle();
-    expect(selected, isNull);
-    expect(revealed, {'card-4'});
-    expect(tester.widget<FlippablePlayingCard>(held).isFaceUp, isTrue);
-
-    await tester.tap(held);
-    await tester.pump(kDoubleTapMinTime);
-    await tester.tap(held);
+    await tester.longPress(held);
     await tester.pumpAndSettle();
     expect(previewCardId, 'card-4');
+    expect(selected?.id, 'card-4');
+    expect(revealed, {'card-4'});
+    expect(tester.widget<FlippablePlayingCard>(held).isFaceUp, isTrue);
   });
 
   testWidgets('desktop mouse long-click does not also trigger tap', (
@@ -119,6 +113,97 @@ void main() {
 
     expect(longPresses, 1);
     expect(taps, 0);
+  });
+
+  testWidgets('closing held-card fullscreen preserves hand order and faces', (
+    tester,
+  ) async {
+    final cards = List.generate(5, card);
+    CardImageModel? selected;
+    final revealed = <String>{};
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            height: 240,
+            child: StatefulBuilder(
+              builder: (context, setState) => PlayerHand(
+                cards: cards,
+                selectedCardId: selected?.id,
+                isPlayable: (_) => true,
+                onSelectionChanged: (value) => setState(() => selected = value),
+                revealedCardIds: revealed,
+                onRevealedChanged: (ids) => setState(() {
+                  revealed
+                    ..clear()
+                    ..addAll(ids);
+                }),
+                keepRevealed: true,
+                onFullscreenCard: (cardId) {
+                  Navigator.of(context).push<void>(
+                    MaterialPageRoute(
+                      builder: (_) => PlayHandFullscreenScreen(
+                        cards: cards,
+                        faceUp: cards
+                            .map((card) => revealed.contains(card.id))
+                            .toList(growable: false),
+                        initialIndex: cards.indexWhere(
+                          (card) => card.id == cardId,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final thirdCard = find.byType(FlippablePlayingCard).at(2);
+    await tester.tap(thirdCard);
+    await tester.pumpAndSettle();
+    await tester.longPress(thirdCard);
+    await tester.pumpAndSettle();
+
+    final preview = tester.widget<PlayHandFullscreenScreen>(
+      find.byType(PlayHandFullscreenScreen),
+    );
+    expect(preview.cards.map((card) => card.id), [
+      'card-0',
+      'card-1',
+      'card-2',
+      'card-3',
+      'card-4',
+    ]);
+    expect(preview.faceUp, [false, false, true, false, false]);
+    expect(preview.initialIndex, 2);
+
+    await tester.tap(find.byTooltip('Close card preview'));
+    await tester.pumpAndSettle();
+
+    final returnedCards = tester
+        .widgetList<FlippablePlayingCard>(find.byType(FlippablePlayingCard))
+        .toList();
+    expect(returnedCards, hasLength(5));
+    expect(returnedCards.map((card) => card.frontImagePath), [
+      'missing-0.png',
+      'missing-1.png',
+      'missing-2.png',
+      'missing-3.png',
+      'missing-4.png',
+    ]);
+    expect(returnedCards.map((card) => card.isFaceUp), [
+      false,
+      false,
+      true,
+      false,
+      false,
+    ]);
+    expect(revealed, {'card-2'});
+    expect(selected?.id, 'card-2');
   });
 
   testWidgets('viewer starts on held card, pages, and closes with Escape', (

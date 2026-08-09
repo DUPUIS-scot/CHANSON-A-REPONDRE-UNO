@@ -52,6 +52,11 @@ class _PlayerHandState extends State<PlayerHand> {
     widget.onRevealedChanged(Set<String>.unmodifiable(revealed));
   }
 
+  void handleCardTap(CardImageModel card) {
+    flip(card);
+    select(card);
+  }
+
   @override
   Widget build(BuildContext context) {
     if (widget.cards.isEmpty) {
@@ -65,7 +70,7 @@ class _PlayerHandState extends State<PlayerHand> {
           preferredWidth,
           math.max(72.0, constraints.maxWidth / fitFactor),
         );
-        final cardHeight = cardWidth * 1.48;
+        final cardHeight = cardWidth * 3 / 2;
         final step = cardWidth * .62;
         final contentWidth = cardWidth + step * (widget.cards.length - 1);
         final handWidth = math.max(constraints.maxWidth, contentWidth);
@@ -113,9 +118,8 @@ class _PlayerHandState extends State<PlayerHand> {
                           '${widget.cards[index].category}, '
                           '${widget.revealedCardIds.contains(widget.cards[index].id) ? 'face up' : 'face down'}, '
                           '${widget.isPlayable(widget.cards[index]) ? 'playable' : 'unavailable'}',
-                      onTap: () => select(widget.cards[index]),
-                      onLongPress: () => flip(widget.cards[index]),
-                      onDoubleTap: widget.onFullscreenCard == null
+                      onTap: () => handleCardTap(widget.cards[index]),
+                      onLongPress: widget.onFullscreenCard == null
                           ? null
                           : () => widget.onFullscreenCard!(
                               widget.cards[index].id,
