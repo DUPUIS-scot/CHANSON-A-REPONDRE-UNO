@@ -7,7 +7,6 @@ import 'dart:ui_web' as ui_web;
 
 import 'package:flutter/material.dart';
 
-import '../data/card_categories.dart';
 import '../models/card_image_model.dart';
 
 class WebGlCardCastleView extends StatefulWidget {
@@ -162,7 +161,6 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
               'year': card.year,
               'isFavourite': card.isFavourite,
               'rectoUrl': _assetUrl(card.imagePath),
-              'versoUrl': _assetUrl(cardCategoryFor(card.category).versoAsset),
               'thumbnailUrl': _assetUrl(card.imagePath),
               'aspectRatio': card.aspectRatio,
             },

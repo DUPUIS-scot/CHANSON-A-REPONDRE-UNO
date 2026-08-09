@@ -107,8 +107,11 @@ void main() {
           'lib/widgets/webgl_card_castle_view_web.dart',
         ).readAsStringSync();
         expect(bridge, contains("'rectoUrl'"));
-        expect(bridge, contains("'versoUrl'"));
+        expect(bridge, isNot(contains("'versoUrl'")));
         expect(bridge, contains("'tags'"));
+        expect(castle, contains("mesh.userData.cardId=card.id"));
+        expect(castle, contains('deriveSurfaceAnchors(84)'));
+        expect(castle, contains('setTimeout(()=>'));
       },
     );
   });

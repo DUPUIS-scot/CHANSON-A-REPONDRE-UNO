@@ -61,6 +61,7 @@
     touches: new Map(), pinch: null, activeCategory: 'TOUTES',
     fullscreenActive: false, fallbackElements: null, lastFrame: 0,
     frame: 0, visible: true, ready: false, generation: 0,
+    surfaceAnchors: [], longPressTimer: 0,
   };
   const keys = new Set();
   const orbit = {
@@ -69,7 +70,8 @@
   };
   let scene,camera,renderer,raycaster,pointer,cardGroup,castleRoot;
   let resizeObserver,intersectionObserver;
-  const cardGeometry = new THREE.BoxGeometry(1.22,1.83,.065);
+  const cardGeometry = new THREE.BoxGeometry(1.08,1.62,.035);
+  const cardForward = new THREE.Vector3(0,0,1);
 
   function emit(type,payload={}) {
     parent.postMessage(JSON.stringify({type,...payload}),location.origin);
@@ -97,7 +99,7 @@
     renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.6));
     renderer.outputColorSpace=THREE.SRGBColorSpace;
     renderer.toneMapping=THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure=1.18;
+    renderer.toneMappingExposure=1.34;
     // The supplied castle is a dense, fully textured mesh. PBR lighting is
     // retained, while a second 756k-vertex shadow pass is intentionally
     // avoided for mobile and software WebGL renderers.
@@ -134,6 +136,15 @@
     state.ready=true;
     document.body.classList.add('ready');
     document.body.dataset.rendererStatus='ready';
+    if(state.cards.length){
+      setCards(
+        state.cards,
+        state.focusedCardId,
+        state.shuffleSeed,
+        false,
+        state.activeCategory,
+      );
+    }
     updateSceneCount();
     resume();
     emit('rendererReady');
@@ -160,12 +171,15 @@
   }
 
   function buildLights() {
-    scene.add(new THREE.HemisphereLight(0xa8cce8,0x17110d,2.1));
-    scene.add(new THREE.AmbientLight(0x31495c,.7));
-    const moon=new THREE.DirectionalLight(0xc9e1ff,3.6);
-    moon.position.set(-30,45,32);
+    scene.add(new THREE.HemisphereLight(0xd8ebff,0x252b35,3.15));
+    scene.add(new THREE.AmbientLight(0x91abc2,1.15));
+    const moon=new THREE.DirectionalLight(0xdcecff,5.4);
+    moon.position.set(-26,44,30);
     scene.add(moon);
-    const warm=new THREE.PointLight(0xff9a3d,32,48,2);
+    const rim=new THREE.DirectionalLight(0x9ebdde,1.75);
+    rim.position.set(30,22,-26);
+    scene.add(rim);
+    const warm=new THREE.PointLight(0xffaa58,14,42,2);
     warm.position.set(0,8,15);
     scene.add(warm);
   }
@@ -190,8 +204,15 @@
         castleRoot.scale.setScalar(scale);
         castleRoot.position.set(-center.x*scale,-bounds.min.y*scale,-center.z*scale);
         scene.add(castleRoot);
+        castleRoot.updateMatrixWorld(true);
+        state.surfaceAnchors=deriveSurfaceAnchors(84);
         document.body.dataset.castleMeshCount=String(meshCount);
         document.body.dataset.castleAnimations=String(gltf.animations.length);
+        document.body.dataset.surfaceAnchorCount=String(state.surfaceAnchors.length);
+        if(state.surfaceAnchors.length<84){
+          reject(new Error(`Only ${state.surfaceAnchors.length} castle surface anchors were found.`));
+          return;
+        }
         resolve();
       },event=>{
         if(event.total)document.body.dataset.modelProgress=
@@ -211,22 +232,61 @@
     });
   }
 
-  function anchors() {
-    const out=[];
-    const row=(x1,x2,y,z,count)=>{
-      for(let i=0;i<count;i++){
-        const t=count===1?.5:i/(count-1);
-        const x=x1+(x2-x1)*t;
-        out.push({position:[x,y,z],normal:[x*.025,0,1]});
+  function deriveSurfaceAnchors(limit) {
+    const candidates=[];
+    const a=new THREE.Vector3(),b=new THREE.Vector3(),c=new THREE.Vector3();
+    const ab=new THREE.Vector3(),ac=new THREE.Vector3();
+    const center=new THREE.Vector3(),normal=new THREE.Vector3(),radial=new THREE.Vector3();
+    const establishingDirection=new THREE.Vector3(Math.sin(.72),0,Math.cos(.72));
+    castleRoot.traverse(object=>{
+      if(!object.isMesh||!object.geometry?.attributes?.position)return;
+      const geometry=object.geometry,position=geometry.attributes.position,index=geometry.index;
+      const triangleCount=Math.floor((index?.count||position.count)/3);
+      const stride=Math.max(1,Math.floor(triangleCount/42000));
+      for(let triangle=0;triangle<triangleCount;triangle+=stride){
+        const offset=triangle*3;
+        const ia=index?index.getX(offset):offset;
+        const ib=index?index.getX(offset+1):offset+1;
+        const ic=index?index.getX(offset+2):offset+2;
+        a.fromBufferAttribute(position,ia).applyMatrix4(object.matrixWorld);
+        b.fromBufferAttribute(position,ib).applyMatrix4(object.matrixWorld);
+        c.fromBufferAttribute(position,ic).applyMatrix4(object.matrixWorld);
+        ab.subVectors(b,a);ac.subVectors(c,a);normal.crossVectors(ab,ac);
+        if(normal.lengthSq()<1e-7)continue;
+        normal.normalize();center.copy(a).add(b).add(c).multiplyScalar(1/3);
+        if(center.y<1.5||center.y>22||Math.abs(normal.y)>.58)continue;
+        radial.set(center.x,0,center.z);
+        if(radial.lengthSq()<2)continue;
+        radial.normalize();
+        if(normal.dot(radial)<0)normal.negate();
+        if(normal.dot(radial)<.16)continue;
+        candidates.push({
+          position:center.clone().addScaledVector(normal,.045),
+          normal:normal.clone(),
+          score:normal.dot(establishingDirection)+center.y*.006,
+          sector:(Math.floor((Math.atan2(center.x,center.z)+Math.PI)/(Math.PI*2)*12)+12)%12,
+          level:clamp(Math.floor((center.y-1.5)/3),0,6),
+        });
       }
-    };
-    row(-18,18,5.5,17,18);
-    row(-16,16,9.5,10.5,16);
-    row(-13,13,13.5,4.5,14);
-    row(-11,11,17.2,-2.5,12);
-    for(let i=0;i<8;i++)out.push({position:[-20.5,5.5+(i%2)*3.2,12-i*3.3],normal:[-1,0,.15]});
-    for(let i=0;i<8;i++)out.push({position:[20.5,5.5+(i%2)*3.2,12-i*3.3],normal:[1,0,.15]});
-    row(-9,9,20.5,-8,8);
+    });
+    candidates.sort((left,right)=>right.score-left.score);
+    const out=[];
+    const usedBuckets=new Set();
+    for(const candidate of candidates){
+      const bucket=`${candidate.sector}:${candidate.level}`;
+      if(usedBuckets.has(bucket))continue;
+      usedBuckets.add(bucket);out.push(candidate);
+      if(out.length>=limit)return out;
+    }
+    for(const spacing of [2.2,1.75,1.35]){
+      const minimum=spacing*spacing;
+      for(const candidate of candidates){
+        if(out.includes(candidate))continue;
+        if(out.some(anchor=>anchor.position.distanceToSquared(candidate.position)<minimum))continue;
+        out.push(candidate);
+        if(out.length>=limit)return out;
+      }
+    }
     return out;
   }
 
@@ -253,14 +313,19 @@
     state.activeCategory=activeCategory;
     document.body.dataset.cardCount=String(cards.length);
     document.body.dataset.textureCount='0';
+    document.body.dataset.textureErrorCount='0';
+    document.body.dataset.textureRequestCount='0';
     document.body.dataset.firstCardId=cards[0]?.id||'';
+    document.body.dataset.firstTextureUrl='';
+    if(!state.ready||!state.surfaceAnchors.length)return;
     clearCards();
-    const points=anchors();
-    seeded(cards,shuffleSeed).slice(0,points.length).forEach((card,index)=>addCard(card,points[index]));
+    const points=state.surfaceAnchors;
+    seeded(cards,shuffleSeed).slice(0,points.length)
+      .forEach((card,index)=>addCard(card,points[index]));
     document.body.dataset.meshCount=String(state.meshes.length);
     updateCategoryControl();
+    state.meshes.forEach(queueRecto);
     if(focusedCardId)focusCard(focusedCardId,animateFocus);
-    else state.meshes.forEach(mesh=>setCardFace(mesh,false));
     pumpTextures();
     updateSceneCount();
     resume();
@@ -271,43 +336,66 @@
     const face=new THREE.MeshStandardMaterial({color:0x2a1c18,roughness:.64,metalness:.02});
     const back=new THREE.MeshStandardMaterial({color:0x241712,roughness:.7});
     const mesh=new THREE.Mesh(cardGeometry,[edge,edge,edge,edge,face,back]);
-    mesh.position.fromArray(anchor.position);
+    mesh.position.copy(anchor.position);
+    mesh.quaternion.setFromUnitVectors(cardForward,anchor.normal);
     mesh.userData.card=card;
-    mesh.userData.anchorNormal=new THREE.Vector3().fromArray(anchor.normal).normalize();
+    mesh.userData.type='card';
+    mesh.userData.cardId=card.id;
+    mesh.userData.anchorPosition=anchor.position.clone();
+    mesh.userData.anchorNormal=anchor.normal.clone();
     mesh.userData.textureUrl='';
-    mesh.castShadow=true;
+    mesh.castShadow=false;
     cardGroup.add(mesh);state.meshes.push(mesh);
   }
 
-  function setCardFace(mesh,faceUp) {
+  function queueRecto(mesh) {
     const card=mesh.userData.card;
-    const url=faceUp?(card.rectoUrl||card.thumbnailUrl):(card.versoUrl||card.thumbnailUrl);
-    mesh.userData.faceUp=faceUp;
+    const url=card.rectoUrl||card.thumbnailUrl;
+    if(!document.body.dataset.firstTextureUrl)document.body.dataset.firstTextureUrl=url||'';
     if(mesh.userData.textureUrl===url&&mesh.material[4].map)return;
     mesh.userData.textureUrl=url;
     state.loadQueue.push({mesh,url,generation:state.generation});
+    document.body.dataset.textureQueueCount=String(state.loadQueue.length);
   }
 
   function pumpTextures() {
-    while(state.activeLoads<5&&state.loadQueue.length){
+    // Recto-only presentation means the initial castle needs 84 distinct
+    // images instead of a handful of shared category backs. Keep enough
+    // requests in flight to populate the fortifications promptly.
+    while(state.activeLoads<12&&state.loadQueue.length){
       const item=state.loadQueue.shift();
       if(item.generation!==state.generation||!state.meshes.includes(item.mesh)||item.mesh.userData.textureUrl!==item.url)continue;
       const cached=state.textures.get(item.url);
       if(cached){applyTexture(item.mesh,item.url,cached);continue}
       state.activeLoads++;
-      new THREE.TextureLoader().load(item.url,texture=>{
-        texture.colorSpace=THREE.SRGBColorSpace;
-        texture.anisotropy=Math.min(6,renderer.capabilities.getMaxAnisotropy());
-        state.textures.set(item.url,texture);
-        if(item.generation===state.generation){
-          applyTexture(item.mesh,item.url,texture);state.activeLoads--;
-        }
-        pumpTextures();
-      },undefined,error=>{
-        console.warn(`Search card texture failed: ${item.url}`,error);
+      document.body.dataset.textureRequestCount=String(
+        Number(document.body.dataset.textureRequestCount||0)+1,
+      );
+      document.body.dataset.textureQueueCount=String(state.loadQueue.length);
+      try {
+        new THREE.TextureLoader().load(item.url,texture=>{
+          texture.colorSpace=THREE.SRGBColorSpace;
+          texture.anisotropy=Math.min(6,renderer.capabilities.getMaxAnisotropy());
+          state.textures.set(item.url,texture);
+          if(item.generation===state.generation){
+            applyTexture(item.mesh,item.url,texture);state.activeLoads--;
+          }
+          pumpTextures();
+        },undefined,error=>{
+          console.warn(`Search card texture failed: ${item.url}`,error);
+          document.body.dataset.textureErrorCount=String(
+            Number(document.body.dataset.textureErrorCount||0)+1,
+          );
+          if(item.generation===state.generation)state.activeLoads--;
+          pumpTextures();
+        });
+      } catch(error) {
+        console.warn(`Search card texture rejected: ${item.url}`,error);
+        document.body.dataset.textureErrorCount=String(
+          Number(document.body.dataset.textureErrorCount||0)+1,
+        );
         if(item.generation===state.generation)state.activeLoads--;
-        pumpTextures();
-      });
+      }
     }
   }
 
@@ -316,6 +404,9 @@
     mesh.material[4].map=texture;
     mesh.material[4].color.set(0xffffff);
     mesh.material[4].needsUpdate=true;
+    mesh.material[5].map=texture;
+    mesh.material[5].color.set(0xffffff);
+    mesh.material[5].needsUpdate=true;
     const loaded=state.meshes.filter(item=>item.material[4].map).length;
     document.body.dataset.textureCount=String(loaded);
     resume();
@@ -329,13 +420,14 @@
     let selected=null;
     state.meshes.forEach(mesh=>{
       const active=mesh.userData.card.id===cardId;
-      mesh.scale.setScalar(active?1.18:1);
+      mesh.scale.setScalar(active?1.06:1);
+      mesh.position.copy(mesh.userData.anchorPosition)
+        .addScaledVector(mesh.userData.anchorNormal,active ? .11 : 0);
       mesh.material.slice(0,4).forEach(material=>{
         material.color.set(active?0xffc928:0x9aa6ad);
         material.emissive.set(active?0x6b2f00:0x000000);
         material.emissiveIntensity=active?1.3:0;
       });
-      setCardFace(mesh,active);
       if(active)selected=mesh;
     });
     pumpTextures();
@@ -438,7 +530,18 @@
     if(document.fullscreenElement)await document.exitFullscreen().catch(()=>{});
     else if(state.fullscreenActive){setFrameFallback(false);emit('fullscreenFallbackExit');setFullscreenUi(false)}
   }
-  function openFocusedCard(){if(state.focusedCardId){emit('cardLongPressed',{cardId:state.focusedCardId});void exitCastleFullscreen()}}
+  function openCardById(cardId){
+    if(!cardId||!state.meshes.some(mesh=>mesh.userData.cardId===cardId))return;
+    state.focusedCardId=cardId;
+    emit('cardLongPressed',{cardId});
+    void exitCastleFullscreen();
+  }
+  function openFocusedCard(){openCardById(state.focusedCardId)}
+
+  function cancelLongPress(){
+    if(state.longPressTimer)clearTimeout(state.longPressTimer);
+    state.longPressTimer=0;
+  }
 
   function clampTarget() {
     orbit.target.x=clamp(orbit.target.x,-28,28);
@@ -458,6 +561,19 @@
       }
       state.dragging=false;
       state.pointerDown={x:event.clientX,y:event.clientY,t:performance.now(),mesh:pick(event),yaw:orbit.yaw,pitch:orbit.pitch,target:orbit.target.clone(),panning:event.button===1||event.button===2||event.shiftKey};
+      cancelLongPress();
+      if(state.pointerDown.mesh&&
+          (event.pointerType==='touch'||event.button===0)&&
+          !event.shiftKey&&state.touches.size<2){
+        const down=state.pointerDown;
+        state.longPressTimer=setTimeout(()=>{
+          state.longPressTimer=0;
+          if(state.pointerDown===down&&!state.dragging){
+            down.longPressFired=true;
+            openCardById(down.mesh.userData.cardId);
+          }
+        },600);
+      }
       canvas.setPointerCapture(event.pointerId);
       resume();
     });
@@ -478,7 +594,7 @@
       }
       const down=state.pointerDown;if(!down)return;
       const dx=event.clientX-down.x,dy=event.clientY-down.y;
-      if(Math.hypot(dx,dy)>7)state.dragging=true;
+      if(Math.hypot(dx,dy)>7){state.dragging=true;cancelLongPress()}
       if(state.dragging){
         if(down.panning){
           const scale=orbit.distance*.0018;
@@ -498,11 +614,12 @@
         state.touches.delete(event.pointerId);if(state.touches.size<2)state.pinch=null;
       }
       const down=state.pointerDown;const wasDragging=state.dragging;
+      cancelLongPress();
       state.pointerDown=null;state.dragging=false;
-      if(!down||wasDragging||!down.mesh){resume();return}
-      const card=down.mesh.userData.card;
-      if(performance.now()-down.t>520){state.focusedCardId=card.id;openFocusedCard()}
-      else{focusCard(card.id,true);emit('cardSelected',{cardId:card.id})}
+      if(event.type==='pointercancel'||!down||wasDragging||!down.mesh||down.longPressFired){resume();return}
+      const cardId=down.mesh.userData.cardId;
+      if(performance.now()-down.t>520)openCardById(cardId);
+      else{focusCard(cardId,true);emit('cardSelected',{cardId})}
     };
     listen(canvas,'pointerup',release);listen(canvas,'pointercancel',release);
     listen(canvas,'wheel',event=>{event.preventDefault();orbit.distance=clamp(orbit.distance+event.deltaY*.025,24,90);state.targetCamera=null;resume()},{passive:false});
@@ -571,7 +688,6 @@
       }
       updateOrbit();
     }
-    state.meshes.forEach(mesh=>{const target=camera.position.clone();target.y=mesh.position.y;mesh.lookAt(target)});
     renderer.render(scene,camera);
     if(state.targetCamera||keys.size||state.dragging){
       state.frame=requestAnimationFrame(animate);
@@ -581,7 +697,7 @@
   function pause(){if(state.frame)cancelAnimationFrame(state.frame);state.frame=0}
 
   function dispose() {
-    if(state.disposed)return;state.disposed=true;pause();abort.abort();
+    if(state.disposed)return;state.disposed=true;pause();cancelLongPress();abort.abort();
     resizeObserver?.disconnect();intersectionObserver?.disconnect();clearCards();
     state.textures.forEach(texture=>texture.dispose());state.textures.clear();
     cardGeometry.dispose();

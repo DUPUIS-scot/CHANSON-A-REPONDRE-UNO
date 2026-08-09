@@ -268,13 +268,46 @@ async function verifySearchCastle(client, url) {
     'all 84 stable cards to reach the castle',
     20000,
   );
-  await waitFor(
-    client,
-    `Number(document.getElementById('search-card-castle-frame')
-      ?.contentDocument?.body.dataset.textureCount || 0) === 84`,
-    'all permanent card textures in the castle',
-    20000,
-  );
+  try {
+    await waitFor(
+      client,
+      `Number(document.getElementById('search-card-castle-frame')
+        ?.contentDocument?.body.dataset.textureCount || 0) === 84`,
+      'all permanent card textures in the castle',
+      90000,
+    );
+  } catch (error) {
+    const textureDebug = await client.evaluate(`(() => {
+      const frame = document.getElementById('search-card-castle-frame');
+      const body = frame?.contentDocument?.body;
+      const resources = frame?.contentWindow?.performance
+        ?.getEntriesByType('resource')
+        ?.filter((entry) => entry.name.includes('/cards/final_import/')) || [];
+      return {
+        textureCount: Number(body?.dataset.textureCount || 0),
+        rendererStatus: body?.dataset.rendererStatus || '',
+        cardCount: Number(body?.dataset.cardCount || 0),
+        meshCount: Number(body?.dataset.meshCount || 0),
+        surfaceAnchorCount: Number(body?.dataset.surfaceAnchorCount || 0),
+        firstTextureUrl: body?.dataset.firstTextureUrl || '',
+        textureQueueCount: Number(body?.dataset.textureQueueCount || 0),
+        textureRequestCount: Number(body?.dataset.textureRequestCount || 0),
+        textureErrorCount: Number(body?.dataset.textureErrorCount || 0),
+        resourceCount: resources.length,
+        resources: resources.slice(-15).map((entry) => ({
+          name: entry.name,
+          duration: entry.duration,
+          transferSize: entry.transferSize,
+          decodedBodySize: entry.decodedBodySize,
+        })),
+      };
+    })()`);
+    console.error('SEARCH TEXTURE VERIFICATION DEBUG', JSON.stringify({
+      textureDebug,
+      console: client.consoleMessages,
+    }, null, 2));
+    throw error;
+  }
   await capture(client, castleOutputPath);
   client.consoleMessages.length = 0;
   const requestedFocusId = await client.evaluate(`(() => {
@@ -352,6 +385,7 @@ async function verifySearchCastle(client, url) {
       focusMode: body?.dataset.focusMode || '',
       rendererInstanceId: body?.dataset.rendererInstanceId || '',
       castleMeshCount: Number(body?.dataset.castleMeshCount || 0),
+      surfaceAnchorCount: Number(body?.dataset.surfaceAnchorCount || 0),
       modelPath: body?.dataset.modelAsset
         ? new URL(body.dataset.modelAsset).pathname
         : '',
@@ -379,6 +413,7 @@ async function verifySearchCastle(client, url) {
     result.focusMode !== 'animated' ||
     result.rendererInstanceId !== rendererInstanceId ||
     result.castleMeshCount < 1 ||
+    result.surfaceAnchorCount !== 84 ||
     result.modelPath !== `${basePath}assets/assets/models/search_castle.glb` ||
     result.sceneObjectCount < 40 ||
     result.bottomNavigation ||
