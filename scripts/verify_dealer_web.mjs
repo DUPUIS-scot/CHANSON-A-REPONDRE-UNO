@@ -494,13 +494,14 @@ async function main() {
     try {
       await waitFor(
         client,
-        `document.getElementById('dealer-3d-container')?.dataset.dealerStatus === 'ready'`,
+        `document.querySelector('[id^="dealer-3d-container-"]')
+          ?.dataset.dealerStatus === 'ready'`,
         'the 3D dealer',
         40000,
       );
     } catch (error) {
       const debug = await client.evaluate(`(() => {
-        const host = document.getElementById('dealer-3d-container');
+        const host = document.querySelector('[id^="dealer-3d-container-"]');
         return {
           href: location.href,
           hash: location.hash,
@@ -517,7 +518,8 @@ async function main() {
           hostSize: host
             ? [host.clientWidth, host.clientHeight]
             : null,
-          diagnostic: host?.querySelector('.dealer-3d-diagnostic')?.textContent,
+          modelAsset: host?.dataset.modelAsset,
+          modelProgress: host?.dataset.modelProgress,
           canvases: [...document.querySelectorAll('canvas')].map((canvas) => ({
             id: canvas.id,
             width: canvas.width,
@@ -532,7 +534,7 @@ async function main() {
       throw error;
     }
     const result = await client.evaluate(`(() => {
-      const host = document.getElementById('dealer-3d-container');
+      const host = document.querySelector('[id^="dealer-3d-container-"]');
       const canvas = host?.querySelector('canvas');
       const rect = canvas?.getBoundingClientRect();
       return {
@@ -544,7 +546,8 @@ async function main() {
         bufferWidth: canvas?.width || 0,
         bufferHeight: canvas?.height || 0,
         renderer: canvas?.dataset.renderer,
-        diagnostic: host?.querySelector('.dealer-3d-diagnostic')?.textContent,
+        modelAsset: host?.dataset.modelAsset,
+        modelAnimations: host?.dataset.modelAnimations,
       };
     })()`);
     if (
@@ -582,51 +585,60 @@ async function main() {
       );
     }
     const animationStarted = await client.evaluate(
-      `window.puppetDealerDeal('dealer-3d-container', ${JSON.stringify(
-        textureUrl,
-      )})`,
+      `(() => {
+        const host = document.querySelector('[id^="dealer-3d-container-"]');
+        return window.puppetDealerDeal(host?.id || '', ${JSON.stringify(
+          textureUrl,
+        )});
+      })()`,
     );
     if (!animationStarted) throw new Error('Dealer animation did not start.');
     await waitFor(
       client,
-      `document.getElementById('dealer-3d-container')
-        ?.dataset.dealerAnimation === 'dealing'`,
-      'the dealer animation to enter DEALING',
+      `document.querySelector('[id^="dealer-3d-container-"]')
+        ?.dataset.dealerAnimation !== 'idle'`,
+      'the dealer animation to leave IDLE',
       3000,
     );
     let animationDiagnostic = await client.evaluate(
-      `document.querySelector('.dealer-3d-diagnostic')?.textContent || ''`,
+      `document.querySelector('[id^="dealer-3d-container-"]')
+        ?.dataset.dealerAnimation || ''`,
     );
     await waitFor(
       client,
-      `document.getElementById('dealer-3d-container')?.dataset.cardTexture === 'ready'`,
+      `document.querySelector('[id^="dealer-3d-container-"]')
+        ?.dataset.cardTexture === 'ready'`,
       'the real card texture',
       15000,
     );
     await waitFor(
       client,
-      `document.getElementById('dealer-3d-container')
+      `document.querySelector('[id^="dealer-3d-container-"]')
         ?.dataset.dealerAnimation === 'idle'`,
       'the first dealer animation to finish',
       5000,
     );
     const texturedAnimationStarted = await client.evaluate(
-      `window.puppetDealerDeal('dealer-3d-container', ${JSON.stringify(
-        textureUrl,
-      )})`,
+      `(() => {
+        const host = document.querySelector('[id^="dealer-3d-container-"]');
+        return window.puppetDealerDeal(host?.id || '', ${JSON.stringify(
+          textureUrl,
+        )});
+      })()`,
     );
     if (!texturedAnimationStarted) {
       throw new Error('Textured dealer animation did not restart.');
     }
     await waitFor(
       client,
-      `document.querySelector('.dealer-3d-diagnostic')
-        ?.textContent?.includes('Animation: DEALING') === true`,
+      `document.querySelector('[id^="dealer-3d-container-"]')
+        ?.dataset.dealerAnimation !== 'idle'`,
       'the textured dealer animation',
       3000,
     );
     animationDiagnostic = await client.evaluate(
-      `document.querySelector('.dealer-3d-diagnostic')?.textContent || ''`,
+      `document.querySelector('[id^="dealer-3d-container-"]')
+        ?.dataset.dealerAnimation || ''`,
     );
     await delay(100);
     await capture(client, animationOutputPath);

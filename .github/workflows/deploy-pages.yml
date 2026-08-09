@@ -100,14 +100,20 @@ jobs:
           test -f build/web/main.dart.js
           test -f build/web/puppet_dealer.js
           test -f build/web/vendor/three.min.js
+          test -f build/web/vendor/three.module.js
+          test -f build/web/vendor/GLTFLoader.js
+          test -f build/web/utils/BufferGeometryUtils.js
+          test -f build/web/assets/assets/models/jester_player.glb
           test -f build/web/card_castle/card_castle.html
           test -f build/web/assets/assets/images/default_background.png
           test -f build/web/assets/assets/images/dj_who.png
           test "$(find build/web/assets/assets/cards/category_versos -type f -name '*.png' | wc -l)" -eq 5
           test "$(find build/web/assets/assets/cards/final_import -type f -name '*.png' | wc -l)" -eq 84
           grep -q '<base href="/CHANSON-A-REPONDRE-UNO/">' build/web/index.html
-          grep -q 'vendor/three.min.js' build/web/index.html
+          grep -q 'vendor/three.module.js' build/web/index.html
           grep -q 'puppet_dealer.js' build/web/index.html
+          grep -q 'assets/assets/models/jester_player.glb' build/web/puppet_dealer.js
+          grep -q "from './vendor/GLTFLoader.js'" build/web/puppet_dealer.js
           grep -q 'puppetDealerCreate' build/web/main.dart.js
           grep -q 'dealer-3d-container' build/web/main.dart.js
           grep -q 'search-card-castle' build/web/main.dart.js
