@@ -159,12 +159,8 @@ class _FlippablePlayingCardState extends State<FlippablePlayingCard>
                             Image.asset(
                               cardCategoryFor(widget.category).versoAsset,
                               fit: BoxFit.contain,
-                              errorBuilder: (_, _, _) => Image.asset(
-                                widget.backImagePath,
-                                fit: BoxFit.contain,
-                                errorBuilder: (_, _, _) =>
-                                    const _FallbackFace(label: 'CHanson'),
-                              ),
+                              errorBuilder: (_, _, _) =>
+                                  const _FallbackFace(label: 'CHanson'),
                             ),
                           Positioned(
                             left: 6,

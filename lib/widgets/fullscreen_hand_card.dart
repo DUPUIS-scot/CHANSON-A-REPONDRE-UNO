@@ -85,11 +85,7 @@ class _FullscreenHandCardState extends State<FullscreenHandCard> {
                       : Image.asset(
                           cardCategoryFor(widget.card.category).versoAsset,
                           fit: BoxFit.contain,
-                          errorBuilder: (_, _, _) => Image.asset(
-                            'assets/images/card_back.png',
-                            fit: BoxFit.contain,
-                            errorBuilder: (_, _, _) => const _MissingCard(),
-                          ),
+                          errorBuilder: (_, _, _) => const _MissingCard(),
                         ),
                 ),
               ),
