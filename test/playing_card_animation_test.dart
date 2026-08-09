@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uno_chanson_2/core/app_constants.dart';
 import 'package:uno_chanson_2/data/card_categories.dart';
 import 'package:uno_chanson_2/models/card_image_model.dart';
 import 'package:uno_chanson_2/models/deck_model.dart';
 import 'package:uno_chanson_2/providers/game_provider.dart';
+import 'package:uno_chanson_2/providers/settings_provider.dart';
 import 'package:uno_chanson_2/services/game_storage_service.dart';
 import 'package:uno_chanson_2/services/local_storage_service.dart';
 import 'package:uno_chanson_2/widgets/flippable_playing_card.dart';
@@ -55,7 +57,7 @@ void main() {
     tester,
   ) async {
     final cards = List.generate(
-      4,
+      AppConstants.playHandSize,
       (index) => CardImageModel(
         id: 'c$index',
         deckId: 'deck',
@@ -76,13 +78,17 @@ void main() {
             selectedCardId: null,
             isPlayable: (_) => true,
             onSelectionChanged: (_) {},
-            revealOnTap: true,
+            revealedCardIds: const {},
+            onRevealedChanged: (_) {},
             keepRevealed: true,
           ),
         ),
       ),
     );
-    expect(find.byType(FlippablePlayingCard), findsNWidgets(4));
+    expect(
+      find.byType(FlippablePlayingCard),
+      findsNWidgets(AppConstants.playHandSize),
+    );
     await tester.pump(const Duration(milliseconds: 800));
     expect(tester.takeException(), isNull);
   });
@@ -194,13 +200,52 @@ void main() {
     expect(started, isTrue);
     expect(game.state!.players, hasLength(2));
     for (final player in game.state!.players) {
-      expect(player.hand, hasLength(5));
+      expect(player.hand, hasLength(AppConstants.playHandSize));
     }
     expect(
       game.state!.players.expand((player) => player.hand),
-      everyElement(predicate<CardImageModel>((card) {
-        return isKnownCardCategory(card.category);
-      })),
+      everyElement(
+        predicate<CardImageModel>((card) {
+          return isKnownCardCategory(card.category);
+        }),
+      ),
     );
+  });
+
+  test('Play draw never grows a full hand beyond five cards', () async {
+    SharedPreferences.setMockInitialValues({});
+    final cards = List.generate(20, (index) {
+      final category = cardCategoryAt(index);
+      return CardImageModel(
+        id: 'draw-cap-$index',
+        deckId: 'deck',
+        title: 'Card $index',
+        path: 'assets/images/card_back.png',
+        category: category.label,
+        colour: category.colour,
+        importedAt: DateTime(2026),
+      );
+    });
+    final game = GameProvider(GameStorageService(LocalStorageService()));
+    addTearDown(game.dispose);
+    await game.start(Deck(id: 'deck', name: 'Deck', cards: cards));
+    final drawPileLength = game.state!.drawPile.length;
+
+    await game.draw();
+
+    expect(
+      game.state!.players.first.hand,
+      hasLength(AppConstants.playHandSize),
+    );
+    expect(game.state!.drawPile, hasLength(drawPileLength));
+    expect(game.message, 'The Play hand already contains five cards.');
+  });
+
+  test('Settings exposes the shared fixed Play hand size', () {
+    final settings = SettingsProvider(LocalStorageService());
+    addTearDown(settings.dispose);
+
+    expect(settings.playHandSize, AppConstants.playHandSize);
+    expect(settings.playHandSize, 5);
   });
 }

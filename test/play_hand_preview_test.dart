@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -18,43 +19,98 @@ CardImageModel card(int index) => CardImageModel(
 );
 
 void main() {
-  testWidgets('tap selects while long press opens the same ordered hand', (
+  testWidgets('touch long press opens exact card without flipping it', (
     tester,
   ) async {
     final cards = List.generate(5, card);
     CardImageModel? selected;
-    List<CardImageModel>? preview;
-    int? initialIndex;
+    final revealed = <String>{};
+    String? previewCardId;
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
           body: SizedBox(
             height: 240,
-            child: PlayerHand(
-              cards: cards,
-              selectedCardId: null,
-              isPlayable: (_) => true,
-              onSelectionChanged: (value) => selected = value,
-              revealOnTap: true,
-              keepRevealed: true,
-              onLongPressCard: (value, _, index) {
-                preview = value;
-                initialIndex = index;
-              },
+            child: StatefulBuilder(
+              builder: (context, setState) => PlayerHand(
+                cards: cards,
+                selectedCardId: selected?.id,
+                isPlayable: (_) => true,
+                onSelectionChanged: (value) => setState(() => selected = value),
+                revealedCardIds: revealed,
+                onRevealedChanged: (ids) => setState(() {
+                  revealed
+                    ..clear()
+                    ..addAll(ids);
+                }),
+                keepRevealed: true,
+                onLongPressCard: (cardId) => previewCardId = cardId,
+              ),
             ),
           ),
         ),
       ),
     );
-    await tester.pump(const Duration(milliseconds: 500));
-    final third = find.byType(FlippablePlayingCard).at(2);
-    final thirdCard = tester.widget<FlippablePlayingCard>(third);
-    thirdCard.onTap();
-    expect(selected?.id, 'card-2');
-    expect(preview, isNull);
-    thirdCard.onLongPress!();
-    expect(preview!.map((item) => item.id), cards.map((item) => item.id));
-    expect(initialIndex, 2);
+    await tester.pumpAndSettle();
+    final held = find.byType(FlippablePlayingCard).last;
+    await tester.longPress(held);
+    await tester.pumpAndSettle();
+
+    expect(previewCardId, 'card-4');
+    expect(selected, isNull);
+    expect(revealed, isEmpty);
+    expect(tester.widget<FlippablePlayingCard>(held).isFaceUp, isFalse);
+
+    await tester.tap(held);
+    await tester.pumpAndSettle();
+    expect(selected?.id, 'card-4');
+    expect(revealed, {'card-4'});
+    expect(tester.widget<FlippablePlayingCard>(held).isFaceUp, isTrue);
+
+    await tester.tap(held);
+    await tester.pumpAndSettle();
+    expect(selected, isNull);
+    expect(revealed, {'card-4'});
+    expect(tester.widget<FlippablePlayingCard>(held).isFaceUp, isTrue);
+  });
+
+  testWidgets('desktop mouse long-click does not also trigger tap', (
+    tester,
+  ) async {
+    var taps = 0;
+    var longPresses = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Center(
+          child: SizedBox(
+            width: 120,
+            height: 180,
+            child: FlippablePlayingCard(
+              frontImagePath: 'missing.png',
+              backImagePath: 'assets/images/card_back.png',
+              category: 'CLASSIQUE',
+              isFaceUp: false,
+              isSelected: false,
+              isPlayable: true,
+              onTap: () => taps++,
+              onLongPress: () => longPresses++,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await mouse.addPointer(
+      location: tester.getCenter(find.byType(FlippablePlayingCard)),
+    );
+    await mouse.down(tester.getCenter(find.byType(FlippablePlayingCard)));
+    await tester.pump(const Duration(milliseconds: 650));
+    await mouse.up();
+    await tester.pump();
+
+    expect(longPresses, 1);
+    expect(taps, 0);
   });
 
   testWidgets('viewer starts on held card, pages, and closes with Escape', (

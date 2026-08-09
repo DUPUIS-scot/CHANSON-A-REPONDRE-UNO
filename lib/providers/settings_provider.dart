@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import '../core/app_constants.dart';
 import '../services/local_storage_service.dart';
 import '../models/app_settings.dart';
 
@@ -13,9 +14,9 @@ class SettingsProvider extends ChangeNotifier {
   double volume = .7;
   bool soundEnabled = true;
   String backgroundType = 'IMAGE';
-  bool revealPlayerHandOnTap = true;
   bool keepRevealedCardsFaceUp = true;
   bool hidePlayerHandAfterTurn = false;
+  int get playHandSize => AppConstants.playHandSize;
   AppSettings advanced = const AppSettings();
   Future<void> load() async {
     try {
@@ -29,7 +30,6 @@ class SettingsProvider extends ChangeNotifier {
       volume = (map['volume'] as num?)?.toDouble() ?? .7;
       soundEnabled = map['soundEnabled'] as bool? ?? true;
       backgroundType = map['backgroundType'] as String? ?? 'IMAGE';
-      revealPlayerHandOnTap = map['revealPlayerHandOnTap'] as bool? ?? true;
       keepRevealedCardsFaceUp = map['keepRevealedCardsFaceUp'] as bool? ?? true;
       hidePlayerHandAfterTurn =
           map['hidePlayerHandAfterTurn'] as bool? ?? false;
@@ -49,7 +49,6 @@ class SettingsProvider extends ChangeNotifier {
     double? audioVolume,
     bool? sound,
     String? background,
-    bool? revealHand,
     bool? keepRevealed,
     bool? hideAfterTurn,
   }) async {
@@ -59,7 +58,6 @@ class SettingsProvider extends ChangeNotifier {
     volume = audioVolume ?? volume;
     soundEnabled = sound ?? soundEnabled;
     backgroundType = background ?? backgroundType;
-    revealPlayerHandOnTap = revealHand ?? revealPlayerHandOnTap;
     keepRevealedCardsFaceUp = keepRevealed ?? keepRevealedCardsFaceUp;
     hidePlayerHandAfterTurn = hideAfterTurn ?? hidePlayerHandAfterTurn;
     await _persist();
@@ -72,7 +70,6 @@ class SettingsProvider extends ChangeNotifier {
     volume = .7;
     soundEnabled = true;
     backgroundType = 'IMAGE';
-    revealPlayerHandOnTap = true;
     keepRevealedCardsFaceUp = true;
     hidePlayerHandAfterTurn = false;
     advanced = const AppSettings();
@@ -92,7 +89,6 @@ class SettingsProvider extends ChangeNotifier {
       'volume': volume,
       'soundEnabled': soundEnabled,
       'backgroundType': backgroundType,
-      'revealPlayerHandOnTap': revealPlayerHandOnTap,
       'keepRevealedCardsFaceUp': keepRevealedCardsFaceUp,
       'hidePlayerHandAfterTurn': hidePlayerHandAfterTurn,
       'advanced': advanced.toJson(),

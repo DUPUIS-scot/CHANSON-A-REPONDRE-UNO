@@ -11,47 +11,37 @@ class PlayerHand extends StatefulWidget {
     required this.selectedCardId,
     required this.isPlayable,
     required this.onSelectionChanged,
-    required this.revealOnTap,
+    required this.revealedCardIds,
+    required this.onRevealedChanged,
     required this.keepRevealed,
     this.onLongPressCard,
-    this.hideAll = false,
     super.key,
   });
   final List<CardImageModel> cards;
   final String? selectedCardId;
   final bool Function(CardImageModel card) isPlayable;
   final ValueChanged<CardImageModel?> onSelectionChanged;
-  final bool revealOnTap;
+  final Set<String> revealedCardIds;
+  final ValueChanged<Set<String>> onRevealedChanged;
   final bool keepRevealed;
-  final void Function(List<CardImageModel> cards, List<bool> faceUp, int index)?
-  onLongPressCard;
-  final bool hideAll;
+  final ValueChanged<String>? onLongPressCard;
 
   @override
   State<PlayerHand> createState() => _PlayerHandState();
 }
 
 class _PlayerHandState extends State<PlayerHand> {
-  final revealed = <String>{};
-
-  @override
-  void didUpdateWidget(PlayerHand oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    final currentIds = widget.cards.map((card) => card.id).toSet();
-    revealed.removeWhere((id) => !currentIds.contains(id));
-    if (widget.hideAll && !oldWidget.hideAll) revealed.clear();
-  }
-
   void select(CardImageModel card) {
+    final revealed = {...widget.revealedCardIds};
     final alreadySelected = widget.selectedCardId == card.id;
     if (alreadySelected) {
       if (!widget.keepRevealed) revealed.remove(card.id);
       widget.onSelectionChanged(null);
     } else {
-      if (widget.revealOnTap) revealed.add(card.id);
+      revealed.add(card.id);
       widget.onSelectionChanged(card);
     }
-    setState(() {});
+    widget.onRevealedChanged(Set<String>.unmodifiable(revealed));
   }
 
   @override
@@ -99,27 +89,22 @@ class _PlayerHandState extends State<PlayerHand> {
                       frontImagePath: widget.cards[index].imagePath,
                       backImagePath: 'assets/images/card_back.png',
                       category: widget.cards[index].category,
-                      isFaceUp: revealed.contains(widget.cards[index].id),
+                      isFaceUp: widget.revealedCardIds.contains(
+                        widget.cards[index].id,
+                      ),
                       isSelected:
                           widget.selectedCardId == widget.cards[index].id,
                       isPlayable: widget.isPlayable(widget.cards[index]),
                       semanticLabel:
                           'Card ${index + 1} of ${widget.cards.length}, '
                           '${widget.cards[index].category}, '
-                          '${revealed.contains(widget.cards[index].id) ? 'face up' : 'face down'}, '
+                          '${widget.revealedCardIds.contains(widget.cards[index].id) ? 'face up' : 'face down'}, '
                           '${widget.isPlayable(widget.cards[index]) ? 'playable' : 'unavailable'}',
                       onTap: () => select(widget.cards[index]),
                       onLongPress: widget.onLongPressCard == null
                           ? null
-                          : () => widget.onLongPressCard!(
-                              List<CardImageModel>.unmodifiable(widget.cards),
-                              List<bool>.unmodifiable(
-                                widget.cards
-                                    .map((card) => revealed.contains(card.id))
-                                    .toList(),
-                              ),
-                              index,
-                            ),
+                          : () =>
+                                widget.onLongPressCard!(widget.cards[index].id),
                     ),
                   ),
               ],

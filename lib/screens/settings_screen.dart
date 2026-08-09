@@ -544,22 +544,27 @@ class _SettingsControlCenterState extends State<_SettingsControlCenter> {
             ),
           ],
         ),
+      if (matches('play cards hand size five fixed'))
+        SettingsSection(
+          title: 'Play',
+          icon: Icons.casino_outlined,
+          initiallyExpanded: query.isNotEmpty,
+          children: [
+            ListTile(
+              title: const Text('Play hand size'),
+              subtitle: const Text('Fixed for every active Play game'),
+              trailing: Text('${settings.playHandSize} cards'),
+            ),
+          ],
+        ),
       if (matches(
-        'browse cards hand shuffle preview long press fullscreen zoom hero scroll',
+        'browse cards shuffle preview long press fullscreen zoom hero scroll',
       ))
         SettingsSection(
           title: 'Browse Cards',
           icon: Icons.view_carousel_outlined,
           initiallyExpanded: query.isNotEmpty,
           children: [
-            SettingsDropdownTile<int>(
-              title: 'Default hand size',
-              value: advanced.defaultHandSize,
-              items: const {3: '3', 5: '5', 7: '7', 10: '10'},
-              onChanged: (v) => settings.updateAdvanced(
-                advanced.copyWith(defaultHandSize: v),
-              ),
-            ),
             SettingsToggleTile(
               title: 'Preview on long press',
               value: advanced.previewOnLongPress,

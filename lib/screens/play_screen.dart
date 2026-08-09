@@ -27,18 +27,21 @@ class PlayScreen extends StatefulWidget {
 class _PlayScreenState extends State<PlayScreen> {
   String? selectedCardId;
   CardImageModel? flyingCard;
-  bool hideHand = false;
+  final revealedCardIds = <String>{};
   bool previewOpening = false;
   bool dealerBusy = false;
   PuppetQuality puppetQuality = PuppetQuality.medium;
   final PuppetDealerController puppetController = PuppetDealerController();
 
-  Future<void> openHandPreview(
-    List<CardImageModel> cards,
-    List<bool> faceUp,
-    int initialIndex,
-  ) async {
-    if (previewOpening || cards.isEmpty) return;
+  Future<void> openHandPreview(String cardId) async {
+    final state = context.read<GameProvider>().state;
+    if (previewOpening || state == null) return;
+    final cards = List<CardImageModel>.unmodifiable(state.players.first.hand);
+    final initialIndex = cards.indexWhere((card) => card.id == cardId);
+    if (initialIndex < 0) return;
+    final faceUp = List<bool>.unmodifiable(
+      cards.map((card) => revealedCardIds.contains(card.id)),
+    );
     previewOpening = true;
     try {
       try {
@@ -104,7 +107,10 @@ class _PlayScreenState extends State<PlayScreen> {
       flyingCard = null;
       dealerBusy = false;
       selectedCardId = null;
-      hideHand = context.read<SettingsProvider>().hidePlayerHandAfterTurn;
+      revealedCardIds.remove(selected.id);
+      if (context.read<SettingsProvider>().hidePlayerHandAfterTurn) {
+        revealedCardIds.clear();
+      }
     });
     if (!played && game.message != null) {
       ScaffoldMessenger.of(
@@ -117,6 +123,11 @@ class _PlayScreenState extends State<PlayScreen> {
     final game = context.read<GameProvider>();
     final state = game.state;
     if (dealerBusy || state == null || state.drawPile.isEmpty) return;
+    final settings = context.read<SettingsProvider>();
+    if (state.players[state.currentPlayerIndex].hand.length >=
+        settings.playHandSize) {
+      return;
+    }
     final card = state.drawPile.last;
     setState(() => dealerBusy = true);
     try {
@@ -179,7 +190,14 @@ class _PlayScreenState extends State<PlayScreen> {
         ],
       ),
       body: state == null
-          ? _GameLauncher(decks: decks, game: game)
+          ? _GameLauncher(
+              decks: decks,
+              game: game,
+              onStarting: () => setState(() {
+                selectedCardId = null;
+                revealedCardIds.clear();
+              }),
+            )
           : GameTableBackground(
               stageLayer: LayoutBuilder(
                 builder: (context, constraints) {
@@ -241,7 +259,9 @@ class _PlayScreenState extends State<PlayScreen> {
                               count: state.drawPile.length,
                               topCard: state.drawPile.lastOrNull,
                               onDraw:
-                                  state.currentPlayerIndex == 0 && !dealerBusy
+                                  state.currentPlayerIndex == 0 &&
+                                      !dealerBusy &&
+                                      player.hand.length < settings.playHandSize
                                   ? drawWithDealer
                                   : null,
                             ),
@@ -338,15 +358,20 @@ class _PlayScreenState extends State<PlayScreen> {
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 12),
                             child: PlayerHand(
-                              cards: player.hand,
+                              cards: player.hand
+                                  .take(settings.playHandSize)
+                                  .toList(growable: false),
                               selectedCardId: selectedCardId,
                               isPlayable: game.canPlay,
-                              revealOnTap: settings.revealPlayerHandOnTap,
+                              revealedCardIds: revealedCardIds,
+                              onRevealedChanged: (ids) => setState(() {
+                                revealedCardIds
+                                  ..clear()
+                                  ..addAll(ids);
+                              }),
                               keepRevealed: settings.keepRevealedCardsFaceUp,
-                              hideAll: hideHand,
                               onSelectionChanged: (card) => setState(() {
                                 selectedCardId = card?.id;
-                                hideHand = false;
                               }),
                               onLongPressCard: openHandPreview,
                             ),
@@ -363,9 +388,14 @@ class _PlayScreenState extends State<PlayScreen> {
 }
 
 class _GameLauncher extends StatelessWidget {
-  const _GameLauncher({required this.decks, required this.game});
+  const _GameLauncher({
+    required this.decks,
+    required this.game,
+    required this.onStarting,
+  });
   final DeckProvider decks;
   final GameProvider game;
+  final VoidCallback onStarting;
   @override
   Widget build(BuildContext context) => Center(
     child: ConstrainedBox(
@@ -398,6 +428,7 @@ class _GameLauncher extends StatelessWidget {
                 onPressed: decks.activeDeck == null
                     ? null
                     : () async {
+                        onStarting();
                         final ok = await game.start(decks.activeDeck!);
                         if (!ok && context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(

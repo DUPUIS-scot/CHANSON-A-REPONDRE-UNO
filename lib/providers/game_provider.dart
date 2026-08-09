@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 
+import '../core/app_constants.dart';
 import '../data/card_categories.dart';
 import '../models/card_image_model.dart';
 import '../models/deck_model.dart';
@@ -23,13 +24,18 @@ class GameProvider extends ChangeNotifier {
     _state = loaded == null ? null : _normalizeCategories(loaded);
     final state = _state;
     if (state != null &&
-        state.players.any((player) => player.hand.length < 5) &&
-        state.drawPile.isNotEmpty) {
+        state.players.any(
+          (player) => player.hand.length != AppConstants.playHandSize,
+        )) {
       final drawPile = [...state.drawPile];
       final players = <PlayerModel>[];
       for (final player in state.players) {
         final hand = [...player.hand];
-        while (hand.length < 5 && drawPile.isNotEmpty) {
+        if (hand.length > AppConstants.playHandSize) {
+          drawPile.addAll(hand.sublist(AppConstants.playHandSize));
+          hand.removeRange(AppConstants.playHandSize, hand.length);
+        }
+        while (hand.length < AppConstants.playHandSize && drawPile.isNotEmpty) {
           hand.add(drawPile.removeLast());
         }
         players.add(player.copyWith(hand: hand));
@@ -43,10 +49,7 @@ class GameProvider extends ChangeNotifier {
   GameStateModel _normalizeCategories(GameStateModel state) {
     CardImageModel normalize(CardImageModel card) {
       final category = cardCategoryForStableCard(card.id, card.category);
-      return card.copyWith(
-        category: category.label,
-        colour: category.colour,
-      );
+      return card.copyWith(category: category.label, colour: category.colour);
     }
 
     final top = normalize(state.topCard);
@@ -63,17 +66,16 @@ class GameProvider extends ChangeNotifier {
   }
 
   Future<bool> start(Deck deck, {int playerCount = 2}) async {
-    const initialHandSize = 5;
-    if (deck.cards.length < playerCount * initialHandSize + 1) {
+    if (deck.cards.length < playerCount * AppConstants.playHandSize + 1) {
       _message =
           'This deck needs at least '
-          '${playerCount * initialHandSize + 1} cards.';
+          '${playerCount * AppConstants.playHandSize + 1} cards.';
       notifyListeners();
       return false;
     }
     final shuffled = [...deck.cards]..shuffle(Random.secure());
     final hands = List.generate(playerCount, (_) => <CardImageModel>[]);
-    for (var round = 0; round < initialHandSize; round++) {
+    for (var round = 0; round < AppConstants.playHandSize; round++) {
       for (final hand in hands) {
         hand.add(shuffled.removeLast());
       }
@@ -182,10 +184,16 @@ class GameProvider extends ChangeNotifier {
     }
     final players = [...state.players];
     final player = players[state.currentPlayerIndex];
+    if (player.hand.length >= AppConstants.playHandSize) {
+      _message = 'The Play hand already contains five cards.';
+      notifyListeners();
+      return;
+    }
     final hand = [...player.hand];
     do {
       hand.add(drawPile.removeLast());
     } while (state.drawRule == DrawRule.drawUntilPlayable &&
+        hand.length < AppConstants.playHandSize &&
         drawPile.isNotEmpty &&
         !canPlay(hand.last));
     players[state.currentPlayerIndex] = player.copyWith(hand: hand);
