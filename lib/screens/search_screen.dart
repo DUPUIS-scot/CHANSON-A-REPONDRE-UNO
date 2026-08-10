@@ -288,6 +288,10 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget build(BuildContext context) {
     final provider = context.watch<DeckProvider>();
     final results = _results(provider.decks);
+    final permanentCards = provider.decks
+        .where((deck) => deck.id == AppConstants.productionDeckId)
+        .expand((deck) => deck.cards)
+        .toList(growable: false);
     final selected = results
         .where((card) => card.id == _selectedCardId)
         .firstOrNull;
@@ -347,9 +351,15 @@ class _SearchScreenState extends State<SearchScreen> {
                                 ),
                               ),
                               Expanded(
-                                child: results.isEmpty
+                                child:
+                                    results.isEmpty &&
+                                        _viewMode != _SearchViewMode.castle
                                     ? const _EmptyResults()
-                                    : _buildResults(visible, results),
+                                    : _buildResults(
+                                        visible,
+                                        results,
+                                        permanentCards,
+                                      ),
                               ),
                             ],
                           ),
@@ -392,24 +402,33 @@ class _SearchScreenState extends State<SearchScreen> {
     return '$count RESULTS FOR “${_query.trim().toUpperCase()}”';
   }
 
-  Widget _buildResults(List<CardImageModel> visible, List<CardImageModel> all) {
+  Widget _buildResults(
+    List<CardImageModel> visible,
+    List<CardImageModel> all,
+    List<CardImageModel> permanentCards,
+  ) {
     if (_viewMode == _SearchViewMode.castle) {
       return Padding(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(16),
           child: WebGlCardCastleView(
-            cards: all,
+            cards: permanentCards,
+            matchingCardIds: all.map((card) => card.id).toSet(),
             focusedCardId: _selectedCardId,
             shuffleSeed: _shuffleSeed,
             activeCategory: _category,
             fullscreenRequestId: _castleFullscreenRequestId,
             onCardSelected: (id) {
-              final card = all.where((item) => item.id == id).firstOrNull;
+              final card = permanentCards
+                  .where((item) => item.id == id)
+                  .firstOrNull;
               if (card != null) _select(card);
             },
             onCardOpened: (id) {
-              final card = all.where((item) => item.id == id).firstOrNull;
+              final card = permanentCards
+                  .where((item) => item.id == id)
+                  .firstOrNull;
               if (card != null) {
                 unawaited(_openCastleCardFullscreen(card));
               }
@@ -418,7 +437,7 @@ class _SearchScreenState extends State<SearchScreen> {
             onHomeRequested: () => context.go(AppRoutes.home),
             onFullscreenChanged: _handleCastleFullscreenChanged,
             fallback: SearchCardCastle(
-              cards: visible,
+              cards: permanentCards,
               onFullscreen: _openFullscreen,
             ),
           ),

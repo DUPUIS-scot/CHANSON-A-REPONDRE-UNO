@@ -12,6 +12,7 @@ import '../models/card_image_model.dart';
 class WebGlCardCastleView extends StatefulWidget {
   const WebGlCardCastleView({
     required this.cards,
+    required this.matchingCardIds,
     required this.focusedCardId,
     required this.shuffleSeed,
     required this.activeCategory,
@@ -26,6 +27,7 @@ class WebGlCardCastleView extends StatefulWidget {
   });
 
   final List<CardImageModel> cards;
+  final Set<String> matchingCardIds;
   final String? focusedCardId;
   final int shuffleSeed;
   final String activeCategory;
@@ -160,6 +162,7 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
               'tags': card.tags,
               'year': card.year,
               'isFavourite': card.isFavourite,
+              'isMatch': widget.matchingCardIds.contains(card.id),
               'rectoUrl': _assetUrl(card.imagePath),
               'thumbnailUrl': _assetUrl(card.imagePath),
               'aspectRatio': card.aspectRatio,

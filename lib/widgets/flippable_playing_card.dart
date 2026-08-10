@@ -75,7 +75,7 @@ class _FlippablePlayingCardState extends State<FlippablePlayingCard>
     button: true,
     enabled: !widget.disabled,
     label: widget.semanticLabel,
-    hint: 'Tap to select. Press and hold to flip.',
+    hint: 'Tap to flip. Press and hold to open fullscreen.',
     onLongPress: widget.disabled ? null : widget.onLongPress,
     child: FocusableActionDetector(
       enabled: !widget.disabled,

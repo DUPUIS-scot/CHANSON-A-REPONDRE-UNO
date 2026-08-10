@@ -113,9 +113,8 @@ class _PlayerHandState extends State<PlayerHand> {
                           '${widget.cards[index].category}, '
                           '${widget.revealedCardIds.contains(widget.cards[index].id) ? 'face up' : 'face down'}, '
                           '${widget.isPlayable(widget.cards[index]) ? 'playable' : 'unavailable'}',
-                      onTap: () => select(widget.cards[index]),
-                      onLongPress: () => flip(widget.cards[index]),
-                      onDoubleTap: widget.onFullscreenCard == null
+                      onTap: () => flip(widget.cards[index]),
+                      onLongPress: widget.onFullscreenCard == null
                           ? null
                           : () => widget.onFullscreenCard!(
                               widget.cards[index].id,

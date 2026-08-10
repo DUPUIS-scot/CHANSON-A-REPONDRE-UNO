@@ -332,15 +332,17 @@
   }
 
   function addCard(card,anchor) {
-    const edge=new THREE.MeshStandardMaterial({color:0x9aa6ad,roughness:.42,metalness:.35});
-    const face=new THREE.MeshStandardMaterial({color:0x2a1c18,roughness:.64,metalness:.02});
-    const back=new THREE.MeshStandardMaterial({color:0x241712,roughness:.7});
+    const subdued=card.isMatch===false;
+    const edge=new THREE.MeshStandardMaterial({color:subdued?0x4c565c:0x9aa6ad,roughness:.42,metalness:.35});
+    const face=new THREE.MeshStandardMaterial({color:subdued?0x171516:0x2a1c18,roughness:.64,metalness:.02,transparent:subdued,opacity:subdued ? .38 : 1});
+    const back=new THREE.MeshStandardMaterial({color:subdued?0x151011:0x241712,roughness:.7,transparent:subdued,opacity:subdued ? .38 : 1});
     const mesh=new THREE.Mesh(cardGeometry,[edge,edge,edge,edge,face,back]);
     mesh.position.copy(anchor.position);
     mesh.quaternion.setFromUnitVectors(cardForward,anchor.normal);
     mesh.userData.card=card;
     mesh.userData.type='card';
     mesh.userData.cardId=card.id;
+    mesh.userData.isMatch=!subdued;
     mesh.userData.anchorPosition=anchor.position.clone();
     mesh.userData.anchorNormal=anchor.normal.clone();
     mesh.userData.textureUrl='';
@@ -424,7 +426,7 @@
       mesh.position.copy(mesh.userData.anchorPosition)
         .addScaledVector(mesh.userData.anchorNormal,active ? .11 : 0);
       mesh.material.slice(0,4).forEach(material=>{
-        material.color.set(active?0xffc928:0x9aa6ad);
+        material.color.set(active?0xffc928:mesh.userData.isMatch?0x9aa6ad:0x4c565c);
         material.emissive.set(active?0x6b2f00:0x000000);
         material.emissiveIntensity=active?1.3:0;
       });
