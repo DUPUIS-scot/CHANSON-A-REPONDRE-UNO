@@ -1,4 +1,15 @@
-# Chanson a Repondre UNO
+# Chanson à Répondre UNO — v2.5
+
+Version 2.5 is the approved and certified release baseline for the current
+working implementation. It preserves the 84-card permanent deck, application
+routes, 3D Browse/Search castle, category-specific card versos, permanent
+rectos, DJ Who integration, puppet/live-dealer presentation, and established
+UI and interaction system.
+
+- Version: 2.5
+- Status: APPROVED / CERTIFIED
+- Permanent deck: 84 cards
+- Git reference: `v2.5`
 
 ## Live web application
 

@@ -1,11 +1,11 @@
 {
-    "name": "uno_chanson_2",
-    "short_name": "uno_chanson_2",
+    "name": "Chanson à Répondre UNO — Version 2.5",
+    "short_name": "Chanson UNO",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "The approved and certified Chanson à Répondre UNO v2.5 card experience.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

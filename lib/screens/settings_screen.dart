@@ -853,8 +853,8 @@ class _SettingsControlCenterState extends State<_SettingsControlCenter> {
           children: [
             const ListTile(
               leading: Icon(Icons.theater_comedy_rounded, size: 40),
-              title: Text('Chanson a Repondre UNO'),
-              subtitle: Text('Version 1.0.0+1\nCopyright 2026'),
+              title: Text('Chanson à Répondre UNO'),
+              subtitle: Text('Version 2.5\nCopyright 2026'),
             ),
             SettingsActionTile(
               title: 'Privacy Policy',
