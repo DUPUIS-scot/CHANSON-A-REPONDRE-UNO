@@ -10,7 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:uno_chanson_2/app.dart';
 
 void main() {
-  testWidgets('home screen displays every navigation option', (
+  testWidgets('home screen presents the installation entrance hierarchy', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
@@ -23,23 +23,20 @@ void main() {
     await tester.pump(const Duration(milliseconds: 1300));
     await tester.pump();
 
-    expect(
-      find.bySemanticsLabel('Chanson à Répondre application logo'),
-      findsOneWidget,
-    );
-    expect(find.text('CHANSON À RÉPONDRE'), findsNothing);
     for (final label in <String>[
       'PLAY',
-      'CHOOSE DECK',
-      'BROWSE CARDS',
-      'SEARCH',
-      'JOURNAL',
-      'AI CHAT',
-      'RULES',
-      'SETTINGS',
+      'CASTLE',
+      'DJ WHO',
+      'Deck',
+      'Journal',
+      'Rules',
+      'Settings',
+      'About',
     ]) {
-      // Some destinations also appear in persistent navigation.
       expect(find.text(label), findsWidgets);
     }
+    expect(find.text('CHOOSE DECK'), findsNothing);
+    expect(find.text('BROWSE CARDS'), findsNothing);
+    expect(find.text('AI CHAT'), findsNothing);
   });
 }

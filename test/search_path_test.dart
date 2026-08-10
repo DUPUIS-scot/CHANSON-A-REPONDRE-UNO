@@ -70,9 +70,7 @@ void main() {
       expect(browser.visibleHand.first.id, 'final-84-03');
     });
 
-    testWidgets('Grid, Castle, and List switching preserves Search state', (
-      tester,
-    ) async {
+    testWidgets('Castle overlay preserves the search query', (tester) async {
       SharedPreferences.setMockInitialValues({});
       await tester.pumpWidget(
         const ChansonUnoApp(aiBackendUrlOverride: 'https://api.test'),
@@ -81,37 +79,13 @@ void main() {
       AppRouter.router.go(AppRoutes.search);
       await tester.pumpAndSettle();
 
-      String selectedMode() {
-        final widget = tester.widget<Widget>(
-          find.byWidgetPredicate((widget) => widget is SegmentedButton),
-        );
-        final control = widget as SegmentedButton;
-        return control.selected.single.toString();
-      }
-
-      expect(selectedMode(), contains('castle'));
-
       await tester.enterText(find.byType(TextField), 'lumiere');
       await tester.pump(const Duration(milliseconds: 300));
-      await tester.tap(find.byIcon(Icons.grid_view_rounded));
-      await tester.pumpAndSettle();
-      expect(selectedMode(), contains('grid'));
-
-      await tester.tap(find.byIcon(Icons.castle_rounded));
-      await tester.pumpAndSettle();
-      expect(selectedMode(), contains('castle'));
-
-      await tester.tap(find.byIcon(Icons.view_list_rounded));
-      await tester.pumpAndSettle();
-      expect(selectedMode(), contains('list'));
-
-      await tester.tap(find.byIcon(Icons.castle_rounded));
-      await tester.pumpAndSettle();
-      expect(selectedMode(), contains('castle'));
       expect(
         tester.widget<TextField>(find.byType(TextField)).controller?.text,
         'lumiere',
       );
+      expect(find.byType(SegmentedButton), findsNothing);
     });
   });
 }

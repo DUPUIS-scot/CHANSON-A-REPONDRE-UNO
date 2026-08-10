@@ -19,9 +19,7 @@ CardImageModel card(int index) => CardImageModel(
 );
 
 void main() {
-  testWidgets('tap selects, hold toggles the face, and double-tap previews', (
-    tester,
-  ) async {
+  testWidgets('tap flips and hold previews the current side', (tester) async {
     final cards = List.generate(5, card);
     CardImageModel? selected;
     final revealed = <String>{};
@@ -53,7 +51,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     final held = find.byType(FlippablePlayingCard).last;
-    await tester.longPress(held);
+    await tester.tap(held);
     await tester.pumpAndSettle();
 
     expect(previewCardId, isNull);
@@ -62,25 +60,13 @@ void main() {
     expect(tester.widget<FlippablePlayingCard>(held).isFaceUp, isTrue);
 
     await tester.tap(held);
-    await tester.pump(kDoubleTapTimeout + const Duration(milliseconds: 50));
     await tester.pumpAndSettle();
-    expect(selected?.id, 'card-4');
-    expect(revealed, {'card-4'});
-    expect(tester.widget<FlippablePlayingCard>(held).isFaceUp, isTrue);
-
-    await tester.longPress(held);
-    await tester.pumpAndSettle();
-    expect(previewCardId, isNull);
-    expect(selected?.id, 'card-4');
     expect(revealed, isEmpty);
     expect(tester.widget<FlippablePlayingCard>(held).isFaceUp, isFalse);
 
-    await tester.tap(held);
-    await tester.pump(const Duration(milliseconds: 50));
-    await tester.tap(held);
+    await tester.longPress(held);
     await tester.pumpAndSettle();
     expect(previewCardId, 'card-4');
-    expect(selected?.id, 'card-4');
     expect(revealed, isEmpty);
     expect(tester.widget<FlippablePlayingCard>(held).isFaceUp, isFalse);
   });
@@ -171,14 +157,9 @@ void main() {
     await tester.pumpAndSettle();
 
     final thirdCard = find.byType(FlippablePlayingCard).at(2);
+    await tester.tap(thirdCard);
+    await tester.pumpAndSettle();
     await tester.longPress(thirdCard);
-    await tester.pumpAndSettle();
-    await tester.tap(thirdCard);
-    await tester.pump(kDoubleTapTimeout + const Duration(milliseconds: 50));
-    await tester.pumpAndSettle();
-    await tester.tap(thirdCard);
-    await tester.pump(const Duration(milliseconds: 50));
-    await tester.tap(thirdCard);
     await tester.pumpAndSettle();
 
     final preview = tester.widget<PlayHandFullscreenScreen>(
@@ -216,7 +197,7 @@ void main() {
       false,
     ]);
     expect(revealed, {'card-2'});
-    expect(selected?.id, 'card-2');
+    expect(selected, isNull);
   });
 
   testWidgets('viewer starts on held card, pages, and closes with Escape', (
