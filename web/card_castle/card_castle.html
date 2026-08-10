@@ -30,14 +30,7 @@
     <div id="fullscreen-controls">
       <button id="exit-fullscreen" type="button">✕ EXIT</button>
       <button id="castle-home" type="button">⌂ HOME</button>
-      <select id="castle-category" aria-label="Category"></select>
-      <button id="previous-card" type="button">←</button>
-      <div id="focused-summary">
-        <img id="focused-thumbnail" alt="">
-        <span id="focused-title">No card selected</span>
-      </div>
-      <button id="open-focused-card" type="button">OPEN CARD</button>
-      <button id="next-card" type="button">→</button>
+      <button id="castle-reset" type="button">⌂ RESET VIEW</button>
     </div>
   </div>
   <script type="module">
@@ -323,7 +316,6 @@
     seeded(cards,shuffleSeed).slice(0,points.length)
       .forEach((card,index)=>addCard(card,points[index]));
     document.body.dataset.meshCount=String(state.meshes.length);
-    updateCategoryControl();
     state.meshes.forEach(queueRecto);
     if(focusedCardId)focusCard(focusedCardId,animateFocus);
     pumpTextures();
@@ -433,7 +425,6 @@
       if(active)selected=mesh;
     });
     pumpTextures();
-    updateFocusedSummary(selected?.userData.card||null);
     if(!selected)return;
     const look=selected.position.clone();
     const cameraTarget=look.clone()
@@ -629,10 +620,7 @@
     listen(document.getElementById('enter-fullscreen'),'click',enterCastleFullscreen);
     listen(document.getElementById('exit-fullscreen'),'click',exitCastleFullscreen);
     listen(document.getElementById('castle-home'),'click',()=>{void exitCastleFullscreen();setTimeout(()=>emit('homeRequested'),60)});
-    listen(document.getElementById('castle-category'),'change',event=>emit('categorySelected',{category:event.target.value}));
-    listen(document.getElementById('previous-card'),'click',()=>moveCardFocus(-1));
-    listen(document.getElementById('next-card'),'click',()=>moveCardFocus(1));
-    listen(document.getElementById('open-focused-card'),'click',openFocusedCard);
+    listen(document.getElementById('castle-reset'),'click',resetView);
     listen(document,'fullscreenchange',()=>setFullscreenUi(Boolean(document.fullscreenElement)));
     listen(document,'visibilitychange',()=>document.hidden?pause():resume());
     listen(window,'keydown',event=>{
@@ -657,6 +645,10 @@
     orbit.distance=clamp(delta.length(),24,90);
     orbit.pitch=clamp(Math.asin(delta.y/orbit.distance),.06,1.18);
     orbit.yaw=Math.atan2(delta.x,delta.z);
+  }
+  function resetView(){
+    orbit.yaw=.72;orbit.pitch=.34;orbit.distance=59;orbit.target.set(0,8,0);
+    state.targetCamera=null;state.targetLook=null;focusCard('',false);resume();
   }
   function resize(){
     if(!renderer)return;

@@ -99,11 +99,7 @@ class _SearchScreenState extends State<SearchScreen> {
             ? json['category'] as String
             : 'ALL';
         _selectedCardId = json['selectedCardId'] as String?;
-        _viewMode = switch (json['viewMode']) {
-          'grid' => _SearchViewMode.grid,
-          'list' => _SearchViewMode.list,
-          _ => _SearchViewMode.castle,
-        };
+        _viewMode = _SearchViewMode.castle;
         _savedScrollOffset = (json['scrollOffset'] as num?)?.toDouble() ?? 0;
         _shuffleSeed = (json['shuffleSeed'] as num?)?.toInt() ?? 0;
         _visibleCount = max(
@@ -202,6 +198,7 @@ class _SearchScreenState extends State<SearchScreen> {
     return cards;
   }
 
+  // ignore: unused_element
   void _shuffle() {
     setState(() {
       _shuffleSeed = Random().nextInt(0x7fffffff) + 1;
@@ -242,6 +239,7 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
+  // ignore: unused_element
   void _viewInCastle(CardImageModel card) {
     setState(() {
       _viewBeforeCastleFullscreen = _viewMode == _SearchViewMode.castle
@@ -292,114 +290,28 @@ class _SearchScreenState extends State<SearchScreen> {
         .where((deck) => deck.id == AppConstants.productionDeckId)
         .expand((deck) => deck.cards)
         .toList(growable: false);
-    final selected = results
-        .where((card) => card.id == _selectedCardId)
-        .firstOrNull;
-    final visible = results.take(_visibleCount).toList(growable: false);
-
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: SafeArea(
-        child: DecoratedBox(
-          decoration: const BoxDecoration(
-            gradient: RadialGradient(
-              center: Alignment.topCenter,
-              radius: 1.3,
-              colors: [Color(0xB3102130), Color(0x9905080C)],
-            ),
-          ),
-          child: Column(
-            children: [
-              _SearchHeader(
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            _buildResults(const [], results, permanentCards),
+            Positioned(
+              top: 12,
+              left: 12,
+              right: 12,
+              child: _CastleSearchOverlay(
                 controller: _controller,
                 selectedCategory: _category,
-                viewMode: _viewMode,
                 onQueryChanged: _onQueryChanged,
                 onCategoryChanged: _setCategory,
-                onShuffle: results.isEmpty ? null : _shuffle,
-                onViewModeChanged: (mode) {
-                  setState(() => _viewMode = mode);
-                  _schedulePersist();
-                },
-                categories: _categories,
               ),
-              Expanded(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final showSidePanel = constraints.maxWidth >= 980;
-                    return Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.fromLTRB(
-                                  20,
-                                  14,
-                                  20,
-                                  10,
-                                ),
-                                child: Text(
-                                  _resultLabel(results.length),
-                                  style: const TextStyle(
-                                    color: AppTheme.brightGold,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 1.1,
-                                  ),
-                                ),
-                              ),
-                              Expanded(
-                                child:
-                                    results.isEmpty &&
-                                        _viewMode != _SearchViewMode.castle
-                                    ? const _EmptyResults()
-                                    : _buildResults(
-                                        visible,
-                                        results,
-                                        permanentCards,
-                                      ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        if (showSidePanel)
-                          SizedBox(
-                            width: 310,
-                            child: _SelectedCardPanel(
-                              card: selected,
-                              onFullscreen: selected == null
-                                  ? null
-                                  : () => _openFullscreen(selected),
-                              onViewInCastle: selected == null
-                                  ? null
-                                  : () => _viewInCastle(selected),
-                            ),
-                          ),
-                      ],
-                    );
-                  },
-                ),
-              ),
-              if (MediaQuery.sizeOf(context).width < 980 &&
-                  selected != null &&
-                  _viewMode != _SearchViewMode.castle)
-                _MobileSelectionBar(
-                  card: selected,
-                  onFullscreen: () => _openFullscreen(selected),
-                  onViewInCastle: () => _viewInCastle(selected),
-                ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
-  }
-
-  String _resultLabel(int count) {
-    if (_query.trim().isEmpty) return '$count RESULTS';
-    return '$count RESULTS FOR “${_query.trim().toUpperCase()}”';
   }
 
   Widget _buildResults(
@@ -408,39 +320,33 @@ class _SearchScreenState extends State<SearchScreen> {
     List<CardImageModel> permanentCards,
   ) {
     if (_viewMode == _SearchViewMode.castle) {
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: WebGlCardCastleView(
-            cards: permanentCards,
-            matchingCardIds: all.map((card) => card.id).toSet(),
-            focusedCardId: _selectedCardId,
-            shuffleSeed: _shuffleSeed,
-            activeCategory: _category,
-            fullscreenRequestId: _castleFullscreenRequestId,
-            onCardSelected: (id) {
-              final card = permanentCards
-                  .where((item) => item.id == id)
-                  .firstOrNull;
-              if (card != null) _select(card);
-            },
-            onCardOpened: (id) {
-              final card = permanentCards
-                  .where((item) => item.id == id)
-                  .firstOrNull;
-              if (card != null) {
-                unawaited(_openCastleCardFullscreen(card));
-              }
-            },
-            onCategoryChanged: _setCategory,
-            onHomeRequested: () => context.go(AppRoutes.home),
-            onFullscreenChanged: _handleCastleFullscreenChanged,
-            fallback: SearchCardCastle(
-              cards: permanentCards,
-              onFullscreen: _openFullscreen,
-            ),
-          ),
+      return WebGlCardCastleView(
+        cards: permanentCards,
+        matchingCardIds: all.map((card) => card.id).toSet(),
+        focusedCardId: _selectedCardId,
+        shuffleSeed: _shuffleSeed,
+        activeCategory: _category,
+        fullscreenRequestId: _castleFullscreenRequestId,
+        onCardSelected: (id) {
+          final card = permanentCards
+              .where((item) => item.id == id)
+              .firstOrNull;
+          if (card != null) _select(card);
+        },
+        onCardOpened: (id) {
+          final card = permanentCards
+              .where((item) => item.id == id)
+              .firstOrNull;
+          if (card != null) {
+            unawaited(_openCastleCardFullscreen(card));
+          }
+        },
+        onCategoryChanged: _setCategory,
+        onHomeRequested: () => context.go(AppRoutes.home),
+        onFullscreenChanged: _handleCastleFullscreenChanged,
+        fallback: SearchCardCastle(
+          cards: permanentCards,
+          onFullscreen: _openFullscreen,
         ),
       );
     }
@@ -517,6 +423,7 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 }
 
+// ignore: unused_element
 class _SearchHeader extends StatelessWidget {
   const _SearchHeader({
     required this.controller,
@@ -708,6 +615,91 @@ class _SearchHeader extends StatelessWidget {
   );
 }
 
+class _CastleSearchOverlay extends StatelessWidget {
+  const _CastleSearchOverlay({
+    required this.controller,
+    required this.selectedCategory,
+    required this.onQueryChanged,
+    required this.onCategoryChanged,
+  });
+
+  final TextEditingController controller;
+  final String selectedCategory;
+  final ValueChanged<String> onQueryChanged;
+  final ValueChanged<String> onCategoryChanged;
+
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+    decoration: BoxDecoration(
+      color: const Color(0xD9080D12),
+      borderRadius: BorderRadius.circular(8),
+      border: Border.all(color: const Color(0x665EB8EF)),
+    ),
+    child: Padding(
+      padding: const EdgeInsets.all(8),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: controller,
+                  onChanged: onQueryChanged,
+                  textInputAction: TextInputAction.search,
+                  decoration: InputDecoration(
+                    isDense: true,
+                    hintText: 'Search cards…',
+                    prefixIcon: const Icon(Icons.search_rounded),
+                    suffixIcon: controller.text.isEmpty
+                        ? null
+                        : IconButton(
+                            tooltip: 'Clear search',
+                            onPressed: () {
+                              controller.clear();
+                              onQueryChanged('');
+                            },
+                            icon: const Icon(Icons.close_rounded),
+                          ),
+                  ),
+                ),
+              ),
+              IconButton(
+                tooltip: 'DJ WHO',
+                onPressed: () => context.go(AppRoutes.djWhoVideos),
+                icon: const Icon(Icons.queue_music_rounded),
+              ),
+              IconButton(
+                tooltip: 'Return to Home',
+                onPressed: () => context.go(AppRoutes.home),
+                icon: const Icon(Icons.home_rounded),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          SizedBox(
+            height: 34,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: _SearchScreenState._categories.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 6),
+              itemBuilder: (_, index) {
+                final category = _SearchScreenState._categories[index];
+                return ChoiceChip(
+                  label: Text(category),
+                  selected: category == selectedCategory,
+                  onSelected: (_) => onCategoryChanged(category),
+                  labelStyle: const TextStyle(fontSize: 11),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
 class _SearchCardTile extends StatefulWidget {
   const _SearchCardTile({
     required this.card,
@@ -871,6 +863,7 @@ class _SearchListRow extends StatelessWidget {
   );
 }
 
+// ignore: unused_element
 class _SelectedCardPanel extends StatelessWidget {
   const _SelectedCardPanel({
     required this.card,
@@ -989,6 +982,7 @@ class _PanelTitle extends StatelessWidget {
   );
 }
 
+// ignore: unused_element
 class _MobileSelectionBar extends StatelessWidget {
   const _MobileSelectionBar({
     required this.card,
@@ -1046,6 +1040,7 @@ class _MobileSelectionBar extends StatelessWidget {
   );
 }
 
+// ignore: unused_element
 class _EmptyResults extends StatelessWidget {
   const _EmptyResults();
 

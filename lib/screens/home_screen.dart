@@ -3,19 +3,11 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../core/app_router.dart';
-import '../providers/deck_provider.dart';
-import '../providers/game_provider.dart';
 import '../providers/home_experience_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/background_provider.dart';
 import '../theme/app_theme.dart';
-import '../widgets/app_bottom_navigation.dart';
-import '../widgets/continue_progress_panel.dart';
 import '../widgets/interactive_curtain_overlay.dart';
-import '../widgets/deck_carousel.dart';
-import '../widgets/home_menu_card.dart';
-import '../widgets/recent_cards.dart';
-import '../widgets/home_header.dart';
 import '../widgets/home_3d_video_viewport.dart';
 import '../widgets/home_intro_controls.dart';
 import '../widgets/background_widget.dart';
@@ -28,116 +20,16 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  static const _menuBackgroundAsset = 'assets/images/main_menu_background.png';
   static const _sauvageVideoAsset = 'assets/videos/sauvage_background.mp4';
-
-  static const _cardAlignments = <Alignment>[
-    Alignment.topLeft,
-    Alignment.topCenter,
-    Alignment.topRight,
-    Alignment.centerLeft,
-    Alignment.center,
-    Alignment.centerRight,
-    Alignment.bottomLeft,
-    Alignment.bottomRight,
-  ];
-
-  static const _overlayOpacities = <double>[
-    .52,
-    .58,
-    .58,
-    .52,
-    .52,
-    .52,
-    .52,
-    .52,
-  ];
-
-  bool _backgroundPrecached = false;
-
-  static const _items = <_HomeItem>[
-    _HomeItem(
-      Icons.play_arrow_rounded,
-      'Play',
-      'Start a new game or continue your saved game.',
-      AppRoutes.play,
-      Color(0xFFE43C2C),
-    ),
-    _HomeItem(
-      Icons.style_rounded,
-      'Choose Deck',
-      'Enter the permanent curated card collection.',
-      AppRoutes.decks,
-      Color(0xFFE9B52F),
-    ),
-    _HomeItem(
-      Icons.menu_book_rounded,
-      'Browse Cards',
-      'Explore every card by category.',
-      AppRoutes.cards,
-      Color(0xFF75B83A),
-    ),
-    _HomeItem(
-      Icons.search_rounded,
-      'Search',
-      'Find cards by keyword, theme, author, and more.',
-      AppRoutes.search,
-      Color(0xFF2EA4DC),
-    ),
-    _HomeItem(
-      Icons.book_rounded,
-      'Journal',
-      'Return to your saved notes and memories.',
-      AppRoutes.journal,
-      Color(0xFFC85AD9),
-    ),
-    _HomeItem(
-      Icons.smart_toy_rounded,
-      'AI Chat',
-      'Discuss the cards and your ideas with AI.',
-      AppRoutes.aiChat,
-      Color(0xFF35C9C5),
-    ),
-    _HomeItem(
-      Icons.gavel_rounded,
-      'Rules',
-      'Learn the game and discover its variants.',
-      AppRoutes.rules,
-      Color(0xFFE87524),
-    ),
-    _HomeItem(
-      Icons.settings_rounded,
-      'Settings',
-      'Adjust appearance, sound, motion, and play preferences.',
-      AppRoutes.settings,
-      Color(0xFFC8B79B),
-    ),
-  ];
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_backgroundPrecached) return;
-    _backgroundPrecached = true;
-    precacheImage(const AssetImage(_menuBackgroundAsset), context);
-  }
 
   @override
   Widget build(BuildContext context) {
-    final decks = context.watch<DeckProvider>();
-    final game = context.watch<GameProvider>().state;
     final experience = context.watch<HomeExperienceProvider>();
     final reducedMotion =
         context.watch<SettingsProvider>().advanced.reducedMotion ||
         MediaQuery.disableAnimationsOf(context);
     final sauvage = experience.backgroundMode == HomeBackgroundMode.sauvage;
     final homeInteractive = experience.homeInteractive;
-    final continueDeck = game == null
-        ? null
-        : decks.decks.where((deck) => deck.id == game.deckId).firstOrNull;
-    final recent = [...decks.cards]
-      ..sort((a, b) => b.importedAt.compareTo(a.importedAt));
-
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -170,103 +62,82 @@ class _HomeScreenState extends State<HomeScreen> {
                         : const Duration(milliseconds: 500),
                     builder: (context, opacity, child) =>
                         Opacity(opacity: opacity, child: child),
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final width = constraints.maxWidth;
-                        final columns = width >= AppTheme.desktopBreakpoint
-                            ? 4
-                            : width >= AppTheme.tabletBreakpoint
-                            ? 3
-                            : 2;
-                        final horizontal = width >= AppTheme.tabletBreakpoint
-                            ? AppTheme.spaceLg
-                            : AppTheme.spaceSm;
-                        return SingleChildScrollView(
-                          padding: EdgeInsets.fromLTRB(
-                            horizontal,
-                            12,
-                            horizontal,
-                            28,
-                          ),
-                          child: Center(
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(
-                                maxWidth: AppTheme.maxContentWidth,
-                              ),
-                              child: Column(
-                                children: [
-                                  HomeHeader(
-                                    onProfile: () => context.go('/profile'),
-                                    onSettings: () =>
-                                        context.go(AppRoutes.settings),
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppTheme.spaceLg),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'CHANSON À RÉPONDRE UNO',
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.headlineMedium
+                                  ?.copyWith(
+                                    color: AppTheme.brightGold,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 1.2,
                                   ),
-                                  const SizedBox(height: 18),
-                                  GridView.builder(
-                                    shrinkWrap: true,
-                                    physics:
-                                        const NeverScrollableScrollPhysics(),
-                                    itemCount: _items.length,
-                                    gridDelegate:
-                                        SliverGridDelegateWithFixedCrossAxisCount(
-                                          crossAxisCount: columns,
-                                          crossAxisSpacing: 14,
-                                          mainAxisSpacing: 14,
-                                          childAspectRatio: width < 500
-                                              ? .85
-                                              : width < 900
-                                              ? 1.0
-                                              : 1.12,
-                                        ),
-                                    itemBuilder: (context, index) {
-                                      final item = _items[index];
-                                      return HomeMenuCard(
-                                        icon: item.icon,
-                                        title: item.title,
-                                        description: item.description,
-                                        accent: item.accent,
-                                        backgroundAsset: _menuBackgroundAsset,
-                                        backgroundAlignment:
-                                            _cardAlignments[index],
-                                        overlayOpacity:
-                                            _overlayOpacities[index],
-                                        onTap: () => context.go(item.route),
-                                      );
-                                    },
-                                  ),
-                                  const SizedBox(height: 18),
-                                  ContinueProgressPanel(
-                                    deck: continueDeck,
-                                    game: game,
-                                    onContinue: () =>
-                                        context.go(AppRoutes.play),
-                                  ),
-                                  const SizedBox(height: 18),
-                                  DeckCarousel(
-                                    decks: decks.decks.take(10).toList(),
-                                    onDeckTap: (deck) async {
-                                      await decks.select(deck.id);
-                                      if (context.mounted) {
-                                        context.go(AppRoutes.deck(deck.id));
-                                      }
-                                    },
-                                    onViewAll: () =>
-                                        context.go(AppRoutes.decks),
-                                  ),
-                                  const SizedBox(height: 18),
-                                  RecentCards(
-                                    cards: recent.take(12).toList(),
-                                    onCardTap: (card) => context.go(
-                                      AppRoutes.cardAlias(card.id),
-                                    ),
-                                    onViewAll: () =>
-                                        context.go(AppRoutes.cards),
-                                  ),
-                                ],
+                            ),
+                            const SizedBox(height: AppTheme.spaceXl),
+                            const Text(
+                              'ENTER',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 2,
                               ),
                             ),
-                          ),
-                        );
-                      },
+                            const SizedBox(height: AppTheme.spaceLg),
+                            Wrap(
+                              spacing: AppTheme.spaceLg,
+                              runSpacing: AppTheme.spaceSm,
+                              alignment: WrapAlignment.center,
+                              children: [
+                                _PrimaryRoute(
+                                  label: 'PLAY',
+                                  route: AppRoutes.play,
+                                ),
+                                _PrimaryRoute(
+                                  label: 'CASTLE',
+                                  route: AppRoutes.search,
+                                ),
+                                _PrimaryRoute(
+                                  label: 'DJ WHO',
+                                  route: AppRoutes.djWhoVideos,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: AppTheme.spaceXl),
+                            Wrap(
+                              spacing: 4,
+                              runSpacing: 2,
+                              alignment: WrapAlignment.center,
+                              children: [
+                                _SecondaryRoute(
+                                  label: 'Deck',
+                                  route: AppRoutes.decks,
+                                ),
+                                _SecondaryRoute(
+                                  label: 'Journal',
+                                  route: AppRoutes.journal,
+                                ),
+                                _SecondaryRoute(
+                                  label: 'Rules',
+                                  route: AppRoutes.rules,
+                                ),
+                                _SecondaryRoute(
+                                  label: 'Settings',
+                                  route: AppRoutes.settings,
+                                ),
+                                const _SecondaryRoute(
+                                  label: 'About',
+                                  route: AppRoutes.profile,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -276,31 +147,37 @@ class _HomeScreenState extends State<HomeScreen> {
               const HomeIntroControls(),
             ],
           ),
-          bottomNavigationBar: IgnorePointer(
-            ignoring: !homeInteractive,
-            child: AnimatedOpacity(
-              opacity: homeInteractive ? 1 : .45,
-              duration: const Duration(milliseconds: 180),
-              child: const AppBottomNavigation(),
-            ),
-          ),
         ),
       ],
     );
   }
 }
 
-class _HomeItem {
-  const _HomeItem(
-    this.icon,
-    this.title,
-    this.description,
-    this.route,
-    this.accent,
-  );
-  final IconData icon;
-  final String title;
-  final String description;
+class _PrimaryRoute extends StatelessWidget {
+  const _PrimaryRoute({required this.label, required this.route});
+  final String label;
   final String route;
-  final Color accent;
+  @override
+  Widget build(BuildContext context) => TextButton(
+    onPressed: () => context.go(route),
+    child: Text(
+      label,
+      style: const TextStyle(
+        color: AppTheme.brightGold,
+        fontWeight: FontWeight.w900,
+        letterSpacing: 1.1,
+      ),
+    ),
+  );
+}
+
+class _SecondaryRoute extends StatelessWidget {
+  const _SecondaryRoute({required this.label, required this.route});
+  final String label;
+  final String route;
+  @override
+  Widget build(BuildContext context) => TextButton(
+    onPressed: () => context.go(route),
+    child: Text(label, style: const TextStyle(color: Colors.white70)),
+  );
 }

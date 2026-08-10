@@ -42,9 +42,7 @@ class _PlayerHandState extends State<PlayerHand> {
   }
 
   void flip(CardImageModel card) {
-    final revealed = widget.keepRevealed
-        ? {...widget.revealedCardIds}
-        : <String>{};
+    final revealed = {...widget.revealedCardIds};
     if (widget.revealedCardIds.contains(card.id)) {
       revealed.remove(card.id);
     } else {
