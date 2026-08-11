@@ -15,10 +15,10 @@ class HomeIntroControls extends StatelessWidget {
       child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.only(bottom: 16),
-          child: FilledButton.icon(
+          child: IconButton.filled(
+            tooltip: 'Open curtains',
             onPressed: experience.openCurtains,
             icon: const Icon(Icons.theater_comedy_rounded),
-            label: const Text('ENTER'),
           ),
         ),
       ),

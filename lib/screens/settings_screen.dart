@@ -166,10 +166,14 @@ class SettingsScreen extends StatelessWidget {
                     ),
                   ),
                   SwitchListTile(
-                    secondary: const Icon(Icons.volume_off_outlined),
-                    title: const Text('Mute SAUVAGE background video'),
-                    value: background.muteVideo,
-                    onChanged: background.setMuteVideo,
+                    secondary: Icon(
+                      background.muteVideo
+                          ? Icons.volume_off_outlined
+                          : Icons.volume_up_outlined,
+                    ),
+                    title: const Text('SAUVAGE sound'),
+                    value: !background.muteVideo,
+                    onChanged: (value) => background.setMuteVideo(!value),
                   ),
                   ListTile(
                     leading: const Icon(Icons.contrast_rounded),

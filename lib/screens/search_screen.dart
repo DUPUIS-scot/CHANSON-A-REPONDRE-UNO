@@ -556,12 +556,14 @@ class _SearchHeader extends StatelessWidget {
               const SizedBox(width: 8),
               OutlinedButton.icon(
                 onPressed: () => context.go(AppRoutes.djWhoVideos),
-                icon: Image.asset(
-                  'assets/images/dj_who.png',
-                  width: 30,
-                  height: 30,
-                  fit: BoxFit.contain,
-                  semanticLabel: 'DJ WHO logo',
+                icon: ClipOval(
+                  child: Image.asset(
+                    'assets/images/dj_who.png',
+                    width: 30,
+                    height: 30,
+                    fit: BoxFit.cover,
+                    semanticLabel: 'DJ WHO logo',
+                  ),
                 ),
                 label: const Text('DJ WHO'),
               ),

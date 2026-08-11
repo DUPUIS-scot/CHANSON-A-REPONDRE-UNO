@@ -5,7 +5,6 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:uno_chanson_2/app.dart';
@@ -18,9 +17,9 @@ void main() {
       const ChansonUnoApp(aiBackendUrlOverride: 'https://api.test'),
     );
 
-    final enterButton = find.widgetWithText(FilledButton, 'ENTER');
-    expect(enterButton, findsOneWidget);
-    await tester.tap(enterButton);
+    final curtainButton = find.byTooltip('Open curtains');
+    expect(curtainButton, findsOneWidget);
+    await tester.tap(curtainButton);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 1300));
     await tester.pump(const Duration(milliseconds: 600));
@@ -30,7 +29,7 @@ void main() {
       find.bySemanticsLabel('Chanson à Répondre application logo'),
       findsOneWidget,
     );
-    expect(find.text('ENTER'), findsOneWidget);
+    expect(find.text('ENTER'), findsNothing);
     for (final label in <String>[
       'PLAY',
       'CASTLE',

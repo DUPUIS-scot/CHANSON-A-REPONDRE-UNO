@@ -42,9 +42,27 @@ class _BackgroundWidgetState extends State<BackgroundWidget> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.type != widget.type ||
         oldWidget.videoPath != widget.videoPath ||
-        oldWidget.imagePath != widget.imagePath ||
-        oldWidget.muted != widget.muted) {
+        oldWidget.imagePath != widget.imagePath) {
       _configure();
+    } else if (oldWidget.muted != widget.muted) {
+      _updateSound();
+    }
+  }
+
+  Future<void> _updateSound() async {
+    final player = controller;
+    if (player?.value.isInitialized != true) return;
+    try {
+      await player!.setVolume(widget.muted ? 0 : 1);
+      if (!player.value.isPlaying) await player.play();
+    } on Object {
+      // Audible autoplay can be blocked until the next user gesture. Keep the
+      // already initialized background alive instead of treating it as a
+      // media-loading failure.
+      if (!widget.muted) {
+        await player!.setVolume(0);
+        if (!player.value.isPlaying) await player.play();
+      }
     }
   }
 
@@ -72,9 +90,18 @@ class _BackgroundWidgetState extends State<BackgroundWidget> {
     if (mounted) setState(() => loading = true);
     try {
       await next.initialize();
-      await next.setVolume(widget.muted ? 0 : 1);
       await next.setLooping(true);
-      await next.play();
+      try {
+        await next.setVolume(widget.muted ? 0 : 1);
+        await next.play();
+      } on Object {
+        if (widget.muted) rethrow;
+        // Browsers commonly require a gesture before audible autoplay. Start
+        // muted so the video remains available; the Home sound control retries
+        // volume/play directly from the user's gesture.
+        await next.setVolume(0);
+        await next.play();
+      }
       if (mounted) setState(() => loading = false);
     } on Object {
       await next.dispose();

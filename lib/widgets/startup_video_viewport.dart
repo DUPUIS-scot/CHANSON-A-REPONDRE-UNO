@@ -7,7 +7,6 @@ import 'package:video_player/video_player.dart';
 import '../providers/settings_provider.dart';
 import '../providers/startup_video_provider.dart';
 import '../theme/app_theme.dart';
-import 'video_back_face.dart';
 
 const _isFlutterTest = bool.fromEnvironment('FLUTTER_TEST');
 
@@ -151,9 +150,17 @@ class _StartupVideoViewportState extends State<StartupVideoViewport>
                             ),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(6),
-                              child: frontVisible
-                                  ? _content(startup, controller)
-                                  : const VideoBackFace(),
+                              child: Transform(
+                                alignment: Alignment.center,
+                                transform: frontVisible
+                                    ? Matrix4.identity()
+                                    : Matrix4.rotationY(math.pi),
+                                child: _content(
+                                  startup,
+                                  controller,
+                                  mirrored: !frontVisible,
+                                ),
+                              ),
                             ),
                           ),
                         ),
@@ -171,8 +178,9 @@ class _StartupVideoViewportState extends State<StartupVideoViewport>
 
   Widget _content(
     StartupVideoProvider startup,
-    VideoPlayerController? controller,
-  ) {
+    VideoPlayerController? controller, {
+    required bool mirrored,
+  }) {
     if (startup.loading) {
       return const ColoredBox(
         color: Colors.black,
@@ -199,7 +207,10 @@ class _StartupVideoViewportState extends State<StartupVideoViewport>
             child: SizedBox(
               width: size.width,
               height: size.height,
-              child: VideoPlayer(controller),
+              child: Transform.flip(
+                flipX: mirrored,
+                child: VideoPlayer(controller),
+              ),
             ),
           ),
           if (!startup.hasStarted)

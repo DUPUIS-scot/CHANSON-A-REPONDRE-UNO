@@ -58,6 +58,25 @@ class HomeScreen extends StatelessWidget {
           const InteractiveCurtainOverlay(),
           const Home3dVideoViewport(),
           const HomeIntroControls(),
+          if (background.type == BackgroundMediaType.video)
+            Positioned(
+              right: 12,
+              bottom: 12,
+              child: SafeArea(
+                child: IconButton.filledTonal(
+                  tooltip: background.muteVideo
+                      ? 'Turn SAUVAGE sound on'
+                      : 'Mute SAUVAGE',
+                  onPressed: () =>
+                      background.setMuteVideo(!background.muteVideo),
+                  icon: Icon(
+                    background.muteVideo
+                        ? Icons.volume_off_rounded
+                        : Icons.volume_up_rounded,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -91,14 +110,6 @@ class _ArtisticHome extends StatelessWidget {
                   showActions: false,
                 ),
                 SizedBox(height: compact ? 30 : 52),
-                Text(
-                  'ENTER',
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: AppTheme.gold,
-                    letterSpacing: 5,
-                  ),
-                ),
-                const SizedBox(height: 18),
                 Wrap(
                   alignment: WrapAlignment.center,
                   spacing: compact ? 12 : 30,

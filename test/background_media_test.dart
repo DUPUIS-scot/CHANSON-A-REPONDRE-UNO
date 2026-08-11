@@ -83,6 +83,7 @@ void main() {
     expect(background.imagePath, BackgroundProvider.defaultImageAsset);
     expect(background.videoPath, BackgroundProvider.defaultVideoAsset);
     expect(background.currentFilename, BackgroundProvider.defaultImageLabel);
+    expect(background.muteVideo, isFalse);
   });
 
   test('saved video preference still wins over fresh default', () async {
