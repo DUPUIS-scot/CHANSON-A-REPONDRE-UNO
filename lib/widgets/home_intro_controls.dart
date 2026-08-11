@@ -18,7 +18,7 @@ class HomeIntroControls extends StatelessWidget {
           child: FilledButton.icon(
             onPressed: experience.openCurtains,
             icon: const Icon(Icons.theater_comedy_rounded),
-            label: const Text('OPEN CURTAINS'),
+            label: const Text('ENTER'),
           ),
         ),
       ),

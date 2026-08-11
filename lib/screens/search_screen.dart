@@ -42,6 +42,7 @@ class _SearchScreenState extends State<SearchScreen> {
   String _query = '';
   String _category = 'TOUTES';
   String? _selectedCardId;
+  Set<String> _discoveredCardIds = {};
   int _shuffleSeed = 0;
   int _castleFullscreenRequestId = 0;
   late LocalStorageService _storage;
@@ -77,6 +78,9 @@ class _SearchScreenState extends State<SearchScreen> {
             ? json['category'] as String
             : 'TOUTES';
         _selectedCardId = json['selectedCardId'] as String?;
+        _discoveredCardIds = (json['discoveredCardIds'] as List<dynamic>? ?? [])
+            .whereType<String>()
+            .toSet();
         _shuffleSeed = (json['shuffleSeed'] as num?)?.toInt() ?? 0;
       });
     } on Object {
@@ -89,6 +93,7 @@ class _SearchScreenState extends State<SearchScreen> {
       'query': _query,
       'category': _category,
       'selectedCardId': _selectedCardId,
+      'discoveredCardIds': _discoveredCardIds.toList(),
       'shuffleSeed': _shuffleSeed,
     });
   }
@@ -139,7 +144,10 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   void _select(CardImageModel card) {
-    setState(() => _selectedCardId = card.id);
+    setState(() {
+      _selectedCardId = card.id;
+      _discoveredCardIds = {..._discoveredCardIds, card.id};
+    });
     _schedulePersist();
   }
 
@@ -183,11 +191,17 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<DeckProvider>();
-    final results = _results(provider.decks);
-    final permanentCards = provider.decks
+    final permanentDecks = provider.decks
         .where((deck) => deck.id == AppConstants.productionDeckId)
+        .toList(growable: false);
+    final results = _results(permanentDecks);
+    final permanentCards = permanentDecks
         .expand((deck) => deck.cards)
         .toList(growable: false);
+    final permanentIds = permanentCards.map((card) => card.id).toSet();
+    final discoveredCount = _discoveredCardIds
+        .intersection(permanentIds)
+        .length;
     final selected = permanentCards
         .where((card) => card.id == _selectedCardId)
         .firstOrNull;
@@ -231,19 +245,35 @@ class _SearchScreenState extends State<SearchScreen> {
                                   20,
                                   10,
                                 ),
-                                child: Text(
-                                  _resultLabel(results.length),
-                                  style: const TextStyle(
-                                    color: AppTheme.brightGold,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 1.1,
-                                  ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        _resultLabel(results.length),
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          color: AppTheme.brightGold,
+                                          fontWeight: FontWeight.w800,
+                                          letterSpacing: 1.1,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Text(
+                                      '$discoveredCount / ${permanentCards.length} DISCOVERED',
+                                      style: const TextStyle(
+                                        color: Color(0xFFAFC1CC),
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                               Expanded(
                                 child: permanentCards.isEmpty
                                     ? const _EmptyResults()
-                                    : _buildCastle(permanentCards),
+                                    : _buildCastle(permanentCards, results),
                               ),
                             ],
                           ),
@@ -284,12 +314,16 @@ class _SearchScreenState extends State<SearchScreen> {
     return '$count RÉSULTATS POUR “${_query.trim().toUpperCase()}”';
   }
 
-  Widget _buildCastle(List<CardImageModel> cards) => Padding(
+  Widget _buildCastle(
+    List<CardImageModel> cards,
+    List<CardImageModel> results,
+  ) => Padding(
     padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
     child: ClipRRect(
       borderRadius: BorderRadius.circular(16),
       child: WebGlCardCastleView(
         cards: cards,
+        matchingCardIds: results.map((card) => card.id).toSet(),
         focusedCardId: _selectedCardId,
         shuffleSeed: _shuffleSeed,
         activeCategory: _category,
