@@ -22,8 +22,8 @@ class StartupVideoViewport extends StatefulWidget {
 class _StartupVideoViewportState extends State<StartupVideoViewport>
     with SingleTickerProviderStateMixin {
   late final AnimationController rotation;
-  double tiltX = 0;
-  double manualAngle = 0;
+  double manualYaw = 0;
+  double manualPitch = 0;
   bool dragging = false;
 
   @override
@@ -34,10 +34,6 @@ class _StartupVideoViewportState extends State<StartupVideoViewport>
       duration: const Duration(seconds: 14),
     );
   }
-
-  void _resetTilt() => setState(() {
-    tiltX = 0;
-  });
 
   void _syncRotation(SettingsProvider settings, bool reducedMotion) {
     rotation.duration = Duration(
@@ -61,7 +57,10 @@ class _StartupVideoViewportState extends State<StartupVideoViewport>
   }
 
   void _dragUpdate(DragUpdateDetails details) {
-    setState(() => manualAngle += details.delta.dx * .012);
+    setState(() {
+      manualYaw += details.delta.dx * .012;
+      manualPitch -= details.delta.dy * .012;
+    });
   }
 
   void _dragEnd(
@@ -84,7 +83,9 @@ class _StartupVideoViewportState extends State<StartupVideoViewport>
     final startup = context.watch<StartupVideoProvider>();
     final settings = context.watch<SettingsProvider>();
     final controller = startup.controller;
-    final reducedMotion = MediaQuery.disableAnimationsOf(context);
+    final reducedMotion =
+        MediaQuery.disableAnimationsOf(context) ||
+        settings.advanced.reducedMotion;
     _syncRotation(settings, reducedMotion);
 
     return LayoutBuilder(
@@ -104,76 +105,62 @@ class _StartupVideoViewportState extends State<StartupVideoViewport>
             : 16 / 9;
 
         return Center(
-          child: MouseRegion(
-            onExit: (_) => _resetTilt(),
-            onHover: reducedMotion
-                ? null
-                : (event) {
-                    final x = ((event.localPosition.dx / width) - .5).clamp(
-                      -.5,
-                      .5,
-                    );
-                    final y = ((event.localPosition.dy / height) - .5).clamp(
-                      -.5,
-                      .5,
-                    );
-                    setState(() => tiltX = -y * .09 + x.abs() * .01);
-                  },
-            child: GestureDetector(
-              onHorizontalDragStart: _dragStart,
-              onHorizontalDragUpdate: _dragUpdate,
-              onHorizontalDragEnd: (details) =>
-                  _dragEnd(details, settings, reducedMotion),
-              child: SizedBox(
-                width: width,
-                height: height,
-                child: AnimatedBuilder(
-                  animation: rotation,
-                  builder: (context, _) {
-                    final angle = manualAngle + rotation.value * math.pi * 2;
-                    final frontVisible = math.cos(angle) >= 0;
-                    return Semantics(
-                      label: 'Rotating startup video viewport',
-                      child: Transform(
-                        alignment: Alignment.center,
-                        transform: reducedMotion
-                            ? Matrix4.identity()
-                            : (Matrix4.identity()
-                                ..setEntry(3, 2, .001)
-                                ..rotateY(angle)
-                                ..rotateX(tiltX)),
-                        child: Center(
-                          child: AspectRatio(
-                            aspectRatio: ratio,
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                color: Colors.black,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: AppTheme.gold,
-                                  width: 2,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onPanStart: _dragStart,
+            onPanUpdate: _dragUpdate,
+            onPanEnd: (details) => _dragEnd(details, settings, reducedMotion),
+            child: SizedBox(
+              width: width,
+              height: height,
+              child: AnimatedBuilder(
+                animation: rotation,
+                builder: (context, _) {
+                  final automaticAngle = rotation.value * math.pi * 2;
+                  final yaw = manualYaw + automaticAngle;
+                  final pitch = manualPitch + automaticAngle;
+                  final frontVisible = math.cos(yaw) * math.cos(pitch) >= 0;
+                  return Semantics(
+                    label: 'Rotating startup video viewport',
+                    child: Transform(
+                      alignment: Alignment.center,
+                      transform: reducedMotion
+                          ? Matrix4.identity()
+                          : (Matrix4.identity()
+                              ..setEntry(3, 2, .001)
+                              ..rotateY(yaw)
+                              ..rotateX(pitch)),
+                      child: Center(
+                        child: AspectRatio(
+                          aspectRatio: ratio,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: Colors.black,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: AppTheme.gold,
+                                width: 2,
+                              ),
+                              boxShadow: const [
+                                BoxShadow(
+                                  blurRadius: 24,
+                                  spreadRadius: 2,
+                                  color: Color(0x66000000),
                                 ),
-                                boxShadow: const [
-                                  BoxShadow(
-                                    blurRadius: 24,
-                                    spreadRadius: 2,
-                                    color: Color(0x66000000),
-                                  ),
-                                ],
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(6),
-                                child: frontVisible
-                                    ? _content(startup, controller)
-                                    : const VideoBackFace(),
-                              ),
+                              ],
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(6),
+                              child: frontVisible
+                                  ? _content(startup, controller)
+                                  : const VideoBackFace(),
                             ),
                           ),
                         ),
                       ),
-                    );
-                  },
-                ),
+                    ),
+                  );
+                },
               ),
             ),
           ),

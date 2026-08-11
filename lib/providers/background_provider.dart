@@ -73,6 +73,15 @@ class BackgroundProvider extends ChangeNotifier {
     await _importService.deleteIfManaged(previous);
   }
 
+  Future<void> useSauvageVideo() async {
+    final previous = importedPath;
+    type = BackgroundMediaType.video;
+    importedPath = null;
+    currentFilename = defaultVideoLabel;
+    await _persist();
+    await _importService.deleteIfManaged(previous);
+  }
+
   Future<void> setOverlay(double value) async {
     darkOverlay = value.clamp(0, .6);
     await _persist();

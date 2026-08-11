@@ -214,8 +214,6 @@ class _PlayScreenState extends State<PlayScreen> {
                         .firstOrNull;
                     final pileTop =
                         constraints.maxHeight * (narrow ? .43 : .49);
-                    final statusTop =
-                        constraints.maxHeight * (narrow ? .61 : .65);
                     final handHeight = compact
                         ? 188.0
                         : constraints.maxHeight.clamp(720, 1100) * .27;
@@ -260,37 +258,11 @@ class _PlayScreenState extends State<PlayScreen> {
                             ),
                           ),
                         ),
-                        Positioned(
-                          top: statusTop,
-                          left: narrow ? 104 : 150,
-                          right: narrow ? 104 : 150,
-                          child: Wrap(
-                            alignment: WrapAlignment.center,
-                            spacing: narrow ? 5 : 10,
-                            runSpacing: 5,
-                            children: [
-                              _Status(
-                                label: 'CURRENT PLAYER',
-                                value: state
-                                    .players[state.currentPlayerIndex]
-                                    .name,
-                              ),
-                              _Status(
-                                label: 'COLOUR',
-                                value: state.currentColour.name,
-                              ),
-                              _Status(
-                                label: 'CATEGORY',
-                                value: state.currentCategory,
-                              ),
-                            ],
-                          ),
-                        ),
                         if (game.message != null)
                           Positioned(
-                            top: statusTop + (narrow ? 82 : 58),
-                            left: 120,
-                            right: 120,
+                            top: constraints.maxHeight * (narrow ? .61 : .65),
+                            left: narrow ? 24 : 120,
+                            right: narrow ? 24 : 120,
                             child: Text(
                               game.message!,
                               textAlign: TextAlign.center,
@@ -300,35 +272,6 @@ class _PlayScreenState extends State<PlayScreen> {
                                   Shadow(color: Colors.black, blurRadius: 4),
                                 ],
                               ),
-                            ),
-                          ),
-                        if (selected != null)
-                          Positioned(
-                            bottom: handHeight - 12,
-                            left: 0,
-                            right: 0,
-                            child: Wrap(
-                              alignment: WrapAlignment.center,
-                              spacing: 8,
-                              children: [
-                                FilledButton.icon(
-                                  onPressed:
-                                      game.canPlay(selected) && !dealerBusy
-                                      ? playSelected
-                                      : null,
-                                  icon: const Icon(Icons.play_arrow),
-                                  label: const Text('PLAY CARD'),
-                                ),
-                                OutlinedButton.icon(
-                                  onPressed: !dealerBusy
-                                      ? () => setState(
-                                          () => selectedCardId = null,
-                                        )
-                                      : null,
-                                  icon: const Icon(Icons.close),
-                                  label: const Text('CANCEL'),
-                                ),
-                              ],
                             ),
                           ),
                         Positioned(
@@ -353,6 +296,39 @@ class _PlayScreenState extends State<PlayScreen> {
                             ),
                           ),
                         ),
+                        if (selected != null)
+                          Positioned(
+                            bottom: handHeight + 8,
+                            left: 8,
+                            right: 8,
+                            child: SafeArea(
+                              top: false,
+                              child: Wrap(
+                                alignment: WrapAlignment.center,
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  FilledButton.icon(
+                                    onPressed:
+                                        game.canPlay(selected) && !dealerBusy
+                                        ? playSelected
+                                        : null,
+                                    icon: const Icon(Icons.play_arrow),
+                                    label: const Text('PLAY CARD'),
+                                  ),
+                                  OutlinedButton.icon(
+                                    onPressed: !dealerBusy
+                                        ? () => setState(
+                                            () => selectedCardId = null,
+                                          )
+                                        : null,
+                                    icon: const Icon(Icons.close),
+                                    label: const Text('CANCEL'),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                       ],
                     );
                   },
@@ -422,33 +398,6 @@ class _GameLauncher extends StatelessWidget {
           ),
         ),
       ),
-    ),
-  );
-}
-
-class _Status extends StatelessWidget {
-  const _Status({required this.label, required this.value});
-  final String label;
-  final String value;
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-    decoration: BoxDecoration(
-      color: const Color(0xCC130D0B),
-      borderRadius: BorderRadius.circular(6),
-      border: Border.all(color: AppTheme.gold),
-    ),
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          label,
-          style: Theme.of(
-            context,
-          ).textTheme.labelSmall?.copyWith(color: AppTheme.gold),
-        ),
-        Text(value, style: Theme.of(context).textTheme.titleSmall),
-      ],
     ),
   );
 }

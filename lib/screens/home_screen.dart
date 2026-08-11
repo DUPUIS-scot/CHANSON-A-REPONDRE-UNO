@@ -134,6 +134,7 @@ class _ArtisticHome extends StatelessWidget {
                   runSpacing: 2,
                   children: [
                     _SecondaryEntrance('DECK', AppRoutes.decks, onNavigate),
+                    _SecondaryEntrance('BROWSE', AppRoutes.cards, onNavigate),
                     _SecondaryEntrance(
                       'JOURNAL',
                       AppRoutes.journal,
@@ -145,7 +146,6 @@ class _ArtisticHome extends StatelessWidget {
                       AppRoutes.settings,
                       onNavigate,
                     ),
-                    _SecondaryEntrance('ABOUT', AppRoutes.settings, onNavigate),
                   ],
                 ),
               ],
