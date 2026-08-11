@@ -155,7 +155,7 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
               'id': card.id,
               'category': card.category,
               'question': card.question,
-              'thumbnailUrl': _assetUrl(card.imagePath),
+              'rectoUrl': _assetUrl(card.imagePath),
               'aspectRatio': card.aspectRatio,
             },
           )

@@ -18,11 +18,13 @@ CardImageModel card(int index) => CardImageModel(
 );
 
 void main() {
-  testWidgets('tap selects while long press reveals only the held card', (
+  testWidgets('tap flips while long press preserves and opens current side', (
     tester,
   ) async {
     final cards = List.generate(5, card);
     CardImageModel? selected;
+    List<bool>? previewFaceUp;
+    int? previewIndex;
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
@@ -33,6 +35,10 @@ void main() {
               selectedCardId: null,
               isPlayable: (_) => true,
               onSelectionChanged: (value) => selected = value,
+              onLongPressCard: (_, faceUp, index) {
+                previewFaceUp = faceUp;
+                previewIndex = index;
+              },
             ),
           ),
         ),
@@ -40,17 +46,30 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 500));
     final third = find.byType(FlippablePlayingCard).at(2);
-    final thirdCard = tester.widget<FlippablePlayingCard>(third);
-    thirdCard.onTap();
-    expect(selected?.id, 'card-2');
-    expect(thirdCard.isFaceUp, isFalse);
-    thirdCard.onLongPress!();
+    tester.widget<FlippablePlayingCard>(third).onLongPress!();
+    expect(previewIndex, 2);
+    expect(previewFaceUp![2], isFalse);
+    expect(selected, isNull);
+
+    tester.widget<FlippablePlayingCard>(third).onTap();
     await tester.pump(const Duration(milliseconds: 450));
-    final updated = tester.widgetList<FlippablePlayingCard>(
+    expect(selected?.id, 'card-2');
+    var updated = tester.widgetList<FlippablePlayingCard>(
       find.byType(FlippablePlayingCard),
     );
     expect(updated.elementAt(2).isFaceUp, isTrue);
-    expect(updated.where((card) => card.isFaceUp), hasLength(1));
+
+    tester.widget<FlippablePlayingCard>(third).onLongPress!();
+    expect(previewFaceUp![2], isTrue);
+    expect(selected?.id, 'card-2');
+
+    tester.widget<FlippablePlayingCard>(third).onTap();
+    await tester.pump(const Duration(milliseconds: 450));
+    updated = tester.widgetList<FlippablePlayingCard>(
+      find.byType(FlippablePlayingCard),
+    );
+    expect(updated.elementAt(2).isFaceUp, isFalse);
+    expect(selected, isNull);
   });
 
   testWidgets('viewer starts on held card, pages, and closes with Escape', (

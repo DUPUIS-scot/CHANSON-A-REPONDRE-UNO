@@ -96,35 +96,34 @@ void main() {
       );
     });
 
-    test('castle keeps interaction while using the Edinburgh backdrop', () {
+    test('castle uses the local authoritative GLB with 84 anchors', () {
       final castle = File(
         'web/card_castle/card_castle.html',
       ).readAsStringSync();
       final searchScreen = File(
         'lib/screens/search_screen.dart',
       ).readAsStringSync();
-      final backdrop = File('assets/images/search_castle_background.png');
       expect(castle, contains("emit('cardLongPressed',{cardId})"));
       expect(castle, contains("emit('djWhoRequested')"));
-      expect(castle, contains('search_castle_background.png'));
+      expect(castle, contains('assets/assets/models/search_castle.glb'));
+      expect(castle, contains("from '../vendor/GLTFLoader.js'"));
       expect(castle, contains('new THREE.FogExp2'));
-      expect(castle, contains('buildSaltireFlag'));
-      expect(castle, contains('bridgeLantern'));
-      expect(castle, contains('updateVisibleCards'));
+      expect(castle, contains('deriveSurfaceAnchors(84)'));
+      expect(castle, contains('card.rectoUrl'));
       expect(castle, contains('id="exit-fullscreen"'));
       expect(castle, isNot(contains('id="castle-category"')));
       expect(castle, isNot(contains('id="focused-summary"')));
       expect(castle, isNot(contains('id="previous-card"')));
       expect(castle, isNot(contains('id="next-card"')));
-      expect(castle, isNot(contains('id="castle-home"')));
+      expect(castle, contains('id="castle-home"'));
+      expect(castle, contains('id="castle-reset"'));
       expect(searchScreen, isNot(contains('_SearchViewMode')));
       expect(searchScreen, isNot(contains('SegmentedButton')));
       expect(searchScreen, isNot(contains('_SearchCardTile')));
       expect(searchScreen, isNot(contains('_SearchListRow')));
-      expect(backdrop.existsSync(), isTrue);
-      expect(backdrop.lengthSync(), 2709365);
       expect(castle, isNot(contains('id="hint"')));
       expect(castle, isNot(contains('#hint')));
+      expect(searchScreen, isNot(contains('5 CARTES ACTIVES')));
     });
   });
 }

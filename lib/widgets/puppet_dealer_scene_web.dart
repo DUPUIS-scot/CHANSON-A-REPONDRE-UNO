@@ -47,13 +47,13 @@ class _PuppetDealerSceneState extends State<PuppetDealerScene> {
   void initState() {
     super.initState();
     final stamp = DateTime.now().microsecondsSinceEpoch;
-    _elementId = 'dealer-3d-container';
+    _elementId = 'dealer-3d-container-$stamp';
     _viewType = 'puppet-dealer-view-$stamp';
     ui_web.platformViewRegistry.registerViewFactory(_viewType, (_) {
       return html.DivElement()
         ..id = _elementId
         ..className = 'dealer-3d-container'
-        ..setAttribute('aria-label', 'Live 3D puppet dealer')
+        ..setAttribute('aria-label', 'Live 3D jester card dealer')
         ..style.width = '100%'
         ..style.height = '100%'
         ..style.position = 'relative'
