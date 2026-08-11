@@ -36,13 +36,14 @@ void main() {
       'CASTLE',
       'DJ WHO',
       'DECK',
+      'BROWSE',
       'JOURNAL',
       'RULES',
       'SETTINGS',
-      'ABOUT',
     ]) {
       // Some destinations also appear in persistent navigation.
       expect(find.text(label), findsWidgets);
     }
+    expect(find.text('ABOUT'), findsNothing);
   });
 }

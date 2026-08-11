@@ -130,7 +130,9 @@ void main() {
       ).readAsStringSync();
 
       expect(viewport, contains('rotation.value * math.pi * 2'));
-      expect(viewport, contains('..rotateY(angle)'));
+      expect(viewport, contains('..rotateY(yaw)'));
+      expect(viewport, contains('..rotateX(pitch)'));
+      expect(viewport, contains('onPanUpdate: _dragUpdate'));
       expect(viewport, contains('VideoPlayer(controller)'));
       expect(viewport, contains('VideoBackFace'));
       expect(homeViewport, contains('StartupVideoViewport'));

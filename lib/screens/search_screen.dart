@@ -13,6 +13,7 @@ import '../data/card_categories.dart';
 import '../models/card_image_model.dart';
 import '../models/deck_model.dart';
 import '../providers/deck_provider.dart';
+import '../providers/card_ai_provider.dart';
 import '../services/local_storage_service.dart';
 import '../services/search_service.dart';
 import '../theme/app_theme.dart';
@@ -555,7 +556,13 @@ class _SearchHeader extends StatelessWidget {
               const SizedBox(width: 8),
               OutlinedButton.icon(
                 onPressed: () => context.go(AppRoutes.djWhoVideos),
-                icon: const Icon(Icons.queue_music_rounded),
+                icon: Image.asset(
+                  'assets/images/dj_who.png',
+                  width: 30,
+                  height: 30,
+                  fit: BoxFit.contain,
+                  semanticLabel: 'DJ WHO logo',
+                ),
                 label: const Text('DJ WHO'),
               ),
             ],
@@ -829,102 +836,157 @@ class _CastleCardFullscreen extends StatelessWidget {
 
   void _close(BuildContext context) => Navigator.of(context).pop();
 
+  void _openRoute(BuildContext context, String route) {
+    Navigator.of(context).pop();
+    AppRouter.router.go(route);
+  }
+
   @override
-  Widget build(BuildContext context) => Material(
-    color: Colors.black,
-    child: SafeArea(
-      child: CallbackShortcuts(
-        bindings: {
-          const SingleActivator(LogicalKeyboardKey.escape): () =>
-              _close(context),
-        },
-        child: Focus(
-          autofocus: true,
-          child: Column(
-            children: [
-              SizedBox(
-                height: 64,
-                child: Row(
-                  children: [
-                    IconButton(
-                      tooltip: 'Close fullscreen card',
-                      onPressed: () => _close(context),
-                      icon: const Icon(Icons.close_rounded),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            card.displayTitle,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          Text(
-                            card.category.toUpperCase(),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: AppTheme.brightGold,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
+  Widget build(BuildContext context) {
+    final ai = context.watch<CardAiProvider>();
+    final hasTranscription =
+        card.transcription != null || card.cleanedTranscription != null;
+    return Material(
+      color: Colors.black,
+      child: SafeArea(
+        child: CallbackShortcuts(
+          bindings: {
+            const SingleActivator(LogicalKeyboardKey.escape): () =>
+                _close(context),
+          },
+          child: Focus(
+            autofocus: true,
+            child: Column(
+              children: [
+                SizedBox(
+                  height: 64,
+                  child: Row(
+                    children: [
+                      IconButton(
+                        tooltip: 'Close fullscreen card',
+                        onPressed: () => _close(context),
+                        icon: const Icon(Icons.close_rounded),
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                  ],
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              card.displayTitle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            Text(
+                              card.category.toUpperCase(),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: AppTheme.brightGold,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                    ],
+                  ),
                 ),
-              ),
-              Expanded(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    const horizontalPadding = 16.0;
-                    const verticalPadding = 12.0;
-                    final availableWidth = max(
-                      0.0,
-                      constraints.maxWidth - horizontalPadding * 2,
-                    );
-                    final availableHeight = max(
-                      0.0,
-                      constraints.maxHeight - verticalPadding * 2,
-                    );
-                    final width = min(
-                      availableWidth,
-                      availableHeight * card.aspectRatio,
-                    );
-                    final height = width / card.aspectRatio;
-                    return Center(
-                      child: SizedBox(
-                        width: width,
-                        height: height,
-                        child: Semantics(
-                          image: true,
-                          label:
-                              '${card.displayTitle}, ${card.category}, front',
-                          child: StoredImage(
-                            source: card.imagePath,
-                            fit: BoxFit.contain,
-                            errorBuilder: (_, _, _) => const Center(
-                              child: Icon(Icons.broken_image, size: 80),
+                Expanded(
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      const horizontalPadding = 16.0;
+                      const verticalPadding = 12.0;
+                      final availableWidth = max(
+                        0.0,
+                        constraints.maxWidth - horizontalPadding * 2,
+                      );
+                      final availableHeight = max(
+                        0.0,
+                        constraints.maxHeight - verticalPadding * 2,
+                      );
+                      final width = min(
+                        availableWidth,
+                        availableHeight * card.aspectRatio,
+                      );
+                      final height = width / card.aspectRatio;
+                      return Center(
+                        child: SizedBox(
+                          width: width,
+                          height: height,
+                          child: Semantics(
+                            image: true,
+                            label:
+                                '${card.displayTitle}, ${card.category}, front',
+                            child: StoredImage(
+                              source: card.imagePath,
+                              fit: BoxFit.contain,
+                              errorBuilder: (_, _, _) => const Center(
+                                child: Icon(Icons.broken_image, size: 80),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
-              ),
-            ],
+                SafeArea(
+                  top: false,
+                  child: Container(
+                    width: double.infinity,
+                    color: const Color(0xFF090909),
+                    padding: const EdgeInsets.all(12),
+                    child: Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        FilledButton.icon(
+                          onPressed: ai.isConfigured
+                              ? () => _openRoute(
+                                  context,
+                                  AppRoutes.transcription(card.id),
+                                )
+                              : null,
+                          icon: const Icon(Icons.document_scanner_outlined),
+                          label: Text(
+                            hasTranscription
+                                ? 'View Transcription'
+                                : 'Transcribe Card',
+                          ),
+                        ),
+                        FilledButton.tonalIcon(
+                          onPressed: ai.isConfigured && hasTranscription
+                              ? () => _openRoute(
+                                  context,
+                                  AppRoutes.cardChat(card.id),
+                                )
+                              : null,
+                          icon: const Icon(Icons.forum_outlined),
+                          label: const Text('Discuss This Card'),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: () =>
+                              _openRoute(context, AppRoutes.cardAlias(card.id)),
+                          icon: const Icon(Icons.more_horiz_rounded),
+                          label: const Text('All Card Actions'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
