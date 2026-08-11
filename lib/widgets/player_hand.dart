@@ -55,9 +55,21 @@ class _PlayerHandState extends State<PlayerHand> {
     }
     return LayoutBuilder(
       builder: (context, constraints) {
-        final cardWidth = constraints.maxWidth < 500 ? 92.0 : 138.0;
+        final availableCardWidth =
+            (constraints.maxWidth - 64) / widget.cards.length;
+        final cardWidth = constraints.maxWidth >= 1000
+            ? math.min(154.0, availableCardWidth)
+            : constraints.maxWidth >= 620
+            ? math.min(132.0, availableCardWidth)
+            : 92.0;
         final cardHeight = cardWidth * 1.5;
-        final step = cardWidth * .62;
+        final desiredGap = constraints.maxWidth >= 620 ? 14.0 : 7.0;
+        final expandedWidth =
+            cardWidth * widget.cards.length +
+            desiredGap * (widget.cards.length - 1);
+        final step = expandedWidth <= constraints.maxWidth
+            ? cardWidth + desiredGap
+            : cardWidth * .72;
         final contentWidth = cardWidth + step * (widget.cards.length - 1);
         final handWidth = math.max(constraints.maxWidth, contentWidth);
         final centeredOffset = math.max(0, (handWidth - contentWidth) / 2);
@@ -89,6 +101,7 @@ class _PlayerHandState extends State<PlayerHand> {
                     rotation: (index - (widget.cards.length - 1) / 2) * .035,
                     width: cardWidth,
                     height: cardHeight,
+                    selected: widget.selectedCardId == widget.cards[index].id,
                     child: FlippablePlayingCard(
                       frontImagePath: widget.cards[index].imagePath,
                       backImagePath: 'assets/images/card_back.png',
@@ -133,6 +146,7 @@ class _DealtCard extends StatefulWidget {
     required this.rotation,
     required this.width,
     required this.height,
+    required this.selected,
     required this.child,
     super.key,
   });
@@ -142,6 +156,7 @@ class _DealtCard extends StatefulWidget {
   final double rotation;
   final double width;
   final double height;
+  final bool selected;
   final Widget child;
   @override
   State<_DealtCard> createState() => _DealtCardState();
@@ -166,7 +181,7 @@ class _DealtCardState extends State<_DealtCard> {
     width: widget.width,
     height: widget.height,
     child: AnimatedScale(
-      scale: dealt ? 1 : .35,
+      scale: dealt ? (widget.selected ? 1.025 : 1) : .35,
       duration: const Duration(milliseconds: 420),
       child: AnimatedRotation(
         turns: dealt ? widget.rotation / (2 * math.pi) : .2,

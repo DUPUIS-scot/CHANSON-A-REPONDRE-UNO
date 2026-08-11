@@ -137,14 +137,38 @@ class _PlayScreenState extends State<PlayScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF130D0B),
       appBar: AppBar(
-        title: const Text('Play'),
-        backgroundColor: const Color(0xFF130D0B),
-        actions: [
-          const Padding(
-            padding: EdgeInsets.only(right: 8),
-            child: HomeNavigationButton(confirmActiveGame: true),
+        toolbarHeight: 62,
+        centerTitle: true,
+        leadingWidth: 76,
+        leading: const Padding(
+          padding: EdgeInsets.fromLTRB(14, 7, 0, 7),
+          child: HomeNavigationButton(
+            confirmActiveGame: true,
+            showDjWho: false,
           ),
-        ],
+        ),
+        title: const FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            'CHANSON A REPONDRE UNO',
+            style: TextStyle(
+              color: AppTheme.brightGold,
+              fontFamily: 'Georgia',
+              fontSize: 27,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 2.1,
+              shadows: [
+                Shadow(
+                  color: Colors.black,
+                  blurRadius: 5,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        flexibleSpace: const _TheatricalHeaderBackground(),
       ),
       body: state == null
           ? _GameLauncher(decks: decks, game: game)
@@ -152,10 +176,11 @@ class _PlayScreenState extends State<PlayScreen> {
               stageLayer: LayoutBuilder(
                 builder: (context, constraints) {
                   final narrow = constraints.maxWidth < 720;
+                  final veryWide = constraints.maxWidth >= 1200;
                   final width = narrow
                       ? constraints.maxWidth
-                      : constraints.maxWidth * .72;
-                  final height = constraints.maxHeight * (narrow ? .62 : .64);
+                      : constraints.maxWidth * (veryWide ? .62 : .72);
+                  final height = constraints.maxHeight * (narrow ? .58 : .68);
                   return Align(
                     alignment: Alignment.topCenter,
                     child: SizedBox(
@@ -182,16 +207,22 @@ class _PlayScreenState extends State<PlayScreen> {
                         .where((card) => card.id == selectedCardId)
                         .firstOrNull;
                     final pileTop =
-                        constraints.maxHeight * (narrow ? .43 : .49);
+                        constraints.maxHeight * (narrow ? .45 : .51);
                     final handHeight = compact
-                        ? 188.0
-                        : constraints.maxHeight.clamp(720, 1100) * .27;
+                        ? 190.0
+                        : (constraints.maxHeight * .31).clamp(210.0, 292.0);
                     final pileInset = narrow
                         ? 12.0
                         : constraints.maxWidth * .14;
                     return Stack(
                       clipBehavior: Clip.none,
                       children: [
+                        if (constraints.maxWidth >= 1280)
+                          const Positioned(
+                            top: 54,
+                            right: 34,
+                            child: _BrandPlaque(),
+                          ),
                         Positioned(
                           top: 8,
                           left: narrow ? 12 : constraints.maxWidth * .055,
@@ -284,6 +315,25 @@ class _PlayScreenState extends State<PlayScreen> {
                                         : null,
                                     icon: const Icon(Icons.play_arrow),
                                     label: const Text('PLAY CARD'),
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: const Color(0xFF721B18),
+                                      foregroundColor: AppTheme.brightGold,
+                                      side: const BorderSide(
+                                        color: AppTheme.gold,
+                                        width: 1.5,
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 28,
+                                        vertical: 16,
+                                      ),
+                                      textStyle: const TextStyle(
+                                        fontFamily: 'Georgia',
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 1.2,
+                                      ),
+                                      elevation: 8,
+                                      shadowColor: Colors.black,
+                                    ),
                                   ),
                                   OutlinedButton.icon(
                                     onPressed: !dealerBusy
@@ -293,6 +343,23 @@ class _PlayScreenState extends State<PlayScreen> {
                                         : null,
                                     icon: const Icon(Icons.close),
                                     label: const Text('CANCEL'),
+                                    style: OutlinedButton.styleFrom(
+                                      backgroundColor: const Color(0xE622160F),
+                                      foregroundColor: const Color(0xFFF2DFC0),
+                                      side: const BorderSide(
+                                        color: Color(0xFF8D6327),
+                                        width: 1.3,
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 28,
+                                        vertical: 16,
+                                      ),
+                                      textStyle: const TextStyle(
+                                        fontFamily: 'Georgia',
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 1.2,
+                                      ),
+                                    ),
                                   ),
                                 ],
                               ),
@@ -306,6 +373,84 @@ class _PlayScreenState extends State<PlayScreen> {
             ),
     );
   }
+}
+
+class _TheatricalHeaderBackground extends StatelessWidget {
+  const _TheatricalHeaderBackground();
+
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+    decoration: const BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [Color(0xFF24150B), Color(0xFF0E0906)],
+      ),
+      border: Border(
+        top: BorderSide(color: Color(0xFF7D501C)),
+        bottom: BorderSide(color: AppTheme.gold, width: 1.2),
+      ),
+      boxShadow: [
+        BoxShadow(color: Colors.black87, blurRadius: 10, offset: Offset(0, 4)),
+      ],
+    ),
+  );
+}
+
+class _BrandPlaque extends StatelessWidget {
+  const _BrandPlaque();
+
+  @override
+  Widget build(BuildContext context) => IgnorePointer(
+    child: Container(
+      width: 174,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xEE2E1B0F), Color(0xEE120B07)],
+        ),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppTheme.gold, width: 1.4),
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black87,
+            blurRadius: 20,
+            offset: Offset(0, 8),
+          ),
+          BoxShadow(color: Color(0x448D6327), blurRadius: 5),
+        ],
+      ),
+      child: const Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.theater_comedy_rounded, color: AppTheme.gold, size: 28),
+          SizedBox(height: 10),
+          Text(
+            'CHANSON A\nREPONDRE',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Color(0xFFE8C06A),
+              fontFamily: 'Georgia',
+              fontSize: 17,
+              height: 1.25,
+              letterSpacing: 1.1,
+            ),
+          ),
+          SizedBox(height: 4),
+          Text(
+            'UNO',
+            style: TextStyle(
+              color: AppTheme.brightGold,
+              fontFamily: 'Georgia',
+              fontSize: 34,
+              letterSpacing: 2,
+              shadows: [Shadow(color: Color(0xFF78170F), blurRadius: 3)],
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 class _GameLauncher extends StatelessWidget {
