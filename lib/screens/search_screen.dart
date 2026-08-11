@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../core/app_constants.dart';
 import '../core/app_router.dart';
 import '../data/card_categories.dart';
 import '../models/card_image_model.dart';
@@ -183,7 +184,11 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget build(BuildContext context) {
     final provider = context.watch<DeckProvider>();
     final results = _results(provider.decks);
-    final selected = results
+    final permanentCards = provider.decks
+        .where((deck) => deck.id == AppConstants.productionDeckId)
+        .expand((deck) => deck.cards)
+        .toList(growable: false);
+    final selected = permanentCards
         .where((card) => card.id == _selectedCardId)
         .firstOrNull;
 
@@ -236,9 +241,9 @@ class _SearchScreenState extends State<SearchScreen> {
                                 ),
                               ),
                               Expanded(
-                                child: results.isEmpty
+                                child: permanentCards.isEmpty
                                     ? const _EmptyResults()
-                                    : _buildCastle(results),
+                                    : _buildCastle(permanentCards),
                               ),
                             ],
                           ),
@@ -283,61 +288,33 @@ class _SearchScreenState extends State<SearchScreen> {
     padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
     child: ClipRRect(
       borderRadius: BorderRadius.circular(16),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          WebGlCardCastleView(
-            cards: cards,
-            focusedCardId: _selectedCardId,
-            shuffleSeed: _shuffleSeed,
-            activeCategory: _category,
-            fullscreenRequestId: _castleFullscreenRequestId,
-            onCardSelected: (id) {
-              final card = cards.where((item) => item.id == id).firstOrNull;
-              if (card != null) _select(card);
-            },
-            onCardOpened: (id) {
-              final card = cards.where((item) => item.id == id).firstOrNull;
-              if (card != null) {
-                unawaited(_openCastleCardFullscreen(card));
-              }
-            },
-            onCategoryChanged: _setCategory,
-            onHomeRequested: () => context.go(AppRoutes.home),
-            onDjWhoRequested: () => context.go(AppRoutes.djWhoVideos),
-            onFullscreenChanged: _handleCastleFullscreenChanged,
-            fallback: SearchCardCastle(
-              cards: cards,
-              onFullscreen: _openFullscreen,
-            ),
-          ),
-          Positioned(
-            left: 16,
-            right: 16,
-            bottom: 14,
-            child: _CastleActiveCardsHud(
-              cards: _activeCastleCards(cards),
-              selectedCardId: _selectedCardId,
-              onSelect: _select,
-              onFullscreen: _openFullscreen,
-            ),
-          ),
-        ],
+      child: WebGlCardCastleView(
+        cards: cards,
+        focusedCardId: _selectedCardId,
+        shuffleSeed: _shuffleSeed,
+        activeCategory: _category,
+        fullscreenRequestId: _castleFullscreenRequestId,
+        onCardSelected: (id) {
+          final card = cards.where((item) => item.id == id).firstOrNull;
+          if (card != null) _select(card);
+        },
+        onCardOpened: (id) {
+          final card = cards.where((item) => item.id == id).firstOrNull;
+          if (card != null) unawaited(_openCastleCardFullscreen(card));
+        },
+        onCategoryChanged: _setCategory,
+        onHomeRequested: () => context.go(AppRoutes.home),
+        onDjWhoRequested: () => context.go(AppRoutes.djWhoVideos),
+        onFullscreenChanged: _handleCastleFullscreenChanged,
+        fallback: SearchCardCastle(cards: cards, onFullscreen: _openFullscreen),
       ),
     ),
   );
-
-  List<CardImageModel> _activeCastleCards(List<CardImageModel> cards) {
-    final focused = cards
-        .where((card) => card.id == _selectedCardId)
-        .firstOrNull;
-    return [
-      ?focused,
-      ...cards.where((card) => card.id != focused?.id),
-    ].take(5).toList(growable: false);
-  }
 }
 
+// Retained for source compatibility with older state-restoration snapshots;
+// the production Castle no longer mounts this five-card overlay.
+// ignore: unused_element
 class _CastleActiveCardsHud extends StatelessWidget {
   const _CastleActiveCardsHud({
     required this.cards,
@@ -374,7 +351,7 @@ class _CastleActiveCardsHud extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               const Text(
-                '5 CARTES ACTIVES',
+                'CASTLE CARDS',
                 style: TextStyle(
                   color: AppTheme.brightGold,
                   fontWeight: FontWeight.w900,

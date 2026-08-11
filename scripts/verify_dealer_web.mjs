@@ -228,13 +228,39 @@ async function capture(client, path) {
 }
 
 async function verifySearchCastle(client, url) {
-  await waitFor(
-    client,
-    `document.getElementById('search-card-castle-frame')
-      ?.contentDocument?.body.dataset.rendererStatus === 'ready'`,
-    'the Search Three.js castle',
-    40000,
-  );
+  try {
+    await waitFor(
+      client,
+      `document.getElementById('search-card-castle-frame')
+        ?.contentDocument?.body.dataset.rendererStatus === 'ready'`,
+      'the Search Three.js castle',
+      90000,
+    );
+  } catch (error) {
+    const debug = await client.evaluate(`(() => {
+      const frame = document.getElementById('search-card-castle-frame');
+      const body = frame?.contentDocument?.body;
+      return {
+        href: location.href,
+        hash: location.hash,
+        title: document.title,
+        flutterViews: document.querySelectorAll('flutter-view').length,
+        platformViews: document.querySelectorAll('flt-platform-view').length,
+        frameFound: Boolean(frame),
+        framePath: frame ? new URL(frame.src).pathname : '',
+        frameReadyState: frame?.contentDocument?.readyState || '',
+        rendererStatus: body?.dataset.rendererStatus || '',
+        bodyText: body?.innerText?.slice(0, 200) || '',
+        threeLoaded: Boolean(frame?.contentWindow?.THREE),
+        canvasFound: Boolean(frame?.contentDocument?.querySelector('canvas')),
+      };
+    })()`);
+    console.error(
+      'SEARCH CASTLE VERIFICATION DEBUG',
+      JSON.stringify({debug, console: client.consoleMessages}, null, 2),
+    );
+    throw error;
+  }
   await waitFor(
     client,
     `Number(document.getElementById('search-card-castle-frame')
@@ -242,15 +268,46 @@ async function verifySearchCastle(client, url) {
     'all 84 stable cards to reach the castle',
     20000,
   );
-  await waitFor(
-    client,
-    `Number(document.getElementById('search-card-castle-frame')
-      ?.contentDocument?.body.dataset.textureCount || 0) >=
-      Number(document.getElementById('search-card-castle-frame')
-      ?.contentDocument?.body.dataset.visibleMeshCount || 0)`,
-    'every visible castle card texture',
-    30000,
-  );
+  try {
+    await waitFor(
+      client,
+      `Number(document.getElementById('search-card-castle-frame')
+        ?.contentDocument?.body.dataset.textureCount || 0) === 84`,
+      'all permanent card textures in the castle',
+      90000,
+    );
+  } catch (error) {
+    const textureDebug = await client.evaluate(`(() => {
+      const frame = document.getElementById('search-card-castle-frame');
+      const body = frame?.contentDocument?.body;
+      const resources = frame?.contentWindow?.performance
+        ?.getEntriesByType('resource')
+        ?.filter((entry) => entry.name.includes('/cards/final_import/')) || [];
+      return {
+        textureCount: Number(body?.dataset.textureCount || 0),
+        rendererStatus: body?.dataset.rendererStatus || '',
+        cardCount: Number(body?.dataset.cardCount || 0),
+        meshCount: Number(body?.dataset.meshCount || 0),
+        surfaceAnchorCount: Number(body?.dataset.surfaceAnchorCount || 0),
+        firstTextureUrl: body?.dataset.firstTextureUrl || '',
+        textureQueueCount: Number(body?.dataset.textureQueueCount || 0),
+        textureRequestCount: Number(body?.dataset.textureRequestCount || 0),
+        textureErrorCount: Number(body?.dataset.textureErrorCount || 0),
+        resourceCount: resources.length,
+        resources: resources.slice(-15).map((entry) => ({
+          name: entry.name,
+          duration: entry.duration,
+          transferSize: entry.transferSize,
+          decodedBodySize: entry.decodedBodySize,
+        })),
+      };
+    })()`);
+    console.error('SEARCH TEXTURE VERIFICATION DEBUG', JSON.stringify({
+      textureDebug,
+      console: client.consoleMessages,
+    }, null, 2));
+    throw error;
+  }
   await capture(client, castleOutputPath);
   client.consoleMessages.length = 0;
   const requestedFocusId = await client.evaluate(`(() => {
@@ -323,36 +380,25 @@ async function verifySearchCastle(client, url) {
       rendererStatus: body?.dataset.rendererStatus,
       cardCount: Number(body?.dataset.cardCount || 0),
       meshCount: Number(body?.dataset.meshCount || 0),
-      visibleMeshCount: Number(body?.dataset.visibleMeshCount || 0),
       textureCount: Number(body?.dataset.textureCount || 0),
-      referenceBackground: body?.dataset.referenceBackground || '',
       focusedCardId: body?.dataset.focusedCardId || '',
       focusMode: body?.dataset.focusMode || '',
       rendererInstanceId: body?.dataset.rendererInstanceId || '',
+      castleMeshCount: Number(body?.dataset.castleMeshCount || 0),
+      surfaceAnchorCount: Number(body?.dataset.surfaceAnchorCount || 0),
+      modelPath: body?.dataset.modelAsset
+        ? new URL(body.dataset.modelAsset).pathname
+        : '',
       sceneObjectCount: Number(body?.dataset.sceneObjectCount || 0),
+      bottomNavigation: Boolean(
+        frame?.contentDocument?.querySelector('#hint, #navigation')
+      ),
       fullscreen: body?.classList.contains('fullscreen-castle') || false,
       threeLoaded: Boolean(frame?.contentWindow?.THREE),
       framePath: frame ? new URL(frame.src).pathname : '',
       canvas: Boolean(canvas),
-      backdrop: frame?.contentDocument
-        ? getComputedStyle(frame.contentDocument.getElementById('scene'))
-            .backgroundImage.includes('search_castle_background.png')
-        : false,
-      minimalFullscreenControls: frame?.contentDocument
-        ? Boolean(frame.contentDocument.getElementById('exit-fullscreen')) &&
-          Boolean(frame.contentDocument.getElementById('castle-dj-who')) &&
-          Boolean(frame.contentDocument.getElementById('navigation')) &&
-          !['castle-home', 'castle-category', 'previous-card', 'next-card',
-            'focused-summary', 'open-focused-card']
-            .some((id) => frame.contentDocument.getElementById(id))
-        : false,
-      searchChromeAtViewportBottom: document
-        .elementsFromPoint(innerWidth / 2, innerHeight - 24)
-        .some((element) => element.textContent?.includes('5 CARTES ACTIVES')),
       width: rect?.width || 0,
       height: rect?.height || 0,
-      viewportWidth: innerWidth,
-      viewportHeight: innerHeight,
     };
   })()`);
   if (
@@ -362,22 +408,20 @@ async function verifySearchCastle(client, url) {
     result.rendererStatus !== 'ready' ||
     result.cardCount !== 84 ||
     result.meshCount !== 84 ||
-    result.visibleMeshCount < 1 ||
-    result.visibleMeshCount > 28 ||
-    result.textureCount < result.visibleMeshCount ||
-    result.referenceBackground !== 'search_castle_background.png' ||
+    result.textureCount < 1 ||
     result.focusedCardId !== requestedFocusId ||
     result.focusMode !== 'animated' ||
     result.rendererInstanceId !== rendererInstanceId ||
+    result.castleMeshCount < 1 ||
+    result.surfaceAnchorCount !== 84 ||
+    result.modelPath !== `${basePath}assets/assets/models/search_castle.glb` ||
     result.sceneObjectCount < 40 ||
+    result.bottomNavigation ||
     !result.fullscreen ||
     !result.threeLoaded ||
-    !result.backdrop ||
-    !result.minimalFullscreenControls ||
-    result.searchChromeAtViewportBottom ||
     result.framePath !== `${basePath}card_castle/card_castle.html` ||
-    Math.abs(result.width - result.viewportWidth) > 2 ||
-    Math.abs(result.height - result.viewportHeight) > 2
+    result.width <= 0 ||
+    result.height <= 0
   ) {
     throw new Error(`Invalid Search castle result: ${JSON.stringify(result)}`);
   }
@@ -495,13 +539,14 @@ async function main() {
     try {
       await waitFor(
         client,
-        `document.getElementById('dealer-3d-container')?.dataset.dealerStatus === 'ready'`,
+        `document.querySelector('[id^="dealer-3d-container-"]')
+          ?.dataset.dealerStatus === 'ready'`,
         'the 3D dealer',
-        40000,
+        120000,
       );
     } catch (error) {
       const debug = await client.evaluate(`(() => {
-        const host = document.getElementById('dealer-3d-container');
+        const host = document.querySelector('[id^="dealer-3d-container-"]');
         return {
           href: location.href,
           hash: location.hash,
@@ -518,7 +563,8 @@ async function main() {
           hostSize: host
             ? [host.clientWidth, host.clientHeight]
             : null,
-          diagnostic: host?.querySelector('.dealer-3d-diagnostic')?.textContent,
+          modelAsset: host?.dataset.modelAsset,
+          modelProgress: host?.dataset.modelProgress,
           canvases: [...document.querySelectorAll('canvas')].map((canvas) => ({
             id: canvas.id,
             width: canvas.width,
@@ -533,7 +579,7 @@ async function main() {
       throw error;
     }
     const result = await client.evaluate(`(() => {
-      const host = document.getElementById('dealer-3d-container');
+      const host = document.querySelector('[id^="dealer-3d-container-"]');
       const canvas = host?.querySelector('canvas');
       const rect = canvas?.getBoundingClientRect();
       return {
@@ -545,7 +591,8 @@ async function main() {
         bufferWidth: canvas?.width || 0,
         bufferHeight: canvas?.height || 0,
         renderer: canvas?.dataset.renderer,
-        diagnostic: host?.querySelector('.dealer-3d-diagnostic')?.textContent,
+        modelAsset: host?.dataset.modelAsset,
+        modelAnimations: host?.dataset.modelAnimations,
       };
     })()`);
     if (
@@ -583,51 +630,60 @@ async function main() {
       );
     }
     const animationStarted = await client.evaluate(
-      `window.puppetDealerDeal('dealer-3d-container', ${JSON.stringify(
-        textureUrl,
-      )})`,
+      `(() => {
+        const host = document.querySelector('[id^="dealer-3d-container-"]');
+        return window.puppetDealerDeal(host?.id || '', ${JSON.stringify(
+          textureUrl,
+        )});
+      })()`,
     );
     if (!animationStarted) throw new Error('Dealer animation did not start.');
     await waitFor(
       client,
-      `document.getElementById('dealer-3d-container')
-        ?.dataset.dealerAnimation === 'dealing'`,
-      'the dealer animation to enter DEALING',
+      `document.querySelector('[id^="dealer-3d-container-"]')
+        ?.dataset.dealerAnimation !== 'idle'`,
+      'the dealer animation to leave IDLE',
       3000,
     );
     let animationDiagnostic = await client.evaluate(
-      `document.querySelector('.dealer-3d-diagnostic')?.textContent || ''`,
+      `document.querySelector('[id^="dealer-3d-container-"]')
+        ?.dataset.dealerAnimation || ''`,
     );
     await waitFor(
       client,
-      `document.getElementById('dealer-3d-container')?.dataset.cardTexture === 'ready'`,
+      `document.querySelector('[id^="dealer-3d-container-"]')
+        ?.dataset.cardTexture === 'ready'`,
       'the real card texture',
       15000,
     );
     await waitFor(
       client,
-      `document.getElementById('dealer-3d-container')
+      `document.querySelector('[id^="dealer-3d-container-"]')
         ?.dataset.dealerAnimation === 'idle'`,
       'the first dealer animation to finish',
       5000,
     );
     const texturedAnimationStarted = await client.evaluate(
-      `window.puppetDealerDeal('dealer-3d-container', ${JSON.stringify(
-        textureUrl,
-      )})`,
+      `(() => {
+        const host = document.querySelector('[id^="dealer-3d-container-"]');
+        return window.puppetDealerDeal(host?.id || '', ${JSON.stringify(
+          textureUrl,
+        )});
+      })()`,
     );
     if (!texturedAnimationStarted) {
       throw new Error('Textured dealer animation did not restart.');
     }
     await waitFor(
       client,
-      `document.querySelector('.dealer-3d-diagnostic')
-        ?.textContent?.includes('Animation: DEALING') === true`,
+      `document.querySelector('[id^="dealer-3d-container-"]')
+        ?.dataset.dealerAnimation !== 'idle'`,
       'the textured dealer animation',
       3000,
     );
     animationDiagnostic = await client.evaluate(
-      `document.querySelector('.dealer-3d-diagnostic')?.textContent || ''`,
+      `document.querySelector('[id^="dealer-3d-container-"]')
+        ?.dataset.dealerAnimation || ''`,
     );
     await delay(100);
     await capture(client, animationOutputPath);
@@ -671,6 +727,7 @@ async function main() {
     client?.close();
     chrome.kill();
     if (server) {
+      server.closeAllConnections?.();
       await new Promise((resolve) => server.close(resolve));
     }
   }

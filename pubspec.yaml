@@ -88,6 +88,7 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/models/
     - assets/cards/final_import/
     - assets/cards/category_versos/
     - assets/videos/

@@ -11,6 +11,7 @@ class PlayerHand extends StatefulWidget {
     required this.selectedCardId,
     required this.isPlayable,
     required this.onSelectionChanged,
+    this.onLongPressCard,
     this.hideAll = false,
     super.key,
   });
@@ -18,6 +19,8 @@ class PlayerHand extends StatefulWidget {
   final String? selectedCardId;
   final bool Function(CardImageModel card) isPlayable;
   final ValueChanged<CardImageModel?> onSelectionChanged;
+  final void Function(List<CardImageModel> cards, List<bool> faceUp, int index)?
+  onLongPressCard;
   final bool hideAll;
 
   @override
@@ -36,18 +39,13 @@ class _PlayerHandState extends State<PlayerHand> {
   }
 
   void select(CardImageModel card) {
-    final alreadySelected = widget.selectedCardId == card.id;
-    if (alreadySelected) {
+    if (revealed.remove(card.id)) {
       widget.onSelectionChanged(null);
     } else {
+      revealed.add(card.id);
       widget.onSelectionChanged(card);
     }
     setState(() {});
-  }
-
-  void reveal(CardImageModel card) {
-    if (revealed.contains(card.id)) return;
-    setState(() => revealed.add(card.id));
   }
 
   @override
@@ -105,7 +103,17 @@ class _PlayerHandState extends State<PlayerHand> {
                           '${revealed.contains(widget.cards[index].id) ? 'face up' : 'face down'}, '
                           '${widget.isPlayable(widget.cards[index]) ? 'playable' : 'unavailable'}',
                       onTap: () => select(widget.cards[index]),
-                      onLongPress: () => reveal(widget.cards[index]),
+                      onLongPress: widget.onLongPressCard == null
+                          ? null
+                          : () => widget.onLongPressCard!(
+                              List<CardImageModel>.unmodifiable(widget.cards),
+                              List<bool>.unmodifiable(
+                                widget.cards
+                                    .map((card) => revealed.contains(card.id))
+                                    .toList(),
+                              ),
+                              index,
+                            ),
                     ),
                   ),
               ],

@@ -1,939 +1,732 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <style>
-    html,body,#scene{margin:0;width:100%;height:100%;overflow:hidden;background:#020711}
-    #scene{
-      background-image:
-        linear-gradient(180deg,rgba(2,8,18,.08),rgba(2,7,14,.18) 55%,rgba(1,4,8,.58)),
-        url("../assets/assets/images/search_castle_background.png");
-      background-size:cover;
-      background-position:50% 50%;
-      background-repeat:no-repeat;
-    }
-    #scene::after{
-      content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
-      background:
-        radial-gradient(circle at 16% 13%,rgba(170,207,235,.13),transparent 24%),
-        linear-gradient(90deg,rgba(0,5,13,.22),transparent 24%,transparent 76%,rgba(0,5,13,.22));
-      mix-blend-mode:screen;
-    }
-    #scene canvas{position:relative;z-index:1;display:block;touch-action:none}
-    #navigation{position:absolute;z-index:5;padding:7px 10px;border:1px solid #8d6e12aa;border-radius:8px;background:#030914c4;color:#ffc928;font:700 10px/1.42 system-ui;pointer-events:none;box-shadow:0 8px 24px #0009;backdrop-filter:blur(5px)}
-    #navigation{left:12px;top:12px;width:132px}
-    #navigation span{display:block;color:#cbd6df;font-weight:500}
-    #castle-controls{position:absolute;z-index:5;right:12px;top:12px;display:flex;gap:7px;align-items:flex-start;font:700 11px system-ui}
-    #castle-controls button,#castle-controls select{border:1px solid #b77d0c;border-radius:7px;background:#071019ee;color:#ffc928;padding:8px 10px;font:inherit;cursor:pointer}
+    html,body,#scene{margin:0;width:100%;height:100%;overflow:hidden;background:#03070c}
+    #scene canvas{display:block;width:100%;height:100%;touch-action:none}
+    #loading{position:absolute;inset:0;display:grid;place-items:center;z-index:5;background:radial-gradient(circle,#122436,#03070c 72%);color:#dce9f3;font:700 13px system-ui;letter-spacing:.12em;pointer-events:none}
+    body.ready #loading{display:none}
+    #castle-controls{position:absolute;z-index:4;right:12px;top:12px;display:flex;gap:7px;align-items:flex-start;font:700 11px system-ui}
+    #castle-controls button,#castle-controls select{border:1px solid #7f91a0;border-radius:7px;background:#071019e8;color:#edf6ff;padding:8px 10px;font:inherit;cursor:pointer;box-shadow:0 6px 18px #0008}
     #fullscreen-controls{display:none;gap:7px;align-items:center}
     body.fullscreen-castle #fullscreen-controls{display:flex}
     body.fullscreen-castle #enter-fullscreen{display:none}
-    body.fullscreen-castle #navigation{opacity:.62}
-    @media(max-width:720px){
-      #navigation{width:auto;max-width:104px;opacity:.82}
-      #navigation span:nth-of-type(n+3){display:none}
-      #castle-controls{right:7px;top:7px;gap:4px}
-      #castle-controls button,#castle-controls select{padding:7px 8px}
-    }
+    #focused-summary{display:flex;align-items:center;gap:7px;max-width:220px;padding:5px 8px;border:1px solid #7f91a0;border-radius:8px;background:#05090de8;color:#fff}
+    #focused-summary img{width:34px;height:51px;object-fit:contain;border-radius:3px}
+    #focused-summary span{max-width:135px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    @media(max-width:700px){#castle-controls{right:7px;top:7px}#castle-controls button,#castle-controls select{padding:7px}#focused-summary{display:none}}
   </style>
+  <script type="importmap">
+    {"imports":{"three":"../vendor/three.module.js"}}
+  </script>
 </head>
-<body>
+<body data-renderer-status="loading">
   <div id="scene"></div>
-  <div id="navigation">NAVIGATION
-    <span>Glisser · orbite</span>
-    <span>Maj/clic droit · pan</span>
-    <span>Molette · zoom</span>
-    <span>WASD / flèches · visite</span>
-  </div>
+  <div id="loading">LOADING 3D CASTLE…</div>
   <div id="castle-controls">
+    <button id="castle-home" type="button">⌂ HOME</button>
     <button id="castle-dj-who" type="button">DJ WHO</button>
-    <button id="enter-fullscreen" type="button">⛶ PLEIN ÉCRAN 3D</button>
+    <button id="castle-reset" type="button">↺ RESET VIEW</button>
+    <button id="enter-fullscreen" type="button">⛶ FULLSCREEN 3D</button>
     <div id="fullscreen-controls">
-      <button id="exit-fullscreen" type="button">✕ QUITTER</button>
+      <button id="exit-fullscreen" type="button">✕ EXIT</button>
     </div>
   </div>
-  <script src="../vendor/three.min.js"></script>
-  <script>
-  (() => {
-    'use strict';
-    const root = document.getElementById('scene');
-    const state = {
-      cards: [], meshes: [], textures: new Map(), focusedCardId: null,
-      shuffleSeed: 0, disposed: false, pointerDown: null, dragging: false,
-      targetLook: null, targetCamera: null, loadQueue: [], activeLoads: 0,
-      touches: new Map(), pinch: null, activeCategory: 'TOUTES',
-      fullscreenActive: false, fallbackElements: null, lastFrame: 0,
-      lanterns: [], clouds: [], mists: [], flags: [], lastBackdropFrame: 0
-    };
-    let scene, camera, renderer, raycaster, pointer, cardGroup, materials;
-    const keys=new Set();
-    const orbit = {yaw:0,pitch:.31,distance:48,target:new THREE.Vector3(0,12,0)};
+  <script type="module">
+  import * as THREE from 'three';
+  import { GLTFLoader } from '../vendor/GLTFLoader.js';
 
-    function emit(type,payload={}) {
-      parent.postMessage(JSON.stringify({type,...payload}), location.origin);
-    }
+  window.THREE = THREE;
+  const root = document.getElementById('scene');
+  const CASTLE_URL = new URL(
+    '../assets/assets/models/search_castle.glb',
+    document.baseURI,
+  ).href;
+  const abort = new AbortController();
+  const listen = (target,type,handler,options={}) =>
+    target.addEventListener(type,handler,{...options,signal:abort.signal});
+  const clamp = THREE.MathUtils.clamp;
+  const state = {
+    cards: [], meshes: [], textures: new Map(), focusedCardId: null,
+    shuffleSeed: 0, disposed: false, pointerDown: null, dragging: false,
+    targetLook: null, targetCamera: null, loadQueue: [], activeLoads: 0,
+    touches: new Map(), pinch: null, activeCategory: 'ALL',
+    fullscreenActive: false, fallbackElements: null, lastFrame: 0,
+    frame: 0, visible: true, ready: false, generation: 0,
+    surfaceAnchors: [], longPressTimer: 0,
+  };
+  const keys = new Set();
+  const orbit = {
+    yaw: .72, pitch: .34, distance: 59,
+    target: new THREE.Vector3(0,8,0),
+  };
+  let scene,camera,renderer,raycaster,pointer,cardGroup,castleRoot;
+  let resizeObserver,intersectionObserver;
+  const cardGeometry = new THREE.BoxGeometry(1.08,1.62,.035);
+  const cardForward = new THREE.Vector3(0,0,1);
 
-    function init() {
-      if (!window.THREE || !hasWebGL()) {
-        emit('rendererError',{reason:'webgl-unavailable'});
-        return;
-      }
-      scene = new THREE.Scene();
-      scene.background = null;
-      scene.fog = new THREE.FogExp2(0x071522,.011);
-      camera = new THREE.PerspectiveCamera(48,1,.1,240);
-      renderer = new THREE.WebGLRenderer({
-        antialias:true,alpha:true,premultipliedAlpha:false,
-        powerPreference:'high-performance'
-      });
-      renderer.setClearColor(0x000000,0);
-      renderer.setPixelRatio(Math.min(devicePixelRatio || 1,1.6));
-      renderer.outputColorSpace = THREE.SRGBColorSpace;
-      renderer.toneMapping=THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure=1.24;
-      renderer.shadowMap.enabled=true;
-      renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-      root.appendChild(renderer.domElement);
-      raycaster = new THREE.Raycaster();
-      pointer = new THREE.Vector2();
-      cardGroup = new THREE.Group();
-      scene.add(cardGroup);
-      buildMaterials();
-      buildAtmosphere();
-      buildLights();
-      buildCastle();
-      document.body.dataset.rendererInstanceId=
-        `castle-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-      document.body.dataset.referenceBackground='search_castle_background.png';
-      document.body.dataset.sceneObjectCount=String(scene.children.length);
-      installEvents();
-      resize();
-      updateOrbit();
-      animate();
-      document.body.dataset.rendererStatus='ready';
-      emit('rendererReady');
-    }
+  function emit(type,payload={}) {
+    parent.postMessage(JSON.stringify({type,...payload}),location.origin);
+  }
 
-    function hasWebGL() {
-      try {
-        const canvas=document.createElement('canvas');
-        return !!(window.WebGLRenderingContext &&
-          (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')));
-      } catch (_) { return false; }
-    }
-
-    function proceduralTexture(kind) {
-      const canvas=document.createElement('canvas');canvas.width=256;canvas.height=256;
-      const ctx=canvas.getContext('2d');
-      const palettes={
-        stone:['#686861','#454842','#77776d'],
-        rock:['#292d2e','#15191b','#3a3c39'],
-        grass:['#303c25','#1d2819','#485033'],
-        slate:['#252f39','#111820','#3b4651']
-      };
-      const colors=palettes[kind];ctx.fillStyle=colors[0];ctx.fillRect(0,0,256,256);
-      let seed=kind.length*9187;
-      const random=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};
-      if(kind==='stone'){
-        ctx.strokeStyle='#202521aa';ctx.lineWidth=4;
-        for(let y=0;y<256;y+=34){
-          const shift=(Math.floor(y/34)%2)*24;
-          ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(256,y);ctx.stroke();
-          for(let x=-shift;x<256;x+=48){
-            ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x,y+34);ctx.stroke();
-          }
-        }
-      }
-      for(let i=0;i<220;i++){
-        ctx.fillStyle=colors[1+Math.floor(random()*2)]+'55';
-        const radius=1+random()*5;
-        ctx.beginPath();ctx.arc(random()*256,random()*256,radius,0,Math.PI*2);ctx.fill();
-      }
-      const texture=new THREE.CanvasTexture(canvas);
-      texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
-      texture.repeat.set(kind==='stone'?3:2,kind==='stone'?3:2);
-      texture.colorSpace=THREE.SRGBColorSpace;
-      texture.anisotropy=2;
-      return texture;
-    }
-
-    function buildMaterials() {
-      materials={
-        stone:new THREE.MeshStandardMaterial({map:proceduralTexture('stone'),color:0x74808a,roughness:.93,metalness:.02}),
-        stoneDark:new THREE.MeshStandardMaterial({map:proceduralTexture('stone'),color:0x35434d,roughness:.98}),
-        rock:new THREE.MeshStandardMaterial({map:proceduralTexture('rock'),color:0x26323a,roughness:1}),
-        grass:new THREE.MeshStandardMaterial({map:proceduralTexture('grass'),color:0x273b32,roughness:1}),
-        slate:new THREE.MeshStandardMaterial({map:proceduralTexture('slate'),color:0x263a4d,roughness:.82,metalness:.08}),
-        path:new THREE.MeshStandardMaterial({map:proceduralTexture('stone'),color:0x4d5355,roughness:1}),
-        wood:new THREE.MeshStandardMaterial({color:0x3d2117,roughness:.88}),
-        gold:new THREE.MeshStandardMaterial({color:0xd99a21,emissive:0x3a1a00,roughness:.4,metalness:.36}),
-        window:new THREE.MeshStandardMaterial({color:0xffc05c,emissive:0xff7900,emissiveIntensity:3.1,roughness:.4}),
-        door:new THREE.MeshStandardMaterial({color:0x160c08,roughness:1}),
-      };
-    }
-
-    function architecturalMesh(geometry,material,position,rotation) {
-      const result=new THREE.Mesh(geometry,material);
-      result.position.set(...position);
-      if(rotation)result.rotation.set(...rotation);
-      result.castShadow=true;result.receiveShadow=true;
-      scene.add(result);return result;
-    }
-
-    function box(x,y,z,sx,sy,sz,material=materials.stone,rotationY=0) {
-      return architecturalMesh(
-        new THREE.BoxGeometry(sx,sy,sz),material,[x,y,z],[0,rotationY,0]
-      );
-    }
-
-    function battlements(x,y,z,length,axis='x',material=materials.stone) {
-      const count=Math.max(2,Math.floor(length/2.25));
-      const geometry=new THREE.BoxGeometry(1.25,1.25,1.15);
-      const instances=new THREE.InstancedMesh(geometry,material,count);
-      const matrix=new THREE.Matrix4();
-      for(let i=0;i<count;i++){
-        const offset=-length/2+(i+.5)*(length/count);
-        matrix.makeTranslation(
-          x+(axis==='x'?offset:0),y,z+(axis==='z'?offset:0)
-        );
-        instances.setMatrixAt(i,matrix);
-      }
-      instances.castShadow=true;instances.receiveShadow=true;scene.add(instances);
-    }
-
-    function wall(x,y,z,sx,sy,sz,axis='x',material=materials.stone) {
-      box(x,y,z,sx,sy,sz,material);
-      battlements(x,y+sy/2+.65,z,axis==='x'?sx:sz,axis,material);
-    }
-
-    function warmWindow(x,y,z,sx=.55,sy=1.05,rotationY=0) {
-      box(x,y,z,sx,sy,.08,materials.window,rotationY);
-    }
-
-    function tower(x,z,height=13,radius=3.1,roof=true) {
-      architecturalMesh(
-        new THREE.CylinderGeometry(radius*.9,radius,height,14),
-        materials.stone,[x,5+height/2,z]
-      );
-      battlements(x,5+height+.55,z,radius*1.7,'x',materials.stone);
-      if(roof){
-        architecturalMesh(
-          new THREE.ConeGeometry(radius*1.15,4.2,14),
-          materials.slate,[x,7+height,z]
-        );
-      }
-      warmWindow(x,8+height*.45,z+radius+.03,.48,1.1);
-      warmWindow(x-1.1,8+height*.68,z+radius-.25,.42,.9);
-    }
-
-    function stairs(x,y,z,count,width,direction=1) {
-      const geometry=new THREE.BoxGeometry(width,.34,.9);
-      const instances=new THREE.InstancedMesh(geometry,materials.path,count);
-      const matrix=new THREE.Matrix4();
-      for(let i=0;i<count;i++){
-        matrix.makeTranslation(x,y+i*.3,z+direction*i*.72);
-        instances.setMatrixAt(i,matrix);
-      }
-      instances.castShadow=true;instances.receiveShadow=true;scene.add(instances);
-    }
-
-    function atmosphericTexture(kind) {
+  function hasWebGL() {
+    try {
       const canvas=document.createElement('canvas');
-      canvas.width=512;canvas.height=160;
-      const ctx=canvas.getContext('2d');
-      const clouds=kind==='cloud';
-      for(let i=0;i<(clouds?16:22);i++){
-        const x=(i*83)%540-14,y=35+(i*47)%85;
-        const radius=clouds?65+(i%4)*20:85+(i%3)*28;
-        const gradient=ctx.createRadialGradient(x,y,0,x,y,radius);
-        gradient.addColorStop(0,clouds?'rgba(145,175,196,.24)':'rgba(118,151,165,.12)');
-        gradient.addColorStop(.55,clouds?'rgba(78,104,126,.11)':'rgba(76,111,126,.07)');
-        gradient.addColorStop(1,'rgba(18,33,46,0)');
-        ctx.fillStyle=gradient;
-        ctx.fillRect(x-radius,y-radius,radius*2,radius*2);
-      }
-      const texture=new THREE.CanvasTexture(canvas);
-      texture.colorSpace=THREE.SRGBColorSpace;
-      texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
-      return texture;
+      return Boolean(window.WebGLRenderingContext &&
+        (canvas.getContext('webgl2')||canvas.getContext('webgl')));
+    } catch (_) { return false; }
+  }
+
+  async function init() {
+    if(!hasWebGL()){
+      document.body.dataset.rendererStatus='failed';
+      emit('rendererError',{reason:'webgl-unavailable'});
+      return;
     }
-
-    function buildAtmosphere() {
-      const cloudTexture=atmosphericTexture('cloud');
-      [-58,-66].forEach((z,index)=>{
-        const cloud=new THREE.Mesh(
-          new THREE.PlaneGeometry(104,34),
-          new THREE.MeshBasicMaterial({
-            map:cloudTexture,transparent:true,opacity:index?0.11:0.16,
-            depthWrite:false,side:THREE.DoubleSide,color:0x9bb3c6
-          })
-        );
-        cloud.position.set(index?-18:20,35-index*9,z);
-        cloud.userData={originX:cloud.position.x,speed:index?.16:.1,span:62};
-        scene.add(cloud);state.clouds.push(cloud);
-      });
-      const mistTexture=atmosphericTexture('mist');
-      [[0,6,27,48,13,.12],[-10,12,4,58,12,.08],[8,18,-11,50,10,.07]]
-        .forEach(([x,y,z,width,height,opacity],index)=>{
-          const mist=new THREE.Mesh(
-            new THREE.PlaneGeometry(width,height),
-            new THREE.MeshBasicMaterial({
-              map:mistTexture,transparent:true,opacity,depthWrite:false,
-              side:THREE.DoubleSide,color:0x9bb6c3
-            })
-          );
-          mist.position.set(x,y,z);
-          mist.userData={baseOpacity:opacity,phase:index*1.7};
-          scene.add(mist);state.mists.push(mist);
-        });
+    scene=new THREE.Scene();
+    scene.background=new THREE.Color(0x03070c);
+    scene.fog=new THREE.FogExp2(0x07101a,.012);
+    camera=new THREE.PerspectiveCamera(43,1,.1,180);
+    renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
+    renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.6));
+    renderer.outputColorSpace=THREE.SRGBColorSpace;
+    renderer.toneMapping=THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure=1.34;
+    // The supplied castle is a dense, fully textured mesh. PBR lighting is
+    // retained, while a second 756k-vertex shadow pass is intentionally
+    // avoided for mobile and software WebGL renderers.
+    renderer.shadowMap.enabled=false;
+    root.appendChild(renderer.domElement);
+    raycaster=new THREE.Raycaster();
+    pointer=new THREE.Vector2();
+    cardGroup=new THREE.Group();
+    scene.add(cardGroup);
+    buildEnvironment();
+    buildLights();
+    try {
+      await loadCastle();
+    } catch(error) {
+      document.body.dataset.rendererStatus='failed';
+      document.body.dataset.modelAsset=CASTLE_URL;
+      document.body.dataset.modelError=String(error?.message||error);
+      console.error('Search castle GLB failed to load.',{url:CASTLE_URL,error});
+      emit('rendererError',{reason:'castle-load-failed'});
+      dispose();
+      return;
     }
-
-    function buildLights() {
-      scene.add(new THREE.HemisphereLight(0x789fc2,0x07090b,1.45));
-      scene.add(new THREE.AmbientLight(0x29445e,.52));
-      const moon=new THREE.DirectionalLight(0xbddaf2,3.6);
-      moon.position.set(-28,48,34);moon.castShadow=true;
-      moon.shadow.mapSize.set(1536,1536);
-      moon.shadow.camera.left=-45;moon.shadow.camera.right=45;
-      moon.shadow.camera.top=50;moon.shadow.camera.bottom=-25;
-      scene.add(moon);
-      [[0,8,20],[-13,10,14],[13,10,14],[-7,17,6],[7,20,-4],[-12,25,-9]]
-        .forEach(([x,y,z],index)=>{
-          const lamp=new THREE.PointLight(0xffa23c,index===0?58:31,21,2);
-          lamp.position.set(x,y,z);scene.add(lamp);
-          lamp.userData={
-            baseIntensity:lamp.intensity,
-            phase:index*1.37,
-            speed:1.7+(index%3)*.22
-          };
-          state.lanterns.push(lamp);
-          architecturalMesh(
-            new THREE.SphereGeometry(.16,8,6),materials.window,[x,y,z]
-          );
-        });
-    }
-
-    function bridgeLantern(x,z,index) {
-      architecturalMesh(
-        new THREE.CylinderGeometry(.08,.12,3.5,8),
-        materials.wood,[x,7.35,z]
-      );
-      const glow=architecturalMesh(
-        new THREE.SphereGeometry(.25,8,6),materials.window,[x,9.05,z]
-      );
-      glow.castShadow=false;
-      const light=new THREE.PointLight(0xff9b35,24,14,2);
-      light.position.set(x,9.05,z);scene.add(light);
-      light.userData={baseIntensity:24,phase:index*1.91,speed:2.15};
-      state.lanterns.push(light);
-    }
-
-    function saltireTexture() {
-      const canvas=document.createElement('canvas');
-      canvas.width=256;canvas.height=144;
-      const ctx=canvas.getContext('2d');
-      ctx.fillStyle='#16406f';ctx.fillRect(0,0,256,144);
-      ctx.strokeStyle='#f0f3f4';ctx.lineWidth=18;
-      ctx.beginPath();ctx.moveTo(-10,-8);ctx.lineTo(266,152);
-      ctx.moveTo(266,-8);ctx.lineTo(-10,152);ctx.stroke();
-      const texture=new THREE.CanvasTexture(canvas);
-      texture.colorSpace=THREE.SRGBColorSpace;
-      return texture;
-    }
-
-    function buildSaltireFlag() {
-      const geometry=new THREE.PlaneGeometry(3.8,2.15,12,2);
-      const flag=new THREE.Mesh(
-        geometry,
-        new THREE.MeshStandardMaterial({
-          map:saltireTexture(),side:THREE.DoubleSide,roughness:.82,
-          emissive:0x061226,emissiveIntensity:.18
-        })
-      );
-      flag.position.set(-4.7,35.7,-9.9);
-      flag.userData.basePositions=Float32Array.from(
-        geometry.attributes.position.array
-      );
-      scene.add(flag);state.flags.push(flag);
-    }
-
-    function buildCastle() {
-      const rock=architecturalMesh(
-        new THREE.CylinderGeometry(27,40,16,11),materials.rock,[0,-3,0]
-      );
-      rock.rotation.y=.18;
-      for(let i=0;i<18;i++){
-        const angle=i/18*Math.PI*2;
-        architecturalMesh(
-          new THREE.DodecahedronGeometry(3.2+(i%3),0),materials.rock,
-          [Math.sin(angle)*(29+i%4),-1+(i%3),Math.cos(angle)*(25+i%5)],
-          [i*.31,i*.17,0]
-        );
-      }
-      architecturalMesh(
-        new THREE.CylinderGeometry(27,28,1.3,12),materials.grass,[0,5.2,0]
-      );
-      architecturalMesh(
-        new THREE.CylinderGeometry(20,22,2.2,10),materials.grass,[0,10.8,-2]
-      );
-      architecturalMesh(
-        new THREE.CylinderGeometry(14,16,2.4,9),materials.grass,[-2,17.1,-7]
-      );
-
-      wall(0,8.2,18.3,42,6,2.2);
-      wall(-22,8.4,1.5,2.2,6.4,33,'z');
-      wall(22,8.4,1.5,2.2,6.4,33,'z');
-      wall(0,9,-15.2,38,7.2,2.2);
-      tower(-21,15,14,3.6,true);tower(21,15,14,3.6,true);
-      tower(-22,-13,13,3.3,true);tower(22,-13,13,3.3,true);
-
-      box(0,10.7,18.6,9,11,5,materials.stone);
-      tower(-5,17.7,13,2.7,false);tower(5,17.7,13,2.7,false);
-      box(0,8.5,21.15,3.3,6.2,.35,materials.door);
-      architecturalMesh(
-        new THREE.TorusGeometry(2.25,.42,9,30,Math.PI),
-        materials.stoneDark,[0,11.35,21.42]
-      );
-      for(let x=-1.35;x<=1.36;x+=.45){
-        box(x,8.55,21.55,.08,5.3,.12,materials.gold);
-      }
-      for(let y=7;y<=10.4;y+=.85){
-        box(0,y,21.56,3,.07,.13,materials.gold);
-      }
-      warmWindow(-2.25,12.4,21.2,.55,1.4);
-      warmWindow(2.25,12.4,21.2,.55,1.4);
-      battlements(0,16.75,18.6,9,'x');
-
-      box(0,5.65,30,9,.85,21,materials.path);
-      wall(-5.15,7.05,30,1.1,2.35,21,'z',materials.stoneDark);
-      wall(5.15,7.05,30,1.1,2.35,21,'z',materials.stoneDark);
-      [-1,1].forEach((side,sideIndex)=>{
-        [22.5,30,37.5].forEach((z,index)=>{
-          bridgeLantern(side*4.15,z,sideIndex*3+index);
-        });
-      });
-      stairs(-12,6,15,15,4.2,-1);
-      stairs(12,6,-2,17,4.2,-1);
-
-      wall(-3,13.5,8,31,5.4,2);
-      wall(-15,13.3,-1,2,5.2,17,'z');
-      wall(14,13.3,-2,2,5.2,15,'z');
-      box(-4,11.4,1,24,.8,13,materials.path);
-      tower(-15,8,12,2.8,false);tower(14,7,12,2.8,false);
-
-      box(1,19.1,-3.8,24,8.2,11,materials.stoneDark);
-      battlements(1,23.85,1.1,24,'x',materials.stone);
-      for(let x=-9;x<=10;x+=3.8)warmWindow(x,19.4,1.78,.52,1.25);
-
-      box(-7,24.2,-10,11,14,10,materials.stone);
-      battlements(-7,31.85,-5.1,11,'x');
-      box(6,23,-11,13,11.5,9,materials.stoneDark);
-      architecturalMesh(
-        new THREE.ConeGeometry(8.8,5.2,4),materials.slate,[6,31.35,-11],[0,Math.PI/4,0]
-      );
-      tower(-13,-13,15,3.1,true);tower(14,-14,17,3.2,true);
-
-      for(let x=-10;x<=8;x+=4)warmWindow(x,25,-4.7,.5,1.2);
-      warmWindow(-7,28.5,-4.7,.65,1.5);
-      box(-7,34,-10,.16,5,.16,materials.wood);
-      buildSaltireFlag();
-    }
-
-    function anchors() {
-      const out=[];
-      const row=(x1,x2,y,z,count,normal=[0,0,1],zone='wall')=>{
-        for(let i=0;i<count;i++){
-          const t=count===1?.5:i/(count-1);
-          out.push({position:[x1+(x2-x1)*t,y,z],normal,zone});
-        }
-      };
-      for(let i=0;i<5;i++){
-        const z=22+i*3.85;
-        out.push({position:[-5.76,8.9,z],normal:[-1,0,0],zone:'bridge'});
-        out.push({position:[5.76,8.9,z],normal:[1,0,0],zone:'bridge'});
-      }
-      [-4.25,-3.35,3.35,4.25].forEach(x=>{
-        out.push({position:[x,11.15,21.22],normal:[0,0,1],zone:'gate'});
-      });
-      row(-18.5,18.5,10.2,19.52,14,[0,0,1],'outer-wall');
-      row(-14.8,14.8,7.35,13.18,12,[0,0,1],'courtyard');
-      row(-13,11,14.55,9.08,14,[0,0,1],'terrace');
-      row(-9.5,10.5,20.2,1.78,12,[0,0,1],'inner-keep');
-      for(let i=0;i<6;i++){
-        out.push({
-          position:[-23.15,9.4+(i%2)*3,-8+i*4],
-          normal:[-1,0,0],zone:'west-battlement'
-        });
-        out.push({
-          position:[23.15,9.4+(i%2)*3,-8+i*4],
-          normal:[1,0,0],zone:'east-battlement'
-        });
-      }
-      row(-12,8,27.6,-4.72,6,[0,0,1],'upper-keep');
-      return out;
-    }
-
-    function seeded(cards,seed) {
-      const copy=cards.slice(); let value=seed || 1;
-      for(let i=copy.length-1;i>0;i--){
-        value=(value*1664525+1013904223)>>>0;
-        const j=value%(i+1);
-        [copy[i],copy[j]]=[copy[j],copy[i]];
-      }
-      return copy;
-    }
-
-    function clearCards() {
-      state.meshes.forEach(mesh=>{
-        mesh.geometry.dispose();
-        [...new Set(mesh.material)].forEach(item=>item.dispose());
-      });
-      state.meshes=[]; cardGroup.clear(); state.loadQueue=[];
-    }
-
-    function setCards(cards,focusedCardId,shuffleSeed,animateFocus=false,activeCategory='TOUTES') {
-      state.cards=cards; state.focusedCardId=focusedCardId; state.shuffleSeed=shuffleSeed;
-      state.activeCategory=activeCategory;
-      document.body.dataset.cardCount=String(cards.length);
-      document.body.dataset.textureCount='0';
-      document.body.dataset.firstCardId=cards[0]?.id || '';
-      clearCards();
-      const points=anchors();
-      seeded(cards,shuffleSeed).slice(0,points.length).forEach((card,index)=>addCard(card,points[index]));
-      document.body.dataset.meshCount=String(state.meshes.length);
-      updateVisibleCards(focusedCardId);
-      if(focusedCardId) focusCard(focusedCardId,animateFocus);
-      pumpTextures();
-    }
-
-    function addCard(card,anchor) {
-      const h=3.2,w=Math.max(.9,Math.min(2.5,h*(card.aspectRatio || .66)));
-      const edge=materials.gold.clone();
-      edge.color.set(0xb6aa8e);edge.emissive.set(0x120a00);
-      const face=new THREE.MeshStandardMaterial({
-        color:0x2c1e18,roughness:.68,metalness:.02
-      });
-      const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,.08),[edge,edge,edge,edge,face,edge]);
-      mesh.position.fromArray(anchor.position);
-      mesh.userData.card=card;
-      mesh.userData.zone=anchor.zone;
-      mesh.userData.anchorNormal=new THREE.Vector3().fromArray(anchor.normal||[0,0,1]);
-      mesh.castShadow=true;
-      cardGroup.add(mesh); state.meshes.push(mesh);
-      state.loadQueue.push({mesh,card});
-    }
-
-    function updateVisibleCards(focusedCardId) {
-      const visiblePerZone=28;
-      const focusedIndex=Math.max(
-        0,state.meshes.findIndex(mesh=>mesh.userData.card.id===focusedCardId)
-      );
-      const start=Math.floor(focusedIndex/visiblePerZone)*visiblePerZone;
-      state.meshes.forEach((mesh,index)=>{
-        mesh.visible=index>=start&&index<start+visiblePerZone;
-      });
-      document.body.dataset.visibleMeshCount=String(
-        state.meshes.filter(mesh=>mesh.visible).length
-      );
-      document.body.dataset.visibleZoneStart=String(start);
-    }
-
-    function pumpTextures() {
-      while(state.activeLoads<4 && state.loadQueue.length){
-        const item=state.loadQueue.shift();
-        if(state.textures.has(item.card.thumbnailUrl)){
-          applyTexture(item.mesh,state.textures.get(item.card.thumbnailUrl));
-          continue;
-        }
-        state.activeLoads++;
-        new THREE.TextureLoader().load(item.card.thumbnailUrl,texture=>{
-          texture.colorSpace=THREE.SRGBColorSpace;
-          texture.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());
-          state.textures.set(item.card.thumbnailUrl,texture);
-          applyTexture(item.mesh,texture);
-          state.activeLoads--; pumpTextures();
-        },undefined,()=>{
-          state.activeLoads--; pumpTextures();
-        });
-      }
-    }
-
-    function applyTexture(mesh,texture) {
-      if(!state.meshes.includes(mesh)) return;
-      mesh.material[4].map=texture;
-      mesh.material[4].color.set(0xffffff);
-      mesh.material[4].needsUpdate=true;
-      const loaded=state.meshes.filter(item=>item.material[4].map).length;
-      document.body.dataset.textureCount=String(loaded);
-    }
-
-    function focusCard(cardId,animate=true) {
-      state.focusedCardId=cardId;
-      updateVisibleCards(cardId);
-      document.body.dataset.focusedCardId=cardId || '';
-      document.body.dataset.focusMode=animate?'animated':'immediate';
-      document.body.dataset.focusSettled=animate?'false':'true';
-      let selected=null;
-      state.meshes.forEach(mesh=>{
-        const active=mesh.userData.card.id===cardId;
-        mesh.scale.setScalar(active?1.15:1);
-        [0,1,2,3,5].forEach(i=>{
-          mesh.material[i].color.set(active?0xffc928:0xb6aa8e);
-          mesh.material[i].emissive.set(active?0x8a3b00:0x120a00);
-          mesh.material[i].emissiveIntensity=active?1.8:.35;
-        });
-        if(active) selected=mesh;
-      });
-      if(!selected) return;
-      const look=selected.position.clone();
-      const cameraTarget=look.clone()
-        .addScaledVector(selected.userData.anchorNormal,10)
-        .add(new THREE.Vector3(0,2.4,0));
-      if(animate){state.targetLook=look;state.targetCamera=cameraTarget}
-      else{
-        orbit.target.copy(look);
-        camera.position.copy(cameraTarget);
-        syncOrbitFromCamera();
-      }
-    }
-
-    function pick(event) {
-      const rect=renderer.domElement.getBoundingClientRect();
-      pointer.x=((event.clientX-rect.left)/rect.width)*2-1;
-      pointer.y=-((event.clientY-rect.top)/rect.height)*2+1;
-      raycaster.setFromCamera(pointer,camera);
-      return raycaster.intersectObjects(state.meshes,false)[0]?.object;
-    }
-
-    function setFullscreenUi(active) {
-      state.fullscreenActive=active;
-      document.body.classList.toggle('fullscreen-castle',active);
-      emit('fullscreenChanged',{active});
-      setTimeout(resize,0);
-    }
-
-    function setFrameFallback(active) {
-      if(active){
-        const frame=window.frameElement;
-        if(frame&&typeof frame.showPopover==='function'){
-          frame.setAttribute('popover','manual');
-          try{frame.showPopover()}catch(_){}
-        }
-        const elements=[];
-        let current=frame;
-        while(current&&elements.length<7){
-          elements.push(current);
-          const root=current.getRootNode?.();
-          const next=current.parentElement||(root&&root.host)||null;
-          if(!next||next===parent.document.body||next===parent.document.documentElement)break;
-          current=next;
-        }
-        state.fallbackElements=elements.map(element=>({
-          element,cssText:element.style.cssText
-        }));
-        elements.forEach((element,index)=>{
-          element.style.setProperty('z-index','2147483647','important');
-          element.style.setProperty('transform','none','important');
-          element.style.setProperty('overflow','visible','important');
-          element.style.setProperty('clip-path','none','important');
-          element.style.setProperty('contain','none','important');
-          element.style.setProperty('pointer-events','auto','important');
-          element.style.setProperty('background','#03070c','important');
-          if(index<3){
-            element.style.setProperty('position','fixed','important');
-            element.style.setProperty('inset','0','important');
-            element.style.setProperty('width','100vw','important');
-            element.style.setProperty('height','100vh','important');
-          }
-        });
-      }else if(state.fallbackElements){
-        const frame=window.frameElement;
-        if(frame&&typeof frame.hidePopover==='function'){
-          try{frame.hidePopover()}catch(_){}
-        }
-        state.fallbackElements.forEach(({element,cssText})=>{
-          element.style.cssText=cssText;
-        });
-        state.fallbackElements=null;
-      }
-    }
-
-    function activateFullscreenFallback() {
-      setFrameFallback(true);
-      setFullscreenUi(true);
-      emit('fullscreenFallbackRequested');
-    }
-
-    async function enterCastleFullscreen() {
-      if(state.fullscreenActive)return;
-      try{
-        if(!document.documentElement.requestFullscreen)throw new Error('unsupported');
-        await Promise.race([
-          document.documentElement.requestFullscreen(),
-          new Promise((_,reject)=>setTimeout(()=>reject(new Error('fullscreen-timeout')),650))
-        ]);
-        setTimeout(()=>{
-          if(!document.fullscreenElement&&!state.fullscreenActive){
-            activateFullscreenFallback();
-          }
-        },120);
-      }catch(_){
-        activateFullscreenFallback();
-      }
-    }
-
-    async function exitCastleFullscreen() {
-      if(document.fullscreenElement){
-        await document.exitFullscreen().catch(()=>{});
-      }else if(state.fullscreenActive){
-        setFrameFallback(false);
-        emit('fullscreenFallbackExit');
-        setFullscreenUi(false);
-      }
-    }
-
-    function openFocusedCard() {
-      if(!state.focusedCardId)return;
-      const cardId=state.focusedCardId;
-      emit('cardLongPressed',{cardId});
-      void exitCastleFullscreen();
-    }
-
-    function installEvents() {
-      addEventListener('resize',resize);
-      const canvas=renderer.domElement;
-      canvas.addEventListener('pointerdown',event=>{
-        if(event.pointerType==='touch'){
-          state.touches.set(event.pointerId,{x:event.clientX,y:event.clientY});
-          if(state.touches.size===2){
-            const [a,b]=[...state.touches.values()];
-            state.pinch={
-              distance:Math.hypot(a.x-b.x,a.y-b.y),
-              orbitDistance:orbit.distance,
-              center:{x:(a.x+b.x)/2,y:(a.y+b.y)/2},
-              target:orbit.target.clone()
-            };
-          }
-        }
-        state.dragging=false;
-        state.pointerDown={
-          x:event.clientX,y:event.clientY,t:performance.now(),mesh:pick(event),
-          yaw:orbit.yaw,pitch:orbit.pitch,target:orbit.target.clone(),
-          panning:event.button===1||event.button===2||event.shiftKey
-        };
-        canvas.setPointerCapture(event.pointerId);
-      });
-      canvas.addEventListener('pointermove',event=>{
-        if(event.pointerType==='touch'&&state.touches.has(event.pointerId)){
-          state.touches.set(event.pointerId,{x:event.clientX,y:event.clientY});
-          if(state.touches.size===2&&state.pinch){
-            const [a,b]=[...state.touches.values()];
-            const distance=Math.max(20,Math.hypot(a.x-b.x,a.y-b.y));
-            const center={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
-            orbit.distance=Math.max(
-              14,Math.min(80,state.pinch.orbitDistance*state.pinch.distance/distance)
-            );
-            const scale=orbit.distance*.0018;
-            const right=new THREE.Vector3().setFromMatrixColumn(camera.matrix,0);
-            const up=new THREE.Vector3().setFromMatrixColumn(camera.matrix,1);
-            orbit.target.copy(state.pinch.target)
-              .addScaledVector(right,-(center.x-state.pinch.center.x)*scale)
-              .addScaledVector(up,(center.y-state.pinch.center.y)*scale);
-            state.dragging=true;state.targetCamera=null;return;
-          }
-        }
-        const down=state.pointerDown;if(!down)return;
-        const dx=event.clientX-down.x,dy=event.clientY-down.y;
-        if(Math.hypot(dx,dy)>7)state.dragging=true;
-        if(state.dragging){
-          if(down.panning){
-            const scale=orbit.distance*.0018;
-            const right=new THREE.Vector3().setFromMatrixColumn(camera.matrix,0);
-            const up=new THREE.Vector3().setFromMatrixColumn(camera.matrix,1);
-            orbit.target.copy(down.target)
-              .addScaledVector(right,-dx*scale)
-              .addScaledVector(up,dy*scale);
-          }else{
-            orbit.yaw=down.yaw-dx*.008;
-            orbit.pitch=Math.max(-.05,Math.min(1.15,down.pitch+dy*.006));
-          }
-          state.targetCamera=null;
-        }
-      });
-      canvas.addEventListener('pointerup',event=>{
-        if(event.pointerType==='touch'){
-          state.touches.delete(event.pointerId);
-          if(state.touches.size<2)state.pinch=null;
-        }
-        const down=state.pointerDown;state.pointerDown=null;
-        if(!down || state.dragging || !down.mesh)return;
-        const card=down.mesh.userData.card;
-        if(performance.now()-down.t>520){
-          state.focusedCardId=card.id;openFocusedCard();
-        }
-        else{focusCard(card.id,true);emit('cardSelected',{cardId:card.id})}
-      });
-      canvas.addEventListener('wheel',event=>{
-        event.preventDefault();
-        orbit.distance=Math.max(14,Math.min(80,orbit.distance+event.deltaY*.025));
-        state.targetCamera=null;
-      },{passive:false});
-      canvas.addEventListener('contextmenu',event=>event.preventDefault());
-      document.getElementById('enter-fullscreen').addEventListener('click',enterCastleFullscreen);
-      document.getElementById('castle-dj-who').addEventListener('click',()=>{
-        void exitCastleFullscreen();setTimeout(()=>emit('djWhoRequested'),60);
-      });
-      document.getElementById('exit-fullscreen').addEventListener('click',exitCastleFullscreen);
-      document.addEventListener('fullscreenchange',()=>{
-        setFullscreenUi(Boolean(document.fullscreenElement));
-      });
-      addEventListener('keydown',event=>{
-        if(event.key==='Escape'&&state.fullscreenActive){
-          void exitCastleFullscreen();event.preventDefault();return;
-        }
-        if(['w','a','s','d','W','A','S','D'].includes(event.key)){
-          keys.add(event.key.toLowerCase());event.preventDefault();return;
-        }
-        if(!['ArrowLeft','ArrowRight','Enter'].includes(event.key))return;
-        const ids=state.meshes.map(mesh=>mesh.userData.card.id);
-        if(!ids.length)return;
-        let index=Math.max(0,ids.indexOf(state.focusedCardId));
-        if(event.key==='Enter'){openFocusedCard();return}
-        index+=event.key==='ArrowRight'?1:-1;
-        index=Math.max(0,Math.min(ids.length-1,index));
-        focusCard(ids[index],true);emit('cardSelected',{cardId:ids[index]});
-      });
-      addEventListener('keyup',event=>keys.delete(event.key.toLowerCase()));
-      canvas.addEventListener('webglcontextlost',event=>{
-        event.preventDefault();emit('rendererError',{reason:'context-lost'});
-      });
-    }
-
-    function updateOrbit() {
-      const cp=Math.cos(orbit.pitch);
-      camera.position.set(
-        orbit.target.x+Math.sin(orbit.yaw)*cp*orbit.distance,
-        orbit.target.y+Math.sin(orbit.pitch)*orbit.distance,
-        orbit.target.z+Math.cos(orbit.yaw)*cp*orbit.distance
-      );
-      camera.lookAt(orbit.target);
-    }
-
-    function syncOrbitFromCamera() {
-      const delta=camera.position.clone().sub(orbit.target);
-      orbit.distance=Math.max(14,Math.min(80,delta.length()));
-      orbit.pitch=Math.asin(delta.y/orbit.distance);
-      orbit.yaw=Math.atan2(delta.x,delta.z);
-    }
-
-    function resize() {
-      if(!renderer)return;
-      const width=Math.max(1,root.clientWidth),height=Math.max(1,root.clientHeight);
-      camera.aspect=width/height;camera.updateProjectionMatrix();renderer.setSize(width,height);
-    }
-
-    function animate(now=performance.now()) {
-      if(state.disposed)return;
-      requestAnimationFrame(animate);
-      const delta=Math.min(.25,Math.max(0,(now-(state.lastFrame||now))/1000));
-      state.lastFrame=now;
-      if(state.targetCamera&&state.targetLook){
-        const cameraAlpha=1-Math.exp(-5.2*delta);
-        const targetAlpha=1-Math.exp(-6.1*delta);
-        camera.position.lerp(state.targetCamera,cameraAlpha);
-        orbit.target.lerp(state.targetLook,targetAlpha);
-        camera.lookAt(orbit.target);
-        if(camera.position.distanceTo(state.targetCamera)<.08){
-          camera.position.copy(state.targetCamera);
-          orbit.target.copy(state.targetLook);
-          syncOrbitFromCamera();
-          state.targetCamera=null;
-          state.targetLook=null;
-          document.body.dataset.focusSettled='true';
-        }
-      } else {
-        if(keys.size){
-          const forward=new THREE.Vector3();
-          camera.getWorldDirection(forward);forward.y=0;forward.normalize();
-          const right=new THREE.Vector3().crossVectors(forward,camera.up).normalize();
-          const move=new THREE.Vector3();
-          if(keys.has('w'))move.add(forward);
-          if(keys.has('s'))move.sub(forward);
-          if(keys.has('d'))move.add(right);
-          if(keys.has('a'))move.sub(right);
-          if(move.lengthSq())orbit.target.add(move.normalize().multiplyScalar(.14));
-        }
-        updateOrbit();
-      }
-      const seconds=now*.001;
-      state.clouds.forEach((cloud,index)=>{
-        cloud.position.x=cloud.userData.originX+
-          Math.sin(seconds*cloud.userData.speed+index*2.4)*8;
-      });
-      state.mists.forEach(mist=>{
-        mist.material.opacity=mist.userData.baseOpacity*
-          (.82+Math.sin(seconds*.23+mist.userData.phase)*.18);
-      });
-      state.lanterns.forEach(light=>{
-        const flicker=
-          Math.sin(seconds*light.userData.speed+light.userData.phase)*.055+
-          Math.sin(seconds*5.3+light.userData.phase)*.025;
-        light.intensity=light.userData.baseIntensity*(1+flicker);
-      });
-      state.flags.forEach(flag=>{
-        const positions=flag.geometry.attributes.position;
-        const base=flag.userData.basePositions;
-        for(let i=0;i<positions.count;i++){
-          const baseX=base[i*3],baseY=base[i*3+1];
-          const influence=Math.max(0,Math.min(1,(baseX+1.9)/3.8));
-          positions.setXYZ(
-            i,baseX,baseY,
-            Math.sin(seconds*1.55+baseX*2.25+baseY*.6)*.18*influence
-          );
-        }
-        positions.needsUpdate=true;
-      });
-      if(now-state.lastBackdropFrame>90){
-        state.lastBackdropFrame=now;
-        const backgroundX=50+Math.sin(orbit.yaw)*1.35;
-        const backgroundY=50+(orbit.pitch-.31)*1.8;
-        root.style.backgroundPosition=`${backgroundX}% ${backgroundY}%`;
-      }
-      state.meshes.forEach(mesh=>{
-        if(!mesh.visible)return;
-        const target=camera.position.clone();target.y=mesh.position.y;mesh.lookAt(target);
-      });
-      renderer.render(scene,camera);
-    }
-
-    function dispose() {
-      state.disposed=true;clearCards();
-      state.textures.forEach(texture=>texture.dispose());
-      renderer?.dispose();
-    }
-
-    addEventListener('message',event=>{
-      if(event.origin!==location.origin || typeof event.data!=='string')return;
-      let data;try{data=JSON.parse(event.data)}catch(_){return}
-      if(data.type==='setCards')setCards(
-        data.cards||[],
-        data.focusedCardId,
-        data.shuffleSeed||0,
-        data.animateFocus===true,
-        data.activeCategory||'TOUTES'
-      );
-      if(data.type==='focusCard')focusCard(data.cardId||'',data.animate!==false);
-      if(data.type==='enterFullscreen')enterCastleFullscreen();
-      if(data.type==='exitFullscreen')exitCastleFullscreen();
-      if(data.type==='setInAppFullscreen'){
-        if(data.active!==true)setFrameFallback(false);
-        setFullscreenUi(data.active===true);
-      }
-      if(data.type==='dispose')dispose();
+    document.body.dataset.rendererInstanceId=
+      `castle-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    document.body.dataset.modelAsset=CASTLE_URL;
+    installEvents();
+    resizeObserver=new ResizeObserver(resize);
+    resizeObserver.observe(root);
+    intersectionObserver=new IntersectionObserver(([entry])=>{
+      state.visible=entry.isIntersecting;
+      if(state.visible)resume();else pause();
     });
-    init();
-  })();
+    intersectionObserver.observe(document.documentElement);
+    resize();
+    updateOrbit();
+    state.ready=true;
+    document.body.classList.add('ready');
+    document.body.dataset.rendererStatus='ready';
+    if(state.cards.length){
+      setCards(
+        state.cards,
+        state.focusedCardId,
+        state.shuffleSeed,
+        false,
+        state.activeCategory,
+      );
+    }
+    updateSceneCount();
+    resume();
+    emit('rendererReady');
+  }
+
+  function buildEnvironment() {
+    const ground=new THREE.Mesh(
+      new THREE.CircleGeometry(67,64),
+      new THREE.MeshStandardMaterial({color:0x121a17,roughness:1,metalness:0}),
+    );
+    ground.rotation.x=-Math.PI/2;
+    ground.position.y=-.12;
+    scene.add(ground);
+    const sky=new THREE.Mesh(
+      new THREE.SphereGeometry(130,24,16),
+      new THREE.ShaderMaterial({
+        side:THREE.BackSide,
+        uniforms:{top:{value:new THREE.Color(0x18354d)},bottom:{value:new THREE.Color(0x02050a)}},
+        vertexShader:'varying float h;void main(){h=normalize(position).y;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
+        fragmentShader:'varying float h;uniform vec3 top;uniform vec3 bottom;void main(){gl_FragColor=vec4(mix(bottom,top,smoothstep(-.3,.8,h)),1.0);}',
+      }),
+    );
+    scene.add(sky);
+    const moon=new THREE.Mesh(
+      new THREE.SphereGeometry(6.4,32,24),
+      new THREE.MeshBasicMaterial({color:0xe5f1ff,fog:false}),
+    );
+    // Projected into the upper-left sky from the establishing camera so the
+    // moon remains above the castle instead of slipping outside the frustum.
+    moon.position.set(-70,18,-40);
+    scene.add(moon);
+  }
+
+  function buildLights() {
+    scene.add(new THREE.HemisphereLight(0xd8ebff,0x252b35,3.15));
+    scene.add(new THREE.AmbientLight(0x91abc2,1.15));
+    const moon=new THREE.DirectionalLight(0xdcecff,5.4);
+    moon.position.set(-26,44,30);
+    scene.add(moon);
+    const rim=new THREE.DirectionalLight(0x9ebdde,1.75);
+    rim.position.set(30,22,-26);
+    scene.add(rim);
+    const warm=new THREE.PointLight(0xffaa58,14,42,2);
+    warm.position.set(0,8,15);
+    scene.add(warm);
+  }
+
+  function loadCastle() {
+    return new Promise((resolve,reject)=>{
+      new GLTFLoader().load(CASTLE_URL,gltf=>{
+        if(state.disposed){disposeObject(gltf.scene);reject(new Error('disposed'));return}
+        castleRoot=gltf.scene;
+        let meshCount=0;
+        castleRoot.traverse(object=>{
+          if(object.isMesh){
+            meshCount++;
+            object.castShadow=false;
+            object.receiveShadow=false;
+          }
+        });
+        const bounds=new THREE.Box3().setFromObject(castleRoot);
+        const size=bounds.getSize(new THREE.Vector3());
+        const center=bounds.getCenter(new THREE.Vector3());
+        const scale=42/Math.max(size.x,size.z,.001);
+        castleRoot.scale.setScalar(scale);
+        castleRoot.position.set(-center.x*scale,-bounds.min.y*scale,-center.z*scale);
+        scene.add(castleRoot);
+        castleRoot.updateMatrixWorld(true);
+        state.surfaceAnchors=deriveSurfaceAnchors(84);
+        document.body.dataset.castleMeshCount=String(meshCount);
+        document.body.dataset.castleAnimations=String(gltf.animations.length);
+        document.body.dataset.surfaceAnchorCount=String(state.surfaceAnchors.length);
+        if(state.surfaceAnchors.length<84){
+          reject(new Error(`Only ${state.surfaceAnchors.length} castle surface anchors were found.`));
+          return;
+        }
+        resolve();
+      },event=>{
+        if(event.total)document.body.dataset.modelProgress=
+          String(Math.round(event.loaded/event.total*100));
+      },reject);
+    });
+  }
+
+  function disposeObject(rootObject) {
+    rootObject?.traverse(object=>{
+      object.geometry?.dispose?.();
+      const items=Array.isArray(object.material)?object.material:[object.material];
+      items.filter(Boolean).forEach(material=>{
+        Object.values(material).forEach(value=>value?.isTexture&&value.dispose());
+        material.dispose?.();
+      });
+    });
+  }
+
+  function deriveSurfaceAnchors(limit) {
+    const candidates=[];
+    const a=new THREE.Vector3(),b=new THREE.Vector3(),c=new THREE.Vector3();
+    const ab=new THREE.Vector3(),ac=new THREE.Vector3();
+    const center=new THREE.Vector3(),normal=new THREE.Vector3(),radial=new THREE.Vector3();
+    const establishingDirection=new THREE.Vector3(Math.sin(.72),0,Math.cos(.72));
+    castleRoot.traverse(object=>{
+      if(!object.isMesh||!object.geometry?.attributes?.position)return;
+      const geometry=object.geometry,position=geometry.attributes.position,index=geometry.index;
+      const triangleCount=Math.floor((index?.count||position.count)/3);
+      const stride=Math.max(1,Math.floor(triangleCount/42000));
+      for(let triangle=0;triangle<triangleCount;triangle+=stride){
+        const offset=triangle*3;
+        const ia=index?index.getX(offset):offset;
+        const ib=index?index.getX(offset+1):offset+1;
+        const ic=index?index.getX(offset+2):offset+2;
+        a.fromBufferAttribute(position,ia).applyMatrix4(object.matrixWorld);
+        b.fromBufferAttribute(position,ib).applyMatrix4(object.matrixWorld);
+        c.fromBufferAttribute(position,ic).applyMatrix4(object.matrixWorld);
+        ab.subVectors(b,a);ac.subVectors(c,a);normal.crossVectors(ab,ac);
+        if(normal.lengthSq()<1e-7)continue;
+        normal.normalize();center.copy(a).add(b).add(c).multiplyScalar(1/3);
+        if(center.y<1.5||center.y>22||Math.abs(normal.y)>.58)continue;
+        radial.set(center.x,0,center.z);
+        if(radial.lengthSq()<2)continue;
+        radial.normalize();
+        if(normal.dot(radial)<0)normal.negate();
+        if(normal.dot(radial)<.16)continue;
+        candidates.push({
+          position:center.clone().addScaledVector(normal,.045),
+          normal:normal.clone(),
+          score:normal.dot(establishingDirection)+center.y*.006,
+          sector:(Math.floor((Math.atan2(center.x,center.z)+Math.PI)/(Math.PI*2)*12)+12)%12,
+          level:clamp(Math.floor((center.y-1.5)/3),0,6),
+        });
+      }
+    });
+    candidates.sort((left,right)=>right.score-left.score);
+    const out=[];
+    const usedBuckets=new Set();
+    for(const candidate of candidates){
+      const bucket=`${candidate.sector}:${candidate.level}`;
+      if(usedBuckets.has(bucket))continue;
+      usedBuckets.add(bucket);out.push(candidate);
+      if(out.length>=limit)return out;
+    }
+    for(const spacing of [2.2,1.75,1.35]){
+      const minimum=spacing*spacing;
+      for(const candidate of candidates){
+        if(out.includes(candidate))continue;
+        if(out.some(anchor=>anchor.position.distanceToSquared(candidate.position)<minimum))continue;
+        out.push(candidate);
+        if(out.length>=limit)return out;
+      }
+    }
+    return out;
+  }
+
+  function seeded(cards,seed) {
+    const copy=cards.slice();let value=seed||1;
+    for(let i=copy.length-1;i>0;i--){
+      value=(value*1664525+1013904223)>>>0;
+      const j=value%(i+1);[copy[i],copy[j]]=[copy[j],copy[i]];
+    }
+    return copy;
+  }
+
+  function clearCards() {
+    state.generation++;
+    state.meshes.forEach(mesh=>{
+      [...new Set(mesh.material)].forEach(material=>material.dispose());
+      cardGroup.remove(mesh);
+    });
+    state.meshes=[];state.loadQueue=[];state.activeLoads=0;
+  }
+
+  function setCards(cards,focusedCardId,shuffleSeed,animateFocus=false,activeCategory='ALL') {
+    state.cards=cards;state.focusedCardId=focusedCardId;state.shuffleSeed=shuffleSeed;
+    state.activeCategory=activeCategory;
+    document.body.dataset.cardCount=String(cards.length);
+    document.body.dataset.textureCount='0';
+    document.body.dataset.textureErrorCount='0';
+    document.body.dataset.textureRequestCount='0';
+    document.body.dataset.firstCardId=cards[0]?.id||'';
+    document.body.dataset.firstTextureUrl='';
+    if(!state.ready||!state.surfaceAnchors.length)return;
+    clearCards();
+    const points=state.surfaceAnchors;
+    seeded(cards,shuffleSeed).slice(0,points.length)
+      .forEach((card,index)=>addCard(card,points[index]));
+    document.body.dataset.meshCount=String(state.meshes.length);
+    state.meshes.forEach(queueRecto);
+    if(focusedCardId)focusCard(focusedCardId,animateFocus);
+    pumpTextures();
+    updateSceneCount();
+    resume();
+  }
+
+  function addCard(card,anchor) {
+    const subdued=card.isMatch===false;
+    const edge=new THREE.MeshStandardMaterial({color:subdued?0x4c565c:0x9aa6ad,roughness:.42,metalness:.35});
+    const face=new THREE.MeshStandardMaterial({color:subdued?0x171516:0x2a1c18,roughness:.64,metalness:.02,transparent:subdued,opacity:subdued ? .38 : 1});
+    const back=new THREE.MeshStandardMaterial({color:subdued?0x151011:0x241712,roughness:.7,transparent:subdued,opacity:subdued ? .38 : 1});
+    const mesh=new THREE.Mesh(cardGeometry,[edge,edge,edge,edge,face,back]);
+    mesh.position.copy(anchor.position);
+    mesh.quaternion.setFromUnitVectors(cardForward,anchor.normal);
+    mesh.userData.card=card;
+    mesh.userData.type='card';
+    mesh.userData.cardId=card.id;
+    mesh.userData.isMatch=!subdued;
+    mesh.userData.anchorPosition=anchor.position.clone();
+    mesh.userData.anchorNormal=anchor.normal.clone();
+    mesh.userData.textureUrl='';
+    mesh.castShadow=false;
+    cardGroup.add(mesh);state.meshes.push(mesh);
+  }
+
+  function queueRecto(mesh) {
+    const card=mesh.userData.card;
+    const url=card.rectoUrl||card.thumbnailUrl;
+    if(!document.body.dataset.firstTextureUrl)document.body.dataset.firstTextureUrl=url||'';
+    if(mesh.userData.textureUrl===url&&mesh.material[4].map)return;
+    mesh.userData.textureUrl=url;
+    state.loadQueue.push({mesh,url,generation:state.generation});
+    document.body.dataset.textureQueueCount=String(state.loadQueue.length);
+  }
+
+  function pumpTextures() {
+    // Recto-only presentation means the initial castle needs 84 distinct
+    // images instead of a handful of shared category backs. Keep enough
+    // requests in flight to populate the fortifications promptly.
+    while(state.activeLoads<12&&state.loadQueue.length){
+      const item=state.loadQueue.shift();
+      if(item.generation!==state.generation||!state.meshes.includes(item.mesh)||item.mesh.userData.textureUrl!==item.url)continue;
+      const cached=state.textures.get(item.url);
+      if(cached){applyTexture(item.mesh,item.url,cached);continue}
+      state.activeLoads++;
+      document.body.dataset.textureRequestCount=String(
+        Number(document.body.dataset.textureRequestCount||0)+1,
+      );
+      document.body.dataset.textureQueueCount=String(state.loadQueue.length);
+      try {
+        new THREE.TextureLoader().load(item.url,texture=>{
+          texture.colorSpace=THREE.SRGBColorSpace;
+          texture.anisotropy=Math.min(6,renderer.capabilities.getMaxAnisotropy());
+          state.textures.set(item.url,texture);
+          if(item.generation===state.generation){
+            applyTexture(item.mesh,item.url,texture);state.activeLoads--;
+          }
+          pumpTextures();
+        },undefined,error=>{
+          console.warn(`Search card texture failed: ${item.url}`,error);
+          document.body.dataset.textureErrorCount=String(
+            Number(document.body.dataset.textureErrorCount||0)+1,
+          );
+          if(item.generation===state.generation)state.activeLoads--;
+          pumpTextures();
+        });
+      } catch(error) {
+        console.warn(`Search card texture rejected: ${item.url}`,error);
+        document.body.dataset.textureErrorCount=String(
+          Number(document.body.dataset.textureErrorCount||0)+1,
+        );
+        if(item.generation===state.generation)state.activeLoads--;
+      }
+    }
+  }
+
+  function applyTexture(mesh,url,texture) {
+    if(!state.meshes.includes(mesh)||mesh.userData.textureUrl!==url)return;
+    mesh.material[4].map=texture;
+    mesh.material[4].color.set(0xffffff);
+    mesh.material[4].needsUpdate=true;
+    mesh.material[5].map=texture;
+    mesh.material[5].color.set(0xffffff);
+    mesh.material[5].needsUpdate=true;
+    const loaded=state.meshes.filter(item=>item.material[4].map).length;
+    document.body.dataset.textureCount=String(loaded);
+    resume();
+  }
+
+  function focusCard(cardId,animate=true) {
+    state.focusedCardId=cardId;
+    document.body.dataset.focusedCardId=cardId||'';
+    document.body.dataset.focusMode=animate?'animated':'immediate';
+    document.body.dataset.focusSettled=animate?'false':'true';
+    let selected=null;
+    state.meshes.forEach(mesh=>{
+      const active=mesh.userData.card.id===cardId;
+      mesh.scale.setScalar(active?1.06:1);
+      mesh.position.copy(mesh.userData.anchorPosition)
+        .addScaledVector(mesh.userData.anchorNormal,active ? .11 : 0);
+      mesh.material.slice(0,4).forEach(material=>{
+        material.color.set(active?0xffc928:mesh.userData.isMatch?0x9aa6ad:0x4c565c);
+        material.emissive.set(active?0x6b2f00:0x000000);
+        material.emissiveIntensity=active?1.3:0;
+      });
+      if(active)selected=mesh;
+    });
+    pumpTextures();
+    if(!selected)return;
+    const look=selected.position.clone();
+    const cameraTarget=look.clone()
+      .addScaledVector(selected.userData.anchorNormal,10)
+      .add(new THREE.Vector3(0,2.2,0));
+    if(animate){state.targetLook=look;state.targetCamera=cameraTarget}
+    else{orbit.target.copy(look);camera.position.copy(cameraTarget);syncOrbitFromCamera()}
+    resume();
+  }
+
+  function pick(event) {
+    const rect=renderer.domElement.getBoundingClientRect();
+    pointer.x=((event.clientX-rect.left)/rect.width)*2-1;
+    pointer.y=-((event.clientY-rect.top)/rect.height)*2+1;
+    raycaster.setFromCamera(pointer,camera);
+    return raycaster.intersectObjects(state.meshes,false)[0]?.object;
+  }
+
+  function updateCategoryControl() {
+    const control=document.getElementById('castle-category');
+    const categories=['ALL',...new Set(state.cards.map(card=>card.category.toUpperCase()))];
+    control.replaceChildren(...categories.map(category=>{
+      const option=document.createElement('option');
+      option.value=category;option.textContent=category;
+      option.selected=category===state.activeCategory;return option;
+    }));
+  }
+
+  function updateFocusedSummary(card) {
+    document.getElementById('focused-title').textContent=card?.title||card?.category||'No card selected';
+    const thumbnail=document.getElementById('focused-thumbnail');
+    thumbnail.src=card?.rectoUrl||card?.thumbnailUrl||'';
+    thumbnail.alt=card?`${card.title||card.category}`:'';
+  }
+
+  function moveCardFocus(delta) {
+    const ids=state.meshes.map(mesh=>mesh.userData.card.id);if(!ids.length)return;
+    let index=Math.max(0,ids.indexOf(state.focusedCardId));
+    index=(index+delta+ids.length)%ids.length;
+    focusCard(ids[index],true);emit('cardSelected',{cardId:ids[index]});
+  }
+
+  function setFullscreenUi(active) {
+    state.fullscreenActive=active;
+    document.body.classList.toggle('fullscreen-castle',active);
+    emit('fullscreenChanged',{active});setTimeout(resize,0);
+  }
+
+  function setFrameFallback(active) {
+    if(active){
+      const frame=window.frameElement;
+      if(frame&&typeof frame.showPopover==='function'){
+        frame.setAttribute('popover','manual');try{frame.showPopover()}catch(_){}
+      }
+      const elements=[];let current=frame;
+      while(current&&elements.length<7){
+        elements.push(current);const tree=current.getRootNode?.();
+        const next=current.parentElement||(tree&&tree.host)||null;
+        if(!next||next===parent.document.body||next===parent.document.documentElement)break;
+        current=next;
+      }
+      state.fallbackElements=elements.map(element=>({element,cssText:element.style.cssText}));
+      elements.forEach((element,index)=>{
+        element.style.setProperty('z-index','2147483647','important');
+        element.style.setProperty('transform','none','important');
+        element.style.setProperty('overflow','visible','important');
+        element.style.setProperty('clip-path','none','important');
+        element.style.setProperty('contain','none','important');
+        element.style.setProperty('pointer-events','auto','important');
+        element.style.setProperty('background','#03070c','important');
+        if(index<3){
+          element.style.setProperty('position','fixed','important');
+          element.style.setProperty('inset','0','important');
+          element.style.setProperty('width','100vw','important');
+          element.style.setProperty('height','100vh','important');
+        }
+      });
+    }else if(state.fallbackElements){
+      const frame=window.frameElement;
+      if(frame&&typeof frame.hidePopover==='function')try{frame.hidePopover()}catch(_){}
+      state.fallbackElements.forEach(({element,cssText})=>element.style.cssText=cssText);
+      state.fallbackElements=null;
+    }
+  }
+
+  function activateFullscreenFallback(){setFrameFallback(true);setFullscreenUi(true);emit('fullscreenFallbackRequested')}
+  async function enterCastleFullscreen(){
+    if(state.fullscreenActive)return;
+    try{
+      if(!document.documentElement.requestFullscreen)throw new Error('unsupported');
+      await Promise.race([document.documentElement.requestFullscreen(),new Promise((_,reject)=>setTimeout(()=>reject(new Error('timeout')),650))]);
+      setTimeout(()=>{if(!document.fullscreenElement&&!state.fullscreenActive)activateFullscreenFallback()},120);
+    }catch(_){activateFullscreenFallback()}
+  }
+  async function exitCastleFullscreen(){
+    if(document.fullscreenElement)await document.exitFullscreen().catch(()=>{});
+    else if(state.fullscreenActive){setFrameFallback(false);emit('fullscreenFallbackExit');setFullscreenUi(false)}
+  }
+  function openCardById(cardId){
+    if(!cardId||!state.meshes.some(mesh=>mesh.userData.cardId===cardId))return;
+    state.focusedCardId=cardId;
+    emit('cardLongPressed',{cardId});
+    void exitCastleFullscreen();
+  }
+  function openFocusedCard(){openCardById(state.focusedCardId)}
+
+  function cancelLongPress(){
+    if(state.longPressTimer)clearTimeout(state.longPressTimer);
+    state.longPressTimer=0;
+  }
+
+  function clampTarget() {
+    orbit.target.x=clamp(orbit.target.x,-28,28);
+    orbit.target.y=clamp(orbit.target.y,0,24);
+    orbit.target.z=clamp(orbit.target.z,-28,28);
+  }
+
+  function installEvents() {
+    const canvas=renderer.domElement;
+    listen(canvas,'pointerdown',event=>{
+      if(event.pointerType==='touch'){
+        state.touches.set(event.pointerId,{x:event.clientX,y:event.clientY});
+        if(state.touches.size===2){
+          const [a,b]=[...state.touches.values()];
+          state.pinch={distance:Math.hypot(a.x-b.x,a.y-b.y),orbitDistance:orbit.distance,center:{x:(a.x+b.x)/2,y:(a.y+b.y)/2},target:orbit.target.clone()};
+        }
+      }
+      state.dragging=false;
+      state.pointerDown={x:event.clientX,y:event.clientY,t:performance.now(),mesh:pick(event),yaw:orbit.yaw,pitch:orbit.pitch,target:orbit.target.clone(),panning:event.button===1||event.button===2||event.shiftKey};
+      cancelLongPress();
+      if(state.pointerDown.mesh&&
+          (event.pointerType==='touch'||event.button===0)&&
+          !event.shiftKey&&state.touches.size<2){
+        const down=state.pointerDown;
+        state.longPressTimer=setTimeout(()=>{
+          state.longPressTimer=0;
+          if(state.pointerDown===down&&!state.dragging){
+            down.longPressFired=true;
+            openCardById(down.mesh.userData.cardId);
+          }
+        },600);
+      }
+      canvas.setPointerCapture(event.pointerId);
+      resume();
+    });
+    listen(canvas,'pointermove',event=>{
+      if(event.pointerType==='touch'&&state.touches.has(event.pointerId)){
+        state.touches.set(event.pointerId,{x:event.clientX,y:event.clientY});
+        if(state.touches.size===2&&state.pinch){
+          const [a,b]=[...state.touches.values()];
+          const distance=Math.max(20,Math.hypot(a.x-b.x,a.y-b.y));
+          const center={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
+          orbit.distance=clamp(state.pinch.orbitDistance*state.pinch.distance/distance,24,90);
+          const scale=orbit.distance*.0018;
+          const right=new THREE.Vector3().setFromMatrixColumn(camera.matrix,0);
+          const up=new THREE.Vector3().setFromMatrixColumn(camera.matrix,1);
+          orbit.target.copy(state.pinch.target).addScaledVector(right,-(center.x-state.pinch.center.x)*scale).addScaledVector(up,(center.y-state.pinch.center.y)*scale);
+          clampTarget();state.dragging=true;state.targetCamera=null;resume();return;
+        }
+      }
+      const down=state.pointerDown;if(!down)return;
+      const dx=event.clientX-down.x,dy=event.clientY-down.y;
+      if(Math.hypot(dx,dy)>7){state.dragging=true;cancelLongPress()}
+      if(state.dragging){
+        if(down.panning){
+          const scale=orbit.distance*.0018;
+          const right=new THREE.Vector3().setFromMatrixColumn(camera.matrix,0);
+          const up=new THREE.Vector3().setFromMatrixColumn(camera.matrix,1);
+          orbit.target.copy(down.target).addScaledVector(right,-dx*scale).addScaledVector(up,dy*scale);clampTarget();
+        }else{
+          orbit.yaw=down.yaw-dx*.008;
+          orbit.pitch=clamp(down.pitch+dy*.006,.06,1.18);
+        }
+        state.targetCamera=null;
+        resume();
+      }
+    });
+    const release=event=>{
+      if(event.pointerType==='touch'){
+        state.touches.delete(event.pointerId);if(state.touches.size<2)state.pinch=null;
+      }
+      const down=state.pointerDown;const wasDragging=state.dragging;
+      cancelLongPress();
+      state.pointerDown=null;state.dragging=false;
+      if(event.type==='pointercancel'||!down||wasDragging||!down.mesh||down.longPressFired){resume();return}
+      const cardId=down.mesh.userData.cardId;
+      if(performance.now()-down.t>520)openCardById(cardId);
+      else{focusCard(cardId,true);emit('cardSelected',{cardId})}
+    };
+    listen(canvas,'pointerup',release);listen(canvas,'pointercancel',release);
+    listen(canvas,'wheel',event=>{event.preventDefault();orbit.distance=clamp(orbit.distance+event.deltaY*.025,24,90);state.targetCamera=null;resume()},{passive:false});
+    listen(canvas,'contextmenu',event=>event.preventDefault());
+    listen(document.getElementById('enter-fullscreen'),'click',enterCastleFullscreen);
+    listen(document.getElementById('exit-fullscreen'),'click',exitCastleFullscreen);
+    listen(document.getElementById('castle-home'),'click',()=>{void exitCastleFullscreen();setTimeout(()=>emit('homeRequested'),60)});
+    listen(document.getElementById('castle-dj-who'),'click',()=>{void exitCastleFullscreen();setTimeout(()=>emit('djWhoRequested'),60)});
+    listen(document.getElementById('castle-reset'),'click',resetView);
+    listen(document,'fullscreenchange',()=>setFullscreenUi(Boolean(document.fullscreenElement)));
+    listen(document,'visibilitychange',()=>document.hidden?pause():resume());
+    listen(window,'keydown',event=>{
+      if(event.key==='Escape'&&state.fullscreenActive){void exitCastleFullscreen();event.preventDefault();return}
+      if(['w','a','s','d','W','A','S','D'].includes(event.key)){keys.add(event.key.toLowerCase());resume();event.preventDefault();return}
+      if(!['ArrowLeft','ArrowRight','Enter'].includes(event.key))return;
+      if(event.key==='Enter'){openFocusedCard();return}
+      moveCardFocus(event.key==='ArrowRight'?1:-1);event.preventDefault();
+    });
+    listen(window,'keyup',event=>keys.delete(event.key.toLowerCase()));
+    listen(canvas,'webglcontextlost',event=>{event.preventDefault();emit('rendererError',{reason:'context-lost'})});
+    listen(window,'pagehide',dispose,{once:true});
+  }
+
+  function updateOrbit() {
+    const cp=Math.cos(orbit.pitch);
+    camera.position.set(orbit.target.x+Math.sin(orbit.yaw)*cp*orbit.distance,orbit.target.y+Math.sin(orbit.pitch)*orbit.distance,orbit.target.z+Math.cos(orbit.yaw)*cp*orbit.distance);
+    camera.lookAt(orbit.target);
+  }
+  function syncOrbitFromCamera(){
+    const delta=camera.position.clone().sub(orbit.target);
+    orbit.distance=clamp(delta.length(),24,90);
+    orbit.pitch=clamp(Math.asin(delta.y/orbit.distance),.06,1.18);
+    orbit.yaw=Math.atan2(delta.x,delta.z);
+  }
+  function resetView(){
+    orbit.yaw=.72;orbit.pitch=.34;orbit.distance=59;orbit.target.set(0,8,0);
+    state.targetCamera=null;state.targetLook=null;focusCard('',false);resume();
+  }
+  function resize(){
+    if(!renderer)return;
+    const width=Math.max(1,root.clientWidth),height=Math.max(1,root.clientHeight);
+    camera.aspect=width/height;camera.fov=width<700?49:43;
+    camera.updateProjectionMatrix();renderer.setSize(width,height,false);
+    resume();
+  }
+  function updateSceneCount(){
+    let count=0;scene?.traverse(()=>count++);
+    document.body.dataset.sceneObjectCount=String(count);
+  }
+
+  function animate(now=performance.now()) {
+    state.frame=0;
+    if(state.disposed||!state.visible||document.hidden)return;
+    const delta=Math.min(.25,Math.max(0,(now-(state.lastFrame||now))/1000));state.lastFrame=now;
+    if(state.targetCamera&&state.targetLook){
+      const cameraAlpha=1-Math.exp(-5.2*delta),targetAlpha=1-Math.exp(-6.1*delta);
+      camera.position.lerp(state.targetCamera,cameraAlpha);orbit.target.lerp(state.targetLook,targetAlpha);camera.lookAt(orbit.target);
+      if(camera.position.distanceTo(state.targetCamera)<.08){
+        camera.position.copy(state.targetCamera);orbit.target.copy(state.targetLook);syncOrbitFromCamera();
+        state.targetCamera=null;state.targetLook=null;document.body.dataset.focusSettled='true';
+      }
+    }else{
+      if(keys.size){
+        const forward=new THREE.Vector3();camera.getWorldDirection(forward);forward.y=0;forward.normalize();
+        const right=new THREE.Vector3().crossVectors(forward,camera.up).normalize();const move=new THREE.Vector3();
+        if(keys.has('w'))move.add(forward);if(keys.has('s'))move.sub(forward);if(keys.has('d'))move.add(right);if(keys.has('a'))move.sub(right);
+        if(move.lengthSq())orbit.target.add(move.normalize().multiplyScalar(.14));clampTarget();
+      }
+      updateOrbit();
+    }
+    renderer.render(scene,camera);
+    if(state.targetCamera||keys.size||state.dragging){
+      state.frame=requestAnimationFrame(animate);
+    }
+  }
+  function resume(){if(!state.ready||state.disposed||!state.visible||document.hidden||state.frame)return;state.lastFrame=performance.now();state.frame=requestAnimationFrame(animate)}
+  function pause(){if(state.frame)cancelAnimationFrame(state.frame);state.frame=0}
+
+  function dispose() {
+    if(state.disposed)return;state.disposed=true;pause();cancelLongPress();abort.abort();
+    resizeObserver?.disconnect();intersectionObserver?.disconnect();clearCards();
+    state.textures.forEach(texture=>texture.dispose());state.textures.clear();
+    cardGeometry.dispose();
+    if(castleRoot){scene?.remove(castleRoot);disposeObject(castleRoot)}
+    if(cardGroup)scene?.remove(cardGroup);
+    disposeObject(scene);
+    renderer?.renderLists.dispose();renderer?.dispose();renderer?.forceContextLoss();renderer?.domElement.remove();
+  }
+
+  listen(window,'message',event=>{
+    if(event.origin!==location.origin||typeof event.data!=='string')return;
+    let data;try{data=JSON.parse(event.data)}catch(_){return}
+    if(data.type==='setCards')setCards(data.cards||[],data.focusedCardId,data.shuffleSeed||0,data.animateFocus===true,data.activeCategory||'ALL');
+    if(data.type==='focusCard')focusCard(data.cardId||'',data.animate!==false);
+    if(data.type==='enterFullscreen')enterCastleFullscreen();
+    if(data.type==='exitFullscreen')exitCastleFullscreen();
+    if(data.type==='setInAppFullscreen'){
+      if(data.active!==true)setFrameFallback(false);setFullscreenUi(data.active===true);
+    }
+    if(data.type==='dispose')dispose();
+  });
+
+  init();
   </script>
 </body>
 </html>

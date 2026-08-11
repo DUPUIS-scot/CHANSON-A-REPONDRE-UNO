@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../data/card_categories.dart';
@@ -15,6 +16,7 @@ import '../widgets/opponent_hand.dart';
 import '../widgets/player_hand.dart';
 import '../widgets/puppet_dealer_controller.dart';
 import '../widgets/puppet_dealer_scene.dart';
+import 'play_hand_fullscreen_screen.dart';
 
 class PlayScreen extends StatefulWidget {
   const PlayScreen({super.key});
@@ -26,9 +28,52 @@ class _PlayScreenState extends State<PlayScreen> {
   String? selectedCardId;
   CardImageModel? flyingCard;
   bool hideHand = false;
+  bool previewOpening = false;
   bool dealerBusy = false;
   PuppetQuality puppetQuality = PuppetQuality.medium;
   final PuppetDealerController puppetController = PuppetDealerController();
+
+  Future<void> openHandPreview(
+    List<CardImageModel> cards,
+    List<bool> faceUp,
+    int initialIndex,
+  ) async {
+    if (previewOpening || cards.isEmpty) return;
+    previewOpening = true;
+    try {
+      try {
+        await HapticFeedback.selectionClick();
+      } on Object {
+        // Haptics are optional on desktop browsers.
+      }
+      if (!mounted) return;
+      final reducedMotion = MediaQuery.disableAnimationsOf(context);
+      await Navigator.of(context).push<void>(
+        PageRouteBuilder<void>(
+          transitionDuration: reducedMotion
+              ? Duration.zero
+              : const Duration(milliseconds: 320),
+          reverseTransitionDuration: reducedMotion
+              ? Duration.zero
+              : const Duration(milliseconds: 280),
+          pageBuilder: (_, _, _) => PlayHandFullscreenScreen(
+            cards: cards,
+            faceUp: faceUp,
+            initialIndex: initialIndex,
+          ),
+          transitionsBuilder: (_, animation, _, child) => FadeTransition(
+            opacity: animation,
+            child: ScaleTransition(
+              scale: Tween(begin: .96, end: 1.0).animate(animation),
+              child: child,
+            ),
+          ),
+        ),
+      );
+    } finally {
+      previewOpening = false;
+    }
+  }
 
   Future<void> playSelected() async {
     final game = context.read<GameProvider>();
@@ -294,7 +339,9 @@ class _PlayScreenState extends State<PlayScreen> {
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 12),
                             child: PlayerHand(
-                              cards: player.hand,
+                              cards: player.hand
+                                  .take(5)
+                                  .toList(growable: false),
                               selectedCardId: selectedCardId,
                               isPlayable: game.canPlay,
                               hideAll: hideHand,
@@ -302,6 +349,7 @@ class _PlayScreenState extends State<PlayScreen> {
                                 selectedCardId = card?.id;
                                 hideHand = false;
                               }),
+                              onLongPressCard: openHandPreview,
                             ),
                           ),
                         ),
