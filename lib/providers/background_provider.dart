@@ -19,7 +19,7 @@ class BackgroundProvider extends ChangeNotifier {
   String? importedPath;
   String currentFilename = defaultImageLabel;
   double darkOverlay = .28;
-  bool muteVideo = true;
+  bool muteVideo = false;
 
   String get imagePath =>
       type == BackgroundMediaType.image && importedPath != null
@@ -44,7 +44,7 @@ class BackgroundProvider extends ChangeNotifier {
           0,
           .6,
         );
-        muteVideo = map['muteVideo'] as bool? ?? true;
+        muteVideo = map['muteVideo'] as bool? ?? false;
       }
     } on Object {
       // Defaults recover from corrupt preferences.

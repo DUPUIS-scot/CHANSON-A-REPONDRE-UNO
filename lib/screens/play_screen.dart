@@ -30,7 +30,7 @@ class _PlayScreenState extends State<PlayScreen> {
   bool hideHand = false;
   bool previewOpening = false;
   bool dealerBusy = false;
-  PuppetQuality puppetQuality = PuppetQuality.medium;
+  static const puppetQuality = PuppetQuality.medium;
   final PuppetDealerController puppetController = PuppetDealerController();
 
   Future<void> openHandPreview(
@@ -140,37 +140,6 @@ class _PlayScreenState extends State<PlayScreen> {
         title: const Text('Play'),
         backgroundColor: const Color(0xFF130D0B),
         actions: [
-          PopupMenuButton<PuppetQuality>(
-            initialValue: puppetQuality,
-            tooltip: '3D quality',
-            icon: const Icon(Icons.tune),
-            onSelected: (quality) {
-              setState(() => puppetQuality = quality);
-              puppetController.setQuality(quality);
-            },
-            itemBuilder: (context) => PuppetQuality.values
-                .map(
-                  (quality) => PopupMenuItem(
-                    value: quality,
-                    child: Row(
-                      children: [
-                        Icon(
-                          quality == puppetQuality
-                              ? Icons.radio_button_checked
-                              : Icons.radio_button_unchecked,
-                          size: 18,
-                        ),
-                        const SizedBox(width: 10),
-                        Text(
-                          '${quality.name[0].toUpperCase()}'
-                          '${quality.name.substring(1)}',
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-                .toList(),
-          ),
           const Padding(
             padding: EdgeInsets.only(right: 8),
             child: HomeNavigationButton(confirmActiveGame: true),

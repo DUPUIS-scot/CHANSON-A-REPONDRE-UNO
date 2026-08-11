@@ -35,6 +35,7 @@ void main() {
 
         expect(provider.activeDeckId, custom.id);
         expect(provider.decks.first.id, AppConstants.productionDeckId);
+        expect(provider.decks.first.name, 'CHANSON A REPONDRE UNO');
         expect(
           provider.decks.first.cards,
           hasLength(AppConstants.productionDeckSize),
@@ -134,8 +135,17 @@ void main() {
       expect(viewport, contains('..rotateX(pitch)'));
       expect(viewport, contains('onPanUpdate: _dragUpdate'));
       expect(viewport, contains('VideoPlayer(controller)'));
-      expect(viewport, contains('VideoBackFace'));
+      expect(viewport, contains('Transform.flip'));
+      expect(viewport, contains('flipX: mirrored'));
       expect(homeViewport, contains('StartupVideoViewport'));
+    });
+
+    test('Play keeps production puppet quality internal', () {
+      final playScreen = File('lib/screens/play_screen.dart').readAsStringSync();
+
+      expect(playScreen, contains('PuppetQuality.medium'));
+      expect(playScreen, isNot(contains('PopupMenuButton<PuppetQuality>')));
+      expect(playScreen, isNot(contains("tooltip: '3D quality'")));
     });
   });
 }
