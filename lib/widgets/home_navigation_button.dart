@@ -11,12 +11,14 @@ import 'dj_who_avatar.dart';
 class HomeNavigationButton extends StatefulWidget {
   const HomeNavigationButton({
     this.confirmActiveGame = false,
+    this.showDjWho = true,
     this.beforeNavigate,
     this.navigationGuard,
     super.key,
   });
 
   final bool confirmActiveGame;
+  final bool showDjWho;
   final VoidCallback? beforeNavigate;
   final Future<bool> Function()? navigationGuard;
 
@@ -56,24 +58,26 @@ class _HomeNavigationButtonState extends State<HomeNavigationButton> {
 
   @override
   Widget build(BuildContext context) {
-    final currentPath = AppRouter.router.routeInformationProvider.value.uri.path;
+    final currentPath =
+        AppRouter.router.routeInformationProvider.value.uri.path;
     final isDjWhoActive = currentPath == AppRoutes.djWhoVideos;
 
     final showLabel = MediaQuery.sizeOf(context).width >= 600;
     final djWidth = showLabel ? 112.0 : 48.0;
     return SizedBox(
-      width: 48 + 8 + djWidth,
+      width: widget.showDjWho ? 48 + 8 + djWidth : 48,
       height: 48,
       child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _HomeControl(
-              hovered: hovered,
-              focused: focused,
-              onHover: (value) => setState(() => hovered = value),
-              onFocus: (value) => setState(() => focused = value),
-              onPressed: navigateHome,
-            ),
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _HomeControl(
+            hovered: hovered,
+            focused: focused,
+            onHover: (value) => setState(() => hovered = value),
+            onFocus: (value) => setState(() => focused = value),
+            onPressed: navigateHome,
+          ),
+          if (widget.showDjWho) ...[
             const SizedBox(width: 8),
             _DjWhoControl(
               active: isDjWhoActive,
@@ -86,6 +90,7 @@ class _HomeNavigationButtonState extends State<HomeNavigationButton> {
               onPressed: () => context.go(AppRoutes.djWhoVideos),
             ),
           ],
+        ],
       ),
     );
   }

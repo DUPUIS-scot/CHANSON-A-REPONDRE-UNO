@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../data/card_categories.dart';
 import '../models/card_image_model.dart';
 import '../theme/app_theme.dart';
@@ -10,9 +11,11 @@ class DrawPileWidget extends StatelessWidget {
     this.topCard,
     super.key,
   });
+
   final int count;
   final VoidCallback? onDraw;
   final CardImageModel? topCard;
+
   @override
   Widget build(BuildContext context) => Semantics(
     button: true,
@@ -20,63 +23,106 @@ class DrawPileWidget extends StatelessWidget {
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        InkWell(
-          onTap: onDraw,
-          borderRadius: BorderRadius.circular(8),
-          child: SizedBox(
-            width: 90,
-            height: 135,
-            child: Stack(
-              children: [
-                for (var offset = 6; offset >= 0; offset -= 3)
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: const Color(0xAA1B100A),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0x887D501C)),
+            boxShadow: const [
+              BoxShadow(
+                color: Colors.black87,
+                blurRadius: 13,
+                offset: Offset(0, 8),
+              ),
+            ],
+          ),
+          child: InkWell(
+            onTap: onDraw,
+            borderRadius: BorderRadius.circular(14),
+            child: SizedBox(
+              width: 102,
+              height: 145,
+              child: Stack(
+                children: [
+                  for (var offset = 9; offset >= 0; offset -= 3)
+                    Positioned(
+                      left: offset.toDouble(),
+                      top: offset.toDouble(),
+                      right: (9 - offset).toDouble(),
+                      bottom: (9 - offset).toDouble(),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(9),
+                          border: Border.all(color: const Color(0xFFD5AE58)),
+                          color: const Color(0xFF24140E),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: Image.asset(
+                          topCard == null
+                              ? 'assets/images/card_back.png'
+                              : cardCategoryFor(topCard!.category).versoAsset,
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, _, _) =>
+                              const Icon(Icons.style, color: AppTheme.gold),
+                        ),
+                      ),
+                    ),
                   Positioned(
-                    left: offset.toDouble(),
-                    top: offset.toDouble(),
-                    right: (6 - offset).toDouble(),
-                    bottom: (6 - offset).toDouble(),
+                    right: 8,
+                    top: 8,
                     child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
+                        color: const Color(0xDD160D08),
+                        borderRadius: BorderRadius.circular(10),
                         border: Border.all(color: AppTheme.gold),
-                        color: const Color(0xFF24140E),
                       ),
-                      clipBehavior: Clip.antiAlias,
-                      child: Image.asset(
-                        topCard == null
-                            ? 'assets/images/card_back.png'
-                            : cardCategoryFor(topCard!.category).versoAsset,
-                        fit: BoxFit.contain,
-                        errorBuilder: (_, _, _) =>
-                            const Icon(Icons.style, color: AppTheme.gold),
+                      child: Text(
+                        '$count',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
-                Positioned(
-                  bottom: 8,
-                  left: 0,
-                  right: 0,
-                  child: Text(
-                    '$count',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
-        const SizedBox(height: 4),
-        Text(
-          'DRAW PILE',
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.w700,
-          ),
+        Transform.translate(
+          offset: const Offset(0, -5),
+          child: const _PilePlaque(label: 'DRAW PILE'),
         ),
       ],
+    ),
+  );
+}
+
+class _PilePlaque extends StatelessWidget {
+  const _PilePlaque({required this.label});
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+    decoration: BoxDecoration(
+      color: const Color(0xEE24140C),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: const Color(0xFF9C6B28)),
+    ),
+    child: Text(
+      label,
+      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+        color: const Color(0xFFF1D8A0),
+        fontFamily: 'Georgia',
+        fontWeight: FontWeight.w700,
+        letterSpacing: .7,
+      ),
     ),
   );
 }

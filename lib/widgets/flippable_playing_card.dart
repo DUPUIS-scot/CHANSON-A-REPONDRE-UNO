@@ -112,12 +112,23 @@ class _FlippablePlayingCardState extends State<FlippablePlayingCard>
             boxShadow: widget.isSelected
                 ? const [
                     BoxShadow(
-                      color: Color(0xAAFFC928),
-                      blurRadius: 22,
-                      spreadRadius: 2,
+                      color: Color(0x99E1A52B),
+                      blurRadius: 16,
+                      spreadRadius: 1,
+                    ),
+                    BoxShadow(
+                      color: Color(0xAA000000),
+                      blurRadius: 10,
+                      offset: Offset(0, 7),
                     ),
                   ]
-                : null,
+                : const [
+                    BoxShadow(
+                      color: Color(0x88000000),
+                      blurRadius: 8,
+                      offset: Offset(0, 5),
+                    ),
+                  ],
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(8),
