@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'dart:html' as html;
 import 'dart:ui_web' as ui_web;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../models/card_image_model.dart';
@@ -12,6 +13,7 @@ import '../models/card_image_model.dart';
 class WebGlCardCastleView extends StatefulWidget {
   const WebGlCardCastleView({
     required this.cards,
+    required this.matchingCardIds,
     required this.focusedCardId,
     required this.shuffleSeed,
     required this.activeCategory,
@@ -27,6 +29,7 @@ class WebGlCardCastleView extends StatefulWidget {
   });
 
   final List<CardImageModel> cards;
+  final Set<String> matchingCardIds;
   final String? focusedCardId;
   final int shuffleSeed;
   final String activeCategory;
@@ -77,7 +80,13 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
     if (!rendererReady) return;
     final cardsChanged =
         _cardFingerprint(oldWidget.cards) != _cardFingerprint(widget.cards);
-    if (cardsChanged || oldWidget.shuffleSeed != widget.shuffleSeed) {
+    final matchesChanged = !setEquals(
+      oldWidget.matchingCardIds,
+      widget.matchingCardIds,
+    );
+    if (cardsChanged ||
+        matchesChanged ||
+        oldWidget.shuffleSeed != widget.shuffleSeed) {
       _sendState();
     } else if (oldWidget.focusedCardId != widget.focusedCardId) {
       _sendFocus();
@@ -153,8 +162,21 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
           .map(
             (card) => {
               'id': card.id,
+              'title': card.displayTitle,
               'category': card.category,
               'question': card.question,
+              'text': [
+                card.question,
+                card.answer,
+              ].where((value) => value.isNotEmpty).join(' '),
+              'tags': card.tags,
+              'metadata': {
+                'author': card.author,
+                'theme': card.theme,
+                'emotion': card.emotion,
+                'year': card.year,
+              },
+              'isMatch': widget.matchingCardIds.contains(card.id),
               'rectoUrl': _assetUrl(card.imagePath),
               'aspectRatio': card.aspectRatio,
             },

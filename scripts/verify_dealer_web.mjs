@@ -32,6 +32,14 @@ const castleFullscreenOutputPath = new URL(
   '../build/search-castle-fullscreen-verification.png',
   import.meta.url,
 );
+const homeOutputPath = new URL(
+  '../build/home-verification.png',
+  import.meta.url,
+);
+const homeMobileOutputPath = new URL(
+  '../build/home-mobile-verification.png',
+  import.meta.url,
+);
 
 const mimeTypes = {
   '.css': 'text/css',
@@ -364,7 +372,8 @@ async function verifySearchCastle(client, url) {
       const canvas = document.getElementById('search-card-castle-frame')
         ?.contentDocument?.querySelector('canvas');
       const rect = canvas?.getBoundingClientRect();
-      return (rect?.width || 0) >= 1300 && (rect?.height || 0) >= 850;
+      return (rect?.width || 0) >= innerWidth * .9 &&
+        (rect?.height || 0) >= innerHeight * .85;
     })()`,
     'the fullscreen castle canvas to fill the browser',
     5000,
@@ -480,14 +489,91 @@ async function verifySearchCastle(client, url) {
   }, null, 2));
 }
 
+async function verifyHome(client, url, mobile) {
+  await client.evaluate(
+    `localStorage.removeItem('flutter.home_experience_settings');
+     location.hash = '#/home';
+     location.reload();
+     true`,
+  );
+  await waitFor(
+    client,
+    `document.querySelector('flutter-view') !== null`,
+    'Home to start',
+  );
+  await delay(1000);
+  const bootstrapConsole = [...client.consoleMessages];
+  client.consoleMessages.length = 0;
+  const viewport = await client.evaluate(`({width: innerWidth, height: innerHeight})`);
+  await client.send('Input.dispatchMouseEvent', {
+    type: 'mousePressed',
+    x: viewport.width / 2,
+    y: viewport.height - 32,
+    button: 'left',
+    clickCount: 1,
+  });
+  await client.send('Input.dispatchMouseEvent', {
+    type: 'mouseReleased',
+    x: viewport.width / 2,
+    y: viewport.height - 32,
+    button: 'left',
+    clickCount: 1,
+  });
+  await delay(1900);
+  const result = await client.evaluate(`(() => {
+    const view = document.querySelector('flutter-view');
+    const rect = view?.getBoundingClientRect();
+    return {
+      route: location.hash,
+      innerWidth,
+      innerHeight,
+      viewWidth: rect?.width || 0,
+      viewHeight: rect?.height || 0,
+      documentWidth: document.documentElement.scrollWidth,
+      documentHeight: document.documentElement.scrollHeight,
+      horizontalOverflow:
+        document.documentElement.scrollWidth > innerWidth + 1,
+    };
+  })()`);
+  const fatalConsoleMessages = client.consoleMessages.filter(
+    ({ level }) => level === 'error',
+  );
+  if (
+    result.route !== '#/home' ||
+    !result.viewWidth ||
+    !result.viewHeight ||
+    result.horizontalOverflow ||
+    fatalConsoleMessages.length
+  ) {
+    throw new Error(
+      `Invalid Home result: ${JSON.stringify({result, fatalConsoleMessages})}`,
+    );
+  }
+  const output = mobile ? homeMobileOutputPath : homeOutputPath;
+  await capture(client, output);
+  console.log(JSON.stringify({
+    ok: true,
+    url,
+    mode: mobile ? 'mobile' : 'desktop',
+    result,
+    screenshot: output.pathname.slice(1),
+    bootstrapConsole,
+    console: client.consoleMessages,
+  }, null, 2));
+}
+
 async function main() {
   const argumentsList = process.argv.slice(2);
   const verifySearch = argumentsList.includes('--search');
+  const verifyHomeMode = argumentsList.includes('--home');
+  const mobile = argumentsList.includes('--mobile');
   const requestedUrl = argumentsList.find((value) => !value.startsWith('--'));
   const server = requestedUrl ? null : await startServer();
   const url =
     requestedUrl ||
-    `http://127.0.0.1:${port}${basePath}#/${verifySearch ? 'search' : 'play'}`;
+    `http://127.0.0.1:${port}${basePath}#/${
+      verifySearch ? 'search' : verifyHomeMode ? 'home' : 'play'
+    }`;
   const chrome = spawn(
     chromePath,
     [
@@ -498,7 +584,7 @@ async function main() {
       '--disable-default-apps',
       '--enable-unsafe-swiftshader',
       '--use-angle=swiftshader',
-      '--window-size=1440,1000',
+      `--window-size=${mobile ? '390,844' : '1440,1000'}`,
       url,
     ],
     { stdio: 'ignore' },
@@ -513,10 +599,10 @@ async function main() {
       client.send('Runtime.enable'),
       client.send('Log.enable'),
       client.send('Emulation.setDeviceMetricsOverride', {
-        width: 1440,
-        height: 1000,
+        width: mobile ? 390 : 1440,
+        height: mobile ? 844 : 1000,
         deviceScaleFactor: 1,
-        mobile: false,
+        mobile,
       }),
     ]);
 
@@ -525,6 +611,10 @@ async function main() {
       `document.querySelector('flutter-view') !== null`,
       'Flutter to start',
     );
+    if (verifyHomeMode) {
+      await verifyHome(client, url, mobile);
+      return;
+    }
     if (verifySearch) {
       await client.evaluate(
         `localStorage.removeItem('flutter.search_path_state_v1');

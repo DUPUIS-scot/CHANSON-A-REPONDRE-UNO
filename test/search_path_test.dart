@@ -103,6 +103,9 @@ void main() {
       final searchScreen = File(
         'lib/screens/search_screen.dart',
       ).readAsStringSync();
+      final castleBridge = File(
+        'lib/widgets/webgl_card_castle_view_web.dart',
+      ).readAsStringSync();
       expect(castle, contains("emit('cardLongPressed',{cardId})"));
       expect(castle, contains("emit('djWhoRequested')"));
       expect(castle, contains('assets/assets/models/search_castle.glb'));
@@ -110,6 +113,9 @@ void main() {
       expect(castle, contains('new THREE.FogExp2'));
       expect(castle, contains('deriveSurfaceAnchors(84)'));
       expect(castle, contains('card.rectoUrl'));
+      expect(castle, contains('card.isMatch===false'));
+      expect(castleBridge, contains("'isMatch': widget.matchingCardIds"));
+      expect(castleBridge, contains("'metadata':"));
       expect(castle, contains('id="exit-fullscreen"'));
       expect(castle, isNot(contains('id="castle-category"')));
       expect(castle, isNot(contains('id="focused-summary"')));
@@ -124,6 +130,8 @@ void main() {
       expect(castle, isNot(contains('id="hint"')));
       expect(castle, isNot(contains('#hint')));
       expect(searchScreen, isNot(contains('5 CARTES ACTIVES')));
+      expect(searchScreen, contains('discoveredCardIds'));
+      expect(searchScreen, contains('permanentCards.length'));
     });
   });
 }

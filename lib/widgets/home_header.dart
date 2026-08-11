@@ -6,31 +6,34 @@ class HomeHeader extends StatelessWidget {
     required this.onProfile,
     required this.onSettings,
     this.logoPath = 'assets/images/app_logo.png',
+    this.showActions = true,
     super.key,
   });
   final VoidCallback onProfile;
   final VoidCallback onSettings;
   final String logoPath;
+  final bool showActions;
 
   @override
   Widget build(BuildContext context) => Stack(
     alignment: Alignment.center,
     children: [
-      Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          _HeaderButton(
-            icon: Icons.person_rounded,
-            tooltip: 'Profile',
-            onPressed: onProfile,
-          ),
-          _HeaderButton(
-            icon: Icons.settings_rounded,
-            tooltip: 'Settings',
-            onPressed: onSettings,
-          ),
-        ],
-      ),
+      if (showActions)
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _HeaderButton(
+              icon: Icons.person_rounded,
+              tooltip: 'Profile',
+              onPressed: onProfile,
+            ),
+            _HeaderButton(
+              icon: Icons.settings_rounded,
+              tooltip: 'Settings',
+              onPressed: onSettings,
+            ),
+          ],
+        ),
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 58),
         child: LayoutBuilder(

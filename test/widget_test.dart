@@ -5,6 +5,7 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:uno_chanson_2/app.dart';
@@ -17,26 +18,28 @@ void main() {
       const ChansonUnoApp(aiBackendUrlOverride: 'https://api.test'),
     );
 
-    expect(find.text('OPEN CURTAINS'), findsOneWidget);
-    await tester.tap(find.text('OPEN CURTAINS'));
+    final enterButton = find.widgetWithText(FilledButton, 'ENTER');
+    expect(enterButton, findsOneWidget);
+    await tester.tap(enterButton);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 1300));
+    await tester.pump(const Duration(milliseconds: 600));
     await tester.pump();
 
     expect(
       find.bySemanticsLabel('Chanson à Répondre application logo'),
       findsOneWidget,
     );
-    expect(find.text('CHANSON À RÉPONDRE'), findsNothing);
+    expect(find.text('ENTER'), findsOneWidget);
     for (final label in <String>[
       'PLAY',
-      'CHOOSE DECK',
-      'BROWSE CARDS',
-      'SEARCH',
+      'CASTLE',
+      'DJ WHO',
+      'DECK',
       'JOURNAL',
-      'AI CHAT',
       'RULES',
       'SETTINGS',
+      'ABOUT',
     ]) {
       // Some destinations also appear in persistent navigation.
       expect(find.text(label), findsWidgets);
