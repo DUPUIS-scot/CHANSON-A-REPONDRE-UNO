@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../core/app_router.dart';
 import '../data/card_categories.dart';
 import '../models/card_image_model.dart';
 import '../providers/deck_provider.dart';
 import '../providers/game_provider.dart';
 import '../providers/settings_provider.dart';
 import '../theme/app_theme.dart';
-import '../widgets/discard_pile_widget.dart';
 import '../widgets/draw_pile_widget.dart';
 import '../widgets/game_table_background.dart';
 import '../widgets/home_navigation_button.dart';
-import '../widgets/opponent_hand.dart';
 import '../widgets/player_hand.dart';
 import '../widgets/puppet_dealer_controller.dart';
 import '../widgets/puppet_dealer_scene.dart';
@@ -22,13 +22,13 @@ const _playLogoAsset = 'assets/images/app_logo.png';
 
 class PlayScreen extends StatefulWidget {
   const PlayScreen({super.key});
+
   @override
   State<PlayScreen> createState() => _PlayScreenState();
 }
 
 class _PlayScreenState extends State<PlayScreen> {
   String? selectedCardId;
-  CardImageModel? flyingCard;
   bool hideHand = false;
   bool previewOpening = false;
   bool dealerBusy = false;
@@ -96,16 +96,13 @@ class _PlayScreenState extends State<PlayScreen> {
       );
       return;
     }
-    setState(() {
-      flyingCard = selected;
-      dealerBusy = true;
-    });
+
+    setState(() => dealerBusy = true);
     await puppetController.receiveFromPlayer(selected.imagePath);
     if (!mounted) return;
     final played = await game.play(selected);
     if (!mounted) return;
     setState(() {
-      flyingCard = null;
       dealerBusy = false;
       selectedCardId = null;
       hideHand = context.read<SettingsProvider>().hidePlayerHandAfterTurn;
@@ -139,8 +136,9 @@ class _PlayScreenState extends State<PlayScreen> {
     final decks = context.watch<DeckProvider>();
     final state = game.state;
     final activeDeck = decks.decks
-      .where((deck) => deck.id == state?.deckId)
-      .firstOrNull;
+        .where((deck) => deck.id == state?.deckId)
+        .firstOrNull;
+
     return Scaffold(
       backgroundColor: const Color(0xFF130D0B),
       appBar: AppBar(
@@ -197,7 +195,7 @@ class _PlayScreenState extends State<PlayScreen> {
               color: const Color(0xFF080504),
               child: Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 960),
+                  constraints: const BoxConstraints(maxWidth: 1100),
                   child: DecoratedBox(
                     decoration: const BoxDecoration(
                       border: Border.symmetric(
@@ -211,16 +209,21 @@ class _PlayScreenState extends State<PlayScreen> {
                       stageLayer: LayoutBuilder(
                         builder: (context, constraints) {
                           final narrow = constraints.maxWidth < 600;
+                          final short = constraints.maxHeight < 650;
                           return Align(
                             alignment: Alignment.topCenter,
-                            child: Padding(
-                              padding: EdgeInsets.only(top: narrow ? 52 : 62),
+                            child: Transform.translate(
+                              offset: Offset(0, narrow ? -4 : -10),
                               child: SizedBox(
                                 width: narrow
-                                    ? constraints.maxWidth
-                                    : constraints.maxWidth * .72,
-                                height:
-                                    constraints.maxHeight * (narrow ? .51 : .59),
+                                    ? constraints.maxWidth * 1.08
+                                    : constraints.maxWidth * .94,
+                                height: constraints.maxHeight *
+                                    (short
+                                        ? .72
+                                        : narrow
+                                        ? .74
+                                        : .78),
                                 child: PuppetDealerScene(
                                   controller: puppetController,
                                   quality: puppetQuality,
@@ -237,39 +240,36 @@ class _PlayScreenState extends State<PlayScreen> {
                             final veryNarrow = constraints.maxWidth < 380;
                             final short = constraints.maxHeight < 650;
                             final player = state.players.first;
-                            final opponent = state.players.length > 1
-                                ? state.players[1]
-                                : state.players.first;
                             final selected = player.hand
                                 .where((card) => card.id == selectedCardId)
                                 .firstOrNull;
+
                             final pileScale = veryNarrow
-                                ? .68
+                                ? .62
                                 : narrow
-                                ? .78
-                                : .96;
-                            final pileTop = constraints.maxHeight * .46;
+                                ? .76
+                                : 1.0;
+                            final pileTop = constraints.maxHeight *
+                                (short
+                                    ? .43
+                                    : narrow
+                                    ? .48
+                                    : .50);
                             final pileInset = veryNarrow
-                                ? 8.0
+                                ? 7.0
                                 : narrow
-                                ? 18.0
-                                : constraints.maxWidth * .13;
-                            final actionHeight = short ? 50.0 : 58.0;
+                                ? 16.0
+                                : constraints.maxWidth * .035;
+                            final actionHeight = short ? 52.0 : 62.0;
                             final handHeight = short
-                                ? 156.0
-                                : (constraints.maxHeight * .25).clamp(168.0, 224.0);
-                            final handBottom = actionHeight + 15;
+                                ? 158.0
+                                : (constraints.maxHeight * .26)
+                                      .clamp(176.0, 244.0);
+                            final handBottom = actionHeight + (short ? 8 : 10);
+
                             return Stack(
+                              clipBehavior: Clip.none,
                               children: [
-                                Positioned(
-                                  top: 8,
-                                  left: 0,
-                                  right: 0,
-                                  child: Align(
-                                    alignment: Alignment.topCenter,
-                                    child: OpponentHand(cards: opponent.hand),
-                                  ),
-                                ),
                                 Positioned(
                                   top: pileTop,
                                   left: pileInset,
@@ -295,19 +295,10 @@ class _PlayScreenState extends State<PlayScreen> {
                                   child: Transform.scale(
                                     scale: pileScale,
                                     alignment: Alignment.topRight,
-                                    child: DiscardPileWidget(
-                                      topCard: state.topCard,
-                                      count: state.discardPile.length,
+                                    child: _RulesPileWidget(
+                                      onTap: () =>
+                                          context.push(AppRoutes.rules),
                                     ),
-                                  ),
-                                ),
-                                Positioned(
-                                  top: pileTop + (narrow ? 13 : 23),
-                                  left: narrow ? 86 : 180,
-                                  right: narrow ? 86 : 180,
-                                  child: _CentralPlayArea(
-                                    message: game.message,
-                                    compact: narrow,
                                   ),
                                 ),
                                 Positioned(
@@ -342,8 +333,8 @@ class _PlayScreenState extends State<PlayScreen> {
                                   ),
                                 ),
                                 Positioned(
-                                  left: narrow ? 10 : 52,
-                                  right: narrow ? 10 : 52,
+                                  left: narrow ? 28 : 190,
+                                  right: narrow ? 28 : 190,
                                   bottom: 7,
                                   height: actionHeight,
                                   child: _PlayActionBar(
@@ -351,12 +342,7 @@ class _PlayScreenState extends State<PlayScreen> {
                                         selected != null &&
                                         game.canPlay(selected) &&
                                         !dealerBusy,
-                                    canCancel:
-                                        selected != null && !dealerBusy,
                                     onPlay: playSelected,
-                                    onCancel: () => setState(
-                                      () => selectedCardId = null,
-                                    ),
                                   ),
                                 ),
                               ],
@@ -395,119 +381,191 @@ class _TheatricalHeaderBackground extends StatelessWidget {
   );
 }
 
-class _CentralPlayArea extends StatelessWidget {
-  const _CentralPlayArea({required this.message, required this.compact});
+class _RulesPileWidget extends StatelessWidget {
+  const _RulesPileWidget({required this.onTap});
 
-  final String? message;
-  final bool compact;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    button: true,
+    label: 'Rules pile. Open rules.',
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: const Color(0xAA1B100A),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0x887D501C)),
+            boxShadow: const [
+              BoxShadow(
+                color: Colors.black87,
+                blurRadius: 13,
+                offset: Offset(0, 8),
+              ),
+            ],
+          ),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(14),
+            child: SizedBox(
+              width: 102,
+              height: 145,
+              child: Stack(
+                children: [
+                  Positioned(
+                    left: 9,
+                    top: 8,
+                    right: 1,
+                    bottom: 0,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF3A1D0D),
+                        borderRadius: BorderRadius.circular(9),
+                        border: Border.all(color: const Color(0xFF9C6B28)),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    left: 1,
+                    top: 1,
+                    right: 8,
+                    bottom: 7,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Color(0xFFF2D79B),
+                            Color(0xFFE2BD74),
+                            Color(0xFFC68B43),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(9),
+                        border: Border.all(
+                          color: const Color(0xFF4E260D),
+                          width: 2,
+                        ),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(7, 8, 7, 6),
+                        child: Column(
+                          children: [
+                            Image.asset(
+                              _playLogoAsset,
+                              height: 24,
+                              fit: BoxFit.contain,
+                              errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                            ),
+                            const SizedBox(height: 4),
+                            const Divider(
+                              height: 6,
+                              thickness: 1.3,
+                              color: Color(0xFF9D491E),
+                            ),
+                            const Icon(
+                              Icons.menu_book_rounded,
+                              size: 30,
+                              color: Color(0xFF6F2717),
+                            ),
+                            const SizedBox(height: 3),
+                            for (var i = 0; i < 4; i++)
+                              Container(
+                                height: 2,
+                                margin: const EdgeInsets.only(bottom: 4),
+                                decoration: BoxDecoration(
+                                  color: i.isEven
+                                      ? const Color(0xFF8A4E29)
+                                      : const Color(0xFFB17442),
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        Transform.translate(
+          offset: const Offset(0, -5),
+          child: const _PilePlaque(label: 'RULES PILE'),
+        ),
+      ],
+    ),
+  );
+}
+
+class _PilePlaque extends StatelessWidget {
+  const _PilePlaque({required this.label});
+
+  final String label;
 
   @override
   Widget build(BuildContext context) => Container(
-    constraints: BoxConstraints(minHeight: compact ? 54 : 68),
-    padding: EdgeInsets.symmetric(
-      horizontal: compact ? 8 : 20,
-      vertical: compact ? 7 : 12,
-    ),
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
     decoration: BoxDecoration(
-      gradient: const LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [Color(0xDD301B0E), Color(0xF2180C07)],
-      ),
+      color: const Color(0xEE24140C),
       borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: const Color(0xFF9C6B28), width: 1.2),
-      boxShadow: const [
-        BoxShadow(color: Colors.black87, blurRadius: 10, offset: Offset(0, 5)),
-      ],
+      border: Border.all(color: const Color(0xFF9C6B28)),
     ),
-    child: Center(
-      child: Text(
-        message?.trim().isNotEmpty == true ? message! : 'PLAY AREA',
-        maxLines: compact ? 2 : 3,
-        overflow: TextOverflow.ellipsis,
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          color: const Color(0xFFF1D8A0),
-          fontFamily: 'Georgia',
-          fontSize: compact ? 12 : 15,
-          fontWeight: FontWeight.w700,
-          letterSpacing: compact ? .6 : 1.1,
-          shadows: const [Shadow(color: Colors.black, blurRadius: 4)],
-        ),
+    child: Text(
+      label,
+      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+        color: const Color(0xFFF1D8A0),
+        fontFamily: 'Georgia',
+        fontWeight: FontWeight.w700,
+        letterSpacing: .7,
       ),
     ),
   );
 }
 
 class _PlayActionBar extends StatelessWidget {
-  const _PlayActionBar({
-    required this.canPlay,
-    required this.canCancel,
-    required this.onPlay,
-    required this.onCancel,
-  });
+  const _PlayActionBar({required this.canPlay, required this.onPlay});
 
   final bool canPlay;
-  final bool canCancel;
   final VoidCallback onPlay;
-  final VoidCallback onCancel;
 
   static const _textStyle = TextStyle(
     fontFamily: 'Georgia',
+    fontSize: 18,
     fontWeight: FontWeight.w800,
-    letterSpacing: 1.1,
+    letterSpacing: 1.6,
   );
 
   @override
-  Widget build(BuildContext context) => Row(
-    children: [
-      Expanded(
-        child: FilledButton.icon(
-          onPressed: canPlay ? onPlay : null,
-          icon: const Icon(Icons.play_arrow_rounded),
-          label: const FittedBox(child: Text('PLAY CARD')),
-          style: FilledButton.styleFrom(
-            backgroundColor: const Color(0xFF751B18),
-            disabledBackgroundColor: const Color(0xFF421513),
-            foregroundColor: AppTheme.brightGold,
-            disabledForegroundColor: const Color(0xFF9A7844),
-            side: const BorderSide(color: AppTheme.gold, width: 1.5),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-            textStyle: _textStyle,
-            elevation: 9,
-            shadowColor: Colors.black,
-          ),
-        ),
+  Widget build(BuildContext context) => FilledButton.icon(
+    onPressed: canPlay ? onPlay : null,
+    icon: const Icon(Icons.play_arrow_rounded, size: 30),
+    label: const FittedBox(child: Text('PLAY CARD')),
+    style: FilledButton.styleFrom(
+      backgroundColor: const Color(0xFF7A1E19),
+      disabledBackgroundColor: const Color(0xFF421513),
+      foregroundColor: AppTheme.brightGold,
+      disabledForegroundColor: const Color(0xFF9A7844),
+      side: const BorderSide(color: AppTheme.gold, width: 1.8),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(13),
       ),
-      const SizedBox(width: 12),
-      Expanded(
-        child: OutlinedButton.icon(
-          onPressed: canCancel ? onCancel : null,
-          icon: const Icon(Icons.close_rounded),
-          label: const FittedBox(child: Text('CANCEL')),
-          style: OutlinedButton.styleFrom(
-            backgroundColor: const Color(0xEE160E09),
-            disabledBackgroundColor: const Color(0xCC100B08),
-            foregroundColor: const Color(0xFFF2DFC0),
-            disabledForegroundColor: const Color(0xFF806B4D),
-            side: const BorderSide(color: Color(0xFF9C6B28), width: 1.4),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-            textStyle: _textStyle,
-          ),
-        ),
-      ),
-    ],
+      textStyle: _textStyle,
+      elevation: 11,
+      shadowColor: Colors.black,
+    ),
   );
 }
 
 class _GameLauncher extends StatelessWidget {
   const _GameLauncher({required this.decks, required this.game});
+
   final DeckProvider decks;
   final GameProvider game;
+
   @override
   Widget build(BuildContext context) => Center(
     child: SingleChildScrollView(
