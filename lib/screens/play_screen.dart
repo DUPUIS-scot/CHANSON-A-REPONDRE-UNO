@@ -142,7 +142,9 @@ class _PlayScreenState extends State<PlayScreen> {
         toolbarHeight: 76,
         automaticallyImplyLeading: false,
         titleSpacing: 0,
-        title: SizedBox.expand(
+        title: SizedBox(
+          width: double.infinity,
+          height: 76,
           child: Stack(
             alignment: Alignment.center,
             children: [

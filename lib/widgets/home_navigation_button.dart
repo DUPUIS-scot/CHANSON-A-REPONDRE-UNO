@@ -63,9 +63,8 @@ class _HomeNavigationButtonState extends State<HomeNavigationButton> {
     final isDjWhoActive = currentPath == AppRoutes.djWhoVideos;
 
     final showLabel = MediaQuery.sizeOf(context).width >= 600;
-    final djWidth = showLabel ? 112.0 : 48.0;
+    final djWidth = showLabel ? 152.0 : 48.0;
     return SizedBox(
-      width: widget.showDjWho ? 48 + 8 + djWidth : 48,
       height: 48,
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -179,46 +178,52 @@ class _DjWhoControl extends StatelessWidget {
         onExit: (_) => onHover(false),
         child: Focus(
           onFocusChange: onFocus,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
+          child: SizedBox(
             width: width,
             height: 48,
-            decoration: BoxDecoration(
-              color: active
-                  ? colors.primaryContainer.withValues(alpha: 0.72)
-                  : hovered
-                  ? const Color(0xDD33210F)
-                  : const Color(0xAA100C08),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: focused || active ? colors.primary : AppTheme.gold,
-                width: focused || active ? 2 : 1,
-              ),
-              boxShadow: hovered || active
-                  ? const [BoxShadow(color: Color(0x66FFC928), blurRadius: 12)]
-                  : null,
-            ),
-            child: Tooltip(
-              message: 'Open DJ WHO Videos',
-              child: TextButton(
-                onPressed: onPressed,
-                style: TextButton.styleFrom(
-                  foregroundColor: foreground,
-                  minimumSize: const Size(48, 48),
-                  padding: EdgeInsets.symmetric(horizontal: showLabel ? 12 : 0),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  textStyle: const TextStyle(fontWeight: FontWeight.w800),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              decoration: BoxDecoration(
+                color: active
+                    ? colors.primaryContainer.withValues(alpha: 0.72)
+                    : hovered
+                    ? const Color(0xDD33210F)
+                    : const Color(0xAA100C08),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: focused || active ? colors.primary : AppTheme.gold,
+                  width: focused || active ? 2 : 1,
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const DjWhoAvatar(size: 32),
-                    if (showLabel) ...[
-                      const SizedBox(width: 8),
-                      const Text('DJ WHO'),
+                boxShadow: hovered || active
+                    ? const [
+                        BoxShadow(color: Color(0x66FFC928), blurRadius: 12),
+                      ]
+                    : null,
+              ),
+              child: Tooltip(
+                message: 'Open DJ WHO Videos',
+                child: TextButton(
+                  onPressed: onPressed,
+                  style: TextButton.styleFrom(
+                    foregroundColor: foreground,
+                    minimumSize: const Size(48, 48),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: showLabel ? 12 : 0,
+                    ),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    textStyle: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const DjWhoAvatar(size: 32),
+                      if (showLabel) ...[
+                        const SizedBox(width: 8),
+                        const Text('DJ WHO'),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
             ),

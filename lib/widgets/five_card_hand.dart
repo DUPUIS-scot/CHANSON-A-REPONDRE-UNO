@@ -39,7 +39,9 @@ class FiveCardHand extends StatelessWidget {
           ? ((constraints.maxWidth - gap * (cards.length - 1)) / cards.length)
                 .clamp(100.0, 260.0)
           : (constraints.maxWidth * .48).clamp(150.0, 220.0);
-      final handWidth = cardWidth * cards.length + gap * (cards.length - 1);
+      final handWidth = cards.isEmpty
+          ? 0.0
+          : cardWidth * cards.length + gap * (cards.length - 1);
       final row = SizedBox(
         width: wide ? constraints.maxWidth : handWidth,
         height: constraints.maxHeight,

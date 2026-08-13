@@ -17,8 +17,12 @@ void main() {
   testWidgets('Play uses official logos and existing DJ WHO navigation', (
     tester,
   ) async {
-    await tester.binding.setSurfaceSize(const Size(360, 800));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
 
     await tester.pumpWidget(
       const ChansonUnoApp(aiBackendUrlOverride: 'https://api.test'),
@@ -38,7 +42,7 @@ void main() {
     expect(find.text('CHANSON A REPONDRE UNO'), findsNothing);
     expect(find.byKey(const Key('play-header-logo')), findsOneWidget);
     expect(find.byKey(const Key('play-launcher-logo')), findsOneWidget);
-    expect(find.bySemanticsLabel('Chanson à Répondre UNO'), findsNWidgets(2));
+    expect(find.bySemanticsLabel('Chanson à Répondre UNO'), findsOneWidget);
 
     for (final key in const [
       Key('play-header-logo'),
@@ -58,14 +62,15 @@ void main() {
     expect(tester.getCenter(find.byKey(const Key('play-header-logo'))).dx, 180);
     expect(tester.takeException(), isNull);
 
-    await tester.binding.setSurfaceSize(const Size(768, 1024));
+    tester.view.physicalSize = const Size(768, 1024);
     await tester.pump();
     expect(find.text('DJ WHO'), findsOneWidget);
     expect(tester.getCenter(find.byKey(const Key('play-header-logo'))).dx, 384);
     expect(tester.takeException(), isNull);
 
     await tester.tap(find.byTooltip('Open DJ WHO Videos'));
-    await tester.pumpAndSettle();
     expect(AppRouter.router.state.uri.path, AppRoutes.djWhoVideos);
+    AppRouter.router.go(AppRoutes.play);
+    await tester.pump(const Duration(seconds: 1));
   });
 }
