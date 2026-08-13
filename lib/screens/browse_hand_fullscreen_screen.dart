@@ -5,11 +5,10 @@ import 'package:provider/provider.dart';
 import '../models/browse_hand_preview_args.dart';
 import '../models/card_image_model.dart';
 import '../providers/deck_provider.dart';
+import '../services/public_card_share_service.dart';
 import '../widgets/fullscreen_browse_card.dart';
 import '../widgets/fullscreen_card_page_indicator.dart';
 import '../widgets/fullscreen_card_toolbar.dart';
-import 'ai_chat_screen.dart';
-import 'card_transcription_screen.dart';
 
 class BrowseHandFullscreenScreen extends StatefulWidget {
   const BrowseHandFullscreenScreen({required this.args, super.key});
@@ -121,23 +120,18 @@ class _BrowseHandFullscreenScreenState
                         setState(() => cards[index] = updated);
                       }
                     },
-                    onTranscribe: () => Navigator.push<void>(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            CardTranscriptionScreen(cardId: card.id),
-                      ),
-                    ),
-                    onDiscuss:
-                        card.transcription == null &&
-                            card.cleanedTranscription == null
-                        ? null
-                        : () => Navigator.push<void>(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => AiChatScreen(cardId: card.id),
-                            ),
-                          ),
+                    onShare: () async {
+                      final result = await PublicCardShareService.share(
+                        cardId: card.id,
+                      );
+                      if (!context.mounted ||
+                          result != CardShareResult.copied) {
+                        return;
+                      }
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Link copied')),
+                      );
+                    },
                   ),
                 ),
                 Align(

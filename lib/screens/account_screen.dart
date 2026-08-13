@@ -154,11 +154,6 @@ class _AccountScreenState extends State<AccountScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthController>();
-    final ai = context.watch<CardAiProvider>();
-    final openAi = context.watch<OpenAiConnectionController>();
-    final backendOnline = ai.connectionAvailable;
-    final protectedAi =
-        auth.canUseProtectedAi && backendOnline && openAi.connected;
 
     return Scaffold(
       backgroundColor: _stageBlack,
@@ -216,19 +211,7 @@ class _AccountScreenState extends State<AccountScreen> {
                                 const SizedBox(height: 4),
                                 auth.user == null
                                     ? _authPanel(auth)
-                                    : _signedInPanel(
-                                        auth,
-                                        backendOnline && openAi.connected,
-                                      ),
-                                const SizedBox(height: 14),
-                                KeyedSubtree(
-                                  key: openAiSectionKey,
-                                  child: _openAiPanel(auth, openAi),
-                                ),
-                                const SizedBox(height: 14),
-                                _statusPanel(auth, ai, protectedAi),
-                                const SizedBox(height: 14),
-                                _externalChatGptPanel(),
+                                    : _signedInPanel(auth),
                               ],
                             ),
                           ),
@@ -265,7 +248,7 @@ class _AccountScreenState extends State<AccountScreen> {
             ),
             const SizedBox(height: 8),
             const Text(
-              'Access protected AI features like Chat and Card Transcription.',
+              'Sign in to manage your application account.',
               style: TextStyle(color: _stageIvory, fontSize: 15),
             ),
             if (widget.arguments != null) ...[
@@ -283,7 +266,8 @@ class _AccountScreenState extends State<AccountScreen> {
             if (message != null) ...[
               const SizedBox(height: 14),
               _InlineNotice(
-                isError: message.contains('Invalid') ||
+                isError:
+                    message.contains('Invalid') ||
                     message.contains('Incorrect') ||
                     message.contains('configured') ||
                     message.contains('unavailable'),
@@ -445,7 +429,7 @@ class _AccountScreenState extends State<AccountScreen> {
     );
   }
 
-  Widget _signedInPanel(AuthController auth, bool backendOnline) {
+  Widget _signedInPanel(AuthController auth) {
     final user = auth.user!;
     return _ProfilePanel(
       child: Column(
@@ -461,23 +445,7 @@ class _AccountScreenState extends State<AccountScreen> {
           const SizedBox(height: 14),
           _AccountLine(label: 'Email', value: user.email),
           const _AccountLine(label: 'Session', value: 'Active'),
-          _AccountLine(
-            label: 'AI access',
-            value: backendOnline ? 'Available' : 'Backend unavailable',
-          ),
           const SizedBox(height: 18),
-          _PrimaryGoldButton(
-            onPressed: backendOnline ? () => context.go(AppRoutes.aiChat) : null,
-            icon: Icons.smart_toy_outlined,
-            label: 'OPEN AI CHAT',
-          ),
-          const SizedBox(height: 10),
-          _OutlinedGoldButton(
-            onPressed: () => context.go(AppRoutes.cards),
-            icon: Icons.document_scanner_outlined,
-            label: 'OPEN CARD TRANSCRIPTION',
-          ),
-          const SizedBox(height: 10),
           _OutlinedGoldButton(
             onPressed: auth.busy ? null : () => _signOut(auth),
             icon: Icons.logout,
@@ -496,6 +464,8 @@ class _AccountScreenState extends State<AccountScreen> {
     );
   }
 
+  // Dormant while AI product features are hidden for this release.
+  // ignore: unused_element
   Widget _openAiPanel(
     AuthController auth,
     OpenAiConnectionController connection,
@@ -613,9 +583,7 @@ class _AccountScreenState extends State<AccountScreen> {
             )
           else ...[
             _PrimaryGoldButton(
-              onPressed: connection.loading
-                  ? null
-                  : connection.testConnection,
+              onPressed: connection.loading ? null : connection.testConnection,
               icon: Icons.network_check,
               loading: connection.loading,
               label: 'TEST CONNECTION',
@@ -656,7 +624,9 @@ class _AccountScreenState extends State<AccountScreen> {
       barrierDismissible: false,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: Text(replacing ? 'REPLACE OPENAI API KEY' : 'CONNECT OPENAI API'),
+          title: Text(
+            replacing ? 'REPLACE OPENAI API KEY' : 'CONNECT OPENAI API',
+          ),
           content: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 520),
             child: SingleChildScrollView(
@@ -713,8 +683,10 @@ class _AccountScreenState extends State<AccountScreen> {
               child: const Text('CANCEL'),
             ),
             FilledButton(
-              onPressed: () =>
-                  Navigator.pop(dialogContext, keyController.text.trim().isNotEmpty),
+              onPressed: () => Navigator.pop(
+                dialogContext,
+                keyController.text.trim().isNotEmpty,
+              ),
               child: Text(replacing ? 'REPLACE' : 'CONNECT'),
             ),
           ],
@@ -728,9 +700,7 @@ class _AccountScreenState extends State<AccountScreen> {
     await connection.connect(plaintext, replace: replacing);
   }
 
-  Future<void> _confirmDisconnect(
-    OpenAiConnectionController connection,
-  ) async {
+  Future<void> _confirmDisconnect(OpenAiConnectionController connection) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -754,6 +724,7 @@ class _AccountScreenState extends State<AccountScreen> {
     if (confirmed == true) await connection.disconnect();
   }
 
+  // ignore: unused_element
   Widget _statusPanel(
     AuthController auth,
     CardAiProvider ai,
@@ -831,9 +802,10 @@ class _AccountScreenState extends State<AccountScreen> {
             ),
             ConfigurationStatusRow(
               label: 'Supabase client key',
-              status: AppConfig.isValidSupabaseClientKey(
-                AppConfig.supabaseClientKey,
-              )
+              status:
+                  AppConfig.isValidSupabaseClientKey(
+                    AppConfig.supabaseClientKey,
+                  )
                   ? 'Configured'
                   : 'Missing or placeholder',
               isValid: AppConfig.isValidSupabaseClientKey(
@@ -852,7 +824,8 @@ class _AccountScreenState extends State<AccountScreen> {
                   : AppConfig.hasAuthConfiguration
                   ? 'Ready'
                   : 'Missing',
-              isValid: AppConfig.hasAuthConfiguration &&
+              isValid:
+                  AppConfig.hasAuthConfiguration &&
                   auth.mode != AuthenticationMode.configurationError,
             ),
             const SizedBox(height: 8),
@@ -870,6 +843,7 @@ class _AccountScreenState extends State<AccountScreen> {
     ),
   );
 
+  // ignore: unused_element
   Widget _externalChatGptPanel() => _ProfilePanel(
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

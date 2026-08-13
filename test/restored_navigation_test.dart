@@ -23,7 +23,6 @@ void main() {
           AppRoutes.play,
           AppRoutes.journal,
           AppRoutes.search,
-          AppRoutes.aiChat,
           AppRoutes.rules,
           AppRoutes.settings,
           AppRoutes.profile,
@@ -58,7 +57,7 @@ void main() {
     await tester.tap(find.text('PLUS'));
     await tester.pumpAndSettle();
     expect(find.text('Search'), findsOneWidget);
-    expect(find.text('AI Chat'), findsOneWidget);
+    expect(find.text('AI Chat'), findsNothing);
     expect(find.text('Rules'), findsOneWidget);
     expect(find.text('Settings'), findsOneWidget);
     expect(find.text('Profile'), findsOneWidget);

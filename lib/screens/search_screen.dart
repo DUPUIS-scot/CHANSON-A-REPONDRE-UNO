@@ -13,7 +13,6 @@ import '../data/card_categories.dart';
 import '../models/card_image_model.dart';
 import '../models/deck_model.dart';
 import '../providers/deck_provider.dart';
-import '../providers/card_ai_provider.dart';
 import '../services/local_storage_service.dart';
 import '../services/search_service.dart';
 import '../theme/app_theme.dart';
@@ -704,16 +703,8 @@ class _CastleCardFullscreen extends StatelessWidget {
 
   void _close(BuildContext context) => Navigator.of(context).pop();
 
-  void _openRoute(BuildContext context, String route) {
-    Navigator.of(context).pop();
-    AppRouter.router.go(route);
-  }
-
   @override
   Widget build(BuildContext context) {
-    final ai = context.watch<CardAiProvider>();
-    final hasTranscription =
-        card.transcription != null || card.cleanedTranscription != null;
     return Material(
       color: Colors.black,
       child: SafeArea(
@@ -801,35 +792,13 @@ class _CastleCardFullscreen extends StatelessWidget {
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                        FilledButton.icon(
-                          onPressed: ai.isConfigured
-                              ? () => _openRoute(
-                                  context,
-                                  AppRoutes.transcription(card.id),
-                                )
-                              : null,
-                          icon: const Icon(Icons.document_scanner_outlined),
-                          label: Text(
-                            hasTranscription
-                                ? 'View Transcription'
-                                : 'Transcribe Card',
-                          ),
-                        ),
-                        FilledButton.tonalIcon(
-                          onPressed: ai.isConfigured && hasTranscription
-                              ? () => _openRoute(
-                                  context,
-                                  AppRoutes.cardChat(card.id),
-                                )
-                              : null,
-                          icon: const Icon(Icons.forum_outlined),
-                          label: const Text('Discuss This Card'),
-                        ),
                         OutlinedButton.icon(
-                          onPressed: () =>
-                              _openRoute(context, AppRoutes.cardAlias(card.id)),
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            AppRouter.router.go(AppRoutes.cardAlias(card.id));
+                          },
                           icon: const Icon(Icons.more_horiz_rounded),
-                          label: const Text('All Card Actions'),
+                          label: const Text('Open Card'),
                         ),
                       ],
                     ),

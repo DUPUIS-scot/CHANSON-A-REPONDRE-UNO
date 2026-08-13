@@ -6,16 +6,14 @@ class SelectedCardActions extends StatelessWidget {
     required this.card,
     required this.deckName,
     required this.onOpen,
-    required this.onTranscribe,
-    required this.onDiscuss,
+    required this.onShare,
     required this.onFavourite,
     super.key,
   });
   final CardImageModel card;
   final String deckName;
   final VoidCallback onOpen;
-  final VoidCallback onTranscribe;
-  final VoidCallback? onDiscuss;
+  final VoidCallback onShare;
   final VoidCallback onFavourite;
   @override
   Widget build(BuildContext context) => Card(
@@ -41,14 +39,9 @@ class SelectedCardActions extends StatelessWidget {
                 label: const Text('Open Full Screen'),
               ),
               OutlinedButton.icon(
-                onPressed: onTranscribe,
-                icon: const Icon(Icons.document_scanner),
-                label: const Text('Transcribe'),
-              ),
-              OutlinedButton.icon(
-                onPressed: onDiscuss,
-                icon: const Icon(Icons.smart_toy),
-                label: const Text('Discuss with AI'),
+                onPressed: onShare,
+                icon: const Icon(Icons.share_outlined),
+                label: const Text('Share'),
               ),
               IconButton.outlined(
                 tooltip: card.isFavourite

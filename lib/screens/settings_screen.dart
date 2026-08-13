@@ -94,7 +94,7 @@ class SettingsScreen extends StatelessWidget {
               SettingsSection(
                 title: 'GENERAL',
                 icon: Icons.tune_rounded,
-                initiallyExpanded: true,
+                initiallyExpanded: false,
                 children: [
                   ListTile(
                     leading: const Icon(Icons.language_rounded),
@@ -133,7 +133,7 @@ class SettingsScreen extends StatelessWidget {
               SettingsSection(
                 title: 'HOME',
                 icon: Icons.home_outlined,
-                initiallyExpanded: true,
+                initiallyExpanded: false,
                 children: [
                   const ListTile(
                     title: Text('Home background'),
@@ -231,7 +231,7 @@ class SettingsScreen extends StatelessWidget {
               SettingsSection(
                 title: 'RESTORE',
                 icon: Icons.restore_rounded,
-                initiallyExpanded: true,
+                initiallyExpanded: false,
                 children: [
                   SettingsActionTile(
                     title: 'Restore default Home background',

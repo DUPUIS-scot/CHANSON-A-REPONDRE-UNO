@@ -22,14 +22,6 @@ class AppBottomNavigation extends StatelessWidget {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.smart_toy),
-                title: const Text('AI Chat'),
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  context.go(AppRoutes.aiChat);
-                },
-              ),
-              ListTile(
                 leading: const Icon(Icons.gavel),
                 title: const Text('Rules'),
                 onTap: () {

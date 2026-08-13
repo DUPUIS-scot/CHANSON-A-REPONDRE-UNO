@@ -3,10 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/deck_provider.dart';
-import '../screens/ai_chat_screen.dart';
 import '../screens/card_browser_screen.dart';
 import '../screens/card_fullscreen_screen.dart';
-import '../screens/card_transcription_screen.dart';
 import '../screens/deck_selection_screen.dart';
 import '../screens/dj_who_videos_screen.dart';
 import '../screens/home_screen.dart';
@@ -85,14 +83,6 @@ abstract final class AppRouter {
             path: ':cardId',
             builder: (_, state) =>
                 CardFullscreenScreen(cardId: state.pathParameters['cardId']!),
-            routes: [
-              GoRoute(
-                path: 'transcription',
-                builder: (_, state) => CardTranscriptionScreen(
-                  cardId: state.pathParameters['cardId']!,
-                ),
-              ),
-            ],
           ),
         ],
       ),
@@ -100,12 +90,6 @@ abstract final class AppRouter {
       GoRoute(
         path: AppRoutes.journal,
         builder: (_, _) => const JournalScreen(),
-      ),
-      GoRoute(path: AppRoutes.aiChat, builder: (_, _) => const AiChatScreen()),
-      GoRoute(
-        path: '${AppRoutes.aiChat}/:cardId',
-        builder: (_, state) =>
-            AiChatScreen(cardId: state.pathParameters['cardId']),
       ),
       GoRoute(path: AppRoutes.rules, builder: (_, _) => const RulesScreen()),
       GoRoute(
@@ -133,19 +117,6 @@ abstract final class AppRouter {
         path: '/card/:cardId',
         builder: (_, state) =>
             CardFullscreenScreen(cardId: state.pathParameters['cardId']!),
-        routes: [
-          GoRoute(
-            path: 'transcription',
-            builder: (_, state) => CardTranscriptionScreen(
-              cardId: state.pathParameters['cardId']!,
-            ),
-          ),
-          GoRoute(
-            path: 'chat',
-            builder: (_, state) =>
-                AiChatScreen(cardId: state.pathParameters['cardId']),
-          ),
-        ],
       ),
     ],
   );

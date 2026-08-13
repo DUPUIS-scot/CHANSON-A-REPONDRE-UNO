@@ -8,6 +8,7 @@ import '../models/card_image_model.dart';
 import '../models/browse_hand_preview_args.dart';
 import '../providers/card_browser_provider.dart';
 import '../providers/deck_provider.dart';
+import '../services/public_card_share_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/card_hand_toolbar.dart';
 import '../widgets/empty_deck_state.dart';
@@ -60,6 +61,14 @@ class _CardBrowserScreenState extends State<CardBrowserScreen> {
 
   void open(CardImageModel card) => context.go(AppRoutes.cardAlias(card.id));
 
+  Future<void> share(CardImageModel card) async {
+    final result = await PublicCardShareService.share(cardId: card.id);
+    if (!mounted || result != CardShareResult.copied) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Link copied')),
+    );
+  }
+
   Future<void> openHandPreview(int heldIndex, String deckName) async {
     if (previewOpening || browser.visibleHand.isEmpty) return;
     previewOpening = true;
@@ -104,7 +113,6 @@ class _CardBrowserScreenState extends State<CardBrowserScreen> {
     var category = browser.categoryFilter;
     var title = browser.titleFilter;
     var favourites = browser.favouritesOnly;
-    var transcribed = browser.transcribedOnly;
     final categories = deck.cards.map((card) => card.category).toSet().toList()
       ..sort();
     await showModalBottomSheet<void>(
@@ -154,12 +162,6 @@ class _CardBrowserScreenState extends State<CardBrowserScreen> {
                   onChanged: (value) =>
                       setSheetState(() => favourites = value ?? false),
                 ),
-                CheckboxListTile(
-                  title: const Text('Transcribed only'),
-                  value: transcribed,
-                  onChanged: (value) =>
-                      setSheetState(() => transcribed = value ?? false),
-                ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
@@ -182,7 +184,7 @@ class _CardBrowserScreenState extends State<CardBrowserScreen> {
                           category: category,
                           title: title,
                           favourites: favourites,
-                          transcribed: transcribed,
+                          transcribed: false,
                           clearCategory: category == null,
                         );
                         Navigator.pop(sheetContext);
@@ -202,8 +204,7 @@ class _CardBrowserScreenState extends State<CardBrowserScreen> {
   int get filterCount =>
       (browser.categoryFilter == null ? 0 : 1) +
       (browser.titleFilter.isEmpty ? 0 : 1) +
-      (browser.favouritesOnly ? 1 : 0) +
-      (browser.transcribedOnly ? 1 : 0);
+      (browser.favouritesOnly ? 1 : 0);
 
   @override
   Widget build(BuildContext context) {
@@ -319,14 +320,7 @@ class _CardBrowserScreenState extends State<CardBrowserScreen> {
                               card: selected,
                               deckName: deck.name,
                               onOpen: () => open(selected),
-                              onTranscribe: () => context.go(
-                                AppRoutes.transcription(selected.id),
-                              ),
-                              onDiscuss: selected.transcriptionReviewed
-                                  ? () => context.go(
-                                      AppRoutes.cardChat(selected.id),
-                                    )
-                                  : null,
+                              onShare: () => share(selected),
                               onFavourite: () async {
                                 await decks.toggleFavourite(selected.id);
                                 final refreshed = decks.activeDeck;

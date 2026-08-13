@@ -5,8 +5,7 @@ class FullscreenCardToolbar extends StatelessWidget {
     required this.title,
     required this.onClose,
     required this.onFavourite,
-    required this.onTranscribe,
-    required this.onDiscuss,
+    required this.onShare,
     required this.favourite,
     super.key,
   });
@@ -14,8 +13,7 @@ class FullscreenCardToolbar extends StatelessWidget {
   final bool favourite;
   final VoidCallback onClose;
   final VoidCallback onFavourite;
-  final VoidCallback onTranscribe;
-  final VoidCallback? onDiscuss;
+  final VoidCallback onShare;
 
   @override
   Widget build(BuildContext context) => Material(
@@ -38,14 +36,9 @@ class FullscreenCardToolbar extends StatelessWidget {
             icon: Icon(favourite ? Icons.favorite : Icons.favorite_border),
           ),
           IconButton(
-            tooltip: 'Transcribe card',
-            onPressed: onTranscribe,
-            icon: const Icon(Icons.document_scanner_outlined),
-          ),
-          IconButton(
-            tooltip: 'Discuss with AI',
-            onPressed: onDiscuss,
-            icon: const Icon(Icons.forum_outlined),
+            tooltip: 'Share card',
+            onPressed: onShare,
+            icon: const Icon(Icons.share_outlined),
           ),
         ],
       ),

@@ -23,8 +23,7 @@ class FullscreenBrowseCard extends StatelessWidget {
   Widget build(BuildContext context) => Semantics(
     label:
         'Card $position of $total, ${card.category}, '
-        '${card.isFavourite ? 'favourite' : 'not favourite'}, '
-        '${card.transcription == null && card.cleanedTranscription == null ? 'not transcribed' : 'transcribed'}',
+        '${card.isFavourite ? 'favourite' : 'not favourite'}',
     child: ZoomableCardView(
       onZoomChanged: onZoomChanged,
       child: Padding(

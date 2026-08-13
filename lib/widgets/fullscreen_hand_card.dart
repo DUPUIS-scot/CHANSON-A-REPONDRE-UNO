@@ -44,8 +44,7 @@ class _FullscreenHandCardState extends State<FullscreenHandCard> {
       label:
           'Card ${widget.position} of ${widget.total}, '
           '${widget.card.category}, ${widget.faceUp ? 'face up' : 'face down'}, '
-          '${widget.card.isFavourite ? 'favourite' : 'not favourite'}, '
-          '${widget.card.transcription == null ? 'not transcribed' : 'transcribed'}',
+          '${widget.card.isFavourite ? 'favourite' : 'not favourite'}',
       child: Center(
         child: GestureDetector(
           onDoubleTap: _resetZoom,
