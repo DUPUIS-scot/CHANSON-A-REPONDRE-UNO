@@ -31,7 +31,7 @@ abstract final class AppRoutes {
   static const rules = '/rules';
   static const settings = '/settings';
   static const profile = '/profile';
-  static const djWhoVideos = '/dj-who-videos';
+  static const djWhoVideos = '/djwho';
   static const login = '/login';
   static const register = '/register';
   static const forgotPassword = '/forgot-password';

@@ -32,12 +32,17 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> {
   static const _storageKey = 'search_path_state_v1';
-  static const _categories = <String>[
-    'CLASSIQUE',
-    'ART CONTEMPORAIN',
-    'CYBERPUNK',
-    'POÉSIE',
-    'SAUVAGE',
+  // Landing order is visual only; these are the authoritative permanent
+  // category definitions used by the existing Search filter.
+  static final _categories = <CardCategoryDefinition>[
+    for (final id in const [
+      'classique',
+      'art-contemporain',
+      'cyberpunk',
+      'poesie',
+      'sauvage',
+    ])
+      cardCategoryFor(id),
   ];
 
   final _search = SearchService();
@@ -210,15 +215,7 @@ class _SearchScreenState extends State<SearchScreen> {
       },
       child: Scaffold(
         backgroundColor: const Color(0xFF05080C),
-        body: DecoratedBox(
-          decoration: const BoxDecoration(
-            gradient: RadialGradient(
-              center: Alignment.topCenter,
-              radius: 1.3,
-              colors: [Color(0xFF102130), Color(0xFF05080C)],
-            ),
-          ),
-          child: !_castleActive
+        body: !_castleActive
               ? _SearchCategorySelection(
                   categories: _categories,
                   onAllCategoriesSelected: _openAllCategories,
@@ -233,7 +230,6 @@ class _SearchScreenState extends State<SearchScreen> {
                   ],
                 )
               : _buildCastle(results, category ?? searchAllCategoriesLabel),
-        ),
       ),
     );
   }
@@ -431,114 +427,190 @@ class _SearchCategorySelection extends StatelessWidget {
 
   final VoidCallback onAllCategoriesSelected;
   final ValueChanged<String> onCategorySelected;
-  final List<String> categories;
+  final List<CardCategoryDefinition> categories;
 
   @override
-  Widget build(BuildContext context) => SafeArea(
-    child: Stack(
-      children: [
-        Positioned.fill(
-          child: LayoutBuilder(
-            builder: (context, constraints) => SingleChildScrollView(
+  Widget build(BuildContext context) => Stack(
+    fit: StackFit.expand,
+    children: [
+      Image.asset(
+        'assets/images/search_castle_background.png',
+        fit: BoxFit.cover,
+        alignment: Alignment.center,
+        filterQuality: FilterQuality.high,
+        cacheWidth: (MediaQuery.sizeOf(context).width *
+                MediaQuery.devicePixelRatioOf(context))
+            .round(),
+      ),
+      const DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0x33000612), Color(0x12000612), Color(0xA6000308)],
+            stops: [0, .46, 1],
+          ),
+        ),
+      ),
+      SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final compact = constraints.maxWidth < 700;
+            final gutter = AppBreakpoints.gutterFor(constraints.maxWidth);
+            final galleryWidth = min(constraints.maxWidth - gutter * 2, 1120.0);
+            final cardWidth = compact
+                ? ((galleryWidth - 14) / 2).clamp(112.0, 166.0)
+                : ((galleryWidth - 56) / 5).clamp(120.0, 184.0);
+            return SingleChildScrollView(
               padding: EdgeInsets.fromLTRB(
-                AppBreakpoints.gutterFor(constraints.maxWidth),
-                84,
-                AppBreakpoints.gutterFor(constraints.maxWidth),
-                AppSpacing.large,
+                gutter,
+                compact ? 102 : 118,
+                gutter,
+                28,
               ),
               child: ConstrainedBox(
                 constraints: BoxConstraints(
-                  minHeight: max(0, constraints.maxHeight - 112),
+                  minHeight: max(
+                    0,
+                    constraints.maxHeight - (compact ? 130 : 146),
+                  ),
                 ),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      maxWidth: AppBreakpoints.readingContent,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Text(
+                      'CHOOSE A CATEGORY',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: .88),
+                        fontSize: compact ? 12 : 14,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 2.4,
+                        shadows: const [
+                          Shadow(color: Colors.black, blurRadius: 8),
+                        ],
+                      ),
                     ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const Text(
-                          'SEARCH',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 30,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 2.2,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        const Text(
-                          'CHOOSE A CATEGORY',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Color(0xFFAFC1CC),
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.2,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.large),
-                        FilledButton.tonal(
-                          key: const ValueKey('search-all-categories'),
-                          onPressed: onAllCategoriesSelected,
-                          style: FilledButton.styleFrom(
-                            minimumSize: const Size.fromHeight(56),
-                            foregroundColor: AppTheme.ink,
-                            backgroundColor: AppTheme.brightGold,
-                            textStyle: const TextStyle(
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 1.2,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                AppRadius.panel,
-                              ),
-                            ),
-                          ),
-                          child: const Text(searchAllCategoriesLabel),
-                        ),
-                        const SizedBox(height: AppSpacing.medium),
-                        for (var index = 0; index < categories.length; index++)
-                          Padding(
-                            padding: EdgeInsets.only(
-                              bottom: index == categories.length - 1
-                                  ? 0
-                                  : AppSpacing.small,
-                            ),
-                            child: OutlinedButton(
-                              key: ValueKey(
-                                'search-category-${categories[index]}',
-                              ),
+                    SizedBox(height: compact ? 14 : 20),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 1120),
+                      child: Wrap(
+                        alignment: WrapAlignment.center,
+                        spacing: 14,
+                        runSpacing: compact ? 16 : 20,
+                        children: [
+                          for (final category in categories)
+                            _CategoryArtworkButton(
+                              category: category,
+                              width: cardWidth,
                               onPressed: () =>
-                                  onCategorySelected(categories[index]),
-                              style: OutlinedButton.styleFrom(
-                                minimumSize: const Size.fromHeight(
-                                  AppTouchTarget.minimum,
-                                ),
-                                foregroundColor: Colors.white,
-                                side: const BorderSide(
-                                  color: AppTheme.brightGold,
-                                ),
-                                textStyle: const TextStyle(
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 1,
-                                ),
-                              ),
-                              child: Text(categories[index]),
+                                  onCategorySelected(category.label),
                             ),
-                          ),
-                      ],
+                        ],
+                      ),
                     ),
+                    const SizedBox(height: 16),
+                    TextButton.icon(
+                      key: const ValueKey('search-all-categories'),
+                      onPressed: onAllCategoriesSelected,
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        backgroundColor: const Color(0x8A07111C),
+                        minimumSize: const Size(48, AppTouchTarget.minimum),
+                        padding: const EdgeInsets.symmetric(horizontal: 18),
+                        side: const BorderSide(color: Color(0x8FFFC928)),
+                        shape: const StadiumBorder(),
+                      ),
+                      icon: const Icon(Icons.castle_outlined, size: 19),
+                      label: const Text(
+                        searchAllCategoriesLabel,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+      const _SearchEntryNavigation(),
+    ],
+  );
+}
+
+class _CategoryArtworkButton extends StatefulWidget {
+  const _CategoryArtworkButton({
+    required this.category,
+    required this.width,
+    required this.onPressed,
+  });
+
+  final CardCategoryDefinition category;
+  final double width;
+  final VoidCallback onPressed;
+
+  @override
+  State<_CategoryArtworkButton> createState() =>
+      _CategoryArtworkButtonState();
+}
+
+class _CategoryArtworkButtonState extends State<_CategoryArtworkButton> {
+  bool hovered = false;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    button: true,
+    label: '${widget.category.label}. Open category in the castle.',
+    child: MouseRegion(
+      onEnter: (_) => setState(() => hovered = true),
+      onExit: (_) => setState(() => hovered = false),
+      child: AnimatedScale(
+        duration: const Duration(milliseconds: 170),
+        curve: Curves.easeOut,
+        scale: hovered ? 1.035 : 1,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 170),
+          transform: Matrix4.translationValues(0, hovered ? -7 : 0, 0),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(widget.width * .065),
+            boxShadow: [
+              BoxShadow(
+                color: hovered
+                    ? const Color(0x99FFC928)
+                    : const Color(0xB3000000),
+                blurRadius: hovered ? 24 : 18,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              key: ValueKey('search-category-${widget.category.label}'),
+              onTap: widget.onPressed,
+              borderRadius: BorderRadius.circular(widget.width * .065),
+              child: SizedBox(
+                width: widget.width,
+                child: AspectRatio(
+                  aspectRatio: 2 / 3,
+                  child: Image.asset(
+                    widget.category.versoAsset,
+                    fit: BoxFit.contain,
+                    filterQuality: FilterQuality.high,
+                    cacheWidth: (widget.width *
+                            MediaQuery.devicePixelRatioOf(context))
+                        .round(),
                   ),
                 ),
               ),
             ),
           ),
         ),
-        const Positioned(top: 12, right: 12, child: _SearchEntryNavigation()),
-      ],
+      ),
     ),
   );
 }
@@ -547,22 +619,95 @@ class _SearchEntryNavigation extends StatelessWidget {
   const _SearchEntryNavigation();
 
   @override
-  Widget build(BuildContext context) => Row(
+  Widget build(BuildContext context) => SafeArea(
     key: const ValueKey('search-entry-navigation'),
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      OutlinedButton(
-        key: const ValueKey('search-home-button'),
-        onPressed: () => context.go(AppRoutes.home),
-        child: const Text('HOME'),
+    child: SizedBox(
+      height: 76,
+      child: Stack(
+        alignment: Alignment.topCenter,
+        children: [
+          Positioned(
+            left: 12,
+            top: 12,
+            child: IconButton(
+              key: const ValueKey('search-home-button'),
+              onPressed: () => context.go(AppRoutes.home),
+              tooltip: 'Home',
+              icon: const Icon(Icons.home_rounded),
+              color: Colors.white,
+              iconSize: 25,
+              style: IconButton.styleFrom(
+                minimumSize: const Size.square(48),
+                backgroundColor: const Color(0xA608111C),
+                side: const BorderSide(color: Color(0x80FFFFFF)),
+                shadowColor: Colors.black,
+                elevation: 5,
+              ),
+            ),
+          ),
+          const Positioned(
+            top: 14,
+            child: IgnorePointer(
+              child: Text(
+                'SEARCH',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 25,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 3.2,
+                  shadows: [Shadow(color: Colors.black, blurRadius: 12)],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            right: 12,
+            top: 12,
+            child: Tooltip(
+              message: 'DJ WHO',
+              child: Semantics(
+                button: true,
+                label: 'DJ WHO',
+                child: InkWell(
+                  key: const ValueKey('search-dj-who-button'),
+                  onTap: () => context.go(AppRoutes.djWhoVideos),
+                  customBorder: const CircleBorder(),
+                  child: Container(
+                    width: 56,
+                    height: 56,
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: const Color(0xCCFFC928),
+                        width: 1.5,
+                      ),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x88000000),
+                          blurRadius: 10,
+                          offset: Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: ClipOval(
+                      child: Image.asset(
+                        'assets/images/dj_who.png',
+                        fit: BoxFit.cover,
+                        width: 52,
+                        height: 52,
+                        cacheWidth: (52 * MediaQuery.devicePixelRatioOf(context))
+                            .round(),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
-      const SizedBox(width: 8),
-      OutlinedButton(
-        key: const ValueKey('search-dj-who-button'),
-        onPressed: () => context.go(AppRoutes.djWhoVideos),
-        child: const Text('DJ WHO'),
-      ),
-    ],
+    ),
   );
 }
 

@@ -118,6 +118,19 @@ void main() {
         );
       }
 
+      final homeIcon = tester.widget<IconButton>(
+        find.byKey(const ValueKey('search-home-button')),
+      );
+      expect(homeIcon.tooltip, 'Home');
+      expect(find.text('HOME'), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('search-dj-who-button')),
+          matching: find.byType(Image),
+        ),
+        findsOneWidget,
+      );
+
       await tester.tap(find.byKey(const ValueKey('search-all-categories')));
       await tester.pump(const Duration(milliseconds: 500));
       expect(
@@ -155,7 +168,11 @@ void main() {
         'POÉSIE',
         'SAUVAGE',
       ]) {
-        await tester.tap(find.byKey(ValueKey('search-category-$category')));
+        tester
+            .widget<InkWell>(
+              find.byKey(ValueKey('search-category-$category')),
+            )
+            .onTap!();
         await tester.pump(const Duration(milliseconds: 500));
         expect(
           find.byKey(const ValueKey('search-entry-navigation')),
@@ -307,8 +324,14 @@ void main() {
       expect(castle, isNot(contains('#hint')));
       expect(searchScreen, isNot(contains('5 CARTES ACTIVES')));
       expect(searchScreen, isNot(contains('Rechercher une carte')));
-      expect(searchScreen, contains("child: const Text('HOME')"));
-      expect(searchScreen, contains("child: const Text('DJ WHO')"));
+      expect(searchScreen, contains("tooltip: 'Home'"));
+      expect(searchScreen, contains("label: 'DJ WHO'"));
+      expect(searchScreen, isNot(contains("child: const Text('HOME')")));
+      expect(searchScreen, contains('category.versoAsset'));
+      expect(
+        searchScreen,
+        contains("assets/images/search_castle_background.png"),
+      );
       expect(searchScreen, contains('bool _castleActive = false'));
       expect(searchScreen, contains('category ?? searchAllCategoriesLabel'));
       expect(searchScreen, contains("'castleActive': _castleActive"));
