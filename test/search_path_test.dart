@@ -130,7 +130,11 @@ void main() {
         findsOneWidget,
       );
 
-      await tester.tap(find.byKey(const ValueKey('search-all-categories')));
+      tester
+          .widget<TextButton>(
+            find.byKey(const ValueKey('search-all-categories')),
+          )
+          .onPressed!();
       await tester.pump(const Duration(milliseconds: 500));
       expect(
         find.byKey(const ValueKey('castle-back-to-categories')),
