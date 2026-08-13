@@ -7,8 +7,12 @@ enum CardShareResult { shared, copied }
 abstract final class PublicCardShareService {
   static Uri urlFor(String cardId, {Uri? applicationUri}) {
     final base = applicationUri ?? Uri.base;
-    return base.replace(
-      queryParameters: const <String, String>{},
+    return Uri(
+      scheme: base.scheme,
+      userInfo: base.userInfo,
+      host: base.host,
+      port: base.hasPort ? base.port : null,
+      path: base.path,
       fragment: '/cards/$cardId',
     );
   }
