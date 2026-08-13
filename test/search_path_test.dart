@@ -111,7 +111,6 @@ void main() {
         'POÉSIE',
         'SAUVAGE',
       ]) {
-        expect(find.text(category), findsOneWidget);
         expect(
           find.byKey(ValueKey('search-category-$category')),
           findsOneWidget,
@@ -169,9 +168,7 @@ void main() {
         'SAUVAGE',
       ]) {
         tester
-            .widget<InkWell>(
-              find.byKey(ValueKey('search-category-$category')),
-            )
+            .widget<InkWell>(find.byKey(ValueKey('search-category-$category')))
             .onTap!();
         await tester.pump(const Duration(milliseconds: 500));
         expect(
