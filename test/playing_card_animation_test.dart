@@ -96,7 +96,7 @@ void main() {
             height: 180,
             child: FlippablePlayingCard(
               frontImagePath: 'assets/images/card_back.png',
-              backImagePath: 'assets/images/card_back.png',
+              backImagePath: '',
               category: category.label,
               isFaceUp: false,
               isSelected: false,
