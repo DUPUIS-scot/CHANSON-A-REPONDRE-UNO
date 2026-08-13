@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:uno_chanson_2/screens/rules_screen.dart';
 import 'package:uno_chanson_2/widgets/game_status_panel.dart';
-import 'package:uno_chanson_2/widgets/home_navigation_button.dart';
 import 'package:uno_chanson_2/widgets/rule_option_tile.dart';
 
 void main() {
@@ -18,7 +17,7 @@ void main() {
     expect(find.text('HOW TO PLAY'), findsOneWidget);
     expect(find.text('CARD CATEGORIES'), findsOneWidget);
     expect(find.text('Each player starts with 5 cards.'), findsOneWidget);
-    expect(find.byType(HomeNavigationButton), findsOneWidget);
+    expect(find.byTooltip('Return to Home'), findsOneWidget);
 
     for (final category in const [
       'CLASSIQUE',

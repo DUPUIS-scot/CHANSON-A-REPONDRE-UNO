@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
+import '../core/app_router.dart';
 import '../data/card_categories.dart';
-import '../widgets/home_navigation_button.dart';
 
 class RulesScreen extends StatelessWidget {
   const RulesScreen({super.key});
@@ -32,7 +33,7 @@ class RulesScreen extends StatelessWidget {
         actions: const [
           Padding(
             padding: EdgeInsets.only(right: 8),
-            child: HomeNavigationButton(showDjWho: false),
+            child: _RulesHomeButton(),
           ),
         ],
       ),
@@ -96,6 +97,17 @@ class RulesScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+class _RulesHomeButton extends StatelessWidget {
+  const _RulesHomeButton();
+
+  @override
+  Widget build(BuildContext context) => IconButton(
+    tooltip: 'Return to Home',
+    onPressed: () => context.go(AppRoutes.home),
+    icon: const Icon(Icons.home_rounded),
+  );
 }
 
 class _SectionHeading extends StatelessWidget {
