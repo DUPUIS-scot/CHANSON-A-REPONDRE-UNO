@@ -21,10 +21,12 @@ class CardBrowserScreen extends StatefulWidget {
   const CardBrowserScreen({
     this.focusCardId,
     this.initialCategory,
+    this.shareCard,
     super.key,
   });
   final String? focusCardId;
   final String? initialCategory;
+  final Future<CardShareResult> Function(CardImageModel card)? shareCard;
   @override
   State<CardBrowserScreen> createState() => _CardBrowserScreenState();
 }
@@ -62,11 +64,22 @@ class _CardBrowserScreenState extends State<CardBrowserScreen> {
   void open(CardImageModel card) => context.go(AppRoutes.cardAlias(card.id));
 
   Future<void> share(CardImageModel card) async {
-    final result = await PublicCardShareService.share(cardId: card.id);
-    if (!mounted || result != CardShareResult.copied) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Link copied')),
-    );
+    final result =
+        await widget.shareCard?.call(card) ??
+        await PublicCardShareService.share(
+          cardId: card.id,
+          imagePath: card.imagePath,
+        );
+    if (!mounted) return;
+    if (result == CardShareResult.copied) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Link copied')));
+    } else if (result == CardShareResult.failed) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to share this card')),
+      );
+    }
   }
 
   Future<void> openHandPreview(int heldIndex, String deckName) async {

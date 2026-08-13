@@ -4,14 +4,16 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../core/app_router.dart';
+import '../models/card_image_model.dart';
 import '../providers/deck_provider.dart';
 import '../services/public_card_share_service.dart';
 import '../widgets/stored_image.dart';
 import '../widgets/home_navigation_button.dart';
 
 class CardFullscreenScreen extends StatefulWidget {
-  const CardFullscreenScreen({required this.cardId, super.key});
+  const CardFullscreenScreen({required this.cardId, this.shareCard, super.key});
   final String cardId;
+  final Future<CardShareResult> Function(CardImageModel card)? shareCard;
   @override
   State<CardFullscreenScreen> createState() => _CardFullscreenScreenState();
 }
@@ -29,12 +31,23 @@ class _CardFullscreenScreenState extends State<CardFullscreenScreen> {
   void _close() =>
       context.canPop() ? context.pop() : context.go(AppRoutes.cards);
 
-  Future<void> _share(String cardId) async {
-    final result = await PublicCardShareService.share(cardId: cardId);
-    if (!mounted || result != CardShareResult.copied) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Link copied')));
+  Future<void> _share(CardImageModel card) async {
+    final result =
+        await widget.shareCard?.call(card) ??
+        await PublicCardShareService.share(
+          cardId: card.id,
+          imagePath: card.imagePath,
+        );
+    if (!mounted) return;
+    if (result == CardShareResult.copied) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Link copied')));
+    } else if (result == CardShareResult.failed) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to share this card')),
+      );
+    }
   }
 
   @override
@@ -76,7 +89,7 @@ class _CardFullscreenScreenState extends State<CardFullscreenScreen> {
         actions: [
           IconButton(
             tooltip: 'Share card',
-            onPressed: () => _share(card.id),
+            onPressed: () => _share(card),
             icon: const Icon(Icons.share_outlined),
           ),
           const Padding(
@@ -142,7 +155,7 @@ class _CardFullscreenScreenState extends State<CardFullscreenScreen> {
               runSpacing: 8,
               children: [
                 FilledButton.icon(
-                  onPressed: () => _share(card.id),
+                  onPressed: () => _share(card),
                   icon: const Icon(Icons.share_outlined),
                   label: const Text('Share'),
                 ),

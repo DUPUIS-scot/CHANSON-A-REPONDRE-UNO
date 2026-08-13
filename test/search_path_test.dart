@@ -72,9 +72,11 @@ void main() {
       expect(browser.visibleHand.first.id, 'final-84-03');
     });
 
-    testWidgets('Search exposes only the five category selectors and castle', (
+    testWidgets('Search separates category selection from the castle', (
       tester,
     ) async {
+      await tester.binding.setSurfaceSize(const Size(390, 844));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
       SharedPreferences.setMockInitialValues({});
       await tester.pumpWidget(
         const ChansonUnoApp(aiBackendUrlOverride: 'https://api.test'),
@@ -84,12 +86,18 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(TextField), findsNothing);
-      expect(find.text('DJ WHO'), findsNothing);
-      expect(find.byIcon(Icons.home_rounded), findsNothing);
-      expect(find.byType(SegmentedButton), findsNothing);
-      expect(find.byIcon(Icons.grid_view_rounded), findsNothing);
-      expect(find.byIcon(Icons.view_list_rounded), findsNothing);
-      expect(find.byType(ChoiceChip), findsNWidgets(5));
+      expect(find.byKey(const ValueKey('search-entry-navigation')), findsOne);
+      expect(find.byKey(const ValueKey('search-home-button')), findsOne);
+      expect(find.byKey(const ValueKey('search-dj-who-button')), findsOne);
+      final homeRect = tester.getRect(
+        find.byKey(const ValueKey('search-home-button')),
+      );
+      final djWhoRect = tester.getRect(
+        find.byKey(const ValueKey('search-dj-who-button')),
+      );
+      expect(homeRect.top, djWhoRect.top);
+      expect(homeRect.right, lessThan(djWhoRect.left));
+      expect(djWhoRect.right, lessThanOrEqualTo(378));
       expect(find.text('TOUTES'), findsNothing);
       for (final category in const [
         'CLASSIQUE',
@@ -99,6 +107,54 @@ void main() {
         'SAUVAGE',
       ]) {
         expect(find.text(category), findsOneWidget);
+        expect(
+          find.byKey(ValueKey('search-category-$category')),
+          findsOneWidget,
+        );
+      }
+
+      await tester.tap(find.byKey(const ValueKey('search-home-button')));
+      await tester.pump(const Duration(seconds: 1));
+      expect(AppRouter.router.state.uri.path, AppRoutes.home);
+
+      AppRouter.router.go(AppRoutes.search);
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      await tester.tap(find.byKey(const ValueKey('search-dj-who-button')));
+      expect(AppRouter.router.state.uri.path, AppRoutes.djWhoVideos);
+
+      AppRouter.router.go(AppRoutes.search);
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      for (final category in const [
+        'CLASSIQUE',
+        'ART CONTEMPORAIN',
+        'CYBERPUNK',
+        'POÉSIE',
+        'SAUVAGE',
+      ]) {
+        await tester.tap(find.byKey(ValueKey('search-category-$category')));
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(
+          find.byKey(const ValueKey('search-entry-navigation')),
+          findsNothing,
+        );
+        expect(find.byKey(const ValueKey('search-home-button')), findsNothing);
+        expect(
+          find.byKey(const ValueKey('search-dj-who-button')),
+          findsNothing,
+        );
+        expect(
+          find.byKey(const ValueKey('castle-back-to-categories')),
+          findsOne,
+        );
+
+        await tester.tap(
+          find.byKey(const ValueKey('castle-back-to-categories')),
+        );
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(find.byKey(const ValueKey('search-entry-navigation')), findsOne);
+        expect(find.byKey(ValueKey('search-category-$category')), findsOne);
       }
     });
 
@@ -168,14 +224,14 @@ void main() {
       expect(castle, isNot(contains('#hint')));
       expect(searchScreen, isNot(contains('5 CARTES ACTIVES')));
       expect(searchScreen, isNot(contains('Rechercher une carte')));
-      expect(searchScreen, isNot(contains("label: const Text('DJ WHO')")));
-      expect(searchScreen, contains(': _buildCastle(results)'));
+      expect(searchScreen, contains("child: const Text('HOME')"));
+      expect(searchScreen, contains("child: const Text('DJ WHO')"));
+      expect(searchScreen, contains('_buildCastle(results, category)'));
       expect(
         searchScreen,
         contains('matchingCardIds: cards.map((card) => card.id).toSet()'),
       );
       expect(searchScreen, contains('discoveredCardIds'));
-      expect(searchScreen, contains('permanentCards.length'));
       expect(searchScreen, contains('_castleCardViewerOpen'));
       expect(searchScreen, contains('_CastleCardFullscreen(card: card)'));
       expect(searchScreen, contains('source: card.imagePath'));

@@ -36,11 +36,11 @@ class _SearchScreenState extends State<SearchScreen> {
   final _search = SearchService();
   Timer? _persistDebounce;
   bool _restored = false;
-  String _category = defaultCardCategory.label;
+  String? _category;
   String? _selectedCardId;
   Set<String> _discoveredCardIds = {};
   int _shuffleSeed = 0;
-  int _castleFullscreenRequestId = 0;
+  final int _castleFullscreenRequestId = 0;
   bool _castleCardViewerOpen = false;
   late LocalStorageService _storage;
 
@@ -67,9 +67,6 @@ class _SearchScreenState extends State<SearchScreen> {
     try {
       final json = jsonDecode(source) as Map<String, dynamic>;
       setState(() {
-        _category = _categories.contains(json['category'])
-            ? json['category'] as String
-            : defaultCardCategory.label;
         _selectedCardId = json['selectedCardId'] as String?;
         _discoveredCardIds = (json['discoveredCardIds'] as List<dynamic>? ?? [])
             .whereType<String>()
@@ -83,7 +80,6 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Future<void> _persistState() async {
     await _storage.write(_storageKey, {
-      'category': _category,
       'selectedCardId': _selectedCardId,
       'discoveredCardIds': _discoveredCardIds.toList(),
       'shuffleSeed': _shuffleSeed,
@@ -101,6 +97,14 @@ class _SearchScreenState extends State<SearchScreen> {
   void _setCategory(String value) {
     setState(() {
       _category = value;
+      _selectedCardId = null;
+    });
+    _schedulePersist();
+  }
+
+  void _leaveCastle() {
+    setState(() {
+      _category = null;
       _selectedCardId = null;
     });
     _schedulePersist();
@@ -153,14 +157,6 @@ class _SearchScreenState extends State<SearchScreen> {
     }
   }
 
-  void _viewInCastle(CardImageModel card) {
-    setState(() {
-      _selectedCardId = card.id;
-      _castleFullscreenRequestId += 1;
-    });
-    _schedulePersist();
-  }
-
   void _handleCastleFullscreenChanged(bool active) {
     _schedulePersist();
   }
@@ -171,22 +167,21 @@ class _SearchScreenState extends State<SearchScreen> {
     final permanentDecks = provider.decks
         .where((deck) => deck.id == AppConstants.productionDeckId)
         .toList(growable: false);
-    final results = _results(permanentDecks);
+    final category = _category;
+    final results = category == null
+        ? const <CardImageModel>[]
+        : _results(permanentDecks);
     final permanentCards = permanentDecks
         .expand((deck) => deck.cards)
         .toList(growable: false);
-    final permanentIds = permanentCards.map((card) => card.id).toSet();
-    final discoveredCount = _discoveredCardIds
-        .intersection(permanentIds)
-        .length;
-    final selected = permanentCards
-        .where((card) => card.id == _selectedCardId)
-        .firstOrNull;
-
-    return Scaffold(
-      backgroundColor: const Color(0xFF05080C),
-      body: SafeArea(
-        child: DecoratedBox(
+    return PopScope(
+      canPop: category == null,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && category != null) _leaveCastle();
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFF05080C),
+        body: DecoratedBox(
           decoration: const BoxDecoration(
             gradient: RadialGradient(
               center: Alignment.topCenter,
@@ -194,109 +189,46 @@ class _SearchScreenState extends State<SearchScreen> {
               colors: [Color(0xFF102130), Color(0xFF05080C)],
             ),
           ),
-          child: Column(
-            children: [
-              _SearchHeader(
-                selectedCategory: _category,
-                onCategoryChanged: _setCategory,
-                categories: _categories,
-              ),
-              Expanded(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final showSidePanel = constraints.maxWidth >= 980;
-                    return Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.fromLTRB(
-                                  20,
-                                  14,
-                                  20,
-                                  10,
-                                ),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        _resultLabel(results.length),
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          color: AppTheme.brightGold,
-                                          fontWeight: FontWeight.w800,
-                                          letterSpacing: 1.1,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Text(
-                                      '$discoveredCount / ${permanentCards.length} DISCOVERED',
-                                      style: const TextStyle(
-                                        color: Color(0xFFAFC1CC),
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Expanded(
-                                child: permanentCards.isEmpty
-                                    ? const _EmptyResults()
-                                    : _buildCastle(results),
-                              ),
-                            ],
+          child: category == null
+              ? _SearchCategorySelection(
+                  categories: _categories,
+                  onCategorySelected: _setCategory,
+                )
+              : Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    if (permanentCards.isEmpty)
+                      const SafeArea(child: _EmptyResults())
+                    else
+                      _buildCastle(results, category),
+                    SafeArea(
+                      child: Align(
+                        alignment: Alignment.topLeft,
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: OutlinedButton.icon(
+                            key: const ValueKey('castle-back-to-categories'),
+                            onPressed: _leaveCastle,
+                            icon: const Icon(Icons.arrow_back_rounded),
+                            label: const Text('CATEGORIES'),
                           ),
                         ),
-                        if (showSidePanel)
-                          SizedBox(
-                            width: 310,
-                            child: _SelectedCardPanel(
-                              card: selected,
-                              onFullscreen: selected == null
-                                  ? null
-                                  : () => _openFullscreen(selected),
-                              onViewInCastle: selected == null
-                                  ? null
-                                  : () => _viewInCastle(selected),
-                            ),
-                          ),
-                      ],
-                    );
-                  },
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              if (MediaQuery.sizeOf(context).width < 980 && selected != null)
-                _MobileSelectionBar(
-                  card: selected,
-                  onFullscreen: () => _openFullscreen(selected),
-                  onViewInCastle: () => _viewInCastle(selected),
-                ),
-            ],
-          ),
         ),
       ),
     );
   }
 
-  String _resultLabel(int count) {
-    return '$count RÉSULTATS · $_category';
-  }
-
-  Widget _buildCastle(List<CardImageModel> cards) => Padding(
-    padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-    child: ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: WebGlCardCastleView(
+  Widget _buildCastle(List<CardImageModel> cards, String category) =>
+      WebGlCardCastleView(
         cards: cards,
         matchingCardIds: cards.map((card) => card.id).toSet(),
         focusedCardId: _selectedCardId,
         shuffleSeed: _shuffleSeed,
-        activeCategory: _category,
+        activeCategory: category,
         fullscreenRequestId: _castleFullscreenRequestId,
         onCardSelected: (id) {
           final card = cards.where((item) => item.id == id).firstOrNull;
@@ -308,9 +240,7 @@ class _SearchScreenState extends State<SearchScreen> {
         },
         onFullscreenChanged: _handleCastleFullscreenChanged,
         fallback: SearchCardCastle(cards: cards, onFullscreen: _openFullscreen),
-      ),
-    ),
-  );
+      );
 }
 
 // Retained for source compatibility with older state-restoration snapshots;
@@ -454,55 +384,119 @@ class _CastleActiveCardsHud extends StatelessWidget {
   );
 }
 
-class _SearchHeader extends StatelessWidget {
-  const _SearchHeader({
-    required this.selectedCategory,
-    required this.onCategoryChanged,
+class _SearchCategorySelection extends StatelessWidget {
+  const _SearchCategorySelection({
+    required this.onCategorySelected,
     required this.categories,
   });
 
-  final String selectedCategory;
-  final ValueChanged<String> onCategoryChanged;
+  final ValueChanged<String> onCategorySelected;
   final List<String> categories;
 
   @override
-  Widget build(BuildContext context) => DecoratedBox(
-    decoration: const BoxDecoration(
-      color: Color(0xE6080D12),
-      border: Border(bottom: BorderSide(color: Color(0x665EB8EF))),
-    ),
-    child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: SizedBox(
-        height: 38,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          itemCount: categories.length,
-          separatorBuilder: (_, _) => const SizedBox(width: 8),
-          itemBuilder: (_, index) {
-            final category = categories[index];
-            final active = category == selectedCategory;
-            return ChoiceChip(
-              label: Text(category),
-              selected: active,
-              onSelected: (_) => onCategoryChanged(category),
-              selectedColor: AppTheme.gold,
-              labelStyle: TextStyle(
-                color: active ? Colors.black : Colors.white,
-                fontWeight: FontWeight.w800,
-                fontSize: 12,
+  Widget build(BuildContext context) => SafeArea(
+    child: Stack(
+      children: [
+        Positioned.fill(
+          child: LayoutBuilder(
+            builder: (context, constraints) => SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 84, 20, 28),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: max(0, constraints.maxHeight - 112),
+                ),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 460),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Text(
+                          'SEARCH',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 30,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 2.2,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        const Text(
+                          'CHOOSE A CATEGORY',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Color(0xFFAFC1CC),
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 28),
+                        for (var index = 0; index < categories.length; index++)
+                          Padding(
+                            padding: EdgeInsets.only(
+                              bottom: index == categories.length - 1 ? 0 : 10,
+                            ),
+                            child: OutlinedButton(
+                              key: ValueKey(
+                                'search-category-${categories[index]}',
+                              ),
+                              onPressed: () =>
+                                  onCategorySelected(categories[index]),
+                              style: OutlinedButton.styleFrom(
+                                minimumSize: const Size.fromHeight(52),
+                                foregroundColor: Colors.white,
+                                side: const BorderSide(
+                                  color: AppTheme.brightGold,
+                                ),
+                                textStyle: const TextStyle(
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 1,
+                                ),
+                              ),
+                              child: Text(categories[index]),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
-              side: BorderSide(
-                color: active ? AppTheme.brightGold : const Color(0xFF516779),
-              ),
-            );
-          },
+            ),
+          ),
         ),
-      ),
+        const Positioned(top: 12, right: 12, child: _SearchEntryNavigation()),
+      ],
     ),
   );
 }
 
+class _SearchEntryNavigation extends StatelessWidget {
+  const _SearchEntryNavigation();
+
+  @override
+  Widget build(BuildContext context) => Row(
+    key: const ValueKey('search-entry-navigation'),
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      OutlinedButton(
+        key: const ValueKey('search-home-button'),
+        onPressed: () => context.go(AppRoutes.home),
+        child: const Text('HOME'),
+      ),
+      const SizedBox(width: 8),
+      OutlinedButton(
+        key: const ValueKey('search-dj-who-button'),
+        onPressed: () => context.go(AppRoutes.djWhoVideos),
+        child: const Text('DJ WHO'),
+      ),
+    ],
+  );
+}
+
+// Retained for source compatibility with older Search layouts.
+// ignore: unused_element
 class _SelectedCardPanel extends StatelessWidget {
   const _SelectedCardPanel({
     required this.card,
@@ -621,6 +615,8 @@ class _PanelTitle extends StatelessWidget {
   );
 }
 
+// Retained for source compatibility with older Search layouts.
+// ignore: unused_element
 class _MobileSelectionBar extends StatelessWidget {
   const _MobileSelectionBar({
     required this.card,

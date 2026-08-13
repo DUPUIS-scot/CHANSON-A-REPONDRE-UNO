@@ -89,6 +89,13 @@ jobs:
       - name: Add GitHub Pages fallback
         run: cp build/web/index.html build/web/404.html
 
+      - name: Generate exact-card share previews
+        run: |
+          dart run scripts/generate_card_share_pages.dart \
+            --catalog assets/json/cards.json \
+            --build-dir build/web \
+            --public-base https://dupuis-scot.github.io/CHANSON-A-REPONDRE-UNO/
+
       - name: Verify build output
         shell: bash
         run: |
@@ -98,6 +105,11 @@ jobs:
           test -f build/web/flutter_bootstrap.js
           test -f build/web/main.dart.js
           test -f build/web/puppet_dealer.js
+          test -f build/web/card_share.js
+          test "$(find build/web/share -type f -name 'index.html' | wc -l)" -eq 84
+          grep -q 'og:image' build/web/share/final-84-01/index.html
+          grep -q 'twitter:image' build/web/share/final-84-42/index.html
+          grep -q 'final-84-84' build/web/share/final-84-84/index.html
           test -f build/web/vendor/three.min.js
           test -f build/web/vendor/three.module.js
           test -f build/web/vendor/GLTFLoader.js

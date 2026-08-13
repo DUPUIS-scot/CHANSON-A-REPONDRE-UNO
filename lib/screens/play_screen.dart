@@ -18,6 +18,8 @@ import '../widgets/puppet_dealer_controller.dart';
 import '../widgets/puppet_dealer_scene.dart';
 import 'play_hand_fullscreen_screen.dart';
 
+const _playLogoAsset = 'assets/images/app_logo.png';
+
 class PlayScreen extends StatefulWidget {
   const PlayScreen({super.key});
   @override
@@ -137,34 +139,51 @@ class _PlayScreenState extends State<PlayScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF130D0B),
       appBar: AppBar(
-        toolbarHeight: 62,
-        centerTitle: true,
-        leadingWidth: 76,
-        leading: const Padding(
-          padding: EdgeInsets.fromLTRB(14, 7, 0, 7),
-          child: HomeNavigationButton(
-            confirmActiveGame: true,
-            showDjWho: false,
-          ),
-        ),
-        title: const FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            'CHANSON A REPONDRE UNO',
-            style: TextStyle(
-              color: AppTheme.brightGold,
-              fontFamily: 'Georgia',
-              fontSize: 27,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 2.1,
-              shadows: [
-                Shadow(
-                  color: Colors.black,
-                  blurRadius: 5,
-                  offset: Offset(0, 2),
+        toolbarHeight: 76,
+        automaticallyImplyLeading: false,
+        titleSpacing: 0,
+        title: SizedBox.expand(
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Positioned(
+                left: 12,
+                child: IconButtonTheme(
+                  data: const IconButtonThemeData(
+                    style: ButtonStyle(
+                      minimumSize: WidgetStatePropertyAll(Size(46, 46)),
+                      maximumSize: WidgetStatePropertyAll(Size(46, 46)),
+                    ),
+                  ),
+                  child: const HomeNavigationButton(
+                    confirmActiveGame: true,
+                    showDjWho: true,
+                  ),
                 ),
-              ],
-            ),
+              ),
+              IgnorePointer(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final mobile = constraints.maxWidth < 600;
+                    return Semantics(
+                      image: true,
+                      label: 'Chanson à Répondre UNO',
+                      child: SizedBox(
+                        key: const Key('play-header-logo'),
+                        width: mobile ? 124 : 220,
+                        height: mobile ? 44 : 54,
+                        child: ExcludeSemantics(
+                          child: Image.asset(
+                            _playLogoAsset,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
         ),
         backgroundColor: Colors.transparent,
@@ -217,12 +236,6 @@ class _PlayScreenState extends State<PlayScreen> {
                     return Stack(
                       clipBehavior: Clip.none,
                       children: [
-                        if (constraints.maxWidth >= 1280)
-                          const Positioned(
-                            top: 54,
-                            right: 34,
-                            child: _BrandPlaque(),
-                          ),
                         Positioned(
                           top: 8,
                           left: narrow ? 12 : constraints.maxWidth * .055,
@@ -397,118 +410,84 @@ class _TheatricalHeaderBackground extends StatelessWidget {
   );
 }
 
-class _BrandPlaque extends StatelessWidget {
-  const _BrandPlaque();
-
-  @override
-  Widget build(BuildContext context) => IgnorePointer(
-    child: Container(
-      width: 174,
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xEE2E1B0F), Color(0xEE120B07)],
-        ),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: AppTheme.gold, width: 1.4),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black87,
-            blurRadius: 20,
-            offset: Offset(0, 8),
-          ),
-          BoxShadow(color: Color(0x448D6327), blurRadius: 5),
-        ],
-      ),
-      child: const Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.theater_comedy_rounded, color: AppTheme.gold, size: 28),
-          SizedBox(height: 10),
-          Text(
-            'CHANSON A\nREPONDRE',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Color(0xFFE8C06A),
-              fontFamily: 'Georgia',
-              fontSize: 17,
-              height: 1.25,
-              letterSpacing: 1.1,
-            ),
-          ),
-          SizedBox(height: 4),
-          Text(
-            'UNO',
-            style: TextStyle(
-              color: AppTheme.brightGold,
-              fontFamily: 'Georgia',
-              fontSize: 34,
-              letterSpacing: 2,
-              shadows: [Shadow(color: Color(0xFF78170F), blurRadius: 3)],
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
 class _GameLauncher extends StatelessWidget {
   const _GameLauncher({required this.decks, required this.game});
   final DeckProvider decks;
   final GameProvider game;
   @override
   Widget build(BuildContext context) => Center(
-    child: ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 430),
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.casino, size: 52, color: AppTheme.gold),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: decks.activeDeckId,
-                decoration: const InputDecoration(labelText: 'Active deck'),
-                items: decks.decks
-                    .map(
-                      (deck) => DropdownMenuItem(
-                        value: deck.id,
-                        child: Text('${deck.name} (${deck.cards.length})'),
+    child: SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 430),
+        child: Card(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Semantics(
+                  image: true,
+                  label: 'Chanson à Répondre UNO',
+                  child: FractionallySizedBox(
+                    widthFactor: .72,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 280),
+                      child: AspectRatio(
+                        key: const Key('play-launcher-logo'),
+                        aspectRatio: 836 / 303,
+                        child: ExcludeSemantics(
+                          child: Image.asset(
+                            _playLogoAsset,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
                       ),
-                    )
-                    .toList(),
-                onChanged: (id) {
-                  if (id != null) decks.select(id);
-                },
-              ),
-              const SizedBox(height: 18),
-              FilledButton.icon(
-                onPressed: decks.activeDeck == null
-                    ? null
-                    : () async {
-                        final ok = await game.start(decks.activeDeck!);
-                        if (!ok && context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                game.message ?? 'Could not start game.',
-                              ),
-                            ),
-                          );
-                        }
-                      },
-                icon: const Icon(Icons.play_arrow),
-                label: const Text('NEW GAME'),
-              ),
-              if (decks.activeDeck == null)
-                const Padding(
-                  padding: EdgeInsets.only(top: 12),
-                  child: Text('Select a deck before starting.'),
+                    ),
+                  ),
                 ),
-            ],
+                const SizedBox(height: 18),
+                DropdownButtonFormField<String>(
+                  initialValue: decks.activeDeckId,
+                  decoration: const InputDecoration(labelText: 'Active deck'),
+                  items: decks.decks
+                      .map(
+                        (deck) => DropdownMenuItem(
+                          value: deck.id,
+                          child: Text('${deck.name} (${deck.cards.length})'),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (id) {
+                    if (id != null) decks.select(id);
+                  },
+                ),
+                const SizedBox(height: 18),
+                FilledButton.icon(
+                  onPressed: decks.activeDeck == null
+                      ? null
+                      : () async {
+                          final ok = await game.start(decks.activeDeck!);
+                          if (!ok && context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  game.message ?? 'Could not start game.',
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                  icon: const Icon(Icons.play_arrow),
+                  label: const Text('NEW GAME'),
+                ),
+                if (decks.activeDeck == null)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 12),
+                    child: Text('Select a deck before starting.'),
+                  ),
+              ],
+            ),
           ),
         ),
       ),

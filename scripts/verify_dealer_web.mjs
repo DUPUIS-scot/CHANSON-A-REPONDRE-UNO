@@ -236,6 +236,33 @@ async function capture(client, path) {
 }
 
 async function verifySearchCastle(client, url) {
+  // Search now opens on its category-selection state. Select the first of the
+  // five vertically centered category buttons before validating the WebGL
+  // castle. Repeat while Flutter finishes its first frame; stop as soon as the
+  // castle iframe is mounted.
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    const frameMounted = await client.evaluate(
+      `document.getElementById('search-card-castle-frame') !== null`,
+    );
+    if (frameMounted) break;
+    const viewport = await client.evaluate(
+      `({width: innerWidth, height: innerHeight})`,
+    );
+    const position = {x: viewport.width / 2, y: viewport.height * .45};
+    await client.send('Input.dispatchMouseEvent', {
+      type: 'mousePressed',
+      ...position,
+      button: 'left',
+      clickCount: 1,
+    });
+    await client.send('Input.dispatchMouseEvent', {
+      type: 'mouseReleased',
+      ...position,
+      button: 'left',
+      clickCount: 1,
+    });
+    await delay(800);
+  }
   try {
     await waitFor(
       client,

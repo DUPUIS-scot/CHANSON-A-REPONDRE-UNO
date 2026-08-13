@@ -1,33 +1,35 @@
 import 'dart:js_interop';
 
-@JS('navigator')
-external JSObject get _navigator;
+import 'native_share_result.dart';
 
-@JS('navigator.share')
-external JSFunction? get _navigatorShare;
+@JS('shareChansonCard')
+external JSFunction? get _shareChansonCard;
 
-@JS()
-@anonymous
-extension type _ShareData._(JSObject _) implements JSObject {
-  external factory _ShareData({JSString title, JSString url});
-}
-
-Future<bool> sharePublicCard({
+Future<NativeShareResult> sharePublicCard({
   required String title,
+  required String text,
   required String url,
+  String? imagePath,
 }) async {
-  final share = _navigatorShare;
-  if (share == null) return false;
+  final share = _shareChansonCard;
+  if (share == null) return NativeShareResult.unavailable;
 
   try {
     final promise = share.callAsFunction(
-      _navigator,
-      _ShareData(title: title.toJS, url: url.toJS),
+      null,
+      title.toJS,
+      text.toJS,
+      url.toJS,
+      imagePath?.toJS,
     );
-    await (promise as JSPromise<JSAny?>).toDart;
+    final value = await (promise as JSPromise<JSString>).toDart;
+    return switch (value.toDart) {
+      'shared' => NativeShareResult.shared,
+      'cancelled' => NativeShareResult.cancelled,
+      'unavailable' => NativeShareResult.unavailable,
+      _ => NativeShareResult.failed,
+    };
   } on Object {
-    // The native sheet may reject when the user cancels. It was still
-    // available, so do not unexpectedly overwrite the clipboard.
+    return NativeShareResult.failed;
   }
-  return true;
 }

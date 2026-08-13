@@ -34,8 +34,11 @@ void main() {
       expect(find.text(category), findsOneWidget);
     }
 
-    await tester.drag(find.byType(ListView), const Offset(0, -600));
-    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('BASIC CARD INTERACTION'),
+      300,
+      scrollable: find.byType(Scrollable),
+    );
     expect(find.text('BASIC CARD INTERACTION'), findsOneWidget);
     expect(find.text('Long-click / long-press'), findsOneWidget);
 

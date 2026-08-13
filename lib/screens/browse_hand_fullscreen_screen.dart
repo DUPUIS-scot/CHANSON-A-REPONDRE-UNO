@@ -123,14 +123,20 @@ class _BrowseHandFullscreenScreenState
                     onShare: () async {
                       final result = await PublicCardShareService.share(
                         cardId: card.id,
+                        imagePath: card.imagePath,
                       );
-                      if (!context.mounted ||
-                          result != CardShareResult.copied) {
-                        return;
+                      if (!context.mounted) return;
+                      if (result == CardShareResult.copied) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Link copied')),
+                        );
+                      } else if (result == CardShareResult.failed) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Unable to share this card'),
+                          ),
+                        );
                       }
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Link copied')),
-                      );
                     },
                   ),
                 ),
