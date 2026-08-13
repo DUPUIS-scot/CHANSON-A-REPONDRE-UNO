@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -98,7 +99,11 @@ void main() {
       expect(homeRect.top, djWhoRect.top);
       expect(homeRect.right, lessThan(djWhoRect.left));
       expect(djWhoRect.right, lessThanOrEqualTo(378));
-      expect(find.text('TOUTES'), findsNothing);
+      expect(find.text('ALL CATEGORIES'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('search-all-categories')),
+        findsOneWidget,
+      );
       for (final category in const [
         'CLASSIQUE',
         'ART CONTEMPORAIN',
@@ -112,6 +117,23 @@ void main() {
           findsOneWidget,
         );
       }
+
+      await tester.tap(find.byKey(const ValueKey('search-all-categories')));
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(
+        find.byKey(const ValueKey('castle-back-to-categories')),
+        findsOneWidget,
+      );
+      expect(find.text('ALL CATEGORIES'), findsNothing);
+      final preferences = await SharedPreferences.getInstance();
+      final persisted =
+          jsonDecode(preferences.getString('search_path_state_v1')!)
+              as Map<String, dynamic>;
+      expect(persisted['castleActive'], isTrue);
+      expect(persisted['category'], isNull);
+      await tester.tap(find.byKey(const ValueKey('castle-back-to-categories')));
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.text('ALL CATEGORIES'), findsOneWidget);
 
       await tester.tap(find.byKey(const ValueKey('search-home-button')));
       await tester.pump(const Duration(seconds: 1));
@@ -156,6 +178,55 @@ void main() {
         expect(find.byKey(const ValueKey('search-entry-navigation')), findsOne);
         expect(find.byKey(ValueKey('search-category-$category')), findsOne);
       }
+    });
+
+    testWidgets('old category-based Search state restores without crashing', (
+      tester,
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(390, 844));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      SharedPreferences.setMockInitialValues({
+        'flutter.search_path_state_v1':
+            '{"category":"CLASSIQUE","selectedCardId":"final-84-01",'
+            '"discoveredCardIds":["final-84-01"],"shuffleSeed":4}',
+      });
+      await tester.pumpWidget(
+        const ChansonUnoApp(aiBackendUrlOverride: 'https://api.test'),
+      );
+      await tester.pump(const Duration(seconds: 2));
+      AppRouter.router.go(AppRoutes.search);
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 2));
+
+      expect(tester.takeException(), isNull);
+      expect(
+        find.byKey(const ValueKey('castle-back-to-categories')),
+        findsOneWidget,
+      );
+    });
+
+    test('null category returns the complete permanent-style collection', () {
+      final allCards = List.generate(
+        84,
+        (index) => _card(
+          'final-84-${(index + 1).toString().padLeft(2, '0')}',
+          title: 'Card ${index + 1}',
+          category: const [
+            'CLASSIQUE',
+            'SAUVAGE',
+            'POÉSIE',
+            'CYBERPUNK',
+            'ART CONTEMPORAIN',
+          ][index % 5],
+        ),
+      );
+      final result = SearchService().cards(
+        decks: [Deck(id: 'permanent', name: 'Permanent', cards: allCards)],
+        category: null,
+      );
+
+      expect(result, hasLength(84));
+      expect(result.map((card) => card.category).toSet(), hasLength(5));
     });
 
     test('castle uses the local authoritative GLB with 84 anchors', () {
@@ -226,7 +297,10 @@ void main() {
       expect(searchScreen, isNot(contains('Rechercher une carte')));
       expect(searchScreen, contains("child: const Text('HOME')"));
       expect(searchScreen, contains("child: const Text('DJ WHO')"));
-      expect(searchScreen, contains('_buildCastle(results, category)'));
+      expect(searchScreen, contains('bool _castleActive = false'));
+      expect(searchScreen, contains('category ?? searchAllCategoriesLabel'));
+      expect(searchScreen, contains("'castleActive': _castleActive"));
+      expect(searchScreen, contains("'category': _category"));
       expect(
         searchScreen,
         contains('matchingCardIds: cards.map((card) => card.id).toSet()'),

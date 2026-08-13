@@ -236,10 +236,8 @@ async function capture(client, path) {
 }
 
 async function verifySearchCastle(client, url) {
-  // Search now opens on its category-selection state. Select the first of the
-  // five vertically centered category buttons before validating the WebGL
-  // castle. Repeat while Flutter finishes its first frame; stop as soon as the
-  // castle iframe is mounted.
+  // Search opens on its category-selection state. ALL CATEGORIES is the first
+  // prominent option, so activate it and certify the complete 84-card castle.
   for (let attempt = 0; attempt < 12; attempt += 1) {
     const frameMounted = await client.evaluate(
       `document.getElementById('search-card-castle-frame') !== null`,
@@ -248,7 +246,7 @@ async function verifySearchCastle(client, url) {
     const viewport = await client.evaluate(
       `({width: innerWidth, height: innerHeight})`,
     );
-    const position = {x: viewport.width / 2, y: viewport.height * .45};
+    const position = {x: viewport.width / 2, y: viewport.height * .43};
     await client.send('Input.dispatchMouseEvent', {
       type: 'mousePressed',
       ...position,
@@ -301,8 +299,8 @@ async function verifySearchCastle(client, url) {
     `Number(document.getElementById('search-card-castle-frame')
       ?.contentDocument?.body.dataset.cardCount || 0) > 0 &&
       Number(document.getElementById('search-card-castle-frame')
-        ?.contentDocument?.body.dataset.cardCount || 0) < 84`,
-    'the selected category cards to reach the castle',
+        ?.contentDocument?.body.dataset.cardCount || 0) === 84`,
+    'all 84 permanent cards to reach the ALL CATEGORIES castle',
     20000,
   );
   const visibleCardCount = await client.evaluate(
@@ -315,7 +313,7 @@ async function verifySearchCastle(client, url) {
       `Number(document.getElementById('search-card-castle-frame')
         ?.contentDocument?.body.dataset.textureCount || 0) ===
           ${visibleCardCount}`,
-      'all selected-category card textures in the castle',
+      'all ALL CATEGORIES card textures in the castle',
       90000,
     );
   } catch (error) {
@@ -447,7 +445,8 @@ async function verifySearchCastle(client, url) {
     result.cardCount !== visibleCardCount ||
     result.meshCount !== visibleCardCount ||
     result.textureCount !== visibleCardCount ||
-    result.cardCategories !== result.activeCategory ||
+    result.activeCategory !== 'ALL CATEGORIES' ||
+    result.cardCategories.split('|').filter(Boolean).length !== 5 ||
     result.textureCount < 1 ||
     result.focusedCardId !== requestedFocusId ||
     result.focusMode !== 'immediate' ||

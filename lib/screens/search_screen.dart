@@ -16,9 +16,12 @@ import '../providers/deck_provider.dart';
 import '../services/local_storage_service.dart';
 import '../services/search_service.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_design_tokens.dart';
 import '../widgets/search_card_castle.dart';
 import '../widgets/stored_image.dart';
 import '../widgets/webgl_card_castle_view.dart';
+
+const searchAllCategoriesLabel = 'ALL CATEGORIES';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -29,13 +32,18 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> {
   static const _storageKey = 'search_path_state_v1';
-  static final _categories = cardCategories
-      .map((category) => category.label)
-      .toList(growable: false);
+  static const _categories = <String>[
+    'CLASSIQUE',
+    'ART CONTEMPORAIN',
+    'CYBERPUNK',
+    'POÉSIE',
+    'SAUVAGE',
+  ];
 
   final _search = SearchService();
   Timer? _persistDebounce;
   bool _restored = false;
+  bool _castleActive = false;
   String? _category;
   String? _selectedCardId;
   Set<String> _discoveredCardIds = {};
@@ -67,6 +75,14 @@ class _SearchScreenState extends State<SearchScreen> {
     try {
       final json = jsonDecode(source) as Map<String, dynamic>;
       setState(() {
+        final storedCategory = json['category'];
+        _category =
+            storedCategory is String && isKnownCardCategory(storedCategory)
+            ? normalizeCardCategoryLabel(storedCategory)
+            : null;
+        _castleActive = json.containsKey('castleActive')
+            ? json['castleActive'] == true
+            : _category != null;
         _selectedCardId = json['selectedCardId'] as String?;
         _discoveredCardIds = (json['discoveredCardIds'] as List<dynamic>? ?? [])
             .whereType<String>()
@@ -80,6 +96,8 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Future<void> _persistState() async {
     await _storage.write(_storageKey, {
+      'castleActive': _castleActive,
+      'category': _category,
       'selectedCardId': _selectedCardId,
       'discoveredCardIds': _discoveredCardIds.toList(),
       'shuffleSeed': _shuffleSeed,
@@ -94,9 +112,19 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  void _setCategory(String value) {
+  void _openCategory(String value) {
     setState(() {
+      _castleActive = true;
       _category = value;
+      _selectedCardId = null;
+    });
+    _schedulePersist();
+  }
+
+  void _openAllCategories() {
+    setState(() {
+      _castleActive = true;
+      _category = null;
       _selectedCardId = null;
     });
     _schedulePersist();
@@ -104,6 +132,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   void _leaveCastle() {
     setState(() {
+      _castleActive = false;
       _category = null;
       _selectedCardId = null;
     });
@@ -168,16 +197,16 @@ class _SearchScreenState extends State<SearchScreen> {
         .where((deck) => deck.id == AppConstants.productionDeckId)
         .toList(growable: false);
     final category = _category;
-    final results = category == null
-        ? const <CardImageModel>[]
-        : _results(permanentDecks);
+    final results = _castleActive
+        ? _results(permanentDecks)
+        : const <CardImageModel>[];
     final permanentCards = permanentDecks
         .expand((deck) => deck.cards)
         .toList(growable: false);
     return PopScope(
-      canPop: category == null,
+      canPop: !_castleActive,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop && category != null) _leaveCastle();
+        if (!didPop && _castleActive) _leaveCastle();
       },
       child: Scaffold(
         backgroundColor: const Color(0xFF05080C),
@@ -189,10 +218,11 @@ class _SearchScreenState extends State<SearchScreen> {
               colors: [Color(0xFF102130), Color(0xFF05080C)],
             ),
           ),
-          child: category == null
+          child: !_castleActive
               ? _SearchCategorySelection(
                   categories: _categories,
-                  onCategorySelected: _setCategory,
+                  onAllCategoriesSelected: _openAllCategories,
+                  onCategorySelected: _openCategory,
                 )
               : Stack(
                   fit: StackFit.expand,
@@ -200,7 +230,10 @@ class _SearchScreenState extends State<SearchScreen> {
                     if (permanentCards.isEmpty)
                       const SafeArea(child: _EmptyResults())
                     else
-                      _buildCastle(results, category),
+                      _buildCastle(
+                        results,
+                        category ?? searchAllCategoriesLabel,
+                      ),
                     SafeArea(
                       child: Align(
                         alignment: Alignment.topLeft,
@@ -386,10 +419,12 @@ class _CastleActiveCardsHud extends StatelessWidget {
 
 class _SearchCategorySelection extends StatelessWidget {
   const _SearchCategorySelection({
+    required this.onAllCategoriesSelected,
     required this.onCategorySelected,
     required this.categories,
   });
 
+  final VoidCallback onAllCategoriesSelected;
   final ValueChanged<String> onCategorySelected;
   final List<String> categories;
 
@@ -400,14 +435,21 @@ class _SearchCategorySelection extends StatelessWidget {
         Positioned.fill(
           child: LayoutBuilder(
             builder: (context, constraints) => SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 84, 20, 28),
+              padding: EdgeInsets.fromLTRB(
+                AppBreakpoints.gutterFor(constraints.maxWidth),
+                84,
+                AppBreakpoints.gutterFor(constraints.maxWidth),
+                AppSpacing.large,
+              ),
               child: ConstrainedBox(
                 constraints: BoxConstraints(
                   minHeight: max(0, constraints.maxHeight - 112),
                 ),
                 child: Center(
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 460),
+                    constraints: const BoxConstraints(
+                      maxWidth: AppBreakpoints.readingContent,
+                    ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -432,11 +474,33 @@ class _SearchCategorySelection extends StatelessWidget {
                             letterSpacing: 1.2,
                           ),
                         ),
-                        const SizedBox(height: 28),
+                        const SizedBox(height: AppSpacing.large),
+                        FilledButton.tonal(
+                          key: const ValueKey('search-all-categories'),
+                          onPressed: onAllCategoriesSelected,
+                          style: FilledButton.styleFrom(
+                            minimumSize: const Size.fromHeight(56),
+                            foregroundColor: AppTheme.ink,
+                            backgroundColor: AppTheme.brightGold,
+                            textStyle: const TextStyle(
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1.2,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.panel,
+                              ),
+                            ),
+                          ),
+                          child: const Text(searchAllCategoriesLabel),
+                        ),
+                        const SizedBox(height: AppSpacing.medium),
                         for (var index = 0; index < categories.length; index++)
                           Padding(
                             padding: EdgeInsets.only(
-                              bottom: index == categories.length - 1 ? 0 : 10,
+                              bottom: index == categories.length - 1
+                                  ? 0
+                                  : AppSpacing.small,
                             ),
                             child: OutlinedButton(
                               key: ValueKey(
@@ -445,7 +509,9 @@ class _SearchCategorySelection extends StatelessWidget {
                               onPressed: () =>
                                   onCategorySelected(categories[index]),
                               style: OutlinedButton.styleFrom(
-                                minimumSize: const Size.fromHeight(52),
+                                minimumSize: const Size.fromHeight(
+                                  AppTouchTarget.minimum,
+                                ),
                                 foregroundColor: Colors.white,
                                 side: const BorderSide(
                                   color: AppTheme.brightGold,

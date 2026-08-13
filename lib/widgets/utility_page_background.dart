@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
+import '../theme/app_design_tokens.dart';
 
 class UtilityPageBackground extends StatelessWidget {
   const UtilityPageBackground({required this.child, super.key});
@@ -23,7 +24,7 @@ class UtilityPageBackground extends StatelessWidget {
         elevation: 3,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(AppRadius.panel),
           side: BorderSide(color: AppTheme.gold.withValues(alpha: 0.45)),
         ),
       ),
@@ -71,12 +72,26 @@ class UtilityPageScaffold extends StatelessWidget {
   Widget build(BuildContext context) => UtilityPageBackground(
     child: Scaffold(
       appBar: appBar,
-      body: panelBody
-          ? Padding(
-              padding: const EdgeInsets.all(12),
-              child: UtilityPagePanel(child: body),
-            )
-          : body,
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final gutter = AppBreakpoints.gutterFor(constraints.maxWidth);
+          final content = panelBody
+              ? Padding(
+                  padding: EdgeInsets.all(gutter),
+                  child: UtilityPagePanel(child: body),
+                )
+              : body;
+          return Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxWidth: AppBreakpoints.normalContent,
+              ),
+              child: SizedBox(width: double.infinity, child: content),
+            ),
+          );
+        },
+      ),
     ),
   );
 }
@@ -95,7 +110,7 @@ class UtilityPagePanel extends StatelessWidget {
   Widget build(BuildContext context) => DecoratedBox(
     decoration: BoxDecoration(
       color: AppTheme.leather.withValues(alpha: 0.78),
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(AppRadius.panel),
       border: Border.all(color: AppTheme.gold.withValues(alpha: 0.45)),
       boxShadow: const [
         BoxShadow(

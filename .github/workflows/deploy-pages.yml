@@ -134,10 +134,12 @@ jobs:
           grep -q 'puppetDealerCreate' build/web/main.dart.js
           grep -q 'dealer-3d-container' build/web/main.dart.js
           grep -q 'search-card-castle' build/web/main.dart.js
+          grep -q 'ALL CATEGORIES' build/web/main.dart.js
           grep -q '../vendor/three.module.js' build/web/card_castle/card_castle.html
           grep -q 'assets/assets/models/search_castle.glb' build/web/card_castle/card_castle.html
           grep -q "from '../vendor/GLTFLoader.js'" build/web/card_castle/card_castle.html
           grep -q 'deriveSurfaceAnchors(84)' build/web/card_castle/card_castle.html
+          grep -q 'dataset.cardCategories=' build/web/card_castle/card_castle.html
           grep -q "data.type==='focusCard'" build/web/card_castle/card_castle.html
           grep -q 'down.panning' build/web/card_castle/card_castle.html
           grep -q 'rendererInstanceId' build/web/card_castle/card_castle.html

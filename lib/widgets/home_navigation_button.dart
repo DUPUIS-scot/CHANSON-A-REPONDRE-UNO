@@ -6,6 +6,7 @@ import '../core/app_router.dart';
 import '../providers/game_provider.dart';
 import '../services/navigation_guard_service.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_design_tokens.dart';
 import 'dj_who_avatar.dart';
 
 class HomeNavigationButton extends StatefulWidget {
@@ -62,10 +63,10 @@ class _HomeNavigationButtonState extends State<HomeNavigationButton> {
         AppRouter.router.routeInformationProvider.value.uri.path;
     final isDjWhoActive = currentPath == AppRoutes.djWhoVideos;
 
-    final showLabel = MediaQuery.sizeOf(context).width >= 600;
-    final djWidth = showLabel ? 152.0 : 48.0;
+    final showLabel = MediaQuery.sizeOf(context).width >= AppBreakpoints.mobile;
+    final djWidth = showLabel ? 152.0 : AppTouchTarget.minimum;
     return SizedBox(
-      height: 48,
+      height: AppTouchTarget.minimum,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -77,7 +78,7 @@ class _HomeNavigationButtonState extends State<HomeNavigationButton> {
             onPressed: navigateHome,
           ),
           if (widget.showDjWho) ...[
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.small),
             _DjWhoControl(
               active: isDjWhoActive,
               hovered: djHovered,
@@ -120,8 +121,11 @@ class _HomeControl extends StatelessWidget {
       child: Focus(
         onFocusChange: onFocus,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+          duration: AppMotion.responsive(context, AppMotion.quick),
+          constraints: const BoxConstraints(
+            minWidth: AppTouchTarget.minimum,
+            minHeight: AppTouchTarget.minimum,
+          ),
           decoration: BoxDecoration(
             color: hovered ? const Color(0xDD33210F) : const Color(0xAA100C08),
             shape: BoxShape.circle,
@@ -180,16 +184,16 @@ class _DjWhoControl extends StatelessWidget {
           onFocusChange: onFocus,
           child: SizedBox(
             width: width,
-            height: 48,
+            height: AppTouchTarget.minimum,
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
+              duration: AppMotion.responsive(context, AppMotion.quick),
               decoration: BoxDecoration(
                 color: active
                     ? colors.primaryContainer.withValues(alpha: 0.72)
                     : hovered
                     ? const Color(0xDD33210F)
                     : const Color(0xAA100C08),
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(AppRadius.pill),
                 border: Border.all(
                   color: focused || active ? colors.primary : AppTheme.gold,
                   width: focused || active ? 2 : 1,
@@ -206,7 +210,7 @@ class _DjWhoControl extends StatelessWidget {
                   onPressed: onPressed,
                   style: TextButton.styleFrom(
                     foregroundColor: foreground,
-                    minimumSize: const Size(48, 48),
+                    minimumSize: AppTouchTarget.size,
                     padding: EdgeInsets.symmetric(
                       horizontal: showLabel ? 12 : 0,
                     ),
@@ -219,7 +223,7 @@ class _DjWhoControl extends StatelessWidget {
                     children: [
                       const DjWhoAvatar(size: 32),
                       if (showLabel) ...[
-                        const SizedBox(width: 8),
+                        const SizedBox(width: AppSpacing.small),
                         const Text('DJ WHO'),
                       ],
                     ],

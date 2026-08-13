@@ -1,6 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import 'app_design_tokens.dart';
+
 abstract final class AppTheme {
   static const gold = Color(0xFFD9A51D);
   static const brightGold = Color(0xFFFFD76A);
@@ -56,6 +58,7 @@ abstract final class AppTheme {
       colorScheme: colorScheme,
       scaffoldBackgroundColor: darkLeather,
       canvasColor: darkLeather,
+      focusColor: brightGold,
       textTheme: textTheme,
       splashFactory: InkRipple.splashFactory,
       appBarTheme: const AppBarTheme(
@@ -64,25 +67,39 @@ abstract final class AppTheme {
         foregroundColor: parchment,
         surfaceTintColor: Colors.transparent,
       ),
+      iconButtonTheme: const IconButtonThemeData(
+        style: ButtonStyle(
+          minimumSize: WidgetStatePropertyAll(AppTouchTarget.size),
+        ),
+      ),
+      outlinedButtonTheme: const OutlinedButtonThemeData(
+        style: ButtonStyle(
+          minimumSize: WidgetStatePropertyAll(AppTouchTarget.size),
+          foregroundColor: WidgetStatePropertyAll(parchment),
+          side: WidgetStatePropertyAll(BorderSide(color: gold)),
+        ),
+      ),
       cardTheme: CardThemeData(
         color: leather.withValues(alpha: 0.96),
         elevation: 2,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppRadius.control),
           side: const BorderSide(color: Color(0x668B6B24)),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: ink.withValues(alpha: 0.7),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.control),
+        ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppRadius.control),
           borderSide: const BorderSide(color: Color(0x998B6B24)),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppRadius.control),
           borderSide: const BorderSide(color: brightGold, width: 1.5),
         ),
       ),
@@ -93,7 +110,9 @@ abstract final class AppTheme {
       ),
       dialogTheme: DialogThemeData(
         backgroundColor: leather,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.panel),
+        ),
       ),
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {

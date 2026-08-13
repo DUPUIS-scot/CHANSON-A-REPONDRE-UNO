@@ -103,9 +103,7 @@ class _ChansonUnoAppState extends State<ChansonUnoApp> {
       auth,
     );
     cardAi = CardAiProvider(
-      service: CardAiApiService(
-        client: aiClient,
-      ),
+      service: CardAiApiService(client: aiClient),
       decks: decks,
       localStorage: storage,
     );
@@ -203,6 +201,9 @@ class _ChansonUnoAppState extends State<ChansonUnoApp> {
                           child: MediaQuery(
                             data: MediaQuery.of(context).copyWith(
                               textScaler: TextScaler.linear(settings.textScale),
+                              disableAnimations:
+                                  MediaQuery.disableAnimationsOf(context) ||
+                                  settings.advanced.reducedMotion,
                             ),
                             child: child!,
                           ),
