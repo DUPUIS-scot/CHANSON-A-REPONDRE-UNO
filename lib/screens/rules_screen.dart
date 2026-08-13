@@ -32,7 +32,7 @@ class RulesScreen extends StatelessWidget {
         actions: const [
           Padding(
             padding: EdgeInsets.only(right: 8),
-            child: HomeNavigationButton(),
+            child: HomeNavigationButton(showDjWho: false),
           ),
         ],
       ),

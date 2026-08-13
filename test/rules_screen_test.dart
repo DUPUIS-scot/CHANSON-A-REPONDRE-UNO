@@ -17,9 +17,7 @@ void main() {
     expect(find.text('RULES'), findsOneWidget);
     expect(find.text('HOW TO PLAY'), findsOneWidget);
     expect(find.text('CARD CATEGORIES'), findsOneWidget);
-    expect(find.text('BASIC CARD INTERACTION'), findsOneWidget);
     expect(find.text('Each player starts with 5 cards.'), findsOneWidget);
-    expect(find.text('Long-click / long-press'), findsOneWidget);
     expect(find.byType(HomeNavigationButton), findsOneWidget);
 
     for (final category in const [
@@ -29,8 +27,21 @@ void main() {
       'POÉSIE',
       'SAUVAGE',
     ]) {
+      await tester.scrollUntilVisible(
+        find.text(category),
+        200,
+        scrollable: find.byType(Scrollable),
+      );
       expect(find.text(category), findsOneWidget);
     }
+
+    await tester.scrollUntilVisible(
+      find.text('BASIC CARD INTERACTION'),
+      300,
+      scrollable: find.byType(Scrollable),
+    );
+    expect(find.text('BASIC CARD INTERACTION'), findsOneWidget);
+    expect(find.text('Long-click / long-press'), findsOneWidget);
 
     expect(find.text('Live game state'), findsNothing);
     expect(find.text('Optional variations'), findsNothing);
