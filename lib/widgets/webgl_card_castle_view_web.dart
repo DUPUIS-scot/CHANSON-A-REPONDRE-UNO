@@ -21,6 +21,7 @@ class WebGlCardCastleView extends StatefulWidget {
     required this.onCardSelected,
     required this.onCardOpened,
     required this.onFullscreenChanged,
+    required this.onCategoriesRequested,
     required this.fallback,
     super.key,
   });
@@ -34,6 +35,7 @@ class WebGlCardCastleView extends StatefulWidget {
   final ValueChanged<String> onCardSelected;
   final Future<void> Function(String) onCardOpened;
   final ValueChanged<bool> onFullscreenChanged;
+  final VoidCallback onCategoriesRequested;
   final Widget fallback;
 
   @override
@@ -147,6 +149,10 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
           final active = decoded['active'] == true;
           if (!active) _setInAppFullscreen(false);
           widget.onFullscreenChanged(active);
+        case 'categoriesRequested':
+          _setInAppFullscreen(false);
+          widget.onFullscreenChanged(false);
+          widget.onCategoriesRequested();
       }
     } on FormatException {
       // Ignore unrelated window messages.
@@ -258,6 +264,16 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
         children: [
           widget.fallback,
           const Positioned(left: 12, top: 12, child: _FallbackNotice()),
+          Positioned(
+            left: 12,
+            bottom: 12,
+            child: OutlinedButton.icon(
+              key: const ValueKey('castle-back-to-categories'),
+              onPressed: widget.onCategoriesRequested,
+              icon: const Icon(Icons.arrow_back_rounded),
+              label: const Text('CATEGORIES'),
+            ),
+          ),
         ],
       );
     }

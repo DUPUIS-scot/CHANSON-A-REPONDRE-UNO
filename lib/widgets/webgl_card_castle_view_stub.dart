@@ -13,6 +13,7 @@ class WebGlCardCastleView extends StatelessWidget {
     required this.onCardSelected,
     required this.onCardOpened,
     required this.onFullscreenChanged,
+    required this.onCategoriesRequested,
     required this.fallback,
     super.key,
   });
@@ -26,8 +27,28 @@ class WebGlCardCastleView extends StatelessWidget {
   final ValueChanged<String> onCardSelected;
   final Future<void> Function(String) onCardOpened;
   final ValueChanged<bool> onFullscreenChanged;
+  final VoidCallback onCategoriesRequested;
   final Widget fallback;
 
   @override
-  Widget build(BuildContext context) => fallback;
+  Widget build(BuildContext context) => Stack(
+    fit: StackFit.expand,
+    children: [
+      fallback,
+      SafeArea(
+        child: Align(
+          alignment: Alignment.topLeft,
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: OutlinedButton.icon(
+              key: const ValueKey('castle-back-to-categories'),
+              onPressed: onCategoriesRequested,
+              icon: const Icon(Icons.arrow_back_rounded),
+              label: const Text('CATEGORIES'),
+            ),
+          ),
+        ),
+      ),
+    ],
+  );
 }

@@ -5,15 +5,46 @@ import '../providers/background_provider.dart';
 import '../providers/home_experience_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/startup_video_provider.dart';
+import '../models/visitor_stats.dart';
 import '../services/background_import_service.dart';
+import '../services/visitor_analytics_service.dart';
 import '../widgets/home_navigation_button.dart';
 import '../widgets/settings_action_tile.dart';
 import '../widgets/settings_section.dart';
 import '../widgets/startup_video_viewport.dart';
 import '../widgets/utility_page_background.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  VisitorStats? _visitorStats;
+  bool _visitorStatsLoading = true;
+  bool _visitorStatsLoaded = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_visitorStatsLoaded) return;
+    _visitorStatsLoaded = true;
+    _loadVisitorStats();
+  }
+
+  Future<void> _loadVisitorStats() async {
+    if (mounted) setState(() => _visitorStatsLoading = true);
+    try {
+      final stats = await context.read<VisitorAnalyticsService>().getStats();
+      if (mounted) setState(() => _visitorStats = stats);
+    } on Object {
+      if (mounted) setState(() => _visitorStats = null);
+    } finally {
+      if (mounted) setState(() => _visitorStatsLoading = false);
+    }
+  }
 
   Future<bool> _confirm(
     BuildContext context, {
@@ -128,6 +159,17 @@ class SettingsScreen extends StatelessWidget {
                         animationsEnabled: !value,
                       ),
                     ),
+                  ),
+                ],
+              ),
+              SettingsSection(
+                title: 'VISITORS',
+                icon: Icons.groups_outlined,
+                initiallyExpanded: true,
+                children: [
+                  VisitorStatsPanel(
+                    stats: _visitorStats,
+                    loading: _visitorStatsLoading,
                   ),
                 ],
               ),
@@ -294,6 +336,101 @@ class SettingsScreen extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class VisitorStatsPanel extends StatelessWidget {
+  const VisitorStatsPanel({required this.stats, required this.loading, super.key});
+
+  final VisitorStats? stats;
+  final bool loading;
+
+  @override
+  Widget build(BuildContext context) {
+    final values = <(String, int?)>[
+      ('7 DAYS', stats?.sevenDays),
+      ('90 DAYS', stats?.ninetyDays),
+      ('1 YEAR', stats?.oneYear),
+    ];
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Approximate unique visitors to the web app.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 12),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 340;
+              if (compact) {
+                return Column(
+                  children: [
+                    for (final value in values)
+                      _VisitorStat(label: value.$1, value: value.$2, horizontal: true),
+                  ],
+                );
+              }
+              return Row(
+                children: [
+                  for (final value in values)
+                    Expanded(child: _VisitorStat(label: value.$1, value: value.$2)),
+                ],
+              );
+            },
+          ),
+          if (!loading && stats == null)
+            const Padding(
+              padding: EdgeInsets.only(top: 8),
+              child: Text(
+                'Visitor statistics unavailable',
+                textAlign: TextAlign.center,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _VisitorStat extends StatelessWidget {
+  const _VisitorStat({required this.label, required this.value, this.horizontal = false});
+
+  final String label;
+  final int? value;
+  final bool horizontal;
+
+  String get formattedValue {
+    if (value == null) return '—';
+    return value.toString().replaceAllMapped(
+      RegExp(r'\B(?=(\d{3})+(?!\d))'),
+      (_) => ',',
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final labelWidget = Text(
+      label,
+      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1),
+    );
+    final valueWidget = Text(
+      formattedValue,
+      key: ValueKey('visitor-stat-$label'),
+      style: const TextStyle(
+        color: Color(0xFFFFC928),
+        fontSize: 22,
+        fontWeight: FontWeight.w900,
+      ),
+    );
+    return SizedBox(
+      height: horizontal ? 48 : 58,
+      child: horizontal
+          ? Row(children: [Expanded(child: labelWidget), valueWidget])
+          : Column(mainAxisAlignment: MainAxisAlignment.center, children: [labelWidget, valueWidget]),
     );
   }
 }

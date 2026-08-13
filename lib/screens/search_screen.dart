@@ -224,32 +224,15 @@ class _SearchScreenState extends State<SearchScreen> {
                   onAllCategoriesSelected: _openAllCategories,
                   onCategorySelected: _openCategory,
                 )
-              : Stack(
+              : permanentCards.isEmpty
+              ? Stack(
                   fit: StackFit.expand,
                   children: [
-                    if (permanentCards.isEmpty)
-                      const SafeArea(child: _EmptyResults())
-                    else
-                      _buildCastle(
-                        results,
-                        category ?? searchAllCategoriesLabel,
-                      ),
-                    SafeArea(
-                      child: Align(
-                        alignment: Alignment.topLeft,
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: OutlinedButton.icon(
-                            key: const ValueKey('castle-back-to-categories'),
-                            onPressed: _leaveCastle,
-                            icon: const Icon(Icons.arrow_back_rounded),
-                            label: const Text('CATEGORIES'),
-                          ),
-                        ),
-                      ),
-                    ),
+                    const SafeArea(child: _EmptyResults()),
+                    _CastleFallbackBackButton(onPressed: _leaveCastle),
                   ],
-                ),
+                )
+              : _buildCastle(results, category ?? searchAllCategoriesLabel),
         ),
       ),
     );
@@ -272,8 +255,30 @@ class _SearchScreenState extends State<SearchScreen> {
           if (card != null) await _openCastleCardFullscreen(card);
         },
         onFullscreenChanged: _handleCastleFullscreenChanged,
+        onCategoriesRequested: _leaveCastle,
         fallback: SearchCardCastle(cards: cards, onFullscreen: _openFullscreen),
       );
+}
+
+class _CastleFallbackBackButton extends StatelessWidget {
+  const _CastleFallbackBackButton({required this.onPressed});
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) => SafeArea(
+    child: Align(
+      alignment: Alignment.topLeft,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: OutlinedButton.icon(
+          key: const ValueKey('castle-back-to-categories'),
+          onPressed: onPressed,
+          icon: const Icon(Icons.arrow_back_rounded),
+          label: const Text('CATEGORIES'),
+        ),
+      ),
+    ),
+  );
 }
 
 // Retained for source compatibility with older state-restoration snapshots;

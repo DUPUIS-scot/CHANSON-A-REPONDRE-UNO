@@ -11,12 +11,13 @@
     #scene::after{box-shadow:inset 0 0 min(15vw,170px) #0008,inset 0 -10vh 14vh #0004;background:radial-gradient(ellipse at 47% 40%,transparent 52%,#01040912 79%,#0004 100%)}
     #loading{position:absolute;inset:0;display:grid;place-items:center;z-index:5;background:radial-gradient(circle,#122436,#03070c 72%);color:#dce9f3;font:700 13px system-ui;letter-spacing:.12em;pointer-events:none}
     body.ready #loading{display:none}
+    #back-to-categories{position:absolute;z-index:4;left:12px;top:12px}
     #castle-controls{position:absolute;z-index:4;right:12px;top:12px;display:flex;gap:7px;align-items:flex-start;font:700 11px system-ui}
-    #castle-controls button,#castle-controls select{border:1px solid #7f91a0;border-radius:7px;background:#071019e8;color:#edf6ff;padding:8px 10px;font:inherit;cursor:pointer;box-shadow:0 6px 18px #0008}
+    #back-to-categories,#castle-controls button,#castle-controls select{border:1px solid #7f91a0;border-radius:7px;background:#071019e8;color:#edf6ff;padding:8px 10px;font:700 11px system-ui;cursor:pointer;box-shadow:0 6px 18px #0008}
     #fullscreen-controls{display:none;gap:7px;align-items:center}
     body.fullscreen-castle #fullscreen-controls{display:flex}
     body.fullscreen-castle #enter-fullscreen{display:none}
-    @media(max-width:700px){#castle-controls{right:7px;top:7px}#castle-controls button,#castle-controls select{padding:7px}}
+    @media(max-width:700px){#back-to-categories{left:7px;top:7px}#castle-controls{right:7px;top:7px}#back-to-categories,#castle-controls button,#castle-controls select{padding:7px}}
   </style>
   <script type="importmap">
     {"imports":{"three":"../vendor/three.module.js"}}
@@ -25,6 +26,7 @@
 <body data-renderer-status="loading">
   <div id="scene"></div>
   <div id="loading">LOADING 3D CASTLE…</div>
+  <button id="back-to-categories" type="button">← CATEGORIES</button>
   <div id="castle-controls">
     <button id="castle-reset" type="button">↺ RESET VIEW</button>
     <button id="enter-fullscreen" type="button">⛶ FULLSCREEN 3D</button>
@@ -640,6 +642,13 @@
     if(document.fullscreenElement)await document.exitFullscreen().catch(()=>{});
     else if(state.fullscreenActive){setFrameFallback(false);emit('fullscreenFallbackExit');setFullscreenUi(false)}
   }
+  async function requestCategories(){
+    await exitCastleFullscreen();
+    setFrameFallback(false);
+    setFullscreenUi(false);
+    emit('categoriesRequested');
+  }
+
   function openCardById(cardId){
     if(!cardId||!state.meshes.some(mesh=>mesh.userData.cardId===cardId))return;
     document.body.dataset.lastLongPressedCardId=cardId;
@@ -756,6 +765,7 @@
     listen(document.getElementById('enter-fullscreen'),'click',enterCastleFullscreen);
     listen(document.getElementById('exit-fullscreen'),'click',exitCastleFullscreen);
     listen(document.getElementById('castle-reset'),'click',resetView);
+    listen(document.getElementById('back-to-categories'),'click',requestCategories);
     listen(document,'fullscreenchange',()=>setFullscreenUi(Boolean(document.fullscreenElement)));
     listen(document,'visibilitychange',()=>document.hidden?pause():resume());
     listen(window,'keydown',event=>{

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -28,6 +30,7 @@ import 'services/background_import_service.dart';
 import 'services/auth_service.dart';
 import 'services/supabase_auth_service.dart';
 import 'services/openai_profile_service.dart';
+import 'services/visitor_analytics_service.dart';
 import 'features/startup_media/startup_video_storage.dart';
 import 'theme/app_theme.dart';
 import 'screens/configuration_error_screen.dart';
@@ -38,11 +41,13 @@ class ChansonUnoApp extends StatefulWidget {
     this.aiBackendUrlOverride,
     this.authServiceOverride,
     this.authenticationInitializationError,
+    this.visitorAnalyticsOverride,
     super.key,
   });
   final String? aiBackendUrlOverride;
   final AuthService? authServiceOverride;
   final String? authenticationInitializationError;
+  final VisitorAnalyticsService? visitorAnalyticsOverride;
   @override
   State<ChansonUnoApp> createState() => _ChansonUnoAppState();
 }
@@ -65,6 +70,7 @@ class _ChansonUnoAppState extends State<ChansonUnoApp> {
   late final OpenAiConnectionController openAiConnection;
   late final AuthService authService;
   late final AuthController auth;
+  late final VisitorAnalyticsService visitorAnalytics;
 
   String get effectiveBackendUrl => AppConfig.normalizeAiBackendUrl(
     widget.aiBackendUrlOverride ?? AppConfig.rawAiBackendUrl,
@@ -107,6 +113,17 @@ class _ChansonUnoAppState extends State<ChansonUnoApp> {
       decks: decks,
       localStorage: storage,
     );
+    visitorAnalytics =
+        widget.visitorAnalyticsOverride ??
+        VisitorAnalyticsService(
+          storage: storage,
+          client:
+              AppConfig.hasAuthConfiguration &&
+                  widget.authenticationInitializationError == null
+              ? Supabase.instance.client
+              : null,
+        );
+    unawaited(visitorAnalytics.recordVisit().catchError((_) {}));
   }
 
   Future<void> _returnHome(BuildContext context) async {
@@ -155,6 +172,7 @@ class _ChansonUnoAppState extends State<ChansonUnoApp> {
         ChangeNotifierProvider.value(value: startupVideo),
         Provider.value(value: backgroundImporter),
         Provider.value(value: storage),
+        Provider.value(value: visitorAnalytics),
       ],
       child: Consumer2<SettingsProvider, AuthController>(
         builder: (context, settings, auth, _) =>

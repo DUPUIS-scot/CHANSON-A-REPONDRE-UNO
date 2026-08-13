@@ -502,6 +502,44 @@ async function verifySearchCastle(client, url) {
       `Castle state was not preserved after fullscreen: ${JSON.stringify(restored)}`,
     );
   }
+  await client.evaluate(`(() => {
+    const frame = document.getElementById('search-card-castle-frame');
+    frame?.contentDocument?.getElementById('enter-fullscreen')?.click();
+    return true;
+  })()`);
+  await waitFor(
+    client,
+    `document.getElementById('search-card-castle-frame')
+      ?.contentDocument?.body.classList.contains('fullscreen-castle') === true`,
+    'the Search castle to re-enter fullscreen before returning to categories',
+    5000,
+  );
+  await client.evaluate(`(() => {
+    const frame = document.getElementById('search-card-castle-frame');
+    frame?.contentDocument?.getElementById('back-to-categories')?.click();
+    return true;
+  })()`);
+  await waitFor(
+    client,
+    `location.hash === '#/search' &&
+      document.getElementById('search-card-castle-frame') === null`,
+    'the iframe CATEGORIES control to restore the Search category selector',
+    5000,
+  );
+  const categoriesReturn = await client.evaluate(`(() => ({
+    route: location.hash,
+    frame: Boolean(document.getElementById('search-card-castle-frame')),
+    persistedState: localStorage.getItem('flutter.search_path_state_v1') || '',
+  }))()`);
+  if (
+    categoriesReturn.route !== '#/search' ||
+    categoriesReturn.frame ||
+    !categoriesReturn.persistedState.includes('"castleActive":false')
+  ) {
+    throw new Error(
+      `Invalid Search categories return: ${JSON.stringify(categoriesReturn)}`,
+    );
+  }
   const fatalConsoleMessages = client.consoleMessages.filter((message) =>
     ['error', 'exception', 'assert'].includes(message.level),
   );
@@ -515,6 +553,7 @@ async function verifySearchCastle(client, url) {
     url,
     result,
     restored,
+    categoriesReturn,
     screenshots: [
       castleOutputPath.pathname.slice(1),
       castleFullscreenOutputPath.pathname.slice(1),

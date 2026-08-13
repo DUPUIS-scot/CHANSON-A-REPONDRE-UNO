@@ -239,7 +239,13 @@ void main() {
       final castleBridge = File(
         'lib/widgets/webgl_card_castle_view_web.dart',
       ).readAsStringSync();
+      final runtimeVerification = File(
+        'scripts/verify_dealer_web.mjs',
+      ).readAsStringSync();
       expect(castle, contains("emit('cardLongPressed',{cardId})"));
+      expect(castle, contains('id="back-to-categories"'));
+      expect(castle, contains("emit('categoriesRequested')"));
+      expect(castle, contains('await exitCastleFullscreen()'));
       expect(castle, contains('const LONG_PRESS_MS=600'));
       expect(castle, contains("dataset.longPressState='detected'"));
       expect(castle, contains('down?.suppressNavigation'));
@@ -268,6 +274,12 @@ void main() {
         castleBridge,
         contains('final Future<void> Function(String) onCardOpened'),
       );
+      expect(
+        castleBridge,
+        contains('final VoidCallback onCategoriesRequested'),
+      );
+      expect(castleBridge, contains("case 'categoriesRequested':"));
+      expect(castleBridge, contains('widget.onCategoriesRequested()'));
       expect(castleBridge, contains('_setCardOverlayMode(true)'));
       expect(castleBridge, contains("visibility = active ? 'hidden' : ''"));
       expect(castleBridge, contains('widget.onCardOpened(id)).whenComplete'));
@@ -307,9 +319,18 @@ void main() {
       );
       expect(searchScreen, contains('discoveredCardIds'));
       expect(searchScreen, contains('_castleCardViewerOpen'));
+      expect(searchScreen, contains('onCategoriesRequested: _leaveCastle'));
       expect(searchScreen, contains('_CastleCardFullscreen(card: card)'));
       expect(searchScreen, contains('source: card.imagePath'));
       expect(searchScreen, isNot(contains('card.displayTitle')));
+      expect(
+        runtimeVerification,
+        contains("getElementById('back-to-categories')?.click()"),
+      );
+      expect(
+        runtimeVerification,
+        contains('the iframe CATEGORIES control to restore'),
+      );
       expect(
         searchScreen,
         contains(r"label: '${card.category}, front of card'"),
