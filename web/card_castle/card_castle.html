@@ -4,8 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <style>
-    html,body,#scene{margin:0;width:100%;height:100%;overflow:hidden;background:#03070c}
+    html,body,#scene{margin:0;width:100%;height:100%;overflow:hidden;background:#02060b}
     #scene canvas{display:block;width:100%;height:100%;touch-action:none}
+    #scene::before,#scene::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none}
+    #scene::before{background:linear-gradient(180deg,#06142308 38%,#02060b20 76%,#0005 100%);mix-blend-mode:multiply}
+    #scene::after{box-shadow:inset 0 0 min(15vw,170px) #0008,inset 0 -10vh 14vh #0004;background:radial-gradient(ellipse at 47% 40%,transparent 52%,#01040912 79%,#0004 100%)}
     #loading{position:absolute;inset:0;display:grid;place-items:center;z-index:5;background:radial-gradient(circle,#122436,#03070c 72%);color:#dce9f3;font:700 13px system-ui;letter-spacing:.12em;pointer-events:none}
     body.ready #loading{display:none}
     #castle-controls{position:absolute;z-index:4;right:12px;top:12px;display:flex;gap:7px;align-items:flex-start;font:700 11px system-ui}
@@ -13,10 +16,7 @@
     #fullscreen-controls{display:none;gap:7px;align-items:center}
     body.fullscreen-castle #fullscreen-controls{display:flex}
     body.fullscreen-castle #enter-fullscreen{display:none}
-    #focused-summary{display:flex;align-items:center;gap:7px;max-width:220px;padding:5px 8px;border:1px solid #7f91a0;border-radius:8px;background:#05090de8;color:#fff}
-    #focused-summary img{width:34px;height:51px;object-fit:contain;border-radius:3px}
-    #focused-summary span{max-width:135px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    @media(max-width:700px){#castle-controls{right:7px;top:7px}#castle-controls button,#castle-controls select{padding:7px}#focused-summary{display:none}}
+    @media(max-width:700px){#castle-controls{right:7px;top:7px}#castle-controls button,#castle-controls select{padding:7px}}
   </style>
   <script type="importmap">
     {"imports":{"three":"../vendor/three.module.js"}}
@@ -26,8 +26,6 @@
   <div id="scene"></div>
   <div id="loading">LOADING 3D CASTLE…</div>
   <div id="castle-controls">
-    <button id="castle-home" type="button">⌂ HOME</button>
-    <button id="castle-dj-who" type="button" title="Open DJ WHO" aria-label="Open DJ WHO"><img src="../assets/assets/images/dj_who.png" alt="" style="width:26px;height:26px;object-fit:cover;border-radius:50%;vertical-align:middle;margin-right:6px">DJ WHO</button>
     <button id="castle-reset" type="button">↺ RESET VIEW</button>
     <button id="enter-fullscreen" type="button">⛶ FULLSCREEN 3D</button>
     <div id="fullscreen-controls">
@@ -48,6 +46,8 @@
   const listen = (target,type,handler,options={}) =>
     target.addEventListener(type,handler,{...options,signal:abort.signal});
   const clamp = THREE.MathUtils.clamp;
+  const LONG_PRESS_MS=600;
+  const TAP_SLOP_PX=9;
   const state = {
     cards: [], meshes: [], textures: new Map(), focusedCardId: null,
     shuffleSeed: 0, disposed: false, pointerDown: null, dragging: false,
@@ -64,6 +64,7 @@
   };
   let scene,camera,renderer,raycaster,pointer,cardGroup,castleRoot;
   let resizeObserver,intersectionObserver;
+  const atmosphere={mist:[],warmLights:[],highQuality:false};
   const cardGeometry = new THREE.BoxGeometry(1.08,1.62,.035);
   const cardForward = new THREE.Vector3(0,0,1);
 
@@ -86,18 +87,18 @@
       return;
     }
     scene=new THREE.Scene();
-    scene.background=new THREE.Color(0x03070c);
-    scene.fog=new THREE.FogExp2(0x07101a,.012);
+    scene.background=new THREE.Color(0x02060b);
+    scene.fog=new THREE.FogExp2(0x0a1824,.0108);
     camera=new THREE.PerspectiveCamera(43,1,.1,180);
     renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
     renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.6));
     renderer.outputColorSpace=THREE.SRGBColorSpace;
     renderer.toneMapping=THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure=1.34;
-    // The supplied castle is a dense, fully textured mesh. PBR lighting is
-    // retained, while a second 756k-vertex shadow pass is intentionally
-    // avoided for mobile and software WebGL renderers.
-    renderer.shadowMap.enabled=false;
+    renderer.toneMappingExposure=1.42;
+    atmosphere.highQuality=matchMedia('(min-width: 900px)').matches &&
+      (navigator.hardwareConcurrency||4)>=4 && devicePixelRatio<=2.25;
+    renderer.shadowMap.enabled=atmosphere.highQuality;
+    renderer.shadowMap.type=THREE.PCFSoftShadowMap;
     root.appendChild(renderer.domElement);
     raycaster=new THREE.Raycaster();
     pointer=new THREE.Vector2();
@@ -118,6 +119,8 @@
     }
     document.body.dataset.rendererInstanceId=
       `castle-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    document.body.dataset.atmosphere='scottish-cinematic-night';
+    document.body.dataset.atmosphereQuality=atmosphere.highQuality?'high':'efficient';
     document.body.dataset.modelAsset=CASTLE_URL;
     installEvents();
     resizeObserver=new ResizeObserver(resize);
@@ -149,43 +152,130 @@
   function buildEnvironment() {
     const ground=new THREE.Mesh(
       new THREE.CircleGeometry(67,64),
-      new THREE.MeshStandardMaterial({color:0x121a17,roughness:1,metalness:0}),
+      new THREE.MeshStandardMaterial({color:0x0a1112,roughness:.82,metalness:.025}),
     );
     ground.rotation.x=-Math.PI/2;
     ground.position.y=-.12;
+    ground.receiveShadow=atmosphere.highQuality;
     scene.add(ground);
     const sky=new THREE.Mesh(
       new THREE.SphereGeometry(130,24,16),
       new THREE.ShaderMaterial({
         side:THREE.BackSide,
-        uniforms:{top:{value:new THREE.Color(0x18354d)},bottom:{value:new THREE.Color(0x02050a)}},
+        uniforms:{top:{value:new THREE.Color(0x102a42)},middle:{value:new THREE.Color(0x091827)},bottom:{value:new THREE.Color(0x010409)}},
         vertexShader:'varying float h;void main(){h=normalize(position).y;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
-        fragmentShader:'varying float h;uniform vec3 top;uniform vec3 bottom;void main(){gl_FragColor=vec4(mix(bottom,top,smoothstep(-.3,.8,h)),1.0);}',
+        fragmentShader:'varying float h;uniform vec3 top;uniform vec3 middle;uniform vec3 bottom;void main(){vec3 low=mix(bottom,middle,smoothstep(-.42,.18,h));vec3 colour=mix(low,top,smoothstep(.08,.92,h));gl_FragColor=vec4(colour,1.0);}',
       }),
     );
     scene.add(sky);
     const moon=new THREE.Mesh(
       new THREE.SphereGeometry(6.4,32,24),
-      new THREE.MeshBasicMaterial({color:0xe5f1ff,fog:false}),
+      new THREE.MeshBasicMaterial({color:0xdde9f3,fog:false,toneMapped:false}),
     );
     // Projected into the upper-left sky from the establishing camera so the
     // moon remains above the castle instead of slipping outside the frustum.
     moon.position.set(-70,18,-40);
     scene.add(moon);
+    const halo=new THREE.Sprite(new THREE.SpriteMaterial({
+      map:radialTexture('rgba(207,226,242,.28)'),transparent:true,
+      depthWrite:false,depthTest:false,blending:THREE.AdditiveBlending,toneMapped:false,
+    }));
+    halo.position.copy(moon.position);halo.scale.set(27,27,1);scene.add(halo);
+
+    const cloudTexture=buildCloudTexture();
+    [
+      [-62,20,-37,42,12,.62],[-78,15,-34,34,9,.42],
+      [-45,26,-49,38,10,.26],[28,19,-76,54,13,.18],
+    ].forEach(([x,y,z,w,h,opacity])=>{
+      const cloud=new THREE.Sprite(new THREE.SpriteMaterial({
+        map:cloudTexture,transparent:true,opacity,depthWrite:false,
+        color:0x708399,fog:false,toneMapped:false,
+      }));
+      cloud.position.set(x,y,z);cloud.scale.set(w,h,1);scene.add(cloud);
+    });
+
+    const mistTexture=radialTexture('rgba(153,181,198,.38)',768,192);
+    [
+      [-26,2,-4,42,8,.18],[24,3,-8,46,9,.15],[-14,6,-22,54,10,.12],
+      [7,1,23,36,7,.11],
+    ].forEach(([x,y,z,w,h,opacity])=>{
+      const mist=new THREE.Sprite(new THREE.SpriteMaterial({
+        map:mistTexture,transparent:true,opacity,depthWrite:false,
+        color:0x8ea9bb,fog:true,toneMapped:false,
+      }));
+      mist.position.set(x,y,z);mist.scale.set(w,h,1);scene.add(mist);atmosphere.mist.push(mist);
+    });
+  }
+
+  function radialTexture(colour,width=256,height=256) {
+    const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
+    const context=canvas.getContext('2d');
+    const gradient=context.createRadialGradient(width*.5,height*.5,0,width*.5,height*.5,Math.max(width,height)*.5);
+    gradient.addColorStop(0,colour);gradient.addColorStop(.38,colour);gradient.addColorStop(1,'rgba(0,0,0,0)');
+    context.fillStyle=gradient;context.fillRect(0,0,width,height);
+    const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;return texture;
+  }
+
+  function buildCloudTexture() {
+    const canvas=document.createElement('canvas');canvas.width=512;canvas.height=160;
+    const context=canvas.getContext('2d');context.clearRect(0,0,512,160);
+    let seed=317;
+    for(let index=0;index<34;index++){
+      seed=(seed*1664525+1013904223)>>>0;const x=(seed%500)+6;
+      seed=(seed*1664525+1013904223)>>>0;const y=48+(seed%62);
+      seed=(seed*1664525+1013904223)>>>0;const radius=26+(seed%54);
+      const gradient=context.createRadialGradient(x,y,0,x,y,radius);
+      gradient.addColorStop(0,'rgba(225,235,242,.33)');gradient.addColorStop(1,'rgba(18,31,44,0)');
+      context.fillStyle=gradient;context.fillRect(x-radius,y-radius,radius*2,radius*2);
+    }
+    const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;return texture;
   }
 
   function buildLights() {
-    scene.add(new THREE.HemisphereLight(0xd8ebff,0x252b35,3.15));
-    scene.add(new THREE.AmbientLight(0x91abc2,1.15));
-    const moon=new THREE.DirectionalLight(0xdcecff,5.4);
+    scene.add(new THREE.HemisphereLight(0xb4d0e4,0x22262b,2.45));
+    scene.add(new THREE.AmbientLight(0x7590a5,.62));
+    const moon=new THREE.DirectionalLight(0xcbdff0,9.6);
     moon.position.set(-26,44,30);
+    moon.target.position.set(0,7,0);scene.add(moon.target);
+    moon.castShadow=atmosphere.highQuality;
+    moon.shadow.mapSize.set(1024,1024);moon.shadow.bias=-.00022;moon.shadow.normalBias=.035;
+    moon.shadow.camera.left=-30;moon.shadow.camera.right=30;moon.shadow.camera.top=34;moon.shadow.camera.bottom=-16;
+    moon.shadow.camera.near=8;moon.shadow.camera.far=95;
     scene.add(moon);
-    const rim=new THREE.DirectionalLight(0x9ebdde,1.75);
+    const rim=new THREE.DirectionalLight(0x789fc1,1.45);
     rim.position.set(30,22,-26);
     scene.add(rim);
-    const warm=new THREE.PointLight(0xffaa58,14,42,2);
-    warm.position.set(0,8,15);
-    scene.add(warm);
+    const architecturalLights=[
+      // Main gate, approach and primary bridge.
+      [0,5,18,32,26],[-10,4,16,19,20],[10,4,16,19,20],
+      [0,2,24,22,19],[-17,3,13,14,16],[17,3,13,14,16],
+      // Courtyard, stairs and defensive walkways.
+      [0,8,6,24,22],[-11,8,6,16,17],[11,8,6,16,17],
+      [-19,7,1,13,15],[19,7,1,13,15],
+      // Upper tower entrances and interior-facing windows.
+      [-12,13,-6,14,16],[0,16,-8,17,18],[12,13,-6,14,16],
+    ];
+    architecturalLights
+      .slice(0,atmosphere.highQuality?architecturalLights.length:10)
+      .forEach(([x,y,z,intensity,distance])=>{
+      const warm=new THREE.PointLight(0xffa34d,intensity,distance,2.15);
+      warm.position.set(x,y,z);scene.add(warm);atmosphere.warmLights.push(warm);
+    });
+    if(atmosphere.highQuality){
+      addArchitecturalSpot([0,12,25],[0,5,12],0xffa45b,34,.58);
+      addArchitecturalSpot([-15,15,13],[-8,5,7],0xffb06a,22,.52);
+    }
+    document.body.dataset.warmLightCount=String(atmosphere.warmLights.length);
+    document.body.dataset.moonIntensity=String(moon.intensity);
+  }
+
+  function addArchitecturalSpot(position,target,colour,intensity,angle) {
+    const light=new THREE.SpotLight(colour,intensity,38,angle,.72,1.65);
+    light.position.fromArray(position);light.target.position.fromArray(target);
+    light.castShadow=true;light.shadow.mapSize.set(1024,1024);
+    light.shadow.bias=-.00018;light.shadow.normalBias=.045;
+    light.shadow.camera.near=3;light.shadow.camera.far=48;
+    scene.add(light,light.target);atmosphere.warmLights.push(light);
   }
 
   function loadCastle() {
@@ -197,8 +287,22 @@
         castleRoot.traverse(object=>{
           if(object.isMesh){
             meshCount++;
-            object.castShadow=false;
-            object.receiveShadow=false;
+            object.castShadow=atmosphere.highQuality;
+            object.receiveShadow=atmosphere.highQuality;
+            const materials=Array.isArray(object.material)?object.material:[object.material];
+            materials.filter(Boolean).forEach(material=>{
+              if(!material.isMeshStandardMaterial&&!material.isMeshPhysicalMaterial)return;
+              const subtlyDamp=/(bridge|court|floor|ground|path|stair|walk)/i.test(
+                `${object.name||''} ${material.name||''}`,
+              );
+              material.roughness=clamp(material.roughness??.86,subtlyDamp ? .64 : .7,.94);
+              material.metalness=clamp(material.metalness??0,0,.08);
+              material.envMapIntensity=atmosphere.highQuality ? .62 : .44;
+              if(material.emissive?.getHex()!==0){
+                material.emissiveIntensity=clamp((material.emissiveIntensity||1)*1.18,.6,2.2);
+              }
+              material.needsUpdate=true;
+            });
           }
         });
         const bounds=new THREE.Box3().setFromObject(castleRoot);
@@ -316,6 +420,10 @@
     state.cards=cards;state.focusedCardId=focusedCardId;state.shuffleSeed=shuffleSeed;
     state.activeCategory=activeCategory;
     document.body.dataset.cardCount=String(cards.length);
+    document.body.dataset.activeCategory=activeCategory;
+    document.body.dataset.cardCategories=[...new Set(
+      cards.map(card=>card.category.toUpperCase()),
+    )].join('|');
     document.body.dataset.textureCount='0';
     document.body.dataset.textureErrorCount='0';
     document.body.dataset.textureRequestCount='0';
@@ -336,7 +444,11 @@
 
   function addCard(card,anchor) {
     const subdued=card.isMatch===false;
-    const edge=new THREE.MeshStandardMaterial({color:subdued?0x4c565c:0x9aa6ad,roughness:.42,metalness:.35});
+    const accent=categoryAccent(card.category);
+    const edge=new THREE.MeshStandardMaterial({
+      color:subdued?0x46515a:accent,roughness:.48,metalness:.24,
+      emissive:subdued?0x000000:accent,emissiveIntensity:subdued?0:.12,
+    });
     const face=new THREE.MeshStandardMaterial({color:subdued?0x171516:0x2a1c18,roughness:.64,metalness:.02,transparent:subdued,opacity:subdued ? .38 : 1});
     const back=new THREE.MeshStandardMaterial({color:subdued?0x151011:0x241712,roughness:.7,transparent:subdued,opacity:subdued ? .38 : 1});
     const mesh=new THREE.Mesh(cardGeometry,[edge,edge,edge,edge,face,back]);
@@ -351,6 +463,16 @@
     mesh.userData.textureUrl='';
     mesh.castShadow=false;
     cardGroup.add(mesh);state.meshes.push(mesh);
+  }
+
+  function categoryAccent(category='') {
+    const key=category.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
+    if(key.includes('CLASSIQUE')||key.includes('THEAT'))return 0xa46c48;
+    if(key.includes('ART'))return 0xb39a72;
+    if(key.includes('CYBER')||key.includes('TECH'))return 0x4e8ba5;
+    if(key.includes('POET'))return 0x76629c;
+    if(key.includes('NATURE')||key.includes('SAUVAGE'))return 0x64805e;
+    return 0x7d8c96;
   }
 
   function queueRecto(mesh) {
@@ -429,9 +551,10 @@
       mesh.position.copy(mesh.userData.anchorPosition)
         .addScaledVector(mesh.userData.anchorNormal,active ? .11 : 0);
       mesh.material.slice(0,4).forEach(material=>{
-        material.color.set(active?0xffc928:mesh.userData.isMatch?0x9aa6ad:0x4c565c);
-        material.emissive.set(active?0x6b2f00:0x000000);
-        material.emissiveIntensity=active?1.3:0;
+        const accent=categoryAccent(mesh.userData.card.category);
+        material.color.set(active?0xffc928:mesh.userData.isMatch?accent:0x46515a);
+        material.emissive.set(active?0x6b2f00:mesh.userData.isMatch?accent:0x000000);
+        material.emissiveIntensity=active?1.3:mesh.userData.isMatch ? .12 : 0;
       });
       if(active)selected=mesh;
     });
@@ -452,23 +575,6 @@
     pointer.y=-((event.clientY-rect.top)/rect.height)*2+1;
     raycaster.setFromCamera(pointer,camera);
     return raycaster.intersectObjects(state.meshes,false)[0]?.object;
-  }
-
-  function updateCategoryControl() {
-    const control=document.getElementById('castle-category');
-    const categories=['ALL',...new Set(state.cards.map(card=>card.category.toUpperCase()))];
-    control.replaceChildren(...categories.map(category=>{
-      const option=document.createElement('option');
-      option.value=category;option.textContent=category;
-      option.selected=category===state.activeCategory;return option;
-    }));
-  }
-
-  function updateFocusedSummary(card) {
-    document.getElementById('focused-title').textContent=card?.title||card?.category||'No card selected';
-    const thumbnail=document.getElementById('focused-thumbnail');
-    thumbnail.src=card?.rectoUrl||card?.thumbnailUrl||'';
-    thumbnail.alt=card?`${card.title||card.category}`:'';
   }
 
   function moveCardFocus(delta) {
@@ -536,7 +642,7 @@
   }
   function openCardById(cardId){
     if(!cardId||!state.meshes.some(mesh=>mesh.userData.cardId===cardId))return;
-    state.focusedCardId=cardId;
+    document.body.dataset.lastLongPressedCardId=cardId;
     emit('cardLongPressed',{cardId});
     void exitCastleFullscreen();
   }
@@ -556,6 +662,7 @@
   function installEvents() {
     const canvas=renderer.domElement;
     listen(canvas,'pointerdown',event=>{
+      event.preventDefault();
       if(event.pointerType==='touch'){
         state.touches.set(event.pointerId,{x:event.clientX,y:event.clientY});
         if(state.touches.size===2){
@@ -564,24 +671,35 @@
         }
       }
       state.dragging=false;
-      state.pointerDown={x:event.clientX,y:event.clientY,t:performance.now(),mesh:pick(event),yaw:orbit.yaw,pitch:orbit.pitch,target:orbit.target.clone(),panning:event.button===1||event.button===2||event.shiftKey};
+      const picked=pick(event);
+      document.body.dataset.pointerDown=String(event.pointerId);
+      document.body.dataset.pickedCardId=picked?.userData.cardId||'';
+      state.pointerDown={pointerId:event.pointerId,cardId:picked?.userData.cardId||'',x:event.clientX,y:event.clientY,t:performance.now(),mesh:picked,yaw:orbit.yaw,pitch:orbit.pitch,target:orbit.target.clone(),panning:event.button===1||event.button===2||event.shiftKey};
       cancelLongPress();
       if(state.pointerDown.mesh&&
           (event.pointerType==='touch'||event.button===0)&&
           !event.shiftKey&&state.touches.size<2){
         const down=state.pointerDown;
+        document.body.dataset.longPressState='timer-started';
         state.longPressTimer=setTimeout(()=>{
           state.longPressTimer=0;
           if(state.pointerDown===down&&!state.dragging){
             down.longPressFired=true;
-            openCardById(down.mesh.userData.cardId);
+            down.suppressNavigation=true;
+            document.body.dataset.longPressState='detected';
+            openCardById(down.cardId);
           }
-        },600);
+        },LONG_PRESS_MS);
       }
       canvas.setPointerCapture(event.pointerId);
       resume();
     });
     listen(canvas,'pointermove',event=>{
+      const down=state.pointerDown;
+      if(down?.longPressFired||down?.suppressNavigation){
+        event.preventDefault();
+        return;
+      }
       if(event.pointerType==='touch'&&state.touches.has(event.pointerId)){
         state.touches.set(event.pointerId,{x:event.clientX,y:event.clientY});
         if(state.touches.size===2&&state.pinch){
@@ -596,9 +714,9 @@
           clampTarget();state.dragging=true;state.targetCamera=null;resume();return;
         }
       }
-      const down=state.pointerDown;if(!down)return;
+      if(!down)return;
       const dx=event.clientX-down.x,dy=event.clientY-down.y;
-      if(Math.hypot(dx,dy)>7){state.dragging=true;cancelLongPress()}
+      if(Math.hypot(dx,dy)>TAP_SLOP_PX){state.dragging=true;document.body.dataset.longPressState='cancelled-movement';cancelLongPress()}
       if(state.dragging){
         if(down.panning){
           const scale=orbit.distance*.0018;
@@ -613,25 +731,30 @@
         resume();
       }
     });
+    listen(canvas,'pointerleave',event=>{
+      const down=state.pointerDown;
+      if(down&&down.pointerId===event.pointerId&&!down.longPressFired){
+        document.body.dataset.longPressState='cancelled-leave';cancelLongPress();
+      }
+    });
     const release=event=>{
+      event.preventDefault();
       if(event.pointerType==='touch'){
         state.touches.delete(event.pointerId);if(state.touches.size<2)state.pinch=null;
       }
       const down=state.pointerDown;const wasDragging=state.dragging;
       cancelLongPress();
       state.pointerDown=null;state.dragging=false;
+      if(down?.longPressFired)document.body.dataset.longPressState='released';
       if(event.type==='pointercancel'||!down||wasDragging||!down.mesh||down.longPressFired){resume();return}
-      const cardId=down.mesh.userData.cardId;
-      if(performance.now()-down.t>520)openCardById(cardId);
-      else{focusCard(cardId,true);emit('cardSelected',{cardId})}
+      const cardId=down.cardId;
+      focusCard(cardId,true);emit('cardSelected',{cardId});
     };
     listen(canvas,'pointerup',release);listen(canvas,'pointercancel',release);
     listen(canvas,'wheel',event=>{event.preventDefault();orbit.distance=clamp(orbit.distance+event.deltaY*.025,24,90);state.targetCamera=null;resume()},{passive:false});
     listen(canvas,'contextmenu',event=>event.preventDefault());
     listen(document.getElementById('enter-fullscreen'),'click',enterCastleFullscreen);
     listen(document.getElementById('exit-fullscreen'),'click',exitCastleFullscreen);
-    listen(document.getElementById('castle-home'),'click',()=>{void exitCastleFullscreen();setTimeout(()=>emit('homeRequested'),60)});
-    listen(document.getElementById('castle-dj-who'),'click',()=>{void exitCastleFullscreen();setTimeout(()=>emit('djWhoRequested'),60)});
     listen(document.getElementById('castle-reset'),'click',resetView);
     listen(document,'fullscreenchange',()=>setFullscreenUi(Boolean(document.fullscreenElement)));
     listen(document,'visibilitychange',()=>document.hidden?pause():resume());

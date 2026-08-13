@@ -272,16 +272,23 @@ async function verifySearchCastle(client, url) {
   await waitFor(
     client,
     `Number(document.getElementById('search-card-castle-frame')
-      ?.contentDocument?.body.dataset.cardCount || 0) === 84`,
-    'all 84 stable cards to reach the castle',
+      ?.contentDocument?.body.dataset.cardCount || 0) > 0 &&
+      Number(document.getElementById('search-card-castle-frame')
+        ?.contentDocument?.body.dataset.cardCount || 0) < 84`,
+    'the selected category cards to reach the castle',
     20000,
+  );
+  const visibleCardCount = await client.evaluate(
+    `Number(document.getElementById('search-card-castle-frame')
+      ?.contentDocument?.body.dataset.cardCount || 0)`,
   );
   try {
     await waitFor(
       client,
       `Number(document.getElementById('search-card-castle-frame')
-        ?.contentDocument?.body.dataset.textureCount || 0) === 84`,
-      'all permanent card textures in the castle',
+        ?.contentDocument?.body.dataset.textureCount || 0) ===
+          ${visibleCardCount}`,
+      'all selected-category card textures in the castle',
       90000,
     );
   } catch (error) {
@@ -321,10 +328,10 @@ async function verifySearchCastle(client, url) {
   const requestedFocusId = await client.evaluate(`(() => {
     const frame = document.getElementById('search-card-castle-frame');
     const cardId = frame?.contentDocument?.body.dataset.firstCardId || '';
-    frame?.contentWindow?.postMessage(JSON.stringify({
-      type: 'focusCard',
-      cardId,
-      animate: true,
+     frame?.contentWindow?.postMessage(JSON.stringify({
+       type: 'focusCard',
+       cardId,
+       animate: false,
     }), location.origin);
     return cardId;
   })()`);
@@ -338,13 +345,6 @@ async function verifySearchCastle(client, url) {
         ${JSON.stringify(requestedFocusId)}`,
     'the selected card to focus in the castle',
     5000,
-  );
-  await waitFor(
-    client,
-    `document.getElementById('search-card-castle-frame')
-      ?.contentDocument?.body.dataset.focusSettled === 'true'`,
-    'the castle camera focus animation to settle',
-    15000,
   );
   await delay(250);
   const rendererInstanceId = await client.evaluate(
@@ -390,6 +390,8 @@ async function verifySearchCastle(client, url) {
       cardCount: Number(body?.dataset.cardCount || 0),
       meshCount: Number(body?.dataset.meshCount || 0),
       textureCount: Number(body?.dataset.textureCount || 0),
+      activeCategory: body?.dataset.activeCategory || '',
+      cardCategories: body?.dataset.cardCategories || '',
       focusedCardId: body?.dataset.focusedCardId || '',
       focusMode: body?.dataset.focusMode || '',
       rendererInstanceId: body?.dataset.rendererInstanceId || '',
@@ -415,11 +417,13 @@ async function verifySearchCastle(client, url) {
     !result.frame ||
     !result.canvas ||
     result.rendererStatus !== 'ready' ||
-    result.cardCount !== 84 ||
-    result.meshCount !== 84 ||
+    result.cardCount !== visibleCardCount ||
+    result.meshCount !== visibleCardCount ||
+    result.textureCount !== visibleCardCount ||
+    result.cardCategories !== result.activeCategory ||
     result.textureCount < 1 ||
     result.focusedCardId !== requestedFocusId ||
-    result.focusMode !== 'animated' ||
+    result.focusMode !== 'immediate' ||
     result.rendererInstanceId !== rendererInstanceId ||
     result.castleMeshCount < 1 ||
     result.surfaceAnchorCount !== 84 ||
@@ -461,7 +465,7 @@ async function verifySearchCastle(client, url) {
   })()`);
   if (
     restored.rendererInstanceId !== rendererInstanceId ||
-    restored.cardCount !== 84 ||
+    restored.cardCount !== visibleCardCount ||
     restored.focusedCardId !== requestedFocusId
   ) {
     throw new Error(
