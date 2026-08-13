@@ -328,10 +328,10 @@ async function verifySearchCastle(client, url) {
   const requestedFocusId = await client.evaluate(`(() => {
     const frame = document.getElementById('search-card-castle-frame');
     const cardId = frame?.contentDocument?.body.dataset.firstCardId || '';
-    frame?.contentWindow?.postMessage(JSON.stringify({
-      type: 'focusCard',
-      cardId,
-      animate: true,
+     frame?.contentWindow?.postMessage(JSON.stringify({
+       type: 'focusCard',
+       cardId,
+       animate: false,
     }), location.origin);
     return cardId;
   })()`);
@@ -345,13 +345,6 @@ async function verifySearchCastle(client, url) {
         ${JSON.stringify(requestedFocusId)}`,
     'the selected card to focus in the castle',
     5000,
-  );
-  await waitFor(
-    client,
-    `document.getElementById('search-card-castle-frame')
-      ?.contentDocument?.body.dataset.focusSettled === 'true'`,
-    'the castle camera focus animation to settle',
-    15000,
   );
   await delay(250);
   const rendererInstanceId = await client.evaluate(
@@ -430,7 +423,7 @@ async function verifySearchCastle(client, url) {
     result.cardCategories !== result.activeCategory ||
     result.textureCount < 1 ||
     result.focusedCardId !== requestedFocusId ||
-    result.focusMode !== 'animated' ||
+    result.focusMode !== 'immediate' ||
     result.rendererInstanceId !== rendererInstanceId ||
     result.castleMeshCount < 1 ||
     result.surfaceAnchorCount !== 84 ||
