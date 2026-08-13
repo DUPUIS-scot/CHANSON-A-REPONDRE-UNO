@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../core/app_router.dart';
 import '../data/card_categories.dart';
+import '../widgets/utility_page_background.dart';
 
 class RulesScreen extends StatelessWidget {
   const RulesScreen({super.key});
@@ -27,7 +28,8 @@ class RulesScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final categories = _categoryOrder.map(cardCategoryFor).toList();
 
-    return Scaffold(
+    return UtilityPageScaffold(
+      panelBody: true,
       appBar: AppBar(
         title: const Text('RULES'),
         actions: const [

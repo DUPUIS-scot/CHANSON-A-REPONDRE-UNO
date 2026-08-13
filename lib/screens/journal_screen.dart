@@ -10,6 +10,7 @@ import '../providers/journal_provider.dart';
 import '../widgets/home_navigation_button.dart';
 import '../widgets/card_selection_dialog.dart';
 import '../widgets/medium_card_thumbnail.dart';
+import '../widgets/utility_page_background.dart';
 
 class JournalScreen extends StatefulWidget {
   const JournalScreen({super.key});
@@ -85,9 +86,8 @@ class _JournalScreenState extends State<JournalScreen> {
                                 ? 'Unavailable card'
                                 : card.category.toUpperCase(),
                           ),
-                          onDeleted: () => setDialogState(
-                            () => linkedCardIds.remove(id),
-                          ),
+                          onDeleted: () =>
+                              setDialogState(() => linkedCardIds.remove(id)),
                         );
                       }).toList(),
                     ),
@@ -134,7 +134,7 @@ class _JournalScreenState extends State<JournalScreen> {
             )
             .toList()
           ..sort((a, b) => b.modifiedAt.compareTo(a.modifiedAt));
-    return Scaffold(
+    return UtilityPageScaffold(
       appBar: AppBar(
         title: const Text('Journal'),
         actions: [
@@ -255,7 +255,10 @@ class _JournalEntryCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(entry.text, style: Theme.of(context).textTheme.bodyLarge),
+                      Text(
+                        entry.text,
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
                       const SizedBox(height: 8),
                       Text(
                         'Created ${entry.createdAt.toLocal()}\n'
@@ -291,14 +294,17 @@ class _JournalEntryCard extends StatelessWidget {
                     scrollDirection: Axis.horizontal,
                     itemCount: links.length,
                     separatorBuilder: (_, _) => const SizedBox(width: 16),
-                    itemBuilder: (_, index) => _linkedCard(context, links[index]),
+                    itemBuilder: (_, index) =>
+                        _linkedCard(context, links[index]),
                   ),
                 )
               else
                 Wrap(
                   spacing: 16,
                   runSpacing: 16,
-                  children: links.map((link) => _linkedCard(context, link)).toList(),
+                  children: links
+                      .map((link) => _linkedCard(context, link))
+                      .toList(),
                 ),
             ],
           ],

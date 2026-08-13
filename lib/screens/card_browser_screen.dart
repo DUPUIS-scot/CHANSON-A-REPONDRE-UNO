@@ -15,6 +15,7 @@ import '../widgets/empty_deck_state.dart';
 import '../widgets/five_card_hand.dart';
 import '../widgets/home_navigation_button.dart';
 import '../widgets/selected_card_actions.dart';
+import '../widgets/utility_page_background.dart';
 import 'browse_hand_fullscreen_screen.dart';
 
 class CardBrowserScreen extends StatefulWidget {
@@ -223,8 +224,7 @@ class _CardBrowserScreenState extends State<CardBrowserScreen> {
   Widget build(BuildContext context) {
     final decks = context.watch<DeckProvider>();
     final deck = decks.activeDeck;
-    return Scaffold(
-      backgroundColor: const Color(0xFF090806),
+    return UtilityPageScaffold(
       appBar: AppBar(
         leading: IconButton(
           tooltip: 'Back',

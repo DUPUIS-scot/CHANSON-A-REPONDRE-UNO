@@ -4,6 +4,7 @@ import '../core/app_constants.dart';
 import '../providers/deck_provider.dart';
 import '../widgets/deck_tile.dart';
 import '../widgets/home_navigation_button.dart';
+import '../widgets/utility_page_background.dart';
 
 class DeckSelectionScreen extends StatelessWidget {
   const DeckSelectionScreen({super.key});
@@ -14,7 +15,7 @@ class DeckSelectionScreen extends StatelessWidget {
     final permanentDeck = provider.decks
         .where((deck) => deck.id == AppConstants.productionDeckId)
         .firstOrNull;
-    return Scaffold(
+    return UtilityPageScaffold(
       appBar: AppBar(
         title: const Text('Permanent Deck'),
         actions: [

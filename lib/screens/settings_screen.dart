@@ -10,6 +10,7 @@ import '../widgets/home_navigation_button.dart';
 import '../widgets/settings_action_tile.dart';
 import '../widgets/settings_section.dart';
 import '../widgets/startup_video_viewport.dart';
+import '../widgets/utility_page_background.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -75,7 +76,7 @@ class SettingsScreen extends StatelessWidget {
     final home = context.watch<HomeExperienceProvider>();
     final advanced = settings.advanced;
 
-    return Scaffold(
+    return UtilityPageScaffold(
       appBar: AppBar(
         title: const Text('Settings'),
         actions: const [
