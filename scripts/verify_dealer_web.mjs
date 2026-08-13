@@ -272,16 +272,23 @@ async function verifySearchCastle(client, url) {
   await waitFor(
     client,
     `Number(document.getElementById('search-card-castle-frame')
-      ?.contentDocument?.body.dataset.cardCount || 0) === 84`,
-    'all 84 stable cards to reach the castle',
+      ?.contentDocument?.body.dataset.cardCount || 0) > 0 &&
+      Number(document.getElementById('search-card-castle-frame')
+        ?.contentDocument?.body.dataset.cardCount || 0) < 84`,
+    'the selected category cards to reach the castle',
     20000,
+  );
+  const visibleCardCount = await client.evaluate(
+    `Number(document.getElementById('search-card-castle-frame')
+      ?.contentDocument?.body.dataset.cardCount || 0)`,
   );
   try {
     await waitFor(
       client,
       `Number(document.getElementById('search-card-castle-frame')
-        ?.contentDocument?.body.dataset.textureCount || 0) === 84`,
-      'all permanent card textures in the castle',
+        ?.contentDocument?.body.dataset.textureCount || 0) ===
+          ${visibleCardCount}`,
+      'all selected-category card textures in the castle',
       90000,
     );
   } catch (error) {
@@ -390,6 +397,8 @@ async function verifySearchCastle(client, url) {
       cardCount: Number(body?.dataset.cardCount || 0),
       meshCount: Number(body?.dataset.meshCount || 0),
       textureCount: Number(body?.dataset.textureCount || 0),
+      activeCategory: body?.dataset.activeCategory || '',
+      cardCategories: body?.dataset.cardCategories || '',
       focusedCardId: body?.dataset.focusedCardId || '',
       focusMode: body?.dataset.focusMode || '',
       rendererInstanceId: body?.dataset.rendererInstanceId || '',
@@ -415,8 +424,10 @@ async function verifySearchCastle(client, url) {
     !result.frame ||
     !result.canvas ||
     result.rendererStatus !== 'ready' ||
-    result.cardCount !== 84 ||
-    result.meshCount !== 84 ||
+    result.cardCount !== visibleCardCount ||
+    result.meshCount !== visibleCardCount ||
+    result.textureCount !== visibleCardCount ||
+    result.cardCategories !== result.activeCategory ||
     result.textureCount < 1 ||
     result.focusedCardId !== requestedFocusId ||
     result.focusMode !== 'animated' ||
@@ -461,7 +472,7 @@ async function verifySearchCastle(client, url) {
   })()`);
   if (
     restored.rendererInstanceId !== rendererInstanceId ||
-    restored.cardCount !== 84 ||
+    restored.cardCount !== visibleCardCount ||
     restored.focusedCardId !== requestedFocusId
   ) {
     throw new Error(

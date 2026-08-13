@@ -132,6 +132,8 @@ void main() {
       expect(castle, contains('deriveSurfaceAnchors(84)'));
       expect(castle, contains('card.rectoUrl'));
       expect(castle, contains('card.isMatch===false'));
+      expect(castle, contains('dataset.activeCategory=activeCategory'));
+      expect(castle, contains('dataset.cardCategories='));
       expect(castleBridge, contains("'isMatch': widget.matchingCardIds"));
       expect(castleBridge, contains("'metadata':"));
       expect(castleBridge, isNot(contains("'title': card.displayTitle")));

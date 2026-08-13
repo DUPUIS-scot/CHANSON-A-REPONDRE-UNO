@@ -420,6 +420,10 @@
     state.cards=cards;state.focusedCardId=focusedCardId;state.shuffleSeed=shuffleSeed;
     state.activeCategory=activeCategory;
     document.body.dataset.cardCount=String(cards.length);
+    document.body.dataset.activeCategory=activeCategory;
+    document.body.dataset.cardCategories=[...new Set(
+      cards.map(card=>card.category.toUpperCase()),
+    )].join('|');
     document.body.dataset.textureCount='0';
     document.body.dataset.textureErrorCount='0';
     document.body.dataset.textureRequestCount='0';
