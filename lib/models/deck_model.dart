@@ -6,6 +6,7 @@ class Deck {
     required this.name,
     this.description = '',
     this.coverPath = '',
+    this.cardBack = '',
     this.cards = const [],
     this.createdAt,
   });
@@ -14,6 +15,7 @@ class Deck {
   final String name;
   final String description;
   final String coverPath;
+  final String cardBack;
   final List<CardImageModel> cards;
   final DateTime? createdAt;
 
@@ -25,6 +27,7 @@ class Deck {
     name: json['name'] as String? ?? '',
     description: json['description'] as String? ?? '',
     coverPath: json['coverPath'] as String? ?? json['image'] as String? ?? '',
+    cardBack: json['cardBack'] as String? ?? '',
     cards: (json['cards'] as List<dynamic>? ?? const [])
         .whereType<Map<String, dynamic>>()
         .map(CardImageModel.fromJson)
@@ -37,6 +40,7 @@ class Deck {
     'name': name,
     'description': description,
     'coverPath': coverPath,
+    'cardBack': cardBack,
     'cards': cards.map((card) => card.toJson()).toList(),
     'createdAt': createdAt?.toIso8601String(),
   };
@@ -44,12 +48,14 @@ class Deck {
   Deck copyWith({
     String? name,
     String? coverPath,
+    String? cardBack,
     List<CardImageModel>? cards,
   }) => Deck(
     id: id,
     name: name ?? this.name,
     description: description,
     coverPath: coverPath ?? this.coverPath,
+    cardBack: cardBack ?? this.cardBack,
     cards: cards ?? this.cards,
     createdAt: createdAt,
   );

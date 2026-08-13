@@ -11,6 +11,7 @@ class PlayHandFullscreenScreen extends StatefulWidget {
     required List<CardImageModel> cards,
     required List<bool> faceUp,
     required this.initialIndex,
+    this.backImagePath = '',
     super.key,
   }) : cards = List.unmodifiable(cards),
        faceUp = List.unmodifiable(faceUp);
@@ -18,6 +19,7 @@ class PlayHandFullscreenScreen extends StatefulWidget {
   final List<CardImageModel> cards;
   final List<bool> faceUp;
   final int initialIndex;
+  final String backImagePath;
 
   @override
   State<PlayHandFullscreenScreen> createState() =>
@@ -93,6 +95,7 @@ class _PlayHandFullscreenScreenState extends State<PlayHandFullscreenScreen> {
                     faceUp: index < widget.faceUp.length
                         ? widget.faceUp[index]
                         : true,
+                    backImagePath: widget.backImagePath,
                   ),
                 ),
                 Align(

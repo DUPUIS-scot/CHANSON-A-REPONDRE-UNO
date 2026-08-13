@@ -9,12 +9,14 @@ class DrawPileWidget extends StatelessWidget {
     required this.count,
     required this.onDraw,
     this.topCard,
+    this.backImagePath = '',
     super.key,
   });
 
   final int count;
   final VoidCallback? onDraw;
   final CardImageModel? topCard;
+  final String backImagePath;
 
   @override
   Widget build(BuildContext context) => Semantics(
@@ -57,14 +59,27 @@ class DrawPileWidget extends StatelessWidget {
                           color: const Color(0xFF24140E),
                         ),
                         clipBehavior: Clip.antiAlias,
-                        child: Image.asset(
-                          topCard == null
-                              ? 'assets/images/card_back.png'
-                              : cardCategoryFor(topCard!.category).versoAsset,
-                          fit: BoxFit.contain,
-                          errorBuilder: (_, _, _) =>
-                              const Icon(Icons.style, color: AppTheme.gold),
-                        ),
+                        child: backImagePath.isNotEmpty
+                            ? Image.asset(
+                                backImagePath,
+                                fit: BoxFit.contain,
+                                errorBuilder: (_, _, _) => const Icon(
+                                  Icons.style,
+                                  color: AppTheme.gold,
+                                ),
+                              )
+                            : Image.asset(
+                                topCard == null
+                                    ? 'assets/images/card_back.png'
+                                    : cardCategoryFor(
+                                        topCard!.category,
+                                      ).versoAsset,
+                                fit: BoxFit.contain,
+                                errorBuilder: (_, _, _) => const Icon(
+                                  Icons.style,
+                                  color: AppTheme.gold,
+                                ),
+                              ),
                       ),
                     ),
                   Positioned(

@@ -39,6 +39,7 @@ class _PlayScreenState extends State<PlayScreen> {
     List<CardImageModel> cards,
     List<bool> faceUp,
     int initialIndex,
+    String backImagePath,
   ) async {
     if (previewOpening || cards.isEmpty) return;
     previewOpening = true;
@@ -62,6 +63,7 @@ class _PlayScreenState extends State<PlayScreen> {
             cards: cards,
             faceUp: faceUp,
             initialIndex: initialIndex,
+            backImagePath: backImagePath,
           ),
           transitionsBuilder: (_, animation, _, child) => FadeTransition(
             opacity: animation,
@@ -136,6 +138,9 @@ class _PlayScreenState extends State<PlayScreen> {
     final game = context.watch<GameProvider>();
     final decks = context.watch<DeckProvider>();
     final state = game.state;
+    final activeDeck = decks.decks
+      .where((deck) => deck.id == state?.deckId)
+      .firstOrNull;
     return Scaffold(
       backgroundColor: const Color(0xFF130D0B),
       appBar: AppBar(
@@ -274,6 +279,7 @@ class _PlayScreenState extends State<PlayScreen> {
                                     child: DrawPileWidget(
                                       count: state.drawPile.length,
                                       topCard: state.drawPile.lastOrNull,
+                                      backImagePath: activeDeck?.cardBack ?? '',
                                       onDraw:
                                           state.currentPlayerIndex == 0 &&
                                               player.hand.length < 5 &&
@@ -317,6 +323,7 @@ class _PlayScreenState extends State<PlayScreen> {
                                       cards: player.hand
                                           .take(5)
                                           .toList(growable: false),
+                                      backImagePath: activeDeck?.cardBack ?? '',
                                       selectedCardId: selectedCardId,
                                       isPlayable: game.canPlay,
                                       hideAll: hideHand,
@@ -324,7 +331,13 @@ class _PlayScreenState extends State<PlayScreen> {
                                         selectedCardId = card?.id;
                                         hideHand = false;
                                       }),
-                                      onLongPressCard: openHandPreview,
+                                      onLongPressCard: (cards, faceUp, index) =>
+                                          openHandPreview(
+                                            cards,
+                                            faceUp,
+                                            index,
+                                            activeDeck?.cardBack ?? '',
+                                          ),
                                     ),
                                   ),
                                 ),

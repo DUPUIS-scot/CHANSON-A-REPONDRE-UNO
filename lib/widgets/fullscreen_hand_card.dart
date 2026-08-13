@@ -11,6 +11,7 @@ class FullscreenHandCard extends StatefulWidget {
     required this.position,
     required this.total,
     required this.faceUp,
+    this.backImagePath = '',
     super.key,
   });
 
@@ -18,6 +19,7 @@ class FullscreenHandCard extends StatefulWidget {
   final int position;
   final int total;
   final bool faceUp;
+  final String backImagePath;
 
   @override
   State<FullscreenHandCard> createState() => _FullscreenHandCardState();
@@ -80,6 +82,12 @@ class _FullscreenHandCardState extends State<FullscreenHandCard> {
                               ),
                             ),
                           ],
+                        )
+                      : widget.backImagePath.isNotEmpty
+                      ? Image.asset(
+                          widget.backImagePath,
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, _, _) => const _MissingCard(),
                         )
                       : Image.asset(
                           cardCategoryFor(widget.card.category).versoAsset,

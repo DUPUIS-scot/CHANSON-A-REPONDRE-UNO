@@ -44,6 +44,7 @@ class DeckProvider extends ChangeNotifier {
             .toList();
       }
       await _installProductionDeck();
+      await _installBrioDeck();
       _activeDeckId = _decodeStoredId(await _storage.read(_activeKey));
       if (activeDeck == null) {
         _activeDeckId = AppConstants.productionDeckId;
@@ -106,6 +107,61 @@ class DeckProvider extends ChangeNotifier {
     ];
   }
 
+  Future<void> _installBrioDeck() async {
+    final source = await rootBundle.loadString(AppConstants.brioDeckAsset);
+    final decoded = jsonDecode(source);
+    if (decoded is! Map<String, dynamic>) {
+      throw const FormatException('The bundled BRIO deck is invalid.');
+    }
+    final id = decoded['id'] as String?;
+    final name = decoded['name'] as String?;
+    final cardBack = decoded['cardBack'] as String?;
+    final rawCards = decoded['cards'];
+    if (id != AppConstants.brioDeckId ||
+        name == null ||
+        cardBack == null ||
+        rawCards is! List<dynamic>) {
+      throw const FormatException('The bundled BRIO deck is incomplete.');
+    }
+    final cards = <CardImageModel>[];
+    for (var index = 0; index < rawCards.length; index++) {
+      final card = rawCards[index];
+      if (card is! Map<String, dynamic>) continue;
+      final cardId = card['id'] as String?;
+      final image = card['image'] as String?;
+      if (cardId == null || image == null) continue;
+      final category = cardCategoryAt(index);
+      cards.add(
+        CardImageModel(
+          id: cardId,
+          deckId: viewId,
+          title: 'BRIO ${(index + 1).toString().padLeft(3, '0')}',
+          path: image,
+          category: category.label,
+          colour: category.colour,
+          importedAt: DateTime.utc(2026, 8, 13),
+        ),
+      );
+    }
+    final ids = cards.map((card) => card.id).toSet();
+    if (cards.length != 16 || ids.length != 16) {
+      throw const FormatException(
+        'The bundled BRIO deck must contain exactly 16 unique cards.',
+      );
+    }
+    final deck = Deck(
+      id: viewId,
+      name: name,
+      coverPath: cards.first.path,
+      cardBack: cardBack,
+      cards: cards,
+    );
+    _decks = [
+      ..._decks.where((item) => item.id != AppConstants.brioDeckId),
+      deck,
+    ];
+  }
+
   Future<void> _persist({bool notify = true}) async {
     await _storage.write(
       _decksKey,
@@ -142,7 +198,7 @@ class DeckProvider extends ChangeNotifier {
 
   Future<void> rename(String id, String name) async {
     if (name.trim().isEmpty) return;
-    if (id == AppConstants.productionDeckId) return;
+    if (AppConstants.builtInDeckIds.contains(id)) return;
     _decks = _decks
         .map((deck) => deck.id == id ? deck.copyWith(name: name.trim()) : deck)
         .toList();
@@ -150,7 +206,7 @@ class DeckProvider extends ChangeNotifier {
   }
 
   Future<void> delete(String id) async {
-    if (id == AppConstants.productionDeckId) return;
+    if (AppConstants.builtInDeckIds.contains(id)) return;
     final deck = _decks.where((item) => item.id == id).firstOrNull;
     if (deck == null) return;
     await _importer.deleteFiles(deck);

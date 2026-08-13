@@ -92,6 +92,8 @@ flutter:
     - assets/models/
     - assets/cards/final_import/
     - assets/cards/category_versos/
+    - assets/decks/chanson_a_repondre_brio/
+    - assets/decks/chanson_a_repondre_brio/cards/
     - assets/videos/
     - assets/json/cards.json
 

@@ -1,0 +1,24 @@
+{
+  "id": "chanson-a-repondre-brio",
+  "name": "Chanson à répondre BRIO",
+  "version": "1.0",
+  "cardBack": "assets/decks/chanson_a_repondre_brio/card_back.jpeg",
+  "cards": [
+    {"id": "brio-001", "image": "assets/decks/chanson_a_repondre_brio/cards/001.jpeg"},
+    {"id": "brio-002", "image": "assets/decks/chanson_a_repondre_brio/cards/002.jpeg"},
+    {"id": "brio-003", "image": "assets/decks/chanson_a_repondre_brio/cards/003.jpeg"},
+    {"id": "brio-004", "image": "assets/decks/chanson_a_repondre_brio/cards/004.jpeg"},
+    {"id": "brio-005", "image": "assets/decks/chanson_a_repondre_brio/cards/005.jpeg"},
+    {"id": "brio-006", "image": "assets/decks/chanson_a_repondre_brio/cards/006.jpeg"},
+    {"id": "brio-007", "image": "assets/decks/chanson_a_repondre_brio/cards/007.jpeg"},
+    {"id": "brio-008", "image": "assets/decks/chanson_a_repondre_brio/cards/008.jpeg"},
+    {"id": "brio-009", "image": "assets/decks/chanson_a_repondre_brio/cards/009.jpeg"},
+    {"id": "brio-010", "image": "assets/decks/chanson_a_repondre_brio/cards/010.jpeg"},
+    {"id": "brio-011", "image": "assets/decks/chanson_a_repondre_brio/cards/011.jpeg"},
+    {"id": "brio-012", "image": "assets/decks/chanson_a_repondre_brio/cards/012.jpeg"},
+    {"id": "brio-013", "image": "assets/decks/chanson_a_repondre_brio/cards/013.jpeg"},
+    {"id": "brio-014", "image": "assets/decks/chanson_a_repondre_brio/cards/014.jpeg"},
+    {"id": "brio-015", "image": "assets/decks/chanson_a_repondre_brio/cards/015.jpeg"},
+    {"id": "brio-016", "image": "assets/decks/chanson_a_repondre_brio/cards/016.jpeg"}
+  ]
+}

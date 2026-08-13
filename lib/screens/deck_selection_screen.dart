@@ -12,12 +12,12 @@ class DeckSelectionScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<DeckProvider>();
-    final permanentDeck = provider.decks
-        .where((deck) => deck.id == AppConstants.productionDeckId)
-        .firstOrNull;
+    final builtInDecks = provider.decks
+      .where((deck) => AppConstants.builtInDeckIds.contains(deck.id))
+      .toList();
     return UtilityPageScaffold(
       appBar: AppBar(
-        title: const Text('Permanent Deck'),
+        title: const Text('Built-in Decks'),
         actions: [
           const Padding(
             padding: EdgeInsets.only(right: 8),
@@ -27,22 +27,29 @@ class DeckSelectionScreen extends StatelessWidget {
       ),
       body: provider.loading
           ? const Center(child: CircularProgressIndicator())
-          : permanentDeck == null
-          ? const Center(child: Text('The permanent deck is unavailable.'))
-          : Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 520),
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: DeckTile(
-                    deck: permanentDeck,
-                    selected: permanentDeck.id == provider.activeDeckId,
+          : builtInDecks.isEmpty
+          ? const Center(child: Text('The built-in decks are unavailable.'))
+          : LayoutBuilder(
+              builder: (context, constraints) => GridView.builder(
+                padding: const EdgeInsets.all(24),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: constraints.maxWidth >= 720 ? 2 : 1,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                  childAspectRatio: constraints.maxWidth >= 720 ? 0.72 : 1.45,
+                ),
+                itemCount: builtInDecks.length,
+                itemBuilder: (_, index) {
+                  final deck = builtInDecks[index];
+                  return DeckTile(
+                    deck: deck,
+                    selected: deck.id == provider.activeDeckId,
                     editable: false,
-                    onSelect: () => provider.select(permanentDeck.id),
+                    onSelect: () => provider.select(deck.id),
                     onRename: () {},
                     onDelete: () {},
-                  ),
-                ),
+                  );
+                },
               ),
             ),
     );

@@ -12,6 +12,7 @@ class PlayerHand extends StatefulWidget {
     required this.isPlayable,
     required this.onSelectionChanged,
     this.onLongPressCard,
+    this.backImagePath = '',
     this.hideAll = false,
     super.key,
   });
@@ -21,6 +22,7 @@ class PlayerHand extends StatefulWidget {
   final ValueChanged<CardImageModel?> onSelectionChanged;
   final void Function(List<CardImageModel> cards, List<bool> faceUp, int index)?
   onLongPressCard;
+  final String backImagePath;
   final bool hideAll;
 
   @override
@@ -105,7 +107,7 @@ class _PlayerHandState extends State<PlayerHand> {
                     selected: widget.selectedCardId == widget.cards[index].id,
                     child: FlippablePlayingCard(
                       frontImagePath: widget.cards[index].imagePath,
-                      backImagePath: 'assets/images/card_back.png',
+                      backImagePath: widget.backImagePath,
                       category: widget.cards[index].category,
                       isFaceUp: revealed.contains(widget.cards[index].id),
                       isSelected:

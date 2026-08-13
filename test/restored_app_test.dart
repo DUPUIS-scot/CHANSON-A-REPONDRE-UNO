@@ -8,7 +8,9 @@ import 'package:uno_chanson_2/core/app_router.dart';
 import 'package:uno_chanson_2/models/card_image_model.dart';
 import 'package:uno_chanson_2/models/deck_model.dart';
 import 'package:uno_chanson_2/providers/deck_provider.dart';
+import 'package:uno_chanson_2/providers/game_provider.dart';
 import 'package:uno_chanson_2/services/deck_import_service.dart';
+import 'package:uno_chanson_2/services/game_storage_service.dart';
 import 'package:uno_chanson_2/services/local_storage_service.dart';
 
 void main() {
@@ -44,8 +46,32 @@ void main() {
           provider.decks.first.cards.map((card) => card.id).toSet(),
           hasLength(AppConstants.productionDeckSize),
         );
+        final brio = provider.decks.singleWhere(
+          (deck) => deck.id == AppConstants.brioDeckId,
+        );
+        expect(brio.cards, hasLength(16));
+        expect(
+          brio.cardBack,
+          'assets/decks/chanson_a_repondre_brio/card_back.jpeg',
+        );
       },
     );
+
+    test('BRIO starts with the shared five-card game flow', () async {
+      SharedPreferences.setMockInitialValues({});
+      final storage = LocalStorageService();
+      final decks = DeckProvider(storage, DeckImportService(storage));
+      final game = GameProvider(GameStorageService(storage));
+      addTearDown(decks.dispose);
+      addTearDown(game.dispose);
+
+      await decks.load();
+      await decks.select(AppConstants.brioDeckId);
+      expect(await game.start(decks.activeDeck!), isTrue);
+      expect(game.state?.deckId, AppConstants.brioDeckId);
+      expect(game.state?.players.first.hand, hasLength(5));
+      expect(game.state?.discardPile, hasLength(1));
+    });
 
     test(
       'permanent deck cannot be renamed, deleted, or replaced by bad id',
@@ -58,13 +84,21 @@ void main() {
 
         await provider.rename(AppConstants.productionDeckId, 'Changed');
         await provider.delete(AppConstants.productionDeckId);
+        await provider.rename(AppConstants.brioDeckId, 'Changed BRIO');
+        await provider.delete(AppConstants.brioDeckId);
         await provider.select('missing-deck');
 
-        expect(provider.decks, hasLength(1));
+        expect(provider.decks, hasLength(2));
         expect(provider.activeDeckId, AppConstants.productionDeckId);
-        expect(provider.decks.single.name, isNot('Changed'));
+        expect(provider.decks.first.name, isNot('Changed'));
         expect(
-          provider.decks.single.cards,
+          provider.decks.singleWhere(
+            (deck) => deck.id == AppConstants.brioDeckId,
+          ).name,
+          isNot('Changed BRIO'),
+        );
+        expect(
+          provider.decks.first.cards,
           hasLength(AppConstants.productionDeckSize),
         );
       },
