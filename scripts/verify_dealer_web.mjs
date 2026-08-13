@@ -529,12 +529,17 @@ async function verifySearchCastle(client, url) {
   const categoriesReturn = await client.evaluate(`(() => ({
     route: location.hash,
     frame: Boolean(document.getElementById('search-card-castle-frame')),
-    persistedState: localStorage.getItem('flutter.search_path_state_v1') || '',
+    castleActive: (() => {
+      const raw = localStorage.getItem('flutter.search_path_state_v1');
+      if (!raw) return null;
+      const decoded = JSON.parse(raw);
+      return JSON.parse(typeof decoded === 'string' ? decoded : raw).castleActive;
+    })(),
   }))()`);
   if (
     categoriesReturn.route !== '#/search' ||
     categoriesReturn.frame ||
-    !categoriesReturn.persistedState.includes('"castleActive":false')
+    categoriesReturn.castleActive !== false
   ) {
     throw new Error(
       `Invalid Search categories return: ${JSON.stringify(categoriesReturn)}`,
