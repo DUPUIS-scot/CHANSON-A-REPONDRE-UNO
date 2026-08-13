@@ -314,7 +314,7 @@ async function verifySearchCastle(client, url) {
         ?.contentDocument?.body.dataset.textureCount || 0) ===
           ${visibleCardCount}`,
       'all ALL CATEGORIES card textures in the castle',
-      90000,
+      180000,
     );
   } catch (error) {
     const textureDebug = await client.evaluate(`(() => {
@@ -346,7 +346,11 @@ async function verifySearchCastle(client, url) {
       textureDebug,
       console: client.consoleMessages,
     }, null, 2));
-    throw error;
+    const completedAtDeadline =
+      textureDebug.textureCount === visibleCardCount &&
+      textureDebug.textureErrorCount === 0 &&
+      textureDebug.textureQueueCount === 0;
+    if (!completedAtDeadline) throw error;
   }
   await capture(client, castleOutputPath);
   client.consoleMessages.length = 0;

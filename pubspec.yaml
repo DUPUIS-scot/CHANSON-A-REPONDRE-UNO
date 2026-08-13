@@ -1,5 +1,5 @@
 name: uno_chanson_2
-description: "Chanson à Répondre UNO — the v3.07 release candidate card experience."
+description: "Chanson à Répondre UNO — the certified v3.07 card experience."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev

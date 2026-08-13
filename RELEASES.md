@@ -1,23 +1,25 @@
 # Chanson à Répondre UNO releases
 
-## v3.07 — Release Candidate
+## v3.07 — Approved / Certified
 
 - Version: 3.07
-- Status: RELEASE CANDIDATE
+- Status: APPROVED
+- Status: CERTIFIED
 - Deck: 84 permanent cards across five permanent categories
-- Search: five individual categories plus the new ALL CATEGORIES mode
-- Castle: the existing real 3D castle, capable of presenting all 84 rectos
+- Search: five individual categories + ALL CATEGORIES
+- Castle: real 3D / 84-card capable
 - Utility design: unified theatrical background for Decks, Cards, Journal,
   Rules, and Settings
-- Home: specialised curtain and startup-media environment preserved
-- Play: specialised theatre, five-card hand, and puppet dealer preserved
-- Search: specialised moonlit 3D environment preserved
-- Profile: independent presentation and authentication retained
+- Home: specialised environment preserved
+- Play: specialised environment preserved
+- Search: specialised 3D environment preserved
+- Profile: independent
 
-This release candidate consolidates shared spacing, radius, breakpoint, motion,
-touch-target, and navigation values without redesigning the specialised Home,
-Play, or Search environments. Certification remains gated on successful local
-validation, GitHub Pages deployment, and production smoke testing.
+The v3.07 release candidate passed Flutter analysis, all Flutter tests, the
+release Web build, static 84-card validation, desktop and mobile Three.js
+runtime verification, GitHub Pages deployment, and production smoke testing.
+It is the current protected reference baseline. The historical `v2.5` tag and
+release remain identifiable and restorable.
 
 ## v2.5 — Approved / Certified
 
