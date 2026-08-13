@@ -246,7 +246,9 @@ async function verifySearchCastle(client, url) {
     const viewport = await client.evaluate(
       `({width: innerWidth, height: innerHeight})`,
     );
-    const position = {x: viewport.width / 2, y: viewport.height * .43};
+    // The redesigned landing keeps the castle visible above a lower card
+    // gallery. ALL CATEGORIES remains centred beneath that gallery.
+    const position = {x: viewport.width / 2, y: viewport.height * .91};
     await client.send('Input.dispatchMouseEvent', {
       type: 'mousePressed',
       ...position,
