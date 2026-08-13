@@ -502,6 +502,14 @@ async function verifySearchCastle(client, url) {
       `Castle state was not preserved after fullscreen: ${JSON.stringify(restored)}`,
     );
   }
+  const fatalConsoleMessages = client.consoleMessages.filter((message) =>
+    ['error', 'exception', 'assert'].includes(message.level),
+  );
+  if (fatalConsoleMessages.length) {
+    throw new Error(
+      `Search castle console errors: ${JSON.stringify(fatalConsoleMessages)}`,
+    );
+  }
   await client.evaluate(`(() => {
     const frame = document.getElementById('search-card-castle-frame');
     frame?.contentDocument?.getElementById('enter-fullscreen')?.click();
@@ -543,14 +551,6 @@ async function verifySearchCastle(client, url) {
   ) {
     throw new Error(
       `Invalid Search categories return: ${JSON.stringify(categoriesReturn)}`,
-    );
-  }
-  const fatalConsoleMessages = client.consoleMessages.filter((message) =>
-    ['error', 'exception', 'assert'].includes(message.level),
-  );
-  if (fatalConsoleMessages.length) {
-    throw new Error(
-      `Search castle console errors: ${JSON.stringify(fatalConsoleMessages)}`,
     );
   }
   console.log(JSON.stringify({
