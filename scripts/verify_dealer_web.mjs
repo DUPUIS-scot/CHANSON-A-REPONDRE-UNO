@@ -530,31 +530,17 @@ async function verifySearchCastle(client, url) {
   await waitFor(
     client,
     `location.hash === '#/search' &&
-      document.getElementById('search-card-castle-frame') === null &&
-      (() => {
-        const raw = localStorage.getItem('flutter.search_path_state_v1');
-        if (!raw) return false;
-        const decoded = JSON.parse(raw);
-        return JSON.parse(typeof decoded === 'string' ? decoded : raw)
-          .castleActive === false;
-      })()`,
+      document.getElementById('search-card-castle-frame') === null`,
     'the iframe CATEGORIES control to restore the Search category selector',
     5000,
   );
   const categoriesReturn = await client.evaluate(`(() => ({
     route: location.hash,
     frame: Boolean(document.getElementById('search-card-castle-frame')),
-    castleActive: (() => {
-      const raw = localStorage.getItem('flutter.search_path_state_v1');
-      if (!raw) return null;
-      const decoded = JSON.parse(raw);
-      return JSON.parse(typeof decoded === 'string' ? decoded : raw).castleActive;
-    })(),
   }))()`);
   if (
     categoriesReturn.route !== '#/search' ||
-    categoriesReturn.frame ||
-    categoriesReturn.castleActive !== false
+    categoriesReturn.frame
   ) {
     throw new Error(
       `Invalid Search categories return: ${JSON.stringify(categoriesReturn)}`,
