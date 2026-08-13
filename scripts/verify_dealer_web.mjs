@@ -248,7 +248,7 @@ async function verifySearchCastle(client, url) {
     );
     // The redesigned landing keeps the castle visible above a lower card
     // gallery. ALL CATEGORIES remains centred beneath that gallery.
-    const position = {x: viewport.width / 2, y: viewport.height * .91};
+    const position = {x: viewport.width / 2, y: viewport.height - 52};
     await client.send('Input.dispatchMouseEvent', {
       type: 'mousePressed',
       ...position,
