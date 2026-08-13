@@ -134,7 +134,7 @@ class DeckProvider extends ChangeNotifier {
       cards.add(
         CardImageModel(
           id: cardId,
-          deckId: viewId,
+          deckId: AppConstants.brioDeckId,
           title: 'BRIO ${(index + 1).toString().padLeft(3, '0')}',
           path: image,
           category: category.label,
@@ -150,7 +150,7 @@ class DeckProvider extends ChangeNotifier {
       );
     }
     final deck = Deck(
-      id: viewId,
+      id: AppConstants.brioDeckId,
       name: name,
       coverPath: cards.first.path,
       cardBack: cardBack,
