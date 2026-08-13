@@ -165,7 +165,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               SettingsSection(
                 title: 'VISITORS',
                 icon: Icons.groups_outlined,
-                initiallyExpanded: true,
+                initiallyExpanded: false,
                 children: [
                   VisitorStatsPanel(
                     stats: _visitorStats,

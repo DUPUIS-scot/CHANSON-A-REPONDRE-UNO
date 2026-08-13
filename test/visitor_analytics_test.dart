@@ -93,6 +93,16 @@ void main() {
   });
 
   group('visitor statistics UI', () {
+    test('Settings config starts Visitor section collapsed', () {
+      final source = File('lib/screens/settings_screen.dart').readAsStringSync();
+      expect(
+        RegExp(
+          r"title: 'VISITORS',[\s\S]*?initiallyExpanded: false,",
+        ).hasMatch(source),
+        isTrue,
+      );
+    });
+
     testWidgets('shows all periods and formatted shared totals', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
