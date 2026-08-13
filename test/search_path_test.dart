@@ -72,7 +72,7 @@ void main() {
       expect(browser.visibleHand.first.id, 'final-84-03');
     });
 
-    testWidgets('Search exposes the castle only and preserves query state', (
+    testWidgets('Search exposes only the five category selectors and castle', (
       tester,
     ) async {
       SharedPreferences.setMockInitialValues({});
@@ -83,17 +83,23 @@ void main() {
       AppRouter.router.go(AppRoutes.search);
       await tester.pumpAndSettle();
 
-      expect(find.text('DJ WHO'), findsOneWidget);
+      expect(find.byType(TextField), findsNothing);
+      expect(find.text('DJ WHO'), findsNothing);
+      expect(find.byIcon(Icons.home_rounded), findsNothing);
       expect(find.byType(SegmentedButton), findsNothing);
       expect(find.byIcon(Icons.grid_view_rounded), findsNothing);
       expect(find.byIcon(Icons.view_list_rounded), findsNothing);
-
-      await tester.enterText(find.byType(TextField), 'lumiere');
-      await tester.pump(const Duration(milliseconds: 300));
-      expect(
-        tester.widget<TextField>(find.byType(TextField)).controller?.text,
-        'lumiere',
-      );
+      expect(find.byType(ChoiceChip), findsNWidgets(5));
+      expect(find.text('TOUTES'), findsNothing);
+      for (final category in const [
+        'CLASSIQUE',
+        'ART CONTEMPORAIN',
+        'CYBERPUNK',
+        'POÉSIE',
+        'SAUVAGE',
+      ]) {
+        expect(find.text(category), findsOneWidget);
+      }
     });
 
     test('castle uses the local authoritative GLB with 84 anchors', () {
@@ -107,21 +113,50 @@ void main() {
         'lib/widgets/webgl_card_castle_view_web.dart',
       ).readAsStringSync();
       expect(castle, contains("emit('cardLongPressed',{cardId})"));
-      expect(castle, contains("emit('djWhoRequested')"));
+      expect(castle, contains('const LONG_PRESS_MS=600'));
+      expect(castle, contains("dataset.longPressState='detected'"));
+      expect(castle, contains('down?.suppressNavigation'));
+      expect(castle, isNot(contains('performance.now()-down.t>520')));
+      expect(castle, isNot(contains("emit('djWhoRequested')")));
       expect(castle, contains('assets/assets/models/search_castle.glb'));
       expect(castle, contains("from '../vendor/GLTFLoader.js'"));
       expect(castle, contains('new THREE.FogExp2'));
+      expect(castle, contains("dataset.atmosphere='scottish-cinematic-night'"));
+      expect(castle, contains('THREE.PCFSoftShadowMap'));
+      expect(castle, contains('buildCloudTexture()'));
+      expect(castle, contains('new THREE.PointLight(0xffa34d'));
+      expect(castle, contains('new THREE.DirectionalLight(0xcbdff0,9.6)'));
+      expect(castle, contains('addArchitecturalSpot'));
+      expect(castle, contains('dataset.warmLightCount'));
+      expect(castle, contains('function categoryAccent'));
       expect(castle, contains('deriveSurfaceAnchors(84)'));
       expect(castle, contains('card.rectoUrl'));
       expect(castle, contains('card.isMatch===false'));
       expect(castleBridge, contains("'isMatch': widget.matchingCardIds"));
       expect(castleBridge, contains("'metadata':"));
+      expect(castleBridge, isNot(contains("'title': card.displayTitle")));
+      expect(
+        castleBridge,
+        contains('final Future<void> Function(String) onCardOpened'),
+      );
+      expect(castleBridge, contains('_setCardOverlayMode(true)'));
+      expect(castleBridge, contains("visibility = active ? 'hidden' : ''"));
+      expect(castleBridge, contains('widget.onCardOpened(id)).whenComplete'));
+      expect(
+        castleBridge,
+        contains('event.origin != html.window.location.origin'),
+      );
+      expect(
+        castleBridge,
+        isNot(contains('event.source != iframe.contentWindow')),
+      );
       expect(castle, contains('id="exit-fullscreen"'));
       expect(castle, isNot(contains('id="castle-category"')));
       expect(castle, isNot(contains('id="focused-summary"')));
       expect(castle, isNot(contains('id="previous-card"')));
       expect(castle, isNot(contains('id="next-card"')));
-      expect(castle, contains('id="castle-home"'));
+      expect(castle, isNot(contains('id="castle-home"')));
+      expect(castle, isNot(contains('id="castle-dj-who"')));
       expect(castle, contains('id="castle-reset"'));
       expect(searchScreen, isNot(contains('_SearchViewMode')));
       expect(searchScreen, isNot(contains('SegmentedButton')));
@@ -130,8 +165,25 @@ void main() {
       expect(castle, isNot(contains('id="hint"')));
       expect(castle, isNot(contains('#hint')));
       expect(searchScreen, isNot(contains('5 CARTES ACTIVES')));
+      expect(searchScreen, isNot(contains('Rechercher une carte')));
+      expect(searchScreen, isNot(contains("label: const Text('DJ WHO')")));
+      expect(searchScreen, contains(': _buildCastle(results)'));
+      expect(
+        searchScreen,
+        contains('matchingCardIds: cards.map((card) => card.id).toSet()'),
+      );
       expect(searchScreen, contains('discoveredCardIds'));
       expect(searchScreen, contains('permanentCards.length'));
+      expect(searchScreen, contains('_castleCardViewerOpen'));
+      expect(searchScreen, contains('_CastleCardFullscreen(card: card)'));
+      expect(searchScreen, contains('source: card.imagePath'));
+      expect(searchScreen, isNot(contains('card.displayTitle')));
+      expect(
+        searchScreen,
+        contains(r"label: '${card.category}, front of card'"),
+      );
+      expect(castle, isNot(contains('focused-title')));
+      expect(castle, isNot(contains('card?.title')));
     });
   });
 }

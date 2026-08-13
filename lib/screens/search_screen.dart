@@ -30,22 +30,19 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> {
   static const _storageKey = 'search_path_state_v1';
-  static final _categories = <String>[
-    'TOUTES',
-    ...cardCategories.map((category) => category.label),
-  ];
+  static final _categories = cardCategories
+      .map((category) => category.label)
+      .toList(growable: false);
 
-  final _controller = TextEditingController();
   final _search = SearchService();
-  Timer? _debounce;
   Timer? _persistDebounce;
   bool _restored = false;
-  String _query = '';
-  String _category = 'TOUTES';
+  String _category = defaultCardCategory.label;
   String? _selectedCardId;
   Set<String> _discoveredCardIds = {};
   int _shuffleSeed = 0;
   int _castleFullscreenRequestId = 0;
+  bool _castleCardViewerOpen = false;
   late LocalStorageService _storage;
 
   @override
@@ -60,10 +57,8 @@ class _SearchScreenState extends State<SearchScreen> {
 
   @override
   void dispose() {
-    _debounce?.cancel();
     _persistDebounce?.cancel();
     unawaited(_persistState());
-    _controller.dispose();
     super.dispose();
   }
 
@@ -73,11 +68,9 @@ class _SearchScreenState extends State<SearchScreen> {
     try {
       final json = jsonDecode(source) as Map<String, dynamic>;
       setState(() {
-        _query = json['query'] as String? ?? '';
-        _controller.text = _query;
         _category = _categories.contains(json['category'])
             ? json['category'] as String
-            : 'TOUTES';
+            : defaultCardCategory.label;
         _selectedCardId = json['selectedCardId'] as String?;
         _discoveredCardIds = (json['discoveredCardIds'] as List<dynamic>? ?? [])
             .whereType<String>()
@@ -91,7 +84,6 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Future<void> _persistState() async {
     await _storage.write(_storageKey, {
-      'query': _query,
       'category': _category,
       'selectedCardId': _selectedCardId,
       'discoveredCardIds': _discoveredCardIds.toList(),
@@ -107,15 +99,6 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  void _onQueryChanged(String value) {
-    _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 250), () {
-      if (!mounted) return;
-      setState(() => _query = value);
-      _schedulePersist();
-    });
-  }
-
   void _setCategory(String value) {
     setState(() {
       _category = value;
@@ -125,23 +108,11 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   List<CardImageModel> _results(List<Deck> decks) {
-    final category = _category == 'TOUTES' ? null : _category;
-    final cards = _search.cards(
-      decks: decks,
-      query: _query,
-      category: category,
-    );
+    final cards = _search.cards(decks: decks, category: _category);
     if (_shuffleSeed != 0) {
       cards.shuffle(Random(_shuffleSeed));
     }
     return cards;
-  }
-
-  void _shuffle() {
-    setState(() {
-      _shuffleSeed = Random().nextInt(0x7fffffff) + 1;
-    });
-    _schedulePersist();
   }
 
   void _select(CardImageModel card) {
@@ -159,22 +130,28 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Future<void> _openCastleCardFullscreen(CardImageModel card) async {
+    if (_castleCardViewerOpen || !mounted) return;
+    _castleCardViewerOpen = true;
     // Keep the WebGL platform view mounted and do not call `_select` here:
     // changing focusedCardId would animate the castle camera before the card
     // opens. Pass the exact search result directly to the modal instead of
     // looking it up in the currently selected deck.
-    await showGeneralDialog<void>(
-      context: context,
-      barrierColor: Colors.black87,
-      barrierDismissible: false,
-      barrierLabel: 'Fullscreen card',
-      transitionDuration: const Duration(milliseconds: 180),
-      pageBuilder: (_, _, _) => _CastleCardFullscreen(card: card),
-      transitionBuilder: (_, animation, _, child) => FadeTransition(
-        opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
-        child: child,
-      ),
-    );
+    try {
+      await showGeneralDialog<void>(
+        context: context,
+        barrierColor: Colors.black87,
+        barrierDismissible: false,
+        barrierLabel: 'Fullscreen card',
+        transitionDuration: const Duration(milliseconds: 180),
+        pageBuilder: (_, _, _) => _CastleCardFullscreen(card: card),
+        transitionBuilder: (_, animation, _, child) => FadeTransition(
+          opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+          child: child,
+        ),
+      );
+    } finally {
+      _castleCardViewerOpen = false;
+    }
   }
 
   void _viewInCastle(CardImageModel card) {
@@ -221,11 +198,8 @@ class _SearchScreenState extends State<SearchScreen> {
           child: Column(
             children: [
               _SearchHeader(
-                controller: _controller,
                 selectedCategory: _category,
-                onQueryChanged: _onQueryChanged,
                 onCategoryChanged: _setCategory,
-                onShuffle: results.isEmpty ? null : _shuffle,
                 categories: _categories,
               ),
               Expanded(
@@ -274,7 +248,7 @@ class _SearchScreenState extends State<SearchScreen> {
                               Expanded(
                                 child: permanentCards.isEmpty
                                     ? const _EmptyResults()
-                                    : _buildCastle(permanentCards, results),
+                                    : _buildCastle(results),
                               ),
                             ],
                           ),
@@ -311,20 +285,16 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   String _resultLabel(int count) {
-    if (_query.trim().isEmpty) return '$count RÉSULTATS';
-    return '$count RÉSULTATS POUR “${_query.trim().toUpperCase()}”';
+    return '$count RÉSULTATS · $_category';
   }
 
-  Widget _buildCastle(
-    List<CardImageModel> cards,
-    List<CardImageModel> results,
-  ) => Padding(
+  Widget _buildCastle(List<CardImageModel> cards) => Padding(
     padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
     child: ClipRRect(
       borderRadius: BorderRadius.circular(16),
       child: WebGlCardCastleView(
         cards: cards,
-        matchingCardIds: results.map((card) => card.id).toSet(),
+        matchingCardIds: cards.map((card) => card.id).toSet(),
         focusedCardId: _selectedCardId,
         shuffleSeed: _shuffleSeed,
         activeCategory: _category,
@@ -333,13 +303,10 @@ class _SearchScreenState extends State<SearchScreen> {
           final card = cards.where((item) => item.id == id).firstOrNull;
           if (card != null) _select(card);
         },
-        onCardOpened: (id) {
+        onCardOpened: (id) async {
           final card = cards.where((item) => item.id == id).firstOrNull;
-          if (card != null) unawaited(_openCastleCardFullscreen(card));
+          if (card != null) await _openCastleCardFullscreen(card);
         },
-        onCategoryChanged: _setCategory,
-        onHomeRequested: () => context.go(AppRoutes.home),
-        onDjWhoRequested: () => context.go(AppRoutes.djWhoVideos),
         onFullscreenChanged: _handleCastleFullscreenChanged,
         fallback: SearchCardCastle(cards: cards, onFullscreen: _openFullscreen),
       ),
@@ -490,19 +457,13 @@ class _CastleActiveCardsHud extends StatelessWidget {
 
 class _SearchHeader extends StatelessWidget {
   const _SearchHeader({
-    required this.controller,
     required this.selectedCategory,
-    required this.onQueryChanged,
     required this.onCategoryChanged,
-    required this.onShuffle,
     required this.categories,
   });
 
-  final TextEditingController controller;
   final String selectedCategory;
-  final ValueChanged<String> onQueryChanged;
   final ValueChanged<String> onCategoryChanged;
-  final VoidCallback? onShuffle;
   final List<String> categories;
 
   @override
@@ -512,127 +473,32 @@ class _SearchHeader extends StatelessWidget {
       border: Border(bottom: BorderSide(color: Color(0x665EB8EF))),
     ),
     child: Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Semantics(
-                label: 'Chanson à Répondre UNO logo',
-                image: true,
-                child: Image.asset(
-                  'assets/images/app_logo.png',
-                  width: 78,
-                  height: 62,
-                  fit: BoxFit.contain,
-                ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: SizedBox(
+        height: 38,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: categories.length,
+          separatorBuilder: (_, _) => const SizedBox(width: 8),
+          itemBuilder: (_, index) {
+            final category = categories[index];
+            final active = category == selectedCategory;
+            return ChoiceChip(
+              label: Text(category),
+              selected: active,
+              onSelected: (_) => onCategoryChanged(category),
+              selectedColor: AppTheme.gold,
+              labelStyle: TextStyle(
+                color: active ? Colors.black : Colors.white,
+                fontWeight: FontWeight.w800,
+                fontSize: 12,
               ),
-              const SizedBox(width: 14),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'RECHERCHE',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.5,
-                      ),
-                    ),
-                    Text(
-                      'Trouvez vos cartes',
-                      style: TextStyle(color: Color(0xFF9EB4C5)),
-                    ),
-                  ],
-                ),
+              side: BorderSide(
+                color: active ? AppTheme.brightGold : const Color(0xFF516779),
               ),
-              IconButton.outlined(
-                tooltip: 'Accueil',
-                onPressed: () => context.go(AppRoutes.home),
-                icon: const Icon(Icons.home_rounded),
-              ),
-              const SizedBox(width: 8),
-              OutlinedButton.icon(
-                onPressed: () => context.go(AppRoutes.djWhoVideos),
-                icon: ClipOval(
-                  child: Image.asset(
-                    'assets/images/dj_who.png',
-                    width: 30,
-                    height: 30,
-                    fit: BoxFit.cover,
-                    semanticLabel: 'DJ WHO logo',
-                  ),
-                ),
-                label: const Text('DJ WHO'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: controller,
-                  onChanged: onQueryChanged,
-                  textInputAction: TextInputAction.search,
-                  decoration: InputDecoration(
-                    hintText: 'Rechercher une carte…',
-                    prefixIcon: const Icon(Icons.search_rounded),
-                    suffixIcon: controller.text.isEmpty
-                        ? null
-                        : IconButton(
-                            tooltip: 'Effacer la recherche',
-                            onPressed: () {
-                              controller.clear();
-                              onQueryChanged('');
-                            },
-                            icon: const Icon(Icons.close_rounded),
-                          ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              FilledButton.tonalIcon(
-                onPressed: onShuffle,
-                icon: const Icon(Icons.shuffle_rounded),
-                label: MediaQuery.sizeOf(context).width >= 620
-                    ? const Text('SHUFFLE')
-                    : const SizedBox.shrink(),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          SizedBox(
-            height: 38,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: categories.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 8),
-              itemBuilder: (_, index) {
-                final category = categories[index];
-                final active = category == selectedCategory;
-                return ChoiceChip(
-                  label: Text(category),
-                  selected: active,
-                  onSelected: (_) => onCategoryChanged(category),
-                  selectedColor: AppTheme.gold,
-                  labelStyle: TextStyle(
-                    color: active ? Colors.black : Colors.white,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 12,
-                  ),
-                  side: BorderSide(
-                    color: active
-                        ? AppTheme.brightGold
-                        : const Color(0xFF516779),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
+            );
+          },
+        ),
       ),
     ),
   );
@@ -871,29 +737,15 @@ class _CastleCardFullscreen extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              card.displayTitle,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            Text(
-                              card.category.toUpperCase(),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: AppTheme.brightGold,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
+                        child: Text(
+                          card.category.toUpperCase(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: AppTheme.brightGold,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -924,8 +776,7 @@ class _CastleCardFullscreen extends StatelessWidget {
                           height: height,
                           child: Semantics(
                             image: true,
-                            label:
-                                '${card.displayTitle}, ${card.category}, front',
+                            label: '${card.category}, front of card',
                             child: StoredImage(
                               source: card.imagePath,
                               fit: BoxFit.contain,

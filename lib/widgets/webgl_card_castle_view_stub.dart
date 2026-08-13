@@ -12,9 +12,6 @@ class WebGlCardCastleView extends StatelessWidget {
     required this.fullscreenRequestId,
     required this.onCardSelected,
     required this.onCardOpened,
-    required this.onCategoryChanged,
-    required this.onHomeRequested,
-    required this.onDjWhoRequested,
     required this.onFullscreenChanged,
     required this.fallback,
     super.key,
@@ -27,10 +24,7 @@ class WebGlCardCastleView extends StatelessWidget {
   final String activeCategory;
   final int fullscreenRequestId;
   final ValueChanged<String> onCardSelected;
-  final ValueChanged<String> onCardOpened;
-  final ValueChanged<String> onCategoryChanged;
-  final VoidCallback onHomeRequested;
-  final VoidCallback onDjWhoRequested;
+  final Future<void> Function(String) onCardOpened;
   final ValueChanged<bool> onFullscreenChanged;
   final Widget fallback;
 

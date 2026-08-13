@@ -20,9 +20,6 @@ class WebGlCardCastleView extends StatefulWidget {
     required this.fullscreenRequestId,
     required this.onCardSelected,
     required this.onCardOpened,
-    required this.onCategoryChanged,
-    required this.onHomeRequested,
-    required this.onDjWhoRequested,
     required this.onFullscreenChanged,
     required this.fallback,
     super.key,
@@ -35,10 +32,7 @@ class WebGlCardCastleView extends StatefulWidget {
   final String activeCategory;
   final int fullscreenRequestId;
   final ValueChanged<String> onCardSelected;
-  final ValueChanged<String> onCardOpened;
-  final ValueChanged<String> onCategoryChanged;
-  final VoidCallback onHomeRequested;
-  final VoidCallback onDjWhoRequested;
+  final Future<void> Function(String) onCardOpened;
   final ValueChanged<bool> onFullscreenChanged;
   final Widget fallback;
 
@@ -53,6 +47,7 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
   StreamSubscription<html.Event>? frameLoads;
   bool rendererFailed = false;
   bool rendererReady = false;
+  bool cardOverlayActive = false;
 
   @override
   void initState() {
@@ -86,6 +81,7 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
     );
     if (cardsChanged ||
         matchesChanged ||
+        oldWidget.activeCategory != widget.activeCategory ||
         oldWidget.shuffleSeed != widget.shuffleSeed) {
       _sendState();
     } else if (oldWidget.focusedCardId != widget.focusedCardId) {
@@ -106,10 +102,16 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
   }
 
   void _handleMessage(html.MessageEvent event) {
-    if (event.source != iframe.contentWindow || event.data is! String) return;
+    // WindowProxy wrappers are not identity-stable across the Dart/JS boundary,
+    // so comparing `event.source` with `iframe.contentWindow` can reject valid
+    // messages from this same-origin iframe in release builds.
+    if (event.origin != html.window.location.origin || event.data is! String) {
+      return;
+    }
     try {
       final decoded = jsonDecode(event.data! as String);
       if (decoded is! Map<String, dynamic>) return;
+      iframe.dataset['lastBridgeMessage'] = decoded['type']?.toString() ?? '';
       switch (decoded['type']) {
         case 'rendererReady':
           rendererReady = true;
@@ -122,19 +124,19 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
           if (id != null) widget.onCardSelected(id);
         case 'cardLongPressed':
           final id = decoded['cardId'] as String?;
-          if (id != null) {
+          if (id != null && !cardOverlayActive) {
+            cardOverlayActive = true;
+            iframe.dataset['lastLongPressedCardId'] = id;
             _setInAppFullscreen(false);
-            widget.onCardOpened(id);
+            _setCardOverlayMode(true);
+            unawaited(
+              Future<void>.sync(() => widget.onCardOpened(id)).whenComplete(() {
+                if (!mounted) return;
+                _setCardOverlayMode(false);
+                cardOverlayActive = false;
+              }),
+            );
           }
-        case 'categorySelected':
-          final category = decoded['category'] as String?;
-          if (category != null) widget.onCategoryChanged(category);
-        case 'homeRequested':
-          _setInAppFullscreen(false);
-          widget.onHomeRequested();
-        case 'djWhoRequested':
-          _setInAppFullscreen(false);
-          widget.onDjWhoRequested();
         case 'fullscreenFallbackRequested':
           _setInAppFullscreen(true);
           _post({'type': 'setInAppFullscreen', 'active': true});
@@ -162,7 +164,6 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
           .map(
             (card) => {
               'id': card.id,
-              'title': card.displayTitle,
               'category': card.category,
               'question': card.question,
               'text': [
@@ -217,6 +218,18 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
         ..height = '100%'
         ..zIndex = ''
         ..backgroundColor = '';
+    }
+  }
+
+  void _setCardOverlayMode(bool active) {
+    iframe.style
+      ..pointerEvents = active ? 'none' : ''
+      ..visibility = active ? 'hidden' : '';
+    iframe.dataset['cardOverlayActive'] = active.toString();
+    if (active) {
+      iframe.setAttribute('aria-hidden', 'true');
+    } else {
+      iframe.attributes.remove('aria-hidden');
     }
   }
 
