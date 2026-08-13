@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uno_chanson_2/app.dart';
 import 'package:uno_chanson_2/core/app_router.dart';
-import 'package:uno_chanson_2/widgets/dj_who_avatar.dart';
 import 'package:uno_chanson_2/widgets/home_navigation_button.dart';
 
 void main() {
@@ -34,10 +33,10 @@ void main() {
     );
     expect(navigation.confirmActiveGame, isTrue);
     expect(navigation.showDjWho, isTrue);
-    expect(find.byType(DjWhoAvatar), findsOneWidget);
     expect(find.byTooltip('Return to Home'), findsOneWidget);
     expect(find.byTooltip('Open DJ WHO Videos'), findsOneWidget);
-    expect(find.text('DJ WHO'), findsNothing);
+    expect(find.text('HOME'), findsOneWidget);
+    expect(find.text('DJ WHO'), findsOneWidget);
 
     expect(find.text('CHANSON A REPONDRE UNO'), findsNothing);
     expect(find.byKey(const Key('play-header-logo')), findsOneWidget);

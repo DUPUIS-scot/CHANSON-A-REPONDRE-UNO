@@ -13,6 +13,7 @@ class HomeNavigationButton extends StatefulWidget {
   const HomeNavigationButton({
     this.confirmActiveGame = false,
     this.showDjWho = true,
+    this.theatricalSplit = false,
     this.beforeNavigate,
     this.navigationGuard,
     super.key,
@@ -20,6 +21,7 @@ class HomeNavigationButton extends StatefulWidget {
 
   final bool confirmActiveGame;
   final bool showDjWho;
+  final bool theatricalSplit;
   final VoidCallback? beforeNavigate;
   final Future<bool> Function()? navigationGuard;
 
@@ -57,20 +59,55 @@ class _HomeNavigationButtonState extends State<HomeNavigationButton> {
     if (mounted) context.go(AppRoutes.home);
   }
 
+  Future<void> navigateDjWho() async {
+    if (widget.navigationGuard != null && !await widget.navigationGuard!()) {
+      return;
+    }
+    if (!mounted) return;
+    if (widget.confirmActiveGame) {
+      final game = context.read<GameProvider>();
+      if (game.state != null) {
+        final choice = await NavigationGuardService.confirm(
+          context,
+          title: 'Open DJ WHO?',
+          message: 'Your current game will be saved so you can continue later.',
+          stayLabel: 'Cancel',
+          discardLabel: 'Continue Without Saving',
+          saveLabel: 'Save and Continue',
+        );
+        if (choice == GuardChoice.stay || !mounted) return;
+        if (choice == GuardChoice.save) await game.saveCurrent();
+      }
+    }
+    widget.beforeNavigate?.call();
+    if (mounted) context.go(AppRoutes.djWhoVideos);
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentPath =
         AppRouter.router.routeInformationProvider.value.uri.path;
     final isDjWhoActive = currentPath == AppRoutes.djWhoVideos;
 
-    final showLabel = MediaQuery.sizeOf(context).width >= AppBreakpoints.mobile;
-    final djWidth = showLabel ? 152.0 : AppTouchTarget.minimum;
+    final showLabel =
+        widget.theatricalSplit ||
+        MediaQuery.sizeOf(context).width >= AppBreakpoints.mobile;
+    final djWidth = showLabel
+        ? (widget.theatricalSplit ? 108.0 : 152.0)
+        : AppTouchTarget.minimum;
     return SizedBox(
+      width: widget.theatricalSplit ? double.infinity : null,
       height: AppTouchTarget.minimum,
       child: Row(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: widget.theatricalSplit
+            ? MainAxisSize.max
+            : MainAxisSize.min,
+        mainAxisAlignment: widget.theatricalSplit
+            ? MainAxisAlignment.spaceBetween
+            : MainAxisAlignment.start,
         children: [
           _HomeControl(
+            theatrical: widget.theatricalSplit,
             hovered: hovered,
             focused: focused,
             onHover: (value) => setState(() => hovered = value),
@@ -78,8 +115,10 @@ class _HomeNavigationButtonState extends State<HomeNavigationButton> {
             onPressed: navigateHome,
           ),
           if (widget.showDjWho) ...[
-            const SizedBox(width: AppSpacing.small),
+            if (!widget.theatricalSplit)
+              const SizedBox(width: AppSpacing.small),
             _DjWhoControl(
+              theatrical: widget.theatricalSplit,
               active: isDjWhoActive,
               hovered: djHovered,
               focused: djFocused,
@@ -87,7 +126,7 @@ class _HomeNavigationButtonState extends State<HomeNavigationButton> {
               width: djWidth,
               onHover: (value) => setState(() => djHovered = value),
               onFocus: (value) => setState(() => djFocused = value),
-              onPressed: () => context.go(AppRoutes.djWhoVideos),
+              onPressed: navigateDjWho,
             ),
           ],
         ],
@@ -98,6 +137,7 @@ class _HomeNavigationButtonState extends State<HomeNavigationButton> {
 
 class _HomeControl extends StatelessWidget {
   const _HomeControl({
+    required this.theatrical,
     required this.hovered,
     required this.focused,
     required this.onHover,
@@ -105,6 +145,7 @@ class _HomeControl extends StatelessWidget {
     required this.onPressed,
   });
 
+  final bool theatrical;
   final bool hovered;
   final bool focused;
   final ValueChanged<bool> onHover;
@@ -122,13 +163,16 @@ class _HomeControl extends StatelessWidget {
         onFocusChange: onFocus,
         child: AnimatedContainer(
           duration: AppMotion.responsive(context, AppMotion.quick),
-          constraints: const BoxConstraints(
-            minWidth: AppTouchTarget.minimum,
+          constraints: BoxConstraints(
+            minWidth: theatrical ? 100 : AppTouchTarget.minimum,
             minHeight: AppTouchTarget.minimum,
           ),
           decoration: BoxDecoration(
             color: hovered ? const Color(0xDD33210F) : const Color(0xAA100C08),
-            shape: BoxShape.circle,
+            shape: BoxShape.rectangle,
+            borderRadius: BorderRadius.circular(
+              theatrical ? 8 : AppRadius.pill,
+            ),
             border: Border.all(
               color: focused ? AppTheme.brightGold : AppTheme.gold,
               width: focused ? 2 : 1,
@@ -137,10 +181,25 @@ class _HomeControl extends StatelessWidget {
                 ? const [BoxShadow(color: Color(0x66FFC928), blurRadius: 12)]
                 : null,
           ),
-          child: IconButton(
-            tooltip: 'Return to Home',
-            onPressed: onPressed,
-            icon: const Icon(Icons.home_rounded, color: AppTheme.brightGold),
+          child: Tooltip(
+            message: 'Return to Home',
+            child: TextButton.icon(
+              onPressed: onPressed,
+              style: TextButton.styleFrom(
+                foregroundColor: AppTheme.brightGold,
+                padding: EdgeInsets.symmetric(horizontal: theatrical ? 8 : 0),
+              ),
+              icon: const Icon(Icons.home_rounded, size: 22),
+              label: theatrical
+                  ? const Text(
+                      'HOME',
+                      style: TextStyle(
+                        fontFamily: 'Georgia',
+                        fontWeight: FontWeight.w800,
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ),
           ),
         ),
       ),
@@ -150,6 +209,7 @@ class _HomeControl extends StatelessWidget {
 
 class _DjWhoControl extends StatelessWidget {
   const _DjWhoControl({
+    required this.theatrical,
     required this.active,
     required this.hovered,
     required this.focused,
@@ -160,6 +220,7 @@ class _DjWhoControl extends StatelessWidget {
     required this.onPressed,
   });
 
+  final bool theatrical;
   final bool active;
   final bool hovered;
   final bool focused;
@@ -193,7 +254,9 @@ class _DjWhoControl extends StatelessWidget {
                     : hovered
                     ? const Color(0xDD33210F)
                     : const Color(0xAA100C08),
-                borderRadius: BorderRadius.circular(AppRadius.pill),
+                borderRadius: BorderRadius.circular(
+                  theatrical ? 8 : AppRadius.pill,
+                ),
                 border: Border.all(
                   color: focused || active ? colors.primary : AppTheme.gold,
                   width: focused || active ? 2 : 1,
@@ -212,7 +275,7 @@ class _DjWhoControl extends StatelessWidget {
                     foregroundColor: foreground,
                     minimumSize: AppTouchTarget.size,
                     padding: EdgeInsets.symmetric(
-                      horizontal: showLabel ? 12 : 0,
+                      horizontal: showLabel ? (theatrical ? 4 : 12) : 0,
                     ),
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     textStyle: const TextStyle(fontWeight: FontWeight.w800),
@@ -221,11 +284,10 @@ class _DjWhoControl extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const DjWhoAvatar(size: 32),
-                      if (showLabel) ...[
+                      if (!theatrical) const DjWhoAvatar(size: 32),
+                      if (showLabel && !theatrical)
                         const SizedBox(width: AppSpacing.small),
-                        const Text('DJ WHO'),
-                      ],
+                      if (showLabel) const Text('DJ WHO'),
                     ],
                   ),
                 ),

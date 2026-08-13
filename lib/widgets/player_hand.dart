@@ -55,50 +55,51 @@ class _PlayerHandState extends State<PlayerHand> {
     }
     return LayoutBuilder(
       builder: (context, constraints) {
-        final availableCardWidth =
-            (constraints.maxWidth - 64) / widget.cards.length;
-        final cardWidth = constraints.maxWidth >= 1000
-            ? math.min(154.0, availableCardWidth)
-            : constraints.maxWidth >= 620
-            ? math.min(132.0, availableCardWidth)
-            : 92.0;
+        const overlapStep = .70;
+        final count = widget.cards.length;
+        final widthLimited = constraints.maxWidth /
+            (1 + math.max(0, count - 1) * overlapStep);
+        final heightLimited = math.max(60.0, (constraints.maxHeight - 34) / 1.5);
+        final desiredWidth = constraints.maxWidth >= 850
+            ? 156.0
+            : constraints.maxWidth >= 560
+            ? 134.0
+            : 110.0;
+        final cardWidth = math.min(
+          desiredWidth,
+          math.min(widthLimited, heightLimited),
+        );
         final cardHeight = cardWidth * 1.5;
-        final desiredGap = constraints.maxWidth >= 620 ? 14.0 : 7.0;
-        final expandedWidth =
-            cardWidth * widget.cards.length +
-            desiredGap * (widget.cards.length - 1);
-        final step = expandedWidth <= constraints.maxWidth
-            ? cardWidth + desiredGap
-            : cardWidth * .72;
-        final contentWidth = cardWidth + step * (widget.cards.length - 1);
-        final handWidth = math.max(constraints.maxWidth, contentWidth);
-        final centeredOffset = math.max(0, (handWidth - contentWidth) / 2);
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          reverse: contentWidth > constraints.maxWidth,
-          child: SizedBox(
-            width: handWidth,
-            height: cardHeight + 42,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                for (var index = 0; index < widget.cards.length; index++)
-                  _DealtCard(
-                    key: ValueKey(widget.cards[index].id),
-                    delay: Duration(milliseconds: index * 95),
-                    left: centeredOffset + index * step,
-                    bottom: widget.selectedCardId == widget.cards[index].id
-                        ? 34
-                        : 8 +
-                              (1 -
-                                      ((index - (widget.cards.length - 1) / 2)
-                                              .abs() /
-                                          math.max(
-                                            1,
-                                            widget.cards.length / 2,
-                                          ))) *
-                                  12,
-                    rotation: (index - (widget.cards.length - 1) / 2) * .035,
+        final step = cardWidth * overlapStep;
+        final contentWidth = cardWidth + step * (count - 1);
+        final centeredOffset = math.max(0, (constraints.maxWidth - contentWidth) / 2);
+        final paintOrder = List<int>.generate(count, (index) => index);
+        final selectedIndex = paintOrder.indexWhere(
+          (index) => widget.cards[index].id == widget.selectedCardId,
+        );
+        if (selectedIndex >= 0) {
+          paintOrder.add(paintOrder.removeAt(selectedIndex));
+        }
+        return SizedBox.expand(
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              for (final index in paintOrder)
+                _DealtCard(
+                  key: ValueKey(widget.cards[index].id),
+                  delay: Duration(milliseconds: index * 95),
+                  left: centeredOffset + index * step,
+                  bottom: () {
+                    final centerDistance =
+                        (index - (count - 1) / 2).abs() /
+                        math.max(1, count / 2);
+                    final base = 5 + (1 - centerDistance) * 12;
+                    return base +
+                        (widget.selectedCardId == widget.cards[index].id
+                            ? 17
+                            : 0);
+                  }(),
+                  rotation: (index - (count - 1) / 2) * .052,
                     width: cardWidth,
                     height: cardHeight,
                     selected: widget.selectedCardId == widget.cards[index].id,
@@ -128,9 +129,8 @@ class _PlayerHandState extends State<PlayerHand> {
                               index,
                             ),
                     ),
-                  ),
-              ],
-            ),
+                ),
+            ],
           ),
         );
       },

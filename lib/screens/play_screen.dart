@@ -139,27 +139,22 @@ class _PlayScreenState extends State<PlayScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF130D0B),
       appBar: AppBar(
-        toolbarHeight: 76,
+        toolbarHeight: 68,
         automaticallyImplyLeading: false,
         titleSpacing: 0,
         title: SizedBox(
           width: double.infinity,
-          height: 76,
+          height: 68,
           child: Stack(
             alignment: Alignment.center,
             children: [
-              Positioned(
-                left: 12,
-                child: IconButtonTheme(
-                  data: const IconButtonThemeData(
-                    style: ButtonStyle(
-                      minimumSize: WidgetStatePropertyAll(Size(46, 46)),
-                      maximumSize: WidgetStatePropertyAll(Size(46, 46)),
-                    ),
-                  ),
-                  child: const HomeNavigationButton(
+              const Positioned.fill(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                  child: HomeNavigationButton(
                     confirmActiveGame: true,
                     showDjWho: true,
+                    theatricalSplit: true,
                   ),
                 ),
               ),
@@ -172,8 +167,8 @@ class _PlayScreenState extends State<PlayScreen> {
                       label: 'Chanson à Répondre UNO',
                       child: SizedBox(
                         key: const Key('play-header-logo'),
-                        width: mobile ? 124 : 220,
-                        height: mobile ? 44 : 54,
+                        width: mobile ? 112 : 204,
+                        height: mobile ? 42 : 52,
                         child: ExcludeSemantics(
                           child: Image.asset(
                             _playLogoAsset,
@@ -193,196 +188,171 @@ class _PlayScreenState extends State<PlayScreen> {
       ),
       body: state == null
           ? _GameLauncher(decks: decks, game: game)
-          : GameTableBackground(
-              stageLayer: LayoutBuilder(
-                builder: (context, constraints) {
-                  final narrow = constraints.maxWidth < 720;
-                  final veryWide = constraints.maxWidth >= 1200;
-                  final width = narrow
-                      ? constraints.maxWidth
-                      : constraints.maxWidth * (veryWide ? .62 : .72);
-                  final height = constraints.maxHeight * (narrow ? .58 : .68);
-                  return Align(
-                    alignment: Alignment.topCenter,
-                    child: SizedBox(
-                      width: width,
-                      height: height,
-                      child: PuppetDealerScene(
-                        controller: puppetController,
-                        quality: puppetQuality,
+          : ColoredBox(
+              color: const Color(0xFF080504),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 960),
+                  child: DecoratedBox(
+                    decoration: const BoxDecoration(
+                      border: Border.symmetric(
+                        vertical: BorderSide(color: Color(0xFF6F451B)),
+                      ),
+                      boxShadow: [
+                        BoxShadow(color: Colors.black, blurRadius: 28),
+                      ],
+                    ),
+                    child: GameTableBackground(
+                      stageLayer: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final narrow = constraints.maxWidth < 600;
+                          return Align(
+                            alignment: Alignment.topCenter,
+                            child: Padding(
+                              padding: EdgeInsets.only(top: narrow ? 52 : 62),
+                              child: SizedBox(
+                                width: narrow
+                                    ? constraints.maxWidth
+                                    : constraints.maxWidth * .72,
+                                height:
+                                    constraints.maxHeight * (narrow ? .51 : .59),
+                                child: PuppetDealerScene(
+                                  controller: puppetController,
+                                  quality: puppetQuality,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      child: SafeArea(
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            final narrow = constraints.maxWidth < 600;
+                            final veryNarrow = constraints.maxWidth < 380;
+                            final short = constraints.maxHeight < 650;
+                            final player = state.players.first;
+                            final opponent = state.players.length > 1
+                                ? state.players[1]
+                                : state.players.first;
+                            final selected = player.hand
+                                .where((card) => card.id == selectedCardId)
+                                .firstOrNull;
+                            final pileScale = veryNarrow
+                                ? .68
+                                : narrow
+                                ? .78
+                                : .96;
+                            final pileTop = constraints.maxHeight * .46;
+                            final pileInset = veryNarrow
+                                ? 8.0
+                                : narrow
+                                ? 18.0
+                                : constraints.maxWidth * .13;
+                            final actionHeight = short ? 50.0 : 58.0;
+                            final handHeight = short
+                                ? 156.0
+                                : (constraints.maxHeight * .25).clamp(168.0, 224.0);
+                            final handBottom = actionHeight + 15;
+                            return Stack(
+                              children: [
+                                Positioned(
+                                  top: 8,
+                                  left: 0,
+                                  right: 0,
+                                  child: Align(
+                                    alignment: Alignment.topCenter,
+                                    child: OpponentHand(cards: opponent.hand),
+                                  ),
+                                ),
+                                Positioned(
+                                  top: pileTop,
+                                  left: pileInset,
+                                  child: Transform.scale(
+                                    scale: pileScale,
+                                    alignment: Alignment.topLeft,
+                                    child: DrawPileWidget(
+                                      count: state.drawPile.length,
+                                      topCard: state.drawPile.lastOrNull,
+                                      onDraw:
+                                          state.currentPlayerIndex == 0 &&
+                                              player.hand.length < 5 &&
+                                              !dealerBusy
+                                          ? drawWithDealer
+                                          : null,
+                                    ),
+                                  ),
+                                ),
+                                Positioned(
+                                  top: pileTop,
+                                  right: pileInset,
+                                  child: Transform.scale(
+                                    scale: pileScale,
+                                    alignment: Alignment.topRight,
+                                    child: DiscardPileWidget(
+                                      topCard: state.topCard,
+                                      count: state.discardPile.length,
+                                    ),
+                                  ),
+                                ),
+                                Positioned(
+                                  top: pileTop + (narrow ? 13 : 23),
+                                  left: narrow ? 86 : 180,
+                                  right: narrow ? 86 : 180,
+                                  child: _CentralPlayArea(
+                                    message: game.message,
+                                    compact: narrow,
+                                  ),
+                                ),
+                                Positioned(
+                                  left: 0,
+                                  right: 0,
+                                  bottom: handBottom,
+                                  height: handHeight,
+                                  child: Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: veryNarrow ? 7 : 14,
+                                    ),
+                                    child: PlayerHand(
+                                      cards: player.hand
+                                          .take(5)
+                                          .toList(growable: false),
+                                      selectedCardId: selectedCardId,
+                                      isPlayable: game.canPlay,
+                                      hideAll: hideHand,
+                                      onSelectionChanged: (card) => setState(() {
+                                        selectedCardId = card?.id;
+                                        hideHand = false;
+                                      }),
+                                      onLongPressCard: openHandPreview,
+                                    ),
+                                  ),
+                                ),
+                                Positioned(
+                                  left: narrow ? 10 : 52,
+                                  right: narrow ? 10 : 52,
+                                  bottom: 7,
+                                  height: actionHeight,
+                                  child: _PlayActionBar(
+                                    canPlay:
+                                        selected != null &&
+                                        game.canPlay(selected) &&
+                                        !dealerBusy,
+                                    canCancel:
+                                        selected != null && !dealerBusy,
+                                    onPlay: playSelected,
+                                    onCancel: () => setState(
+                                      () => selectedCardId = null,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
                       ),
                     ),
-                  );
-                },
-              ),
-              child: SafeArea(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final narrow = constraints.maxWidth < 720;
-                    final compact = constraints.maxHeight < 700;
-                    final player = state.players.first;
-                    final opponent = state.players.length > 1
-                        ? state.players[1]
-                        : state.players.first;
-                    final selected = player.hand
-                        .where((card) => card.id == selectedCardId)
-                        .firstOrNull;
-                    final pileTop =
-                        constraints.maxHeight * (narrow ? .45 : .51);
-                    final handHeight = compact
-                        ? 190.0
-                        : (constraints.maxHeight * .31).clamp(210.0, 292.0);
-                    final pileInset = narrow
-                        ? 12.0
-                        : constraints.maxWidth * .14;
-                    return Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Positioned(
-                          top: 8,
-                          left: narrow ? 12 : constraints.maxWidth * .055,
-                          child: OpponentHand(cards: opponent.hand),
-                        ),
-                        Positioned(
-                          top: pileTop,
-                          left: pileInset,
-                          child: Transform.scale(
-                            scale: narrow ? .82 : 1,
-                            alignment: Alignment.topLeft,
-                            child: DrawPileWidget(
-                              count: state.drawPile.length,
-                              topCard: state.drawPile.lastOrNull,
-                              onDraw:
-                                  state.currentPlayerIndex == 0 &&
-                                      player.hand.length < 5 &&
-                                      !dealerBusy
-                                  ? drawWithDealer
-                                  : null,
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          top: pileTop,
-                          right: pileInset,
-                          child: Transform.scale(
-                            scale: narrow ? .82 : 1,
-                            alignment: Alignment.topRight,
-                            child: DiscardPileWidget(
-                              topCard: state.topCard,
-                              count: state.discardPile.length,
-                            ),
-                          ),
-                        ),
-                        if (game.message != null)
-                          Positioned(
-                            top: constraints.maxHeight * (narrow ? .61 : .65),
-                            left: narrow ? 24 : 120,
-                            right: narrow ? 24 : 120,
-                            child: Text(
-                              game.message!,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                color: AppTheme.brightGold,
-                                shadows: [
-                                  Shadow(color: Colors.black, blurRadius: 4),
-                                ],
-                              ),
-                            ),
-                          ),
-                        Positioned(
-                          left: 0,
-                          right: 0,
-                          bottom: 0,
-                          height: handHeight,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            child: PlayerHand(
-                              cards: player.hand
-                                  .take(5)
-                                  .toList(growable: false),
-                              selectedCardId: selectedCardId,
-                              isPlayable: game.canPlay,
-                              hideAll: hideHand,
-                              onSelectionChanged: (card) => setState(() {
-                                selectedCardId = card?.id;
-                                hideHand = false;
-                              }),
-                              onLongPressCard: openHandPreview,
-                            ),
-                          ),
-                        ),
-                        if (selected != null)
-                          Positioned(
-                            bottom: handHeight + 8,
-                            left: 8,
-                            right: 8,
-                            child: SafeArea(
-                              top: false,
-                              child: Wrap(
-                                alignment: WrapAlignment.center,
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: [
-                                  FilledButton.icon(
-                                    onPressed:
-                                        game.canPlay(selected) && !dealerBusy
-                                        ? playSelected
-                                        : null,
-                                    icon: const Icon(Icons.play_arrow),
-                                    label: const Text('PLAY CARD'),
-                                    style: FilledButton.styleFrom(
-                                      backgroundColor: const Color(0xFF721B18),
-                                      foregroundColor: AppTheme.brightGold,
-                                      side: const BorderSide(
-                                        color: AppTheme.gold,
-                                        width: 1.5,
-                                      ),
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 28,
-                                        vertical: 16,
-                                      ),
-                                      textStyle: const TextStyle(
-                                        fontFamily: 'Georgia',
-                                        fontWeight: FontWeight.w700,
-                                        letterSpacing: 1.2,
-                                      ),
-                                      elevation: 8,
-                                      shadowColor: Colors.black,
-                                    ),
-                                  ),
-                                  OutlinedButton.icon(
-                                    onPressed: !dealerBusy
-                                        ? () => setState(
-                                            () => selectedCardId = null,
-                                          )
-                                        : null,
-                                    icon: const Icon(Icons.close),
-                                    label: const Text('CANCEL'),
-                                    style: OutlinedButton.styleFrom(
-                                      backgroundColor: const Color(0xE622160F),
-                                      foregroundColor: const Color(0xFFF2DFC0),
-                                      side: const BorderSide(
-                                        color: Color(0xFF8D6327),
-                                        width: 1.3,
-                                      ),
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 28,
-                                        vertical: 16,
-                                      ),
-                                      textStyle: const TextStyle(
-                                        fontFamily: 'Georgia',
-                                        fontWeight: FontWeight.w700,
-                                        letterSpacing: 1.2,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                      ],
-                    );
-                  },
+                  ),
                 ),
               ),
             ),
@@ -409,6 +379,115 @@ class _TheatricalHeaderBackground extends StatelessWidget {
         BoxShadow(color: Colors.black87, blurRadius: 10, offset: Offset(0, 4)),
       ],
     ),
+  );
+}
+
+class _CentralPlayArea extends StatelessWidget {
+  const _CentralPlayArea({required this.message, required this.compact});
+
+  final String? message;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    constraints: BoxConstraints(minHeight: compact ? 54 : 68),
+    padding: EdgeInsets.symmetric(
+      horizontal: compact ? 8 : 20,
+      vertical: compact ? 7 : 12,
+    ),
+    decoration: BoxDecoration(
+      gradient: const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [Color(0xDD301B0E), Color(0xF2180C07)],
+      ),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: const Color(0xFF9C6B28), width: 1.2),
+      boxShadow: const [
+        BoxShadow(color: Colors.black87, blurRadius: 10, offset: Offset(0, 5)),
+      ],
+    ),
+    child: Center(
+      child: Text(
+        message?.trim().isNotEmpty == true ? message! : 'PLAY AREA',
+        maxLines: compact ? 2 : 3,
+        overflow: TextOverflow.ellipsis,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          color: const Color(0xFFF1D8A0),
+          fontFamily: 'Georgia',
+          fontSize: compact ? 12 : 15,
+          fontWeight: FontWeight.w700,
+          letterSpacing: compact ? .6 : 1.1,
+          shadows: const [Shadow(color: Colors.black, blurRadius: 4)],
+        ),
+      ),
+    ),
+  );
+}
+
+class _PlayActionBar extends StatelessWidget {
+  const _PlayActionBar({
+    required this.canPlay,
+    required this.canCancel,
+    required this.onPlay,
+    required this.onCancel,
+  });
+
+  final bool canPlay;
+  final bool canCancel;
+  final VoidCallback onPlay;
+  final VoidCallback onCancel;
+
+  static const _textStyle = TextStyle(
+    fontFamily: 'Georgia',
+    fontWeight: FontWeight.w800,
+    letterSpacing: 1.1,
+  );
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      Expanded(
+        child: FilledButton.icon(
+          onPressed: canPlay ? onPlay : null,
+          icon: const Icon(Icons.play_arrow_rounded),
+          label: const FittedBox(child: Text('PLAY CARD')),
+          style: FilledButton.styleFrom(
+            backgroundColor: const Color(0xFF751B18),
+            disabledBackgroundColor: const Color(0xFF421513),
+            foregroundColor: AppTheme.brightGold,
+            disabledForegroundColor: const Color(0xFF9A7844),
+            side: const BorderSide(color: AppTheme.gold, width: 1.5),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            textStyle: _textStyle,
+            elevation: 9,
+            shadowColor: Colors.black,
+          ),
+        ),
+      ),
+      const SizedBox(width: 12),
+      Expanded(
+        child: OutlinedButton.icon(
+          onPressed: canCancel ? onCancel : null,
+          icon: const Icon(Icons.close_rounded),
+          label: const FittedBox(child: Text('CANCEL')),
+          style: OutlinedButton.styleFrom(
+            backgroundColor: const Color(0xEE160E09),
+            disabledBackgroundColor: const Color(0xCC100B08),
+            foregroundColor: const Color(0xFFF2DFC0),
+            disabledForegroundColor: const Color(0xFF806B4D),
+            side: const BorderSide(color: Color(0xFF9C6B28), width: 1.4),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            textStyle: _textStyle,
+          ),
+        ),
+      ),
+    ],
   );
 }
 
