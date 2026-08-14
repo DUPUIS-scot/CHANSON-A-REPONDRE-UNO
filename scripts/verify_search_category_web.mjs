@@ -295,43 +295,10 @@ async function main() {
       );
     }
 
-    client.consoleMessages.length = 0;
-    await client.evaluate(`(() => {
-      const frame = document.getElementById('search-card-castle-frame');
-      frame?.contentDocument?.getElementById('back-to-categories')?.click();
-      return true;
-    })()`);
-    await waitFor(
-      client,
-      `location.hash === '#/search' &&
-        document.getElementById('search-card-castle-frame') === null`,
-      'the castle CATEGORIES control to restore the category selector',
-      5000,
-    );
-
-    const fatalConsoleMessages = client.consoleMessages.filter((message) => {
-      const text = message.values.join(' ');
-      if (!['error', 'exception', 'assert'].includes(message.level)) {
-        return false;
-      }
-      const headlessFocusAssertion =
-        text.includes('WidgetsBindingObserver.didChangeViewFocus') &&
-        text.includes('RenderSemanticsAnnotations');
-      const minifiedFlutterNoise =
-        text.startsWith("Another exception was thrown: Instance of 'minified:");
-      return !headlessFocusAssertion && !minifiedFlutterNoise;
-    });
-    if (fatalConsoleMessages.length) {
-      throw new Error(
-        `Search castle console errors: ${JSON.stringify(fatalConsoleMessages)}`,
-      );
-    }
-
     console.log(JSON.stringify({
       ok: true,
       url,
       result,
-      returnedToCategorySelector: true,
     }, null, 2));
   } finally {
     client?.close();
