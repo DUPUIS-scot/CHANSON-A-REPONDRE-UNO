@@ -21,12 +21,27 @@ void main() {
   ];
 
   Future<({LocalStorageService storage, DeckProvider decks})>
-  loadDeckHarness() async {
+  loadDeckHarness(WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({});
-    final storage = LocalStorageService();
-    final decks = DeckProvider(storage, DeckImportService(storage));
-    await decks.load();
-    return (storage: storage, decks: decks);
+    final harness = await tester.runAsync(() async {
+      final storage = LocalStorageService();
+      final decks = DeckProvider(storage, DeckImportService(storage));
+      await decks.load();
+      return (storage: storage, decks: decks);
+    });
+    if (harness == null) {
+      throw TestFailure('Deck harness did not initialize.');
+    }
+    return harness;
+  }
+
+  Future<void> selectDeck(
+    WidgetTester tester,
+    DeckProvider decks,
+    String deckId,
+  ) async {
+    await tester.runAsync(() => decks.select(deckId));
+    await tester.pump();
   }
 
   Future<void> pumpSearch(
@@ -43,7 +58,8 @@ void main() {
         child: const MaterialApp(home: SearchScreen()),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
   }
 
   testWidgets('BRIO Search category choices render the BRIO card verso', (
@@ -52,9 +68,9 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
-    final harness = await loadDeckHarness();
+    final harness = await loadDeckHarness(tester);
     addTearDown(harness.decks.dispose);
-    await harness.decks.select(AppConstants.brioDeckId);
+    await selectDeck(tester, harness.decks, AppConstants.brioDeckId);
     expect(harness.decks.activeDeckId, AppConstants.brioDeckId);
     expect(harness.decks.activeDeck?.hasExplicitCategories, isFalse);
 
@@ -83,9 +99,9 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
-    final harness = await loadDeckHarness();
+    final harness = await loadDeckHarness(tester);
     addTearDown(harness.decks.dispose);
-    await harness.decks.select(AppConstants.productionDeckId);
+    await selectDeck(tester, harness.decks, AppConstants.productionDeckId);
     expect(harness.decks.activeDeckId, AppConstants.productionDeckId);
     expect(harness.decks.activeDeck?.hasExplicitCategories, isTrue);
 
