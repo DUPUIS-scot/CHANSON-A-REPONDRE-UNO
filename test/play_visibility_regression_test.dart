@@ -60,15 +60,29 @@ void main() {
       await tester.pumpAndSettle();
 
       final handRect = tester.getRect(find.byType(PlayerHand));
-      final drawRect = tester.getRect(find.byKey(const Key('draw-pile-left')));
-      final discardRect = tester.getRect(
-        find.byKey(const Key('discard-pile-right')),
-      );
+      final drawLabelRect = tester.getRect(find.text('DRAW PILE'));
+      final discardLabelRect = tester.getRect(find.textContaining('DÉFAUSSE'));
 
-      expect(drawRect.top, greaterThanOrEqualTo(0), reason: 'viewport $size');
-      expect(discardRect.top, greaterThanOrEqualTo(0), reason: 'viewport $size');
-      expect(drawRect.bottom, lessThanOrEqualTo(handRect.top + 4), reason: 'viewport $size');
-      expect(discardRect.bottom, lessThanOrEqualTo(handRect.top + 4), reason: 'viewport $size');
+      expect(
+        drawLabelRect.top,
+        greaterThanOrEqualTo(0),
+        reason: 'viewport $size',
+      );
+      expect(
+        discardLabelRect.top,
+        greaterThanOrEqualTo(0),
+        reason: 'viewport $size',
+      );
+      expect(
+        drawLabelRect.bottom,
+        lessThanOrEqualTo(handRect.top + 4),
+        reason: 'viewport $size',
+      );
+      expect(
+        discardLabelRect.bottom,
+        lessThanOrEqualTo(handRect.top + 4),
+        reason: 'viewport $size',
+      );
       expect(tester.takeException(), isNull, reason: 'viewport $size');
     }
 
