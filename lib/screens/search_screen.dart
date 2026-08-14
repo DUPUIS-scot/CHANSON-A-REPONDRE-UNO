@@ -7,7 +7,6 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../core/app_constants.dart';
 import '../core/app_router.dart';
 import '../data/card_categories.dart';
 import '../models/card_image_model.dart';
@@ -198,14 +197,14 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<DeckProvider>();
-    final permanentDecks = provider.decks
-        .where((deck) => deck.id == AppConstants.productionDeckId)
-        .toList(growable: false);
+    final activeDeck = provider.activeDeck;
+    final activeDecks =
+        activeDeck != null ? [activeDeck] : <Deck>[];
     final category = _category;
     final results = _castleActive
-        ? _results(permanentDecks)
+        ? _results(activeDecks)
         : const <CardImageModel>[];
-    final permanentCards = permanentDecks
+    final permanentCards = activeDecks
         .expand((deck) => deck.cards)
         .toList(growable: false);
     return PopScope(
