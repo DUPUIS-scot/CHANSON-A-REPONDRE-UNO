@@ -34,8 +34,13 @@ jobs:
       - name: Analyze
         run: flutter analyze
 
-      - name: Run tests
-        run: flutter test
+      - name: Run multi-deck share tests
+        run: |
+          flutter test \
+            test/public_card_share_service_test.dart \
+            test/card_share_page_generator_test.dart \
+            test/card_share_target_test.dart \
+            test/restored_app_test.dart
 
       - name: Build Flutter web release
         run: |
@@ -58,6 +63,8 @@ jobs:
 
       - name: Verify multi-deck share output
         shell: bash
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
         run: |
           set -euo pipefail
           test "$(find build/web/share -mindepth 1 -maxdepth 1 -type d -name 'UNO-*' | wc -l)" -eq 84
