@@ -5,11 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uno_chanson_2/app.dart';
+import 'package:uno_chanson_2/core/app_constants.dart';
 import 'package:uno_chanson_2/core/app_router.dart';
 import 'package:uno_chanson_2/models/card_image_model.dart';
 import 'package:uno_chanson_2/models/deck_model.dart';
 import 'package:uno_chanson_2/providers/card_browser_provider.dart';
 import 'package:uno_chanson_2/services/search_service.dart';
+import 'package:uno_chanson_2/widgets/webgl_card_castle_view.dart';
 
 void main() {
   group('Search path', () {
@@ -362,6 +364,76 @@ void main() {
       expect(castle, isNot(contains('focused-title')));
       expect(castle, isNot(contains('card?.title')));
     });
+
+    testWidgets(
+      'castle uses only production-deck cards when production deck is active',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(390, 844));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        SharedPreferences.setMockInitialValues({});
+        await tester.pumpWidget(
+          const ChansonUnoApp(aiBackendUrlOverride: 'https://api.test'),
+        );
+        await tester.pump(const Duration(seconds: 2));
+        AppRouter.router.go(AppRoutes.search);
+        await tester.pumpAndSettle();
+
+        tester
+            .widget<TextButton>(
+              find.byKey(const ValueKey('search-all-categories')),
+            )
+            .onPressed!();
+        await tester.pump(const Duration(milliseconds: 500));
+
+        final castle = tester.widget<WebGlCardCastleView>(
+          find.byType(WebGlCardCastleView),
+        );
+        expect(castle.cards, isNotEmpty);
+        expect(
+          castle.cards.every(
+            (card) => card.deckId == AppConstants.productionDeckId,
+          ),
+          isTrue,
+          reason: 'All cards should belong to the production deck',
+        );
+      },
+    );
+
+    testWidgets(
+      'castle uses only BRIO-deck cards when BRIO deck is active',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(390, 844));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        SharedPreferences.setMockInitialValues({
+          'flutter.active_deck': jsonEncode(AppConstants.brioDeckId),
+        });
+        await tester.pumpWidget(
+          const ChansonUnoApp(aiBackendUrlOverride: 'https://api.test'),
+        );
+        await tester.pump(const Duration(seconds: 2));
+        AppRouter.router.go(AppRoutes.search);
+        await tester.pumpAndSettle();
+
+        tester
+            .widget<TextButton>(
+              find.byKey(const ValueKey('search-all-categories')),
+            )
+            .onPressed!();
+        await tester.pump(const Duration(milliseconds: 500));
+
+        final castle = tester.widget<WebGlCardCastleView>(
+          find.byType(WebGlCardCastleView),
+        );
+        expect(castle.cards, isNotEmpty);
+        expect(
+          castle.cards.every(
+            (card) => card.deckId == AppConstants.brioDeckId,
+          ),
+          isTrue,
+          reason: 'All cards should belong to the BRIO deck',
+        );
+      },
+    );
   });
 }
 
