@@ -23,7 +23,7 @@ class DrawPileWidget extends StatelessWidget {
     button: true,
     label: 'Draw pile, $count cards',
     child: Transform.translate(
-      offset: const Offset(0, -96),
+      offset: const Offset(0, -140),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
