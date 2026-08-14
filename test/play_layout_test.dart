@@ -75,7 +75,7 @@ void main() {
       expect(find.textContaining('DISCARD PILE'), findsOneWidget);
       expect(find.text('PLAY CARD'), findsOneWidget);
       expect(find.text('CANCEL'), findsNothing);
-      expect(find.byKey(const Key('played-card-recto')), findsOneWidget);
+      expect(find.byKey(const Key('played-card-recto')), findsNothing);
       expect(find.byType(FlippablePlayingCard), findsNWidgets(5));
       expect(tester.takeException(), isNull, reason: 'viewport $size');
 
