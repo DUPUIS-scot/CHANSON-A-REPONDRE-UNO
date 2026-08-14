@@ -60,6 +60,7 @@ class DiscardPileWidget extends StatelessWidget {
                     ),
                     clipBehavior: Clip.antiAlias,
                     child: StoredImage(
+                      key: const Key('discard-pile-recto'),
                       source: topCard.imagePath,
                       fit: BoxFit.contain,
                       errorBuilder: (_, _, _) => const ColoredBox(
