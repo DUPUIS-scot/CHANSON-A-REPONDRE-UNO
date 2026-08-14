@@ -57,7 +57,9 @@ void main() {
       Size(1440, 1000),
     ]) {
       tester.view.physicalSize = size;
-      await tester.pump();
+      // The hand intentionally enters from the draw-pile side. Validate the
+      // stable stage geometry after that deal/reflow animation has completed.
+      await tester.pumpAndSettle();
 
       expect(find.text('HOME'), findsOneWidget);
       expect(find.text('DJ WHO'), findsOneWidget);
