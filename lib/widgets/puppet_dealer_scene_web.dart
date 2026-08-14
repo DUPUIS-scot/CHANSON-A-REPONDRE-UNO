@@ -7,6 +7,7 @@ import 'dart:ui_web' as ui_web;
 
 import 'package:flutter/material.dart';
 
+import 'played_card_pile.dart';
 import 'puppet_dealer_controller.dart';
 
 @JS('puppetDealerCreate')
@@ -71,8 +72,6 @@ class _PuppetDealerSceneState extends State<PuppetDealerScene> {
   void _mountDealer(int _) {
     if (_platformViewCreated) return;
     _platformViewCreated = true;
-    // The platform-view callback proves Flutter created the HTML view. The
-    // JavaScript side additionally waits for it to be connected and sized.
     Timer.run(() {
       if (mounted) _createDealer(_elementId, widget.quality.name);
     });
@@ -112,10 +111,26 @@ class _PuppetDealerSceneState extends State<PuppetDealerScene> {
   }
 
   @override
-  Widget build(BuildContext context) => IgnorePointer(
-    child: HtmlElementView(
-      viewType: _viewType,
-      onPlatformViewCreated: _mountDealer,
-    ),
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final scale = constraints.maxWidth < 600 ? 1.08 : 1.14;
+      return Stack(
+        fit: StackFit.expand,
+        clipBehavior: Clip.none,
+        children: [
+          Transform.scale(
+            scale: scale,
+            alignment: Alignment.topCenter,
+            child: IgnorePointer(
+              child: HtmlElementView(
+                viewType: _viewType,
+                onPlatformViewCreated: _mountDealer,
+              ),
+            ),
+          ),
+          const PlayedCardPile(),
+        ],
+      );
+    },
   );
 }
