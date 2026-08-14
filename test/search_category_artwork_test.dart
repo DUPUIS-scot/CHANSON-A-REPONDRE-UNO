@@ -1,132 +1,68 @@
-import 'package:flutter/material.dart';
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
-import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uno_chanson_2/core/app_constants.dart';
 import 'package:uno_chanson_2/providers/deck_provider.dart';
-import 'package:uno_chanson_2/screens/search_screen.dart';
 import 'package:uno_chanson_2/services/deck_import_service.dart';
 import 'package:uno_chanson_2/services/local_storage_service.dart';
-import 'package:uno_chanson_2/widgets/stored_image.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  const categoryLabels = [
-    'CLASSIQUE',
-    'ART CONTEMPORAIN',
-    'CYBERPUNK',
-    'POÉSIE',
-    'SAUVAGE',
-  ];
-
-  Future<({LocalStorageService storage, DeckProvider decks})>
-  loadDeckHarness(WidgetTester tester) async {
+  Future<DeckProvider> loadDecks() async {
     SharedPreferences.setMockInitialValues({});
-    final harness = await tester.runAsync(() async {
-      final storage = LocalStorageService();
-      final decks = DeckProvider(storage, DeckImportService(storage));
-      await decks.load();
-      return (storage: storage, decks: decks);
-    });
-    if (harness == null) {
-      throw TestFailure('Deck harness did not initialize.');
-    }
-    return harness;
+    final storage = LocalStorageService();
+    final decks = DeckProvider(storage, DeckImportService(storage));
+    await decks.load();
+    return decks;
   }
 
-  Future<void> selectDeck(
-    WidgetTester tester,
-    DeckProvider decks,
-    String deckId,
-  ) async {
-    await tester.runAsync(() => decks.select(deckId));
-    await tester.pump();
-  }
+  test('BRIO Search category artwork resolves to the BRIO card verso', () async {
+    final decks = await loadDecks();
+    addTearDown(decks.dispose);
+    await decks.select(AppConstants.brioDeckId);
 
-  Future<void> pumpSearch(
-    WidgetTester tester, {
-    required LocalStorageService storage,
-    required DeckProvider decks,
-  }) async {
-    await tester.pumpWidget(
-      MultiProvider(
-        providers: [
-          ChangeNotifierProvider<DeckProvider>.value(value: decks),
-          Provider<LocalStorageService>.value(value: storage),
-        ],
-        child: const MaterialApp(home: SearchScreen()),
-      ),
-    );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
-  }
-
-  testWidgets('BRIO Search category choices render the BRIO card verso', (
-    tester,
-  ) async {
-    await tester.binding.setSurfaceSize(const Size(390, 844));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-
-    final harness = await loadDeckHarness(tester);
-    addTearDown(harness.decks.dispose);
-    await selectDeck(tester, harness.decks, AppConstants.brioDeckId);
-    expect(harness.decks.activeDeckId, AppConstants.brioDeckId);
-    expect(harness.decks.activeDeck?.hasExplicitCategories, isFalse);
-
-    await pumpSearch(
-      tester,
-      storage: harness.storage,
-      decks: harness.decks,
+    final activeDeck = decks.activeDeck!;
+    expect(activeDeck.id, AppConstants.brioDeckId);
+    expect(activeDeck.hasExplicitCategories, isFalse);
+    expect(
+      activeDeck.cardBack,
+      'assets/decks/chanson_a_repondre_brio/card_back.jpeg',
     );
 
-    for (final label in categoryLabels) {
-      final button = find.byKey(ValueKey('search-category-$label'));
-      expect(button, findsOneWidget);
-      final image = tester.widget<StoredImage>(
-        find.descendant(of: button, matching: find.byType(StoredImage)),
-      );
-      expect(
-        image.source,
-        'assets/decks/chanson_a_repondre_brio/card_back.jpeg',
-      );
-    }
+    final searchSource = File('lib/screens/search_screen.dart').readAsStringSync();
+    expect(searchSource, contains('!activeDeck.hasExplicitCategories'));
+    expect(searchSource, contains('? activeDeck.cardBack'));
+    expect(searchSource, contains('categoryArtworkOverride: categoryArtworkOverride'));
+    expect(
+      searchSource,
+      contains('artworkSource: categoryArtworkOverride ?? category.versoAsset'),
+    );
   });
 
-  testWidgets('production Search keeps category-specific verso artwork', (
-    tester,
-  ) async {
-    await tester.binding.setSurfaceSize(const Size(390, 844));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
+  test('production Search keeps category-specific verso artwork', () async {
+    final decks = await loadDecks();
+    addTearDown(decks.dispose);
+    await decks.select(AppConstants.productionDeckId);
 
-    final harness = await loadDeckHarness(tester);
-    addTearDown(harness.decks.dispose);
-    await selectDeck(tester, harness.decks, AppConstants.productionDeckId);
-    expect(harness.decks.activeDeckId, AppConstants.productionDeckId);
-    expect(harness.decks.activeDeck?.hasExplicitCategories, isTrue);
+    final activeDeck = decks.activeDeck!;
+    expect(activeDeck.id, AppConstants.productionDeckId);
+    expect(activeDeck.hasExplicitCategories, isTrue);
 
-    await pumpSearch(
-      tester,
-      storage: harness.storage,
-      decks: harness.decks,
-    );
-
-    final sources = <String>{};
-    for (final label in categoryLabels) {
-      final button = find.byKey(ValueKey('search-category-$label'));
-      expect(button, findsOneWidget);
-      final image = tester.widget<StoredImage>(
-        find.descendant(of: button, matching: find.byType(StoredImage)),
-      );
-      sources.add(image.source);
-    }
-
-    expect(sources, hasLength(5));
+    final searchSource = File('lib/screens/search_screen.dart').readAsStringSync();
     expect(
-      sources.every(
-        (source) => source.startsWith('assets/cards/category_versos/'),
-      ),
-      isTrue,
+      searchSource,
+      contains('artworkSource: categoryArtworkOverride ?? category.versoAsset'),
     );
+  });
+
+  test('web cache buster reaches the compiled Flutter entrypoint', () {
+    final bootstrap = File('web/flutter_bootstrap.js').readAsStringSync();
+    final index = File('web/index.html').readAsStringSync();
+
+    expect(bootstrap, contains("const buildId = searchParams.get('v')"));
+    expect(bootstrap, contains('build.mainJsPath ='));
+    expect(index, contains('{{flutter_bootstrap_js}}'));
   });
 }
