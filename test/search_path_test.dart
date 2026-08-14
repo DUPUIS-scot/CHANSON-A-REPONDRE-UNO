@@ -324,7 +324,7 @@ void main() {
       expect(searchScreen, isNot(contains('_SearchCardTile')));
       expect(searchScreen, isNot(contains('_SearchListRow')));
       expect(castle, isNot(contains('id="hint"')));
-      expect(castle, isNot(contains('#hint'));
+      expect(castle, isNot(contains('#hint')));
       expect(searchScreen, isNot(contains('5 CARTES ACTIVES')));
       expect(searchScreen, isNot(contains('Rechercher une carte')));
       expect(searchScreen, contains("tooltip: 'Home'"));
