@@ -22,6 +22,28 @@ import '../widgets/webgl_card_castle_view.dart';
 
 const searchAllCategoriesLabel = 'ALL CATEGORIES';
 
+const _searchCategoryOrder = <String>[
+  'classique',
+  'art-contemporain',
+  'cyberpunk',
+  'poesie',
+  'sauvage',
+];
+
+List<CardCategoryDefinition> searchCategoriesForDeck(Deck? deck) {
+  if (deck == null) return const <CardCategoryDefinition>[];
+  final deckCategories = deck.cards
+      .map((card) => card.category)
+      .where(isKnownCardCategory)
+      .map(normalizeCardCategoryLabel)
+      .toSet();
+  return [
+    for (final id in _searchCategoryOrder)
+      if (deckCategories.contains(cardCategoryFor(id).label))
+        cardCategoryFor(id),
+  ];
+}
+
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
 
@@ -31,18 +53,6 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> {
   static const _storageKey = 'search_path_state_v1';
-  // Landing order is visual only; these are the authoritative permanent
-  // category definitions used by the existing Search filter.
-  static final _categories = <CardCategoryDefinition>[
-    for (final id in const [
-      'classique',
-      'art-contemporain',
-      'cyberpunk',
-      'poesie',
-      'sauvage',
-    ])
-      cardCategoryFor(id),
-  ];
 
   final _search = SearchService();
   Timer? _persistDebounce;
@@ -125,15 +135,6 @@ class _SearchScreenState extends State<SearchScreen> {
     _schedulePersist();
   }
 
-  void _openAllCategories() {
-    setState(() {
-      _castleActive = true;
-      _category = null;
-      _selectedCardId = null;
-    });
-    _schedulePersist();
-  }
-
   void _leaveCastle() {
     setState(() {
       _castleActive = false;
@@ -199,6 +200,7 @@ class _SearchScreenState extends State<SearchScreen> {
     final provider = context.watch<DeckProvider>();
     final activeDeck = provider.activeDeck;
     final activeDecks = activeDeck != null ? [activeDeck] : <Deck>[];
+    final categories = searchCategoriesForDeck(activeDeck);
     final categoryArtworkOverride =
         activeDeck != null &&
             !activeDeck.hasExplicitCategories &&
@@ -206,24 +208,26 @@ class _SearchScreenState extends State<SearchScreen> {
         ? activeDeck.cardBack
         : null;
     final category = _category;
-    final results = _castleActive
+    final categoryAvailable = category != null &&
+        categories.any((item) => item.label == category);
+    final castleActive = _castleActive && categoryAvailable;
+    final results = castleActive
         ? _results(activeDecks)
         : const <CardImageModel>[];
     final permanentCards = activeDecks
         .expand((deck) => deck.cards)
         .toList(growable: false);
     return PopScope(
-      canPop: !_castleActive,
+      canPop: !castleActive,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop && _castleActive) _leaveCastle();
+        if (!didPop && castleActive) _leaveCastle();
       },
       child: Scaffold(
         backgroundColor: const Color(0xFF05080C),
-        body: !_castleActive
+        body: !castleActive
             ? _SearchCategorySelection(
-                categories: _categories,
+                categories: categories,
                 categoryArtworkOverride: categoryArtworkOverride,
-                onAllCategoriesSelected: _openAllCategories,
                 onCategorySelected: _openCategory,
               )
             : permanentCards.isEmpty
@@ -234,7 +238,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   _CastleFallbackBackButton(onPressed: _leaveCastle),
                 ],
               )
-            : _buildCastle(results, category ?? searchAllCategoriesLabel),
+            : _buildCastle(results, category),
       ),
     );
   }
@@ -423,13 +427,11 @@ class _CastleActiveCardsHud extends StatelessWidget {
 
 class _SearchCategorySelection extends StatelessWidget {
   const _SearchCategorySelection({
-    required this.onAllCategoriesSelected,
     required this.onCategorySelected,
     required this.categories,
     this.categoryArtworkOverride,
   });
 
-  final VoidCallback onAllCategoriesSelected;
   final ValueChanged<String> onCategorySelected;
   final List<CardCategoryDefinition> categories;
   final String? categoryArtworkOverride;
@@ -463,9 +465,12 @@ class _SearchCategorySelection extends StatelessWidget {
             final compact = constraints.maxWidth < 700;
             final gutter = AppBreakpoints.gutterFor(constraints.maxWidth);
             final galleryWidth = min(constraints.maxWidth - gutter * 2, 1120.0);
+            final desktopColumns = max(1, min(categories.length, 5));
+            final desktopGaps = max(0, desktopColumns - 1) * 14;
             final cardWidth = compact
                 ? ((galleryWidth - 14) / 2).clamp(112.0, 166.0)
-                : ((galleryWidth - 56) / 5).clamp(120.0, 184.0);
+                : ((galleryWidth - desktopGaps) / desktopColumns)
+                      .clamp(120.0, 184.0);
             return SingleChildScrollView(
               padding: EdgeInsets.fromLTRB(
                 gutter,
@@ -514,27 +519,6 @@ class _SearchCategorySelection extends StatelessWidget {
                                   onCategorySelected(category.label),
                             ),
                         ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextButton.icon(
-                      key: const ValueKey('search-all-categories'),
-                      onPressed: onAllCategoriesSelected,
-                      style: TextButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        backgroundColor: const Color(0x8A07111C),
-                        minimumSize: const Size(48, AppTouchTarget.minimum),
-                        padding: const EdgeInsets.symmetric(horizontal: 18),
-                        side: const BorderSide(color: Color(0x8FFFC928)),
-                        shape: const StadiumBorder(),
-                      ),
-                      icon: const Icon(Icons.castle_outlined, size: 19),
-                      label: const Text(
-                        searchAllCategoriesLabel,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 1,
-                        ),
                       ),
                     ),
                   ],
