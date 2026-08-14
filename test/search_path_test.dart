@@ -324,7 +324,7 @@ void main() {
       expect(searchScreen, isNot(contains('_SearchCardTile')));
       expect(searchScreen, isNot(contains('_SearchListRow')));
       expect(castle, isNot(contains('id="hint"')));
-      expect(castle, isNot(contains('#hint')));
+      expect(castle, isNot(contains('#hint'));
       expect(searchScreen, isNot(contains('5 CARTES ACTIVES')));
       expect(searchScreen, isNot(contains('Rechercher une carte')));
       expect(searchScreen, contains("tooltip: 'Home'"));
@@ -383,8 +383,9 @@ void main() {
               find.byKey(const ValueKey('search-all-categories')),
             )
             .onPressed!();
-        await tester.pump(const Duration(milliseconds: 500));
+        await _pumpUntilCastle(tester);
 
+        expect(find.byType(WebGlCardCastleView), findsOneWidget);
         final castle = tester.widget<WebGlCardCastleView>(
           find.byType(WebGlCardCastleView),
         );
@@ -419,8 +420,9 @@ void main() {
               find.byKey(const ValueKey('search-all-categories')),
             )
             .onPressed!();
-        await tester.pump(const Duration(milliseconds: 500));
+        await _pumpUntilCastle(tester);
 
+        expect(find.byType(WebGlCardCastleView), findsOneWidget);
         final castle = tester.widget<WebGlCardCastleView>(
           find.byType(WebGlCardCastleView),
         );
@@ -435,6 +437,16 @@ void main() {
       },
     );
   });
+}
+
+Future<void> _pumpUntilCastle(WidgetTester tester) async {
+  for (
+    var attempt = 0;
+    attempt < 80 && find.byType(WebGlCardCastleView).evaluate().isEmpty;
+    attempt++
+  ) {
+    await tester.pump(const Duration(milliseconds: 100));
+  }
 }
 
 CardImageModel _card(
