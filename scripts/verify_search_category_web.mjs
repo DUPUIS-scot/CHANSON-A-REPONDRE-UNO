@@ -314,10 +314,12 @@ async function main() {
       if (!['error', 'exception', 'assert'].includes(message.level)) {
         return false;
       }
-      return !(
+      const headlessFocusAssertion =
         text.includes('WidgetsBindingObserver.didChangeViewFocus') &&
-        text.includes('RenderSemanticsAnnotations')
-      );
+        text.includes('RenderSemanticsAnnotations');
+      const minifiedFlutterNoise =
+        text.startsWith("Another exception was thrown: Instance of 'minified:");
+      return !headlessFocusAssertion && !minifiedFlutterNoise;
     });
     if (fatalConsoleMessages.length) {
       throw new Error(
