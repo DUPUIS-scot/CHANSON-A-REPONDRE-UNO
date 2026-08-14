@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uno_chanson_2/core/app_constants.dart';
 import 'package:uno_chanson_2/data/card_categories.dart';
+import 'package:uno_chanson_2/models/card_image_model.dart';
 import 'package:uno_chanson_2/providers/deck_provider.dart';
 import 'package:uno_chanson_2/providers/game_provider.dart';
 import 'package:uno_chanson_2/services/deck_import_service.dart';
@@ -37,10 +38,8 @@ void main() {
     expect(
       state.players.first.hand,
       everyElement(
-        isA<dynamic>().having(
-          (card) => card.deckId,
-          'deckId',
-          AppConstants.brioDeckId,
+        predicate<CardImageModel>(
+          (card) => card.deckId == AppConstants.brioDeckId,
         ),
       ),
     );
