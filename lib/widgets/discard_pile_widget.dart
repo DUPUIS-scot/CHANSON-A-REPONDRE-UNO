@@ -18,7 +18,7 @@ class DiscardPileWidget extends StatelessWidget {
   Widget build(BuildContext context) => Semantics(
     label: 'Discard pile, ${topCard.category} card on top',
     child: Transform.translate(
-      offset: const Offset(0, -96),
+      offset: const Offset(0, -140),
       child: SizedBox(
         width: 108,
         child: Column(
