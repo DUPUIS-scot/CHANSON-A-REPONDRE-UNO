@@ -82,14 +82,11 @@
 </head>
 <body>
   <script src="card_share.js"></script>
-  <!--
-    You can customize the "flutter_bootstrap.js" script.
-    This is useful to provide a custom configuration to the Flutter loader
-    or to give the user feedback during the initialization process.
-
-    For more details:
-    * https://docs.flutter.dev/platform-integration/web/initialization
-  -->
-  <script src="flutter_bootstrap.js" async></script>
+  <!-- Inline Flutter bootstrap so ?v=<build> refreshes the loader together
+       with index.html; the custom bootstrap forwards that build ID to
+       main.dart.js as well. -->
+  <script>
+    {{flutter_bootstrap_js}}
+  </script>
 </body>
 </html>
