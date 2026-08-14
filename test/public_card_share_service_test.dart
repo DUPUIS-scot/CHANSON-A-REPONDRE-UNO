@@ -55,6 +55,7 @@ void main() {
     );
     String? receivedTitle;
     String? receivedUrl;
+    String? receivedImage;
     final result = await MultiDeckCardShareService.share(
       card: card,
       deck: deck,
@@ -63,6 +64,7 @@ void main() {
           ({required title, required text, required url, imagePath}) async {
             receivedTitle = title;
             receivedUrl = url;
+            receivedImage = imagePath;
             return NativeShareResult.shared;
           },
       copyLink: (_) async {},
@@ -70,9 +72,10 @@ void main() {
     expect(result, CardShareResult.shared);
     expect(receivedTitle, 'Chanson à répondre UNO — Carte 001');
     expect(receivedUrl, endsWith('/share/UNO-001/'));
+    expect(receivedImage, 'assets/cards/final_import/example.png');
   });
 
-  test('BRIO share title and image are deck-specific', () async {
+  test('BRIO shares canonical link without image attachment', () async {
     final card = _card(
       id: 'brio-001',
       deckId: AppConstants.brioDeckId,
@@ -85,6 +88,7 @@ void main() {
       cards: [card],
     );
     String? receivedTitle;
+    String? receivedUrl;
     String? receivedImage;
     final result = await MultiDeckCardShareService.share(
       card: card,
@@ -93,6 +97,7 @@ void main() {
       nativeShare:
           ({required title, required text, required url, imagePath}) async {
             receivedTitle = title;
+            receivedUrl = url;
             receivedImage = imagePath;
             return NativeShareResult.shared;
           },
@@ -100,10 +105,8 @@ void main() {
     );
     expect(result, CardShareResult.shared);
     expect(receivedTitle, 'Chanson à répondre BRIO — Carte 001');
-    expect(
-      receivedImage,
-      'assets/decks/chanson_a_repondre_brio/cards/001.jpeg',
-    );
+    expect(receivedUrl, endsWith('/share/brio-001/'));
+    expect(receivedImage, isNull);
   });
 }
 
