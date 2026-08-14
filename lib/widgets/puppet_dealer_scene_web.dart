@@ -7,7 +7,6 @@ import 'dart:ui_web' as ui_web;
 
 import 'package:flutter/material.dart';
 
-import 'played_card_pile.dart';
 import 'puppet_dealer_controller.dart';
 
 @JS('puppetDealerCreate')
@@ -111,26 +110,10 @@ class _PuppetDealerSceneState extends State<PuppetDealerScene> {
   }
 
   @override
-  Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, constraints) {
-      final scale = constraints.maxWidth < 600 ? 1.08 : 1.14;
-      return Stack(
-        fit: StackFit.expand,
-        clipBehavior: Clip.none,
-        children: [
-          Transform.scale(
-            scale: scale,
-            alignment: Alignment.topCenter,
-            child: IgnorePointer(
-              child: HtmlElementView(
-                viewType: _viewType,
-                onPlatformViewCreated: _mountDealer,
-              ),
-            ),
-          ),
-          const PlayedCardPile(),
-        ],
-      );
-    },
+  Widget build(BuildContext context) => IgnorePointer(
+    child: HtmlElementView(
+      viewType: _viewType,
+      onPlatformViewCreated: _mountDealer,
+    ),
   );
 }
