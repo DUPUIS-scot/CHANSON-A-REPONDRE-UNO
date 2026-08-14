@@ -205,32 +205,9 @@ class _PlayScreenState extends State<PlayScreen> {
                       ],
                     ),
                     child: GameTableBackground(
-                      stageLayer: LayoutBuilder(
-                        builder: (context, constraints) {
-                          final narrow = constraints.maxWidth < 600;
-                          final short = constraints.maxHeight < 650;
-                          return Align(
-                            alignment: Alignment.topCenter,
-                            child: Transform.translate(
-                              offset: Offset(0, narrow ? -4 : -10),
-                              child: SizedBox(
-                                width: narrow
-                                    ? constraints.maxWidth * 1.08
-                                    : constraints.maxWidth * .94,
-                                height: constraints.maxHeight *
-                                    (short
-                                        ? .72
-                                        : narrow
-                                        ? .74
-                                        : .78),
-                                child: PuppetDealerScene(
-                                  controller: puppetController,
-                                  quality: puppetQuality,
-                                ),
-                              ),
-                            ),
-                          );
-                        },
+                      stageLayer: PuppetDealerScene(
+                        controller: puppetController,
+                        quality: puppetQuality,
                       ),
                       child: SafeArea(
                         child: LayoutBuilder(
