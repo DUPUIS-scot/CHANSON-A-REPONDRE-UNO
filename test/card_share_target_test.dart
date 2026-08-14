@@ -51,7 +51,7 @@ void main() {
     expect(shared?.imagePath, selected.imagePath);
   });
 
-  testWidgets('fullscreen swipe shares the card currently on screen', (
+  testWidgets('fullscreen keeps only bottom Share and targets visible card', (
     tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(1440, 1000));
@@ -75,10 +75,13 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    expect(find.byTooltip('Share card'), findsNothing);
+    expect(find.widgetWithText(FilledButton, 'Share'), findsOneWidget);
+
     final pageView = tester.widget<PageView>(find.byType(PageView));
     pageView.controller!.jumpToPage(1);
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Share card'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Share'));
     await tester.pump();
 
     expect(shared?.id, cards[1].id);
