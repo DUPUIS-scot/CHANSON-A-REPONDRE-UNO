@@ -9,6 +9,7 @@ import 'package:uno_chanson_2/models/card_image_model.dart';
 import 'package:uno_chanson_2/models/deck_model.dart';
 import 'package:uno_chanson_2/providers/game_provider.dart';
 import 'package:uno_chanson_2/screens/play_screen.dart';
+import 'package:uno_chanson_2/widgets/discard_pile_widget.dart';
 import 'package:uno_chanson_2/widgets/flippable_playing_card.dart';
 
 void main() {
@@ -65,9 +66,13 @@ void main() {
       expect(find.text('DJ WHO'), findsNothing);
       expect(find.text('OPPONENT'), findsNothing);
       expect(find.text('RULES PILE'), findsNothing);
-      expect(find.text('DRAW PILE'), findsNWidgets(2));
+      expect(find.text('DRAW PILE'), findsOneWidget);
       expect(find.byKey(const Key('draw-pile-left')), findsOneWidget);
-      expect(find.byKey(const Key('draw-pile-right')), findsOneWidget);
+      expect(find.byKey(const Key('draw-pile-right')), findsNothing);
+      expect(find.byKey(const Key('discard-pile-right')), findsOneWidget);
+      expect(find.byType(DiscardPileWidget), findsOneWidget);
+      expect(find.byKey(const Key('discard-pile-recto')), findsOneWidget);
+      expect(find.textContaining('DISCARD PILE'), findsOneWidget);
       expect(find.text('PLAY CARD'), findsOneWidget);
       expect(find.text('CANCEL'), findsNothing);
       expect(find.byKey(const Key('played-card-recto')), findsOneWidget);
