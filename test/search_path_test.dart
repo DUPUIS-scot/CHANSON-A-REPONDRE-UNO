@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uno_chanson_2/app.dart';
 import 'package:uno_chanson_2/core/app_constants.dart';
@@ -10,6 +11,8 @@ import 'package:uno_chanson_2/core/app_router.dart';
 import 'package:uno_chanson_2/models/card_image_model.dart';
 import 'package:uno_chanson_2/models/deck_model.dart';
 import 'package:uno_chanson_2/providers/card_browser_provider.dart';
+import 'package:uno_chanson_2/providers/deck_provider.dart';
+import 'package:uno_chanson_2/screens/search_screen.dart';
 import 'package:uno_chanson_2/services/search_service.dart';
 import 'package:uno_chanson_2/widgets/webgl_card_castle_view.dart';
 
@@ -377,6 +380,7 @@ void main() {
         await tester.pump(const Duration(seconds: 2));
         AppRouter.router.go(AppRoutes.search);
         await tester.pumpAndSettle();
+        await _ensureDecksLoaded(tester);
 
         tester
             .widget<TextButton>(
@@ -414,6 +418,7 @@ void main() {
         await tester.pump(const Duration(seconds: 2));
         AppRouter.router.go(AppRoutes.search);
         await tester.pumpAndSettle();
+        await _ensureDecksLoaded(tester);
 
         tester
             .widget<TextButton>(
@@ -437,6 +442,15 @@ void main() {
       },
     );
   });
+}
+
+Future<void> _ensureDecksLoaded(WidgetTester tester) async {
+  final context = tester.element(find.byType(SearchScreen));
+  final decks = context.read<DeckProvider>();
+  if (decks.loading || decks.activeDeck == null) {
+    await tester.runAsync(() => decks.load());
+    await tester.pumpAndSettle();
+  }
 }
 
 Future<void> _pumpUntilCastle(WidgetTester tester) async {
