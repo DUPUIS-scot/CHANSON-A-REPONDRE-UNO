@@ -32,12 +32,19 @@ class _CardFullscreenScreenState extends State<CardFullscreenScreen> {
       context.canPop() ? context.pop() : context.go(AppRoutes.cards);
 
   Future<void> _share(CardImageModel card) async {
-    final result =
-        await widget.shareCard?.call(card) ??
-        await PublicCardShareService.share(
-          cardId: card.id,
-          imagePath: card.imagePath,
+    final customShare = widget.shareCard;
+    final deck = context.read<DeckProvider>().deckForCard(card.id);
+    if (customShare == null && deck == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Unable to share this card')),
         );
+      }
+      return;
+    }
+    final result = customShare != null
+        ? await customShare(card)
+        : await PublicCardShareService.share(card: card, deck: deck!);
     if (!mounted) return;
     if (result == CardShareResult.copied) {
       ScaffoldMessenger.of(
