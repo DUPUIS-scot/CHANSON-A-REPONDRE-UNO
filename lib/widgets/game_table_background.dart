@@ -58,7 +58,7 @@ class _TablePainter extends CustomPainter {
       ..color = const Color(0x244F967A)
       ..style = PaintingStyle.stroke
       ..strokeWidth = .8;
-    for (var y = 22.0; y < size.height * .56; y += 38) {
+    for (var y = 22.0; y < size.height * .72; y += 38) {
       final row = (y / 38).round();
       for (var x = -20.0; x < size.width + 20; x += 38) {
         final center = Offset(x + (row.isOdd ? 19 : 0), y);
@@ -83,19 +83,19 @@ class _TablePainter extends CustomPainter {
       ..lineTo(inside, 0)
       ..cubicTo(
         inside - direction * size.width * .018,
-        size.height * .16,
+        size.height * .18,
         inside - direction * size.width * .065,
-        size.height * .29,
+        size.height * .34,
         inside - direction * size.width * .045,
-        size.height * .43,
+        size.height * .52,
       )
       ..cubicTo(
         inside - direction * size.width * .09,
-        size.height * .49,
+        size.height * .60,
         outside + direction * size.width * .035,
-        size.height * .57,
+        size.height * .68,
         outside,
-        size.height * .66,
+        size.height * .75,
       )
       ..close();
     canvas.drawPath(
@@ -128,11 +128,11 @@ class _TablePainter extends CustomPainter {
           ..moveTo(x, 0)
           ..cubicTo(
             x + direction * 9,
-            size.height * .18,
+            size.height * .22,
             x - direction * 7,
-            size.height * .35,
+            size.height * .43,
             x + direction * 13,
-            size.height * .53,
+            size.height * .66,
           ),
         highlight,
       );
@@ -143,7 +143,7 @@ class _TablePainter extends CustomPainter {
   void _paintRope(Canvas canvas, Size size, {required bool left}) {
     final direction = left ? 1.0 : -1.0;
     final outside = left ? 0.0 : size.width;
-    final y = size.height * .37;
+    final y = size.height * .47;
     final rope = Paint()
       ..color = const Color(0xFFD39A32)
       ..strokeWidth = 5
@@ -181,7 +181,7 @@ class _TablePainter extends CustomPainter {
   }
 
   void _paintTable(Canvas canvas, Size size) {
-    final top = size.height * .52;
+    final top = size.height * .72;
     final tablePath = Path()
       ..moveTo(-size.width * .04, top + 28)
       ..quadraticBezierTo(
