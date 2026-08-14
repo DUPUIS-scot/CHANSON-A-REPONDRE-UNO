@@ -1,76 +1,83 @@
-import 'package:flutter/services.dart';
+import '../core/app_constants.dart';
+import '../models/card_image_model.dart';
+import '../models/deck_model.dart';
+import 'card_share_result.dart';
+import 'multi_deck_card_share_service.dart';
 
-import 'native_share.dart';
-import 'native_share_result.dart';
-
-enum CardShareResult { shared, cancelled, copied, failed }
-
-typedef NativeCardSharer =
-    Future<NativeShareResult> Function({
-      required String title,
-      required String text,
-      required String url,
-      String? imagePath,
-    });
-typedef CardLinkCopier = Future<void> Function(String value);
+export 'card_share_result.dart';
 
 abstract final class PublicCardShareService {
-  static const title = 'Chanson à Répondre UNO';
-  static const text = 'Chanson à Répondre UNO — share a card';
-
   static Uri deepLinkFor(String cardId, {Uri? applicationUri}) {
-    final base = _cleanBase(applicationUri ?? Uri.base);
+    final source = applicationUri ?? Uri.base;
+    final base = Uri(
+      scheme: source.scheme,
+      userInfo: source.userInfo,
+      host: source.host,
+      port: source.hasPort ? source.port : null,
+      path: source.path,
+    );
     return base.replace(fragment: '/cards/$cardId');
   }
 
   static Uri urlFor(String cardId, {Uri? applicationUri}) =>
       deepLinkFor(cardId, applicationUri: applicationUri);
 
-  static Uri shareUrlFor(String cardId, {Uri? applicationUri}) {
-    final base = _cleanBase(applicationUri ?? Uri.base);
-    final baseSegments = base.pathSegments.where((value) => value.isNotEmpty);
-    return base.replace(
-      pathSegments: [...baseSegments, 'share', cardId, ''],
-      fragment: null,
-    );
-  }
-
-  static Uri _cleanBase(Uri source) => Uri(
-    scheme: source.scheme,
-    userInfo: source.userInfo,
-    host: source.host,
-    port: source.hasPort ? source.port : null,
-    path: source.path,
+  static Uri shareUrlFor({
+    required String cardId,
+    required String deckId,
+    Uri? applicationUri,
+  }) => MultiDeckCardShareService.shareUrlFor(
+    cardId: cardId,
+    deckId: deckId,
+    applicationUri: applicationUri,
   );
 
   static Future<CardShareResult> share({
-    required String cardId,
-    required String imagePath,
+    CardImageModel? card,
+    Deck? deck,
+    String? cardId,
+    String? imagePath,
     Uri? applicationUri,
-    NativeCardSharer nativeShare = sharePublicCard,
-    CardLinkCopier copyLink = _copyLink,
-  }) async {
-    final url = shareUrlFor(cardId, applicationUri: applicationUri).toString();
-    final nativeResult = await nativeShare(
-      title: title,
-      text: text,
-      url: url,
-      imagePath: imagePath,
+  }) {
+    if (card != null && deck != null) {
+      return MultiDeckCardShareService.share(
+        card: card,
+        deck: deck,
+        applicationUri: applicationUri,
+      );
+    }
+    if (cardId == null || imagePath == null) {
+      return Future.value(CardShareResult.failed);
+    }
+    final isBrio = cardId.startsWith('brio-');
+    final deckId = isBrio
+        ? AppConstants.brioDeckId
+        : cardId.startsWith('final-84-')
+        ? AppConstants.productionDeckId
+        : 'legacy-share';
+    final deckName = isBrio
+        ? 'Chanson à répondre BRIO'
+        : deckId == AppConstants.productionDeckId
+        ? 'Chanson à répondre UNO'
+        : 'Chanson à répondre';
+    final fallbackCard = CardImageModel(
+      id: cardId,
+      deckId: deckId,
+      title: '',
+      path: imagePath,
+      category: 'Share',
+      colour: 'gold',
+      importedAt: DateTime.fromMillisecondsSinceEpoch(0),
     );
-    if (nativeResult == NativeShareResult.shared) {
-      return CardShareResult.shared;
-    }
-    if (nativeResult == NativeShareResult.cancelled) {
-      return CardShareResult.cancelled;
-    }
-    try {
-      await copyLink(url);
-      return CardShareResult.copied;
-    } on Object {
-      return CardShareResult.failed;
-    }
+    final fallbackDeck = Deck(
+      id: deckId,
+      name: deckName,
+      cards: [fallbackCard],
+    );
+    return MultiDeckCardShareService.share(
+      card: fallbackCard,
+      deck: fallbackDeck,
+      applicationUri: applicationUri,
+    );
   }
-
-  static Future<void> _copyLink(String value) =>
-      Clipboard.setData(ClipboardData(text: value));
 }
