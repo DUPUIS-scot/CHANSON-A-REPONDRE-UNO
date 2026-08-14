@@ -19,6 +19,18 @@ void main() {
     'SAUVAGE',
   ];
 
+  Future<DeckProvider> readyDeckProvider(WidgetTester tester) async {
+    for (var attempt = 0; attempt < 100; attempt++) {
+      final materialApp = find.byType(MaterialApp);
+      if (materialApp.evaluate().isNotEmpty) {
+        final provider = tester.element(materialApp.last).read<DeckProvider>();
+        if (!provider.loading) return provider;
+      }
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    throw TestFailure('DeckProvider did not finish loading.');
+  }
+
   testWidgets('selecting BRIO makes Search category choices use BRIO verso', (
     tester,
   ) async {
@@ -29,22 +41,12 @@ void main() {
     await tester.pumpWidget(
       const ChansonUnoApp(aiBackendUrlOverride: 'https://api.test'),
     );
-    await tester.pump(const Duration(seconds: 2));
 
-    AppRouter.router.go(AppRoutes.decks);
-    await tester.pumpAndSettle();
-
-    final brioLabel = find.text('CHANSON A REPONDRE BRIO');
-    expect(brioLabel, findsOneWidget);
-    await tester.ensureVisible(brioLabel);
-    await tester.tap(brioLabel);
-    await tester.pump(const Duration(milliseconds: 300));
-
-    final deckContext = tester.element(brioLabel);
-    expect(
-      deckContext.read<DeckProvider>().activeDeckId,
-      AppConstants.brioDeckId,
-    );
+    final decks = await readyDeckProvider(tester);
+    await decks.select(AppConstants.brioDeckId);
+    await tester.pump();
+    expect(decks.activeDeckId, AppConstants.brioDeckId);
+    expect(decks.activeDeck?.hasExplicitCategories, isFalse);
 
     AppRouter.router.go(AppRoutes.search);
     await tester.pumpAndSettle();
@@ -72,7 +74,13 @@ void main() {
     await tester.pumpWidget(
       const ChansonUnoApp(aiBackendUrlOverride: 'https://api.test'),
     );
-    await tester.pump(const Duration(seconds: 2));
+
+    final decks = await readyDeckProvider(tester);
+    await decks.select(AppConstants.productionDeckId);
+    await tester.pump();
+    expect(decks.activeDeckId, AppConstants.productionDeckId);
+    expect(decks.activeDeck?.hasExplicitCategories, isTrue);
+
     AppRouter.router.go(AppRoutes.search);
     await tester.pumpAndSettle();
 
