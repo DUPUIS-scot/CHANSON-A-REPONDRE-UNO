@@ -46,7 +46,7 @@ jobs:
         run: |
           flutter build web \
             --release \
-            --base-href "/CHANSON-A-REPONDRE-UNO/" \
+            --base-href "/" \
             --dart-define=SKIP_AUTH_FOR_DEVELOPMENT=false \
             --dart-define=APP_BUILD_SHA="${{ github.sha }}"
 
@@ -59,7 +59,7 @@ jobs:
             --catalog assets/json/cards.json \
             --brio assets/decks/chanson_a_repondre_brio/deck.json \
             --build-dir build/web \
-            --public-base https://dupuis-scot.github.io/CHANSON-A-REPONDRE-UNO/
+            --public-base https://www.chanson-a-repondre-uno.scot/
 
       - name: Verify multi-deck share output
         shell: bash

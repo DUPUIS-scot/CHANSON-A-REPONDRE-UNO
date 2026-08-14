@@ -4,17 +4,20 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  const siteUrl = 'https://www.chanson-a-repondre-uno.scot/';
   const imageUrl =
-      'https://dupuis-scot.github.io/CHANSON-A-REPONDRE-UNO/'
+      'https://www.chanson-a-repondre-uno.scot/'
       'social/chanson-a-repondre-uno-share.png';
 
-  test('main page explicitly uses the official Pages-hosted preview', () {
+  test('main page explicitly uses the official custom-domain preview', () {
     final html = File('web/index.html').readAsStringSync();
 
     expect(html, contains('property="og:image"'));
     expect(html, contains('property="og:image:secure_url"'));
     expect(html, contains('name="twitter:image"'));
     expect(RegExp(RegExp.escape(imageUrl)).allMatches(html), hasLength(3));
+    expect(html, contains('property="og:url"\n    content="$siteUrl"'));
+    expect(html, contains('<link rel="canonical" href="$siteUrl">'));
     expect(html, contains('property="og:image:width" content="1200"'));
     expect(html, contains('property="og:image:height" content="630"'));
     expect(
