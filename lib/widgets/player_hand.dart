@@ -60,7 +60,12 @@ class _PlayerHandState extends State<PlayerHand> {
         final count = widget.cards.length;
         final roomy = constraints.maxWidth >= 720;
         final overlapStep = roomy ? .78 : .70;
-        final widthLimited = constraints.maxWidth /
+        // Rotating the two outside cards adds a few visual pixels beyond their
+        // unrotated bounds. Reserve a small gutter on phones so the theatrical
+        // fan remains fully visible instead of clipping against the viewport.
+        final fanGutter = constraints.maxWidth < 560 ? 20.0 : 0.0;
+        final usableWidth = math.max(0.0, constraints.maxWidth - fanGutter);
+        final widthLimited = usableWidth /
             (1 + math.max(0, count - 1) * overlapStep);
         final heightLimited = math.max(60.0, (constraints.maxHeight + 70) / 1.5);
         final desiredWidth = constraints.maxWidth >= 850
