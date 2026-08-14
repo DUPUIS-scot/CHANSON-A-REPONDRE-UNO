@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart';
 
+import '../core/app_constants.dart';
 import '../models/card_image_model.dart';
 import '../models/deck_model.dart';
 import 'card_share_identity.dart';
@@ -63,7 +64,7 @@ abstract final class MultiDeckCardShareService {
       title: title,
       text: title,
       url: url,
-      imagePath: card.imagePath,
+      imagePath: deck.id == AppConstants.brioDeckId ? null : card.imagePath,
     );
     if (result == NativeShareResult.shared) return CardShareResult.shared;
     if (result == NativeShareResult.cancelled) return CardShareResult.cancelled;
