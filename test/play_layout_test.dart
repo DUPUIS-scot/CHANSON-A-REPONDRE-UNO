@@ -10,7 +10,6 @@ import 'package:uno_chanson_2/models/deck_model.dart';
 import 'package:uno_chanson_2/providers/game_provider.dart';
 import 'package:uno_chanson_2/screens/play_screen.dart';
 import 'package:uno_chanson_2/widgets/flippable_playing_card.dart';
-import 'package:uno_chanson_2/widgets/opponent_hand.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -62,11 +61,11 @@ void main() {
 
       expect(find.text('HOME'), findsOneWidget);
       expect(find.text('DJ WHO'), findsOneWidget);
-      expect(find.text('OPPONENT'), findsOneWidget);
+      expect(find.text('OPPONENT'), findsNothing);
+      expect(find.text('RULES PILE'), findsOneWidget);
       expect(find.text('PLAY CARD'), findsOneWidget);
-      expect(find.text('CANCEL'), findsOneWidget);
+      expect(find.text('CANCEL'), findsNothing);
       expect(find.byType(FlippablePlayingCard), findsNWidgets(5));
-      expect(tester.widget<OpponentHand>(find.byType(OpponentHand)).cards, hasLength(5));
       expect(tester.takeException(), isNull, reason: 'viewport $size');
 
       for (final card in find.byType(FlippablePlayingCard).evaluate()) {
