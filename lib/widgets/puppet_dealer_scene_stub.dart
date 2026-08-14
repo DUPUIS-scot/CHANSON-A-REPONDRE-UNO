@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'played_card_pile.dart';
 import 'puppet_dealer_controller.dart';
 
 class PuppetDealerScene extends StatelessWidget {
@@ -14,5 +13,5 @@ class PuppetDealerScene extends StatelessWidget {
   final PuppetQuality quality;
 
   @override
-  Widget build(BuildContext context) => const PlayedCardPile();
+  Widget build(BuildContext context) => const SizedBox.expand();
 }
