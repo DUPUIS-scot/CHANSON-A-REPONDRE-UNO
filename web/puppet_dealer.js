@@ -156,6 +156,13 @@ class JesterDealer {
         this.model.scale.setScalar(scale);
         this.puppetRoot.add(this.model);
 
+        // Capture the neutral, fully rotated puppet bounds after normalization.
+        // The Play camera uses these bounds to maximize the puppet while always
+        // keeping the complete 3D body inside the viewport.
+        this.puppetRoot.updateMatrixWorld(true);
+        this.puppetBounds = new THREE.Box3().setFromObject(this.puppetRoot);
+        this.resize();
+
         if (gltf.animations.length) {
           this.mixer = new THREE.AnimationMixer(this.model);
           this.clips = gltf.animations;
@@ -215,12 +222,62 @@ class JesterDealer {
     this.renderer.setSize(width, height, false);
     this.camera.aspect = width / height;
     const narrow = width < 720;
-    this.camera.fov = narrow ? 38 : 30;
-    this.camera.position.set(0, 0, narrow ? 9.7 : 12.4);
-    this.camera.lookAt(0, 0, 0);
+    this.camera.fov = narrow ? 36 : 30;
     this.modelRoot.scale.setScalar(1);
-    this.modelRoot.position.y = 0;
-    this.camera.updateProjectionMatrix();
+    this.modelRoot.position.set(0, 0, 0);
+
+    if (this.puppetBounds && !this.puppetBounds.isEmpty()) {
+      const center = this.puppetBounds.getCenter(new THREE.Vector3());
+      const min = this.puppetBounds.min;
+      const max = this.puppetBounds.max;
+      const corners = [
+        new THREE.Vector3(min.x, min.y, min.z),
+        new THREE.Vector3(min.x, min.y, max.z),
+        new THREE.Vector3(min.x, max.y, min.z),
+        new THREE.Vector3(min.x, max.y, max.z),
+        new THREE.Vector3(max.x, min.y, min.z),
+        new THREE.Vector3(max.x, min.y, max.z),
+        new THREE.Vector3(max.x, max.y, min.z),
+        new THREE.Vector3(max.x, max.y, max.z),
+      ];
+      // Keep only a very small safety border. This is intentionally close to
+      // edge-to-edge so the puppet is as large as possible without cropping.
+      const edgeLimit = narrow ? 0.965 : 0.975;
+      const frontDepth = Math.max(0.1, max.z - center.z);
+      let low = frontDepth + 0.12;
+      let high = Math.max(10, low * 2);
+
+      const fitsAt = (distance) => {
+        this.camera.position.set(center.x, center.y, center.z + distance);
+        this.camera.lookAt(center);
+        this.camera.updateProjectionMatrix();
+        this.camera.updateMatrixWorld(true);
+        return corners.every((corner) => {
+          const projected = corner.clone().project(this.camera);
+          return (
+            projected.z >= -1 &&
+            projected.z <= 1 &&
+            Math.abs(projected.x) <= edgeLimit &&
+            Math.abs(projected.y) <= edgeLimit
+          );
+        });
+      };
+
+      while (!fitsAt(high) && high < 100) high *= 1.5;
+      for (let index = 0; index < 28; index++) {
+        const middle = (low + high) / 2;
+        if (fitsAt(middle)) high = middle;
+        else low = middle;
+      }
+      fitsAt(high);
+      this.host.dataset.puppetFit = 'full-body-maximized';
+      this.host.dataset.puppetCameraDistance = high.toFixed(3);
+      this.host.dataset.puppetEdgeLimit = String(edgeLimit);
+    } else {
+      this.camera.position.set(0, 0, narrow ? 9.7 : 12.4);
+      this.camera.lookAt(0, 0, 0);
+      this.camera.updateProjectionMatrix();
+    }
   }
 
   updateCardTexture(imageUrl) {
