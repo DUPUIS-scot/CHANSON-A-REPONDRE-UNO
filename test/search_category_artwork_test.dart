@@ -25,7 +25,10 @@ void main() {
   void expectSearchArtworkResolver(String searchSource) {
     expect(searchSource, contains('!activeDeck.hasExplicitCategories'));
     expect(searchSource, contains('? activeDeck.cardBack'));
-    expect(searchSource, contains('categoryArtworkOverride: categoryArtworkOverride'));
+    expect(
+      searchSource,
+      contains('categoryArtworkOverride: categoryArtworkOverride'),
+    );
     expect(searchSource, contains('artworkSource:'));
     expect(
       searchSource,
@@ -33,38 +36,24 @@ void main() {
     );
   }
 
+  CardImageModel card(String id, String category) => CardImageModel(
+    id: id,
+    deckId: 'test-deck',
+    title: id,
+    path: '$id.png',
+    category: category,
+    colour: 'gold',
+    importedAt: DateTime.utc(2026),
+  );
+
   test('Search categories are exactly the unique categories in the active deck', () {
     final deck = Deck(
       id: 'test-deck',
       name: 'Test deck',
       cards: [
-        CardImageModel(
-          id: '1',
-          deckId: 'test-deck',
-          title: '1',
-          path: '1.png',
-          category: 'CLASSIQUE',
-          colour: 'red',
-          importedAt: DateTime.utc(2026),
-        ),
-        CardImageModel(
-          id: '2',
-          deckId: 'test-deck',
-          title: '2',
-          path: '2.png',
-          category: 'POÉSIE',
-          colour: 'yellow',
-          importedAt: DateTime.utc(2026),
-        ),
-        CardImageModel(
-          id: '3',
-          deckId: 'test-deck',
-          title: '3',
-          path: '3.png',
-          category: 'CLASSIQUE',
-          colour: 'red',
-          importedAt: DateTime.utc(2026),
-        ),
+        card('1', 'CLASSIQUE'),
+        card('2', 'POÉSIE'),
+        card('3', 'CLASSIQUE'),
       ],
     );
 
@@ -130,10 +119,25 @@ void main() {
     );
   });
 
-  test('Search entry has no separate ALL CATEGORIES button', () {
-    final searchSource = File('lib/screens/search_screen.dart').readAsStringSync();
-    expect(searchSource, isNot(contains("ValueKey('search-all-categories')")));
-    expect(searchSource, isNot(contains('onAllCategoriesSelected')));
+  test('single category uses one centered enlarged card and no all button', () {
+    final source = File('lib/screens/search_screen.dart').readAsStringSync();
+    expect(source, contains('final singleCategory = categories.length == 1;'));
+    expect(source, contains('singleCategory ? MainAxisAlignment.center'));
+    expect(source, contains('final singleCardWidth = min('));
+    expect(source, contains("singleCategory ? 'ENTER CASTLE'"));
+    expect(
+      source,
+      contains('categories.length > 1 ? _openAllCategories : null'),
+    );
+  });
+
+  test('multiple categories restore ALL CATEGORIES castle entry', () {
+    final source = File('lib/screens/search_screen.dart').readAsStringSync();
+    expect(source, contains("ValueKey('search-all-categories')"));
+    expect(source, contains('onAllCategoriesSelected'));
+    expect(source, contains('void _openAllCategories()'));
+    expect(source, contains('category == null && categories.length > 1'));
+    expect(source, contains('category ?? searchAllCategoriesLabel'));
   });
 
   test('web cache buster reaches the compiled Flutter entrypoint', () {
