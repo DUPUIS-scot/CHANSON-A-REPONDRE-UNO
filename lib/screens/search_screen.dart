@@ -202,6 +202,13 @@ class _SearchScreenState extends State<SearchScreen> {
     final activeDeck = provider.activeDeck;
     final activeDecks = activeDeck != null ? [activeDeck] : <Deck>[];
     final categories = searchCategoriesForDeck(activeDeck);
+    final permanentCards = activeDecks
+        .expand((deck) => deck.cards)
+        .toList(growable: false);
+    final deckVersoArtwork =
+        activeDeck != null && activeDeck.cardBack.isNotEmpty
+        ? activeDeck.cardBack
+        : null;
     final categoryArtworkOverride =
         activeDeck != null &&
             !activeDeck.hasExplicitCategories &&
@@ -212,15 +219,15 @@ class _SearchScreenState extends State<SearchScreen> {
     final category = _category;
     final categoryAvailable = category != null &&
         categories.any((item) => item.label == category);
-    final allCategoriesAvailable = category == null && categories.length > 1;
+    final allCategoriesAvailable =
+        category == null &&
+        permanentCards.isNotEmpty &&
+        (categories.isEmpty || categories.length > 1);
     final castleActive =
         _castleActive && (categoryAvailable || allCategoriesAvailable);
     final results = castleActive
         ? _results(activeDecks)
         : const <CardImageModel>[];
-    final permanentCards = activeDecks
-        .expand((deck) => deck.cards)
-        .toList(growable: false);
 
     return PopScope(
       canPop: !castleActive,
@@ -232,8 +239,13 @@ class _SearchScreenState extends State<SearchScreen> {
         body: !castleActive
             ? _SearchCategorySelection(
                 categories: categories,
+                deckVersoArtwork: deckVersoArtwork,
                 categoryArtworkOverride: categoryArtworkOverride,
                 onCategorySelected: _openCategory,
+                onUncategorizedSelected:
+                    categories.isEmpty && permanentCards.isNotEmpty
+                    ? _openAllCategories
+                    : null,
                 onAllCategoriesSelected:
                     categories.length > 1 ? _openAllCategories : null,
               )
@@ -301,12 +313,16 @@ class _SearchCategorySelection extends StatelessWidget {
     required this.onCategorySelected,
     required this.categories,
     required this.onAllCategoriesSelected,
+    required this.onUncategorizedSelected,
+    this.deckVersoArtwork,
     this.categoryArtworkOverride,
   });
 
   final ValueChanged<String> onCategorySelected;
   final VoidCallback? onAllCategoriesSelected;
+  final VoidCallback? onUncategorizedSelected;
   final List<CardCategoryDefinition> categories;
+  final String? deckVersoArtwork;
   final String? categoryArtworkOverride;
 
   @override
@@ -336,35 +352,44 @@ class _SearchCategorySelection extends StatelessWidget {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final compact = constraints.maxWidth < 700;
-            final singleCategory = categories.length == 1;
+            final singleEntry = categories.length <= 1;
             final gutter = AppBreakpoints.gutterFor(constraints.maxWidth);
             final galleryWidth = min(constraints.maxWidth - gutter * 2, 1120.0);
 
-            if (singleCategory) {
-              final category = categories.single;
-              final singleCardWidth = min(
-                compact ? galleryWidth * .78 : galleryWidth * .38,
-                compact ? 340.0 : 380.0,
-              ).clamp(200.0, 380.0);
+            if (singleEntry) {
+              final category = categories.firstOrNull;
+              final artworkSource = category != null
+                  ? categoryArtworkOverride ?? category.versoAsset
+                  : deckVersoArtwork;
+              final onPressed = category != null
+                  ? () => onCategorySelected(category.label)
+                  : onUncategorizedSelected;
 
-              return Padding(
-                key: const ValueKey('search-single-category-screen'),
-                padding: EdgeInsets.fromLTRB(
-                  gutter,
-                  compact ? 82 : 92,
-                  gutter,
-                  24,
-                ),
-                child: Center(
-                  child: _CategoryArtworkButton(
-                    category: category,
-                    artworkSource:
-                        categoryArtworkOverride ?? category.versoAsset,
-                    width: singleCardWidth,
-                    onPressed: () => onCategorySelected(category.label),
+              if (artworkSource != null && onPressed != null) {
+                final singleCardWidth = min(
+                  compact ? galleryWidth * .78 : galleryWidth * .38,
+                  compact ? 340.0 : 380.0,
+                ).clamp(200.0, 380.0);
+
+                return Padding(
+                  key: const ValueKey('search-single-category-screen'),
+                  padding: EdgeInsets.fromLTRB(
+                    gutter,
+                    compact ? 82 : 92,
+                    gutter,
+                    24,
                   ),
-                ),
-              );
+                  child: Center(
+                    child: _VersoEntryButton(
+                      artworkSource: artworkSource,
+                      semanticLabel: category?.label ?? 'Open deck in the castle',
+                      keyValue: category?.label ?? 'deck-verso',
+                      width: singleCardWidth,
+                      onPressed: onPressed,
+                    ),
+                  ),
+                );
+              }
             }
 
             final desktopColumns = max(1, min(categories.length, 5));
@@ -454,6 +479,78 @@ class _SearchCategorySelection extends StatelessWidget {
       ),
       const _SearchEntryNavigation(),
     ],
+  );
+}
+
+class _VersoEntryButton extends StatefulWidget {
+  const _VersoEntryButton({
+    required this.artworkSource,
+    required this.semanticLabel,
+    required this.keyValue,
+    required this.width,
+    required this.onPressed,
+  });
+
+  final String artworkSource;
+  final String semanticLabel;
+  final String keyValue;
+  final double width;
+  final VoidCallback onPressed;
+
+  @override
+  State<_VersoEntryButton> createState() => _VersoEntryButtonState();
+}
+
+class _VersoEntryButtonState extends State<_VersoEntryButton> {
+  bool hovered = false;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    button: true,
+    label: widget.semanticLabel,
+    child: MouseRegion(
+      onEnter: (_) => setState(() => hovered = true),
+      onExit: (_) => setState(() => hovered = false),
+      child: AnimatedScale(
+        duration: const Duration(milliseconds: 170),
+        curve: Curves.easeOut,
+        scale: hovered ? 1.035 : 1,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 170),
+          transform: Matrix4.translationValues(0, hovered ? -7 : 0, 0),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(widget.width * .065),
+            boxShadow: [
+              BoxShadow(
+                color: hovered
+                    ? const Color(0x99FFC928)
+                    : const Color(0xB3000000),
+                blurRadius: hovered ? 24 : 18,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              key: ValueKey('search-verso-${widget.keyValue}'),
+              onTap: widget.onPressed,
+              borderRadius: BorderRadius.circular(widget.width * .065),
+              child: SizedBox(
+                width: widget.width,
+                child: AspectRatio(
+                  aspectRatio: 2 / 3,
+                  child: StoredImage(
+                    source: widget.artworkSource,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
   );
 }
 
