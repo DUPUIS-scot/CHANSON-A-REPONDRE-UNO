@@ -339,17 +339,40 @@ class _SearchCategorySelection extends StatelessWidget {
             final singleCategory = categories.length == 1;
             final gutter = AppBreakpoints.gutterFor(constraints.maxWidth);
             final galleryWidth = min(constraints.maxWidth - gutter * 2, 1120.0);
+
+            if (singleCategory) {
+              final category = categories.single;
+              final singleCardWidth = min(
+                compact ? galleryWidth * .78 : galleryWidth * .38,
+                compact ? 340.0 : 380.0,
+              ).clamp(200.0, 380.0);
+
+              return Padding(
+                key: const ValueKey('search-single-category-screen'),
+                padding: EdgeInsets.fromLTRB(
+                  gutter,
+                  compact ? 82 : 92,
+                  gutter,
+                  24,
+                ),
+                child: Center(
+                  child: _CategoryArtworkButton(
+                    category: category,
+                    artworkSource:
+                        categoryArtworkOverride ?? category.versoAsset,
+                    width: singleCardWidth,
+                    onPressed: () => onCategorySelected(category.label),
+                  ),
+                ),
+              );
+            }
+
             final desktopColumns = max(1, min(categories.length, 5));
             final desktopGaps = max(0, desktopColumns - 1) * 14;
-            final multiCardWidth = compact
+            final cardWidth = compact
                 ? ((galleryWidth - 14) / 2).clamp(112.0, 166.0)
                 : ((galleryWidth - desktopGaps) / desktopColumns)
                       .clamp(120.0, 184.0);
-            final singleCardWidth = min(
-              compact ? galleryWidth * .68 : galleryWidth * .32,
-              compact ? 300.0 : 330.0,
-            ).clamp(180.0, 330.0);
-            final cardWidth = singleCategory ? singleCardWidth : multiCardWidth;
 
             return SingleChildScrollView(
               padding: EdgeInsets.fromLTRB(
@@ -366,12 +389,10 @@ class _SearchCategorySelection extends StatelessWidget {
                   ),
                 ),
                 child: Column(
-                  mainAxisAlignment: singleCategory
-                      ? MainAxisAlignment.center
-                      : MainAxisAlignment.end,
+                  mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     Text(
-                      singleCategory ? 'ENTER CASTLE' : 'CHOOSE A CATEGORY',
+                      'CHOOSE A CATEGORY',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: .88),
@@ -383,7 +404,7 @@ class _SearchCategorySelection extends StatelessWidget {
                         ],
                       ),
                     ),
-                    SizedBox(height: singleCategory ? 22 : (compact ? 14 : 20)),
+                    SizedBox(height: compact ? 14 : 20),
                     ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 1120),
                       child: Wrap(
@@ -403,7 +424,7 @@ class _SearchCategorySelection extends StatelessWidget {
                         ],
                       ),
                     ),
-                    if (!singleCategory && onAllCategoriesSelected != null) ...[
+                    if (onAllCategoriesSelected != null) ...[
                       SizedBox(height: compact ? 18 : 24),
                       FilledButton.icon(
                         key: const ValueKey('search-all-categories'),
