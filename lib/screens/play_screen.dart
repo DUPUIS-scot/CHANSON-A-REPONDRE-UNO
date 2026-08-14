@@ -8,6 +8,7 @@ import '../providers/deck_provider.dart';
 import '../providers/game_provider.dart';
 import '../providers/settings_provider.dart';
 import '../theme/app_theme.dart';
+import '../widgets/discard_pile_widget.dart';
 import '../widgets/draw_pile_widget.dart';
 import '../widgets/game_table_background.dart';
 import '../widgets/home_navigation_button.dart';
@@ -293,12 +294,10 @@ class _PlayScreenState extends State<PlayScreen> {
                                   child: Transform.scale(
                                     scale: pileScale,
                                     alignment: Alignment.topRight,
-                                    child: DrawPileWidget(
-                                      key: const Key('draw-pile-right'),
-                                      count: state.drawPile.length,
-                                      topCard: state.drawPile.lastOrNull,
-                                      backImagePath: activeDeck?.cardBack ?? '',
-                                      onDraw: canDraw ? drawWithDealer : null,
+                                    child: DiscardPileWidget(
+                                      key: const Key('discard-pile-right'),
+                                      topCard: state.topCard,
+                                      count: state.discardPile.length,
                                     ),
                                   ),
                                 ),
