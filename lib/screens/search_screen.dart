@@ -14,8 +14,8 @@ import '../models/deck_model.dart';
 import '../providers/deck_provider.dart';
 import '../services/local_storage_service.dart';
 import '../services/search_service.dart';
-import '../theme/app_theme.dart';
 import '../theme/app_design_tokens.dart';
+import '../theme/app_theme.dart';
 import '../widgets/search_card_castle.dart';
 import '../widgets/stored_image.dart';
 import '../widgets/webgl_card_castle_view.dart';
@@ -135,6 +135,15 @@ class _SearchScreenState extends State<SearchScreen> {
     _schedulePersist();
   }
 
+  void _openAllCategories() {
+    setState(() {
+      _castleActive = true;
+      _category = null;
+      _selectedCardId = null;
+    });
+    _schedulePersist();
+  }
+
   void _leaveCastle() {
     setState(() {
       _castleActive = false;
@@ -146,9 +155,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   List<CardImageModel> _results(List<Deck> decks) {
     final cards = _search.cards(decks: decks, category: _category);
-    if (_shuffleSeed != 0) {
-      cards.shuffle(Random(_shuffleSeed));
-    }
+    if (_shuffleSeed != 0) cards.shuffle(Random(_shuffleSeed));
     return cards;
   }
 
@@ -169,10 +176,6 @@ class _SearchScreenState extends State<SearchScreen> {
   Future<void> _openCastleCardFullscreen(CardImageModel card) async {
     if (_castleCardViewerOpen || !mounted) return;
     _castleCardViewerOpen = true;
-    // Keep the WebGL platform view mounted and do not call `_select` here:
-    // changing focusedCardId would animate the castle camera before the card
-    // opens. Pass the exact search result directly to the modal instead of
-    // looking it up in the currently selected deck.
     try {
       await showGeneralDialog<void>(
         context: context,
@@ -191,9 +194,7 @@ class _SearchScreenState extends State<SearchScreen> {
     }
   }
 
-  void _handleCastleFullscreenChanged(bool active) {
-    _schedulePersist();
-  }
+  void _handleCastleFullscreenChanged(bool active) => _schedulePersist();
 
   @override
   Widget build(BuildContext context) {
@@ -207,16 +208,20 @@ class _SearchScreenState extends State<SearchScreen> {
             activeDeck.cardBack.isNotEmpty
         ? activeDeck.cardBack
         : null;
+
     final category = _category;
     final categoryAvailable = category != null &&
         categories.any((item) => item.label == category);
-    final castleActive = _castleActive && categoryAvailable;
+    final allCategoriesAvailable = category == null && categories.length > 1;
+    final castleActive =
+        _castleActive && (categoryAvailable || allCategoriesAvailable);
     final results = castleActive
         ? _results(activeDecks)
         : const <CardImageModel>[];
     final permanentCards = activeDecks
         .expand((deck) => deck.cards)
         .toList(growable: false);
+
     return PopScope(
       canPop: !castleActive,
       onPopInvokedWithResult: (didPop, _) {
@@ -229,6 +234,8 @@ class _SearchScreenState extends State<SearchScreen> {
                 categories: categories,
                 categoryArtworkOverride: categoryArtworkOverride,
                 onCategorySelected: _openCategory,
+                onAllCategoriesSelected:
+                    categories.length > 1 ? _openAllCategories : null,
               )
             : permanentCards.isEmpty
             ? Stack(
@@ -238,7 +245,10 @@ class _SearchScreenState extends State<SearchScreen> {
                   _CastleFallbackBackButton(onPressed: _leaveCastle),
                 ],
               )
-            : _buildCastle(results, category),
+            : _buildCastle(
+                results,
+                category ?? searchAllCategoriesLabel,
+              ),
       ),
     );
   }
@@ -286,153 +296,16 @@ class _CastleFallbackBackButton extends StatelessWidget {
   );
 }
 
-// Retained for source compatibility with older state-restoration snapshots;
-// the production Castle no longer mounts this five-card overlay.
-// ignore: unused_element
-class _CastleActiveCardsHud extends StatelessWidget {
-  const _CastleActiveCardsHud({
-    required this.cards,
-    required this.selectedCardId,
-    required this.onSelect,
-    required this.onFullscreen,
-  });
-
-  final List<CardImageModel> cards;
-  final String? selectedCardId;
-  final ValueChanged<CardImageModel> onSelect;
-  final ValueChanged<CardImageModel> onFullscreen;
-
-  @override
-  Widget build(BuildContext context) => Center(
-    child: ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 610),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: const Color(0xE605090D),
-          borderRadius: BorderRadius.circular(13),
-          border: Border.all(color: const Color(0xB3FFC928)),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0xA0000000),
-              blurRadius: 18,
-              spreadRadius: 2,
-            ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(10, 6, 10, 9),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'CASTLE CARDS',
-                style: TextStyle(
-                  color: AppTheme.brightGold,
-                  fontWeight: FontWeight.w900,
-                  fontSize: 11,
-                  letterSpacing: 1.1,
-                ),
-              ),
-              const SizedBox(height: 5),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  for (var index = 0; index < cards.length; index++)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 3),
-                      child: Semantics(
-                        button: true,
-                        label:
-                            'Active castle card ${index + 1}, '
-                            '${cards[index].category}',
-                        child: GestureDetector(
-                          onTap: () => onSelect(cards[index]),
-                          onLongPress: () => onFullscreen(cards[index]),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 180),
-                            width: 62,
-                            height: 82,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF111820),
-                              borderRadius: BorderRadius.circular(7),
-                              border: Border.all(
-                                color: cards[index].id == selectedCardId
-                                    ? AppTheme.brightGold
-                                    : const Color(0xFF637382),
-                                width: cards[index].id == selectedCardId ? 3 : 1,
-                              ),
-                              boxShadow: cards[index].id == selectedCardId
-                                  ? const [
-                                      BoxShadow(
-                                        color: Color(0x99FFC928),
-                                        blurRadius: 12,
-                                      ),
-                                    ]
-                                  : null,
-                            ),
-                            clipBehavior: Clip.antiAlias,
-                            child: Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                StoredImage(
-                                  source: cards[index].imagePath,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, _, _) => const ColoredBox(
-                                    color: Color(0xFF20150E),
-                                    child: Icon(
-                                      Icons.image_not_supported,
-                                      color: AppTheme.gold,
-                                    ),
-                                  ),
-                                ),
-                                Positioned(
-                                  left: 3,
-                                  top: 3,
-                                  child: DecoratedBox(
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xD9000000),
-                                      borderRadius: BorderRadius.circular(9),
-                                    ),
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 5,
-                                        vertical: 2,
-                                      ),
-                                      child: Text(
-                                        '${index + 1}',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w900,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    ),
-  );
-}
-
 class _SearchCategorySelection extends StatelessWidget {
   const _SearchCategorySelection({
     required this.onCategorySelected,
     required this.categories,
+    required this.onAllCategoriesSelected,
     this.categoryArtworkOverride,
   });
 
   final ValueChanged<String> onCategorySelected;
+  final VoidCallback? onAllCategoriesSelected;
   final List<CardCategoryDefinition> categories;
   final String? categoryArtworkOverride;
 
@@ -463,33 +336,42 @@ class _SearchCategorySelection extends StatelessWidget {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final compact = constraints.maxWidth < 700;
+            final singleCategory = categories.length == 1;
             final gutter = AppBreakpoints.gutterFor(constraints.maxWidth);
             final galleryWidth = min(constraints.maxWidth - gutter * 2, 1120.0);
             final desktopColumns = max(1, min(categories.length, 5));
             final desktopGaps = max(0, desktopColumns - 1) * 14;
-            final cardWidth = compact
+            final multiCardWidth = compact
                 ? ((galleryWidth - 14) / 2).clamp(112.0, 166.0)
                 : ((galleryWidth - desktopGaps) / desktopColumns)
                       .clamp(120.0, 184.0);
+            final singleCardWidth = min(
+              compact ? galleryWidth * .68 : galleryWidth * .32,
+              compact ? 300.0 : 330.0,
+            ).clamp(180.0, 330.0);
+            final cardWidth = singleCategory ? singleCardWidth : multiCardWidth;
+
             return SingleChildScrollView(
               padding: EdgeInsets.fromLTRB(
                 gutter,
-                compact ? 102 : 118,
+                compact ? 92 : 104,
                 gutter,
-                28,
+                24,
               ),
               child: ConstrainedBox(
                 constraints: BoxConstraints(
                   minHeight: max(
                     0,
-                    constraints.maxHeight - (compact ? 130 : 146),
+                    constraints.maxHeight - (compact ? 118 : 130),
                   ),
                 ),
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                  mainAxisAlignment: singleCategory
+                      ? MainAxisAlignment.center
+                      : MainAxisAlignment.end,
                   children: [
                     Text(
-                      'CHOOSE A CATEGORY',
+                      singleCategory ? 'ENTER CASTLE' : 'CHOOSE A CATEGORY',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: .88),
@@ -501,7 +383,7 @@ class _SearchCategorySelection extends StatelessWidget {
                         ],
                       ),
                     ),
-                    SizedBox(height: compact ? 14 : 20),
+                    SizedBox(height: singleCategory ? 22 : (compact ? 14 : 20)),
                     ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 1120),
                       child: Wrap(
@@ -521,6 +403,27 @@ class _SearchCategorySelection extends StatelessWidget {
                         ],
                       ),
                     ),
+                    if (!singleCategory && onAllCategoriesSelected != null) ...[
+                      SizedBox(height: compact ? 18 : 24),
+                      FilledButton.icon(
+                        key: const ValueKey('search-all-categories'),
+                        onPressed: onAllCategoriesSelected,
+                        icon: const Icon(Icons.castle_rounded),
+                        label: const Text(searchAllCategoriesLabel),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: const Color(0xE6FFC928),
+                          foregroundColor: Colors.black,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 22,
+                            vertical: 13,
+                          ),
+                          textStyle: const TextStyle(
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.1,
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -700,184 +603,6 @@ class _SearchEntryNavigation extends StatelessWidget {
   );
 }
 
-// Retained for source compatibility with older Search layouts.
-// ignore: unused_element
-class _SelectedCardPanel extends StatelessWidget {
-  const _SelectedCardPanel({
-    required this.card,
-    required this.onFullscreen,
-    required this.onViewInCastle,
-  });
-  final CardImageModel? card;
-  final VoidCallback? onFullscreen;
-  final VoidCallback? onViewInCastle;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    margin: const EdgeInsets.fromLTRB(0, 12, 16, 16),
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: const Color(0xE80B1117),
-      borderRadius: BorderRadius.circular(14),
-      border: Border.all(color: AppTheme.gold),
-    ),
-    child: card == null
-        ? const Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _PanelTitle(),
-              Spacer(),
-              Center(
-                child: Text(
-                  'Sélectionnez une carte\npour afficher ses détails.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Color(0xFF9EADB8)),
-                ),
-              ),
-              Spacer(),
-            ],
-          )
-        : Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const _PanelTitle(),
-              const SizedBox(height: 14),
-              Expanded(
-                child: Center(
-                  child: Semantics(
-                    button: true,
-                    label:
-                        '${card!.category} card preview. '
-                        'Long press to open fullscreen.',
-                    onLongPress: onFullscreen,
-                    child: GestureDetector(
-                      onLongPress: onFullscreen,
-                      child: AspectRatio(
-                        aspectRatio: card!.aspectRatio,
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: StoredImage(
-                            source: card!.imagePath,
-                            fit: BoxFit.contain,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 14),
-              Text(
-                card!.category.toUpperCase(),
-                style: const TextStyle(
-                  color: AppTheme.brightGold,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                card!.question.isEmpty
-                    ? 'Question non renseignée'
-                    : card!.question,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: Color(0xFFCAD3DA)),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'Clic court : sélectionner\nClic long : plein écran',
-                style: TextStyle(color: Color(0xFF91A2AF), fontSize: 12),
-              ),
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
-                onPressed: onFullscreen,
-                icon: const Icon(Icons.fullscreen_rounded),
-                label: const Text('PLEIN ÉCRAN'),
-              ),
-              const SizedBox(height: 8),
-              FilledButton.icon(
-                onPressed: onViewInCastle,
-                icon: const Icon(Icons.castle_rounded),
-                label: const Text('VOIR DANS LE CHÂTEAU'),
-              ),
-            ],
-          ),
-  );
-}
-
-class _PanelTitle extends StatelessWidget {
-  const _PanelTitle();
-
-  @override
-  Widget build(BuildContext context) => const Text(
-    'CARTE SÉLECTIONNÉE',
-    style: TextStyle(
-      color: AppTheme.brightGold,
-      fontWeight: FontWeight.w900,
-      letterSpacing: .8,
-    ),
-  );
-}
-
-// Retained for source compatibility with older Search layouts.
-// ignore: unused_element
-class _MobileSelectionBar extends StatelessWidget {
-  const _MobileSelectionBar({
-    required this.card,
-    required this.onFullscreen,
-    required this.onViewInCastle,
-  });
-  final CardImageModel card;
-  final VoidCallback onFullscreen;
-  final VoidCallback onViewInCastle;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
-    decoration: const BoxDecoration(
-      color: Color(0xFF10161C),
-      border: Border(top: BorderSide(color: AppTheme.gold)),
-    ),
-    child: Row(
-      children: [
-        SizedBox(
-          width: 38,
-          child: AspectRatio(
-            aspectRatio: card.aspectRatio,
-            child: StoredImage(source: card.imagePath, fit: BoxFit.cover),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                card.category.toUpperCase(),
-                style: const TextStyle(
-                  color: AppTheme.brightGold,
-                  fontSize: 11,
-                ),
-              ),
-            ],
-          ),
-        ),
-        IconButton(
-          tooltip: 'Plein écran',
-          onPressed: onFullscreen,
-          icon: const Icon(Icons.fullscreen_rounded),
-        ),
-        FilledButton(
-          onPressed: onViewInCastle,
-          child: const Icon(Icons.castle_rounded),
-        ),
-      ],
-    ),
-  );
-}
-
 class _EmptyResults extends StatelessWidget {
   const _EmptyResults();
 
@@ -905,111 +630,102 @@ class _CastleCardFullscreen extends StatelessWidget {
   void _close(BuildContext context) => Navigator.of(context).pop();
 
   @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.black,
-      child: SafeArea(
-        child: CallbackShortcuts(
-          bindings: {
-            const SingleActivator(LogicalKeyboardKey.escape): () =>
-                _close(context),
-          },
-          child: Focus(
-            autofocus: true,
-            child: Column(
-              children: [
-                SizedBox(
-                  height: 64,
-                  child: Row(
-                    children: [
-                      IconButton(
-                        tooltip: 'Close fullscreen card',
-                        onPressed: () => _close(context),
-                        icon: const Icon(Icons.close_rounded),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          card.category.toUpperCase(),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: AppTheme.brightGold,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                          ),
+  Widget build(BuildContext context) => Material(
+    color: Colors.black,
+    child: SafeArea(
+      child: CallbackShortcuts(
+        bindings: {
+          const SingleActivator(LogicalKeyboardKey.escape): () =>
+              _close(context),
+        },
+        child: Focus(
+          autofocus: true,
+          child: Column(
+            children: [
+              SizedBox(
+                height: 64,
+                child: Row(
+                  children: [
+                    IconButton(
+                      tooltip: 'Close fullscreen card',
+                      onPressed: () => _close(context),
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        card.category.toUpperCase(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: AppTheme.brightGold,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
-                      const SizedBox(width: 16),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(width: 16),
+                  ],
                 ),
-                Expanded(
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      const horizontalPadding = 16.0;
-                      const verticalPadding = 12.0;
-                      final availableWidth = max(
-                        0.0,
-                        constraints.maxWidth - horizontalPadding * 2,
-                      );
-                      final availableHeight = max(
-                        0.0,
-                        constraints.maxHeight - verticalPadding * 2,
-                      );
-                      final width = min(
-                        availableWidth,
-                        availableHeight * card.aspectRatio,
-                      );
-                      final height = width / card.aspectRatio;
-                      return Center(
-                        child: SizedBox(
-                          width: width,
-                          height: height,
-                          child: Semantics(
-                            image: true,
-                            label: '${card.category}, front of card',
-                            child: StoredImage(
-                              source: card.imagePath,
-                              fit: BoxFit.contain,
-                              errorBuilder: (_, _, _) => const Center(
-                                child: Icon(Icons.broken_image, size: 80),
-                              ),
+              ),
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    const horizontalPadding = 16.0;
+                    const verticalPadding = 12.0;
+                    final availableWidth = max(
+                      0.0,
+                      constraints.maxWidth - horizontalPadding * 2,
+                    );
+                    final availableHeight = max(
+                      0.0,
+                      constraints.maxHeight - verticalPadding * 2,
+                    );
+                    final width = min(
+                      availableWidth,
+                      availableHeight * card.aspectRatio,
+                    );
+                    final height = width / card.aspectRatio;
+                    return Center(
+                      child: SizedBox(
+                        width: width,
+                        height: height,
+                        child: Semantics(
+                          image: true,
+                          label: '${card.category}, front of card',
+                          child: StoredImage(
+                            source: card.imagePath,
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, _, _) => const Center(
+                              child: Icon(Icons.broken_image, size: 80),
                             ),
                           ),
                         ),
-                      );
+                      ),
+                    );
+                  },
+                ),
+              ),
+              SafeArea(
+                top: false,
+                child: Container(
+                  width: double.infinity,
+                  color: const Color(0xFF090909),
+                  padding: const EdgeInsets.all(12),
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      AppRouter.router.go(AppRoutes.cardAlias(card.id));
                     },
+                    icon: const Icon(Icons.more_horiz_rounded),
+                    label: const Text('Open Card'),
                   ),
                 ),
-                SafeArea(
-                  top: false,
-                  child: Container(
-                    width: double.infinity,
-                    color: const Color(0xFF090909),
-                    padding: const EdgeInsets.all(12),
-                    child: Wrap(
-                      alignment: WrapAlignment.center,
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        OutlinedButton.icon(
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                            AppRouter.router.go(AppRoutes.cardAlias(card.id));
-                          },
-                          icon: const Icon(Icons.more_horiz_rounded),
-                          label: const Text('Open Card'),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
 }
