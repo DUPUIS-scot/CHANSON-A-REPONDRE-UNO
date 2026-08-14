@@ -3,9 +3,9 @@ import 'package:flutter/services.dart';
 import '../models/card_image_model.dart';
 import '../models/deck_model.dart';
 import 'card_share_identity.dart';
+import 'card_share_result.dart';
 import 'native_share.dart';
 import 'native_share_result.dart';
-import 'public_card_share_service.dart' show CardShareResult;
 
 typedef MultiDeckNativeSharer =
     Future<NativeShareResult> Function({
