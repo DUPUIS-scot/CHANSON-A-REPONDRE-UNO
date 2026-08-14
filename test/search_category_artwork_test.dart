@@ -119,18 +119,30 @@ void main() {
     );
   });
 
-  test('single category uses one dedicated centered verso screen', () {
+  test('zero or one category uses one dedicated centered verso screen', () {
     final source = File('lib/screens/search_screen.dart').readAsStringSync();
-    expect(source, contains('final singleCategory = categories.length == 1;'));
-    expect(source, contains('if (singleCategory) {'));
-    expect(source, contains('final category = categories.single;'));
+    expect(source, contains('final singleEntry = categories.length <= 1;'));
+    expect(source, contains('if (singleEntry) {'));
+    expect(source, contains('final category = categories.firstOrNull;'));
+    expect(source, contains('deckVersoArtwork: deckVersoArtwork'));
+    expect(source, contains('onUncategorizedSelected:'));
     expect(source, contains("ValueKey('search-single-category-screen')"));
+    expect(source, contains("keyValue: category?.label ?? 'deck-verso'"));
     expect(source, contains('child: Center('));
-    expect(source, isNot(contains("singleCategory ? 'ENTER CASTLE'")));
+  });
+
+  test('zero categories open the whole active deck from the verso card', () {
+    final source = File('lib/screens/search_screen.dart').readAsStringSync();
     expect(
       source,
-      contains('categories.length > 1 ? _openAllCategories : null'),
+      contains('(categories.isEmpty || categories.length > 1)'),
     );
+    expect(
+      source,
+      contains('categories.isEmpty && permanentCards.isNotEmpty'),
+    );
+    expect(source, contains('? _openAllCategories'));
+    expect(source, contains("key: ValueKey('search-verso-\${widget.keyValue}')"));
   });
 
   test('multiple categories restore ALL CATEGORIES castle entry', () {
@@ -138,7 +150,7 @@ void main() {
     expect(source, contains("ValueKey('search-all-categories')"));
     expect(source, contains('onAllCategoriesSelected'));
     expect(source, contains('void _openAllCategories()'));
-    expect(source, contains('category == null && categories.length > 1'));
+    expect(source, contains('categories.length > 1 ? _openAllCategories : null'));
     expect(source, contains('category ?? searchAllCategoriesLabel'));
   });
 
