@@ -13,6 +13,7 @@ import '../widgets/discard_pile_widget.dart';
 import '../widgets/draw_pile_widget.dart';
 import '../widgets/game_table_background.dart';
 import '../widgets/home_navigation_button.dart';
+import '../widgets/opponent_hand.dart';
 import '../widgets/player_hand.dart';
 import '../widgets/puppet_dealer_controller.dart';
 import '../widgets/puppet_dealer_scene.dart';
@@ -271,6 +272,7 @@ class _PlayScreenState extends State<PlayScreen> {
                             final veryNarrow = constraints.maxWidth < 380;
                             final short = constraints.maxHeight < 650;
                             final player = state.players.first;
+                            final opponent = state.players.last;
                             final selected = player.hand
                                 .where((card) => card.id == selectedCardId)
                                 .firstOrNull;
@@ -305,6 +307,16 @@ class _PlayScreenState extends State<PlayScreen> {
                             return Stack(
                               clipBehavior: Clip.none,
                               children: [
+                                Positioned(
+                                  top: 8,
+                                  left: 0,
+                                  right: 0,
+                                  child: Center(
+                                    child: OpponentHand(
+                                      cards: opponent.hand,
+                                    ),
+                                  ),
+                                ),
                                 Positioned(
                                   top: pileTop,
                                   left: pileInset,
