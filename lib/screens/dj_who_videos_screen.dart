@@ -76,73 +76,111 @@ class _DjWhoVideosScreenState extends State<DjWhoVideosScreen> {
   @override
   Widget build(BuildContext context) => AppPageShell(
     title: 'DJ WHO Videos',
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          Row(
+    child: Stack(
+      fit: StackFit.expand,
+      children: [
+        Image.asset(
+          'assets/images/dj_who_stage_background.jpg',
+          fit: BoxFit.cover,
+          alignment: Alignment.center,
+        ),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.black.withValues(alpha: .18),
+                Colors.black.withValues(alpha: .32),
+              ],
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
             children: [
-              const DjWhoAvatar(size: 58),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'DJ WHO',
-                      style: Theme.of(context).textTheme.headlineSmall,
+              Row(
+                children: [
+                  const DjWhoAvatar(size: 58),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'DJ WHO',
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            shadows: const [
+                              Shadow(blurRadius: 8, color: Colors.black87),
+                            ],
+                          ),
+                        ),
+                        const Text(
+                          'Playlist officielle',
+                          style: TextStyle(color: Colors.white70),
+                        ),
+                      ],
                     ),
-                    const Text('Playlist officielle'),
-                  ],
-                ),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: _openChannel,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      side: BorderSide(
+                        color: Colors.white.withValues(alpha: .65),
+                      ),
+                      backgroundColor: Colors.black.withValues(alpha: .22),
+                    ),
+                    icon: const Icon(Icons.open_in_new),
+                    label: const Text('Chaîne YouTube'),
+                  ),
+                ],
               ),
-              OutlinedButton.icon(
-                onPressed: _openChannel,
-                icon: const Icon(Icons.open_in_new),
-                label: const Text('Chaîne YouTube'),
+              const SizedBox(height: 16),
+              Expanded(
+                child: videos.isEmpty
+                    ? const _EmptyPlaylist()
+                    : LayoutBuilder(
+                        builder: (context, constraints) {
+                          final desktop = constraints.maxWidth >= 850;
+                          final player = _PlayerPanel(
+                            controller: controller!,
+                            video: videos[selectedIndex],
+                            position: selectedIndex + 1,
+                            count: videos.length,
+                          );
+                          final playlist = _Playlist(
+                            videos: videos,
+                            selectedIndex: selectedIndex,
+                            onSelected: _selectVideo,
+                          );
+                          if (!desktop) {
+                            return Column(
+                              children: [
+                                player,
+                                const SizedBox(height: 12),
+                                Expanded(child: playlist),
+                              ],
+                            );
+                          }
+                          return Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(child: player),
+                              const SizedBox(width: 16),
+                              SizedBox(width: 390, child: playlist),
+                            ],
+                          );
+                        },
+                      ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: videos.isEmpty
-                ? const _EmptyPlaylist()
-                : LayoutBuilder(
-                    builder: (context, constraints) {
-                      final desktop = constraints.maxWidth >= 850;
-                      final player = _PlayerPanel(
-                        controller: controller!,
-                        video: videos[selectedIndex],
-                        position: selectedIndex + 1,
-                        count: videos.length,
-                      );
-                      final playlist = _Playlist(
-                        videos: videos,
-                        selectedIndex: selectedIndex,
-                        onSelected: _selectVideo,
-                      );
-                      if (!desktop) {
-                        return Column(
-                          children: [
-                            player,
-                            const SizedBox(height: 12),
-                            Expanded(child: playlist),
-                          ],
-                        );
-                      }
-                      return Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(child: player),
-                          const SizedBox(width: 16),
-                          SizedBox(width: 390, child: playlist),
-                        ],
-                      );
-                    },
-                  ),
-          ),
-        ],
-      ),
+        ),
+      ],
     ),
   );
 
@@ -236,6 +274,9 @@ class _EmptyPlaylist extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const Center(
-    child: Text('La playlist DJ WHO est momentanément indisponible.'),
+    child: Text(
+      'La playlist DJ WHO est momentanément indisponible.',
+      style: TextStyle(color: Colors.white),
+    ),
   );
 }
