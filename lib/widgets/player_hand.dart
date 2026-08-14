@@ -57,15 +57,16 @@ class _PlayerHandState extends State<PlayerHand> {
     }
     return LayoutBuilder(
       builder: (context, constraints) {
-        const overlapStep = .70;
         final count = widget.cards.length;
+        final roomy = constraints.maxWidth >= 720;
+        final overlapStep = roomy ? .78 : .70;
         final widthLimited = constraints.maxWidth /
             (1 + math.max(0, count - 1) * overlapStep);
-        final heightLimited = math.max(60.0, (constraints.maxHeight - 34) / 1.5);
+        final heightLimited = math.max(60.0, (constraints.maxHeight + 70) / 1.5);
         final desiredWidth = constraints.maxWidth >= 850
-            ? 156.0
+            ? 190.0
             : constraints.maxWidth >= 560
-            ? 134.0
+            ? 152.0
             : 110.0;
         final cardWidth = math.min(
           desiredWidth,
@@ -102,35 +103,35 @@ class _PlayerHandState extends State<PlayerHand> {
                             : 0);
                   }(),
                   rotation: (index - (count - 1) / 2) * .052,
-                    width: cardWidth,
-                    height: cardHeight,
-                    selected: widget.selectedCardId == widget.cards[index].id,
-                    child: FlippablePlayingCard(
-                      frontImagePath: widget.cards[index].imagePath,
-                      backImagePath: widget.backImagePath,
-                      category: widget.cards[index].category,
-                      isFaceUp: revealed.contains(widget.cards[index].id),
-                      isSelected:
-                          widget.selectedCardId == widget.cards[index].id,
-                      isPlayable: widget.isPlayable(widget.cards[index]),
-                      semanticLabel:
-                          'Card ${index + 1} of ${widget.cards.length}, '
-                          '${widget.cards[index].category}, '
-                          '${revealed.contains(widget.cards[index].id) ? 'face up' : 'face down'}, '
-                          '${widget.isPlayable(widget.cards[index]) ? 'playable' : 'unavailable'}',
-                      onTap: () => select(widget.cards[index]),
-                      onLongPress: widget.onLongPressCard == null
-                          ? null
-                          : () => widget.onLongPressCard!(
-                              List<CardImageModel>.unmodifiable(widget.cards),
-                              List<bool>.unmodifiable(
-                                widget.cards
-                                    .map((card) => revealed.contains(card.id))
-                                    .toList(),
-                              ),
-                              index,
+                  width: cardWidth,
+                  height: cardHeight,
+                  selected: widget.selectedCardId == widget.cards[index].id,
+                  child: FlippablePlayingCard(
+                    frontImagePath: widget.cards[index].imagePath,
+                    backImagePath: widget.backImagePath,
+                    category: widget.cards[index].category,
+                    isFaceUp: revealed.contains(widget.cards[index].id),
+                    isSelected:
+                        widget.selectedCardId == widget.cards[index].id,
+                    isPlayable: widget.isPlayable(widget.cards[index]),
+                    semanticLabel:
+                        'Card ${index + 1} of ${widget.cards.length}, '
+                        '${widget.cards[index].category}, '
+                        '${revealed.contains(widget.cards[index].id) ? 'face up' : 'face down'}, '
+                        '${widget.isPlayable(widget.cards[index]) ? 'playable' : 'unavailable'}',
+                    onTap: () => select(widget.cards[index]),
+                    onLongPress: widget.onLongPressCard == null
+                        ? null
+                        : () => widget.onLongPressCard!(
+                            List<CardImageModel>.unmodifiable(widget.cards),
+                            List<bool>.unmodifiable(
+                              widget.cards
+                                  .map((card) => revealed.contains(card.id))
+                                  .toList(),
                             ),
-                    ),
+                            index,
+                          ),
+                  ),
                 ),
             ],
           ),
@@ -178,8 +179,8 @@ class _DealtCardState extends State<_DealtCard> {
   Widget build(BuildContext context) => AnimatedPositioned(
     duration: const Duration(milliseconds: 420),
     curve: Curves.easeOutBack,
-    left: dealt ? widget.left : MediaQuery.sizeOf(context).width / 2,
-    bottom: dealt ? widget.bottom : 150,
+    left: dealt ? widget.left : -widget.width * .45,
+    bottom: dealt ? widget.bottom : widget.height + 36,
     width: widget.width,
     height: widget.height,
     child: AnimatedScale(
