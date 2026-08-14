@@ -188,20 +188,20 @@ class _PlayScreenState extends State<PlayScreen> {
     final handBackImagePath = _handBackImagePath(activeDeck);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF130D0B),
+      backgroundColor: const Color(0xFF080504),
       appBar: AppBar(
-        toolbarHeight: 68,
+        toolbarHeight: 82,
         automaticallyImplyLeading: false,
         titleSpacing: 0,
         title: SizedBox(
           width: double.infinity,
-          height: 68,
+          height: 82,
           child: Stack(
             alignment: Alignment.center,
             children: [
               const Positioned.fill(
                 child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   child: HomeNavigationButton(
                     confirmActiveGame: true,
                     showDjWho: true,
@@ -218,8 +218,8 @@ class _PlayScreenState extends State<PlayScreen> {
                       label: 'Chanson à Répondre UNO',
                       child: SizedBox(
                         key: const Key('play-header-logo'),
-                        width: mobile ? 112 : 204,
-                        height: mobile ? 42 : 52,
+                        width: mobile ? 130 : 224,
+                        height: mobile ? 52 : 66,
                         child: ExcludeSemantics(
                           child: Image.asset(
                             _playLogoAsset,
@@ -248,14 +248,14 @@ class _PlayScreenState extends State<PlayScreen> {
               color: const Color(0xFF080504),
               child: Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1100),
+                  constraints: const BoxConstraints(maxWidth: 1120),
                   child: DecoratedBox(
                     decoration: const BoxDecoration(
                       border: Border.symmetric(
-                        vertical: BorderSide(color: Color(0xFF6F451B)),
+                        vertical: BorderSide(color: Color(0xFF8D6124)),
                       ),
                       boxShadow: [
-                        BoxShadow(color: Colors.black, blurRadius: 28),
+                        BoxShadow(color: Colors.black, blurRadius: 30),
                       ],
                     ),
                     child: GameTableBackground(
@@ -264,6 +264,7 @@ class _PlayScreenState extends State<PlayScreen> {
                         quality: puppetQuality,
                       ),
                       child: SafeArea(
+                        top: false,
                         child: LayoutBuilder(
                           builder: (context, constraints) {
                             final narrow = constraints.maxWidth < 600;
@@ -275,27 +276,27 @@ class _PlayScreenState extends State<PlayScreen> {
                                 .firstOrNull;
 
                             final pileScale = veryNarrow
-                                ? .62
+                                ? .58
                                 : narrow
-                                ? .76
-                                : 1.0;
+                                ? .72
+                                : .92;
                             final pileTop = constraints.maxHeight *
                                 (short
-                                    ? .43
+                                    ? .50
                                     : narrow
-                                    ? .48
-                                    : .50);
+                                    ? .55
+                                    : .57);
                             final pileInset = veryNarrow
-                                ? 7.0
+                                ? 8.0
                                 : narrow
-                                ? 16.0
-                                : constraints.maxWidth * .035;
-                            final actionHeight = short ? 52.0 : 62.0;
+                                ? 18.0
+                                : constraints.maxWidth * .055;
+                            final actionHeight = short ? 54.0 : 68.0;
                             final handHeight = short
-                                ? 158.0
-                                : (constraints.maxHeight * .26)
-                                      .clamp(176.0, 244.0);
-                            final handBottom = actionHeight + (short ? 8 : 10);
+                                ? 146.0
+                                : (constraints.maxHeight * .28)
+                                      .clamp(184.0, 264.0);
+                            final handBottom = actionHeight + (short ? 6 : 8);
                             final canDraw =
                                 state.currentPlayerIndex == 0 &&
                                 player.hand.length < 5 &&
@@ -339,7 +340,11 @@ class _PlayScreenState extends State<PlayScreen> {
                                   height: handHeight,
                                   child: Padding(
                                     padding: EdgeInsets.symmetric(
-                                      horizontal: veryNarrow ? 7 : 14,
+                                      horizontal: veryNarrow
+                                          ? 6
+                                          : narrow
+                                          ? 12
+                                          : 28,
                                     ),
                                     child: PlayerHand(
                                       cards: player.hand
@@ -364,9 +369,9 @@ class _PlayScreenState extends State<PlayScreen> {
                                   ),
                                 ),
                                 Positioned(
-                                  left: narrow ? 28 : 190,
-                                  right: narrow ? 28 : 190,
-                                  bottom: 7,
+                                  left: narrow ? 22 : 58,
+                                  right: narrow ? 22 : 58,
+                                  bottom: 8,
                                   height: actionHeight,
                                   child: _PlayActionBar(
                                     canPlay:
@@ -399,14 +404,13 @@ class _TheatricalHeaderBackground extends StatelessWidget {
       gradient: LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [Color(0xFF24150B), Color(0xFF0E0906)],
+        colors: [Color(0xFF130A06), Color(0xFF050302)],
       ),
       border: Border(
-        top: BorderSide(color: Color(0xFF7D501C)),
-        bottom: BorderSide(color: AppTheme.gold, width: 1.2),
+        bottom: BorderSide(color: AppTheme.gold, width: 1.4),
       ),
       boxShadow: [
-        BoxShadow(color: Colors.black87, blurRadius: 10, offset: Offset(0, 4)),
+        BoxShadow(color: Colors.black87, blurRadius: 12, offset: Offset(0, 4)),
       ],
     ),
   );
@@ -420,27 +424,27 @@ class _PlayActionBar extends StatelessWidget {
 
   static const _textStyle = TextStyle(
     fontFamily: 'Georgia',
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: FontWeight.w800,
-    letterSpacing: 1.6,
+    letterSpacing: 1.9,
   );
 
   @override
   Widget build(BuildContext context) => FilledButton.icon(
     onPressed: canPlay ? onPlay : null,
-    icon: const Icon(Icons.play_arrow_rounded, size: 30),
+    icon: const Icon(Icons.play_arrow_rounded, size: 32),
     label: const FittedBox(child: Text('PLAY CARD')),
     style: FilledButton.styleFrom(
-      backgroundColor: const Color(0xFF7A1E19),
-      disabledBackgroundColor: const Color(0xFF421513),
+      backgroundColor: const Color(0xFF74211D),
+      disabledBackgroundColor: const Color(0xFF401713),
       foregroundColor: AppTheme.brightGold,
       disabledForegroundColor: const Color(0xFF9A7844),
-      side: const BorderSide(color: AppTheme.gold, width: 1.8),
+      side: const BorderSide(color: AppTheme.gold, width: 2),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(13),
+        borderRadius: BorderRadius.circular(18),
       ),
       textStyle: _textStyle,
-      elevation: 11,
+      elevation: 14,
       shadowColor: Colors.black,
     ),
   );
