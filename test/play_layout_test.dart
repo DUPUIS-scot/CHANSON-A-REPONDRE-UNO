@@ -58,8 +58,6 @@ void main() {
       Size(1440, 1000),
     ]) {
       tester.view.physicalSize = size;
-      // The hand intentionally enters from the draw-pile side. Validate the
-      // stable stage geometry after that deal/reflow animation has completed.
       await tester.pumpAndSettle();
 
       expect(find.text('HOME'), findsNothing);
@@ -72,7 +70,7 @@ void main() {
       expect(find.byKey(const Key('discard-pile-right')), findsOneWidget);
       expect(find.byType(DiscardPileWidget), findsOneWidget);
       expect(find.byKey(const Key('discard-pile-recto')), findsOneWidget);
-      expect(find.textContaining('DISCARD PILE'), findsOneWidget);
+      expect(find.textContaining('DÉFAUSSE'), findsOneWidget);
       expect(find.text('PLAY CARD'), findsOneWidget);
       expect(find.text('CANCEL'), findsNothing);
       expect(find.byKey(const Key('played-card-recto')), findsNothing);
