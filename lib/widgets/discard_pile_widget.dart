@@ -86,7 +86,7 @@ class DiscardPileWidget extends StatelessWidget {
                 border: Border.all(color: const Color(0xFF9C6B28)),
               ),
               child: Text(
-                'DISCARD PILE · $count',
+                'DÉFAUSSE · $count',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: const Color(0xFFF1D8A0),
