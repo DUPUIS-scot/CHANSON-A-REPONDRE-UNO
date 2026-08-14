@@ -13,7 +13,7 @@ void main() {
     AppRouter.router.go(AppRoutes.play);
   });
 
-  testWidgets('Play uses official logos and existing DJ WHO navigation', (
+  testWidgets('Play uses official logos and icon-only DJ WHO navigation', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(360, 800);
@@ -35,8 +35,8 @@ void main() {
     expect(navigation.showDjWho, isTrue);
     expect(find.byTooltip('Return to Home'), findsOneWidget);
     expect(find.byTooltip('Open DJ WHO Videos'), findsOneWidget);
-    expect(find.text('HOME'), findsOneWidget);
-    expect(find.text('DJ WHO'), findsOneWidget);
+    expect(find.text('HOME'), findsNothing);
+    expect(find.text('DJ WHO'), findsNothing);
 
     expect(find.text('CHANSON A REPONDRE UNO'), findsNothing);
     expect(find.byKey(const Key('play-header-logo')), findsOneWidget);
@@ -63,7 +63,8 @@ void main() {
 
     tester.view.physicalSize = const Size(768, 1024);
     await tester.pump();
-    expect(find.text('DJ WHO'), findsOneWidget);
+    expect(find.text('HOME'), findsNothing);
+    expect(find.text('DJ WHO'), findsNothing);
     expect(tester.getCenter(find.byKey(const Key('play-header-logo'))).dx, 384);
     expect(tester.takeException(), isNull);
 
