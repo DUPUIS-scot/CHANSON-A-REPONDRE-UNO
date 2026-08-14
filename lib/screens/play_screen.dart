@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../data/card_categories.dart';
 import '../models/card_image_model.dart';
+import '../models/deck_model.dart';
 import '../providers/deck_provider.dart';
 import '../providers/game_provider.dart';
 import '../providers/settings_provider.dart';
@@ -31,8 +32,54 @@ class _PlayScreenState extends State<PlayScreen> {
   bool hideHand = false;
   bool previewOpening = false;
   bool dealerBusy = false;
+  String? _pendingDeckSyncId;
   static const puppetQuality = PuppetQuality.medium;
   final PuppetDealerController puppetController = PuppetDealerController();
+
+  String _handBackImagePath(Deck? deck) {
+    if (deck == null) return '';
+    return !deck.hasExplicitCategories && deck.cardBack.isNotEmpty
+        ? deck.cardBack
+        : '';
+  }
+
+  String _cardVersoForDeck(Deck? deck, CardImageModel card) {
+    final deckBack = _handBackImagePath(deck);
+    return deckBack.isNotEmpty
+        ? deckBack
+        : cardCategoryFor(card.category).versoAsset;
+  }
+
+  void _scheduleSelectedDeckSync(DeckProvider decks, GameProvider game) {
+    final selectedDeck = decks.activeDeck;
+    final state = game.state;
+    if (selectedDeck == null || state == null || state.deckId == selectedDeck.id) {
+      if (_pendingDeckSyncId == selectedDeck?.id) _pendingDeckSyncId = null;
+      return;
+    }
+    if (_pendingDeckSyncId == selectedDeck.id) return;
+    _pendingDeckSyncId = selectedDeck.id;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final liveDecks = context.read<DeckProvider>();
+      final liveGame = context.read<GameProvider>();
+      final liveDeck = liveDecks.activeDeck;
+      if (liveDeck == null) {
+        _pendingDeckSyncId = null;
+        return;
+      }
+      if (liveGame.state?.deckId != liveDeck.id) {
+        await liveGame.start(liveDeck);
+      }
+      if (!mounted) return;
+      setState(() {
+        _pendingDeckSyncId = null;
+        selectedCardId = null;
+        hideHand = false;
+      });
+    });
+  }
 
   Future<void> openHandPreview(
     List<CardImageModel> cards,
@@ -115,14 +162,14 @@ class _PlayScreenState extends State<PlayScreen> {
 
   Future<void> drawWithDealer() async {
     final game = context.read<GameProvider>();
+    final decks = context.read<DeckProvider>();
     final state = game.state;
     if (dealerBusy || state == null || state.drawPile.isEmpty) return;
     final card = state.drawPile.last;
+    final activeDeck = decks.activeDeck;
     setState(() => dealerBusy = true);
     try {
-      await puppetController.dealToPlayer(
-        cardCategoryFor(card.category).versoAsset,
-      );
+      await puppetController.dealToPlayer(_cardVersoForDeck(activeDeck, card));
       if (mounted) await game.draw();
     } finally {
       if (mounted) setState(() => dealerBusy = false);
@@ -134,9 +181,11 @@ class _PlayScreenState extends State<PlayScreen> {
     final game = context.watch<GameProvider>();
     final decks = context.watch<DeckProvider>();
     final state = game.state;
-    final activeDeck = decks.decks
-        .where((deck) => deck.id == state?.deckId)
-        .firstOrNull;
+    final activeDeck = decks.activeDeck;
+    final deckMismatch =
+        state != null && activeDeck != null && state.deckId != activeDeck.id;
+    _scheduleSelectedDeckSync(decks, game);
+    final handBackImagePath = _handBackImagePath(activeDeck);
 
     return Scaffold(
       backgroundColor: const Color(0xFF130D0B),
@@ -190,6 +239,11 @@ class _PlayScreenState extends State<PlayScreen> {
       ),
       body: state == null
           ? _GameLauncher(decks: decks, game: game)
+          : deckMismatch
+          ? const ColoredBox(
+              color: Color(0xFF080504),
+              child: Center(child: CircularProgressIndicator()),
+            )
           : ColoredBox(
               color: const Color(0xFF080504),
               child: Center(
@@ -260,7 +314,7 @@ class _PlayScreenState extends State<PlayScreen> {
                                       key: const Key('draw-pile-left'),
                                       count: state.drawPile.length,
                                       topCard: state.drawPile.lastOrNull,
-                                      backImagePath: activeDeck?.cardBack ?? '',
+                                      backImagePath: handBackImagePath,
                                       onDraw: canDraw ? drawWithDealer : null,
                                     ),
                                   ),
@@ -291,7 +345,7 @@ class _PlayScreenState extends State<PlayScreen> {
                                       cards: player.hand
                                           .take(5)
                                           .toList(growable: false),
-                                      backImagePath: activeDeck?.cardBack ?? '',
+                                      backImagePath: handBackImagePath,
                                       selectedCardId: selectedCardId,
                                       isPlayable: game.canPlay,
                                       hideAll: hideHand,
@@ -304,7 +358,7 @@ class _PlayScreenState extends State<PlayScreen> {
                                             cards,
                                             faceUp,
                                             index,
-                                            activeDeck?.cardBack ?? '',
+                                            handBackImagePath,
                                           ),
                                     ),
                                   ),
