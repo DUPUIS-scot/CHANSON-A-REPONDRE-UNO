@@ -216,10 +216,10 @@ class JesterDealer {
     this.camera.aspect = width / height;
     const narrow = width < 720;
     this.camera.fov = narrow ? 38 : 30;
-    this.camera.position.set(0, narrow ? 0.05 : 0.15, narrow ? 10.6 : 9.4);
-    this.camera.lookAt(0, narrow ? 0.55 : 0.65, 0);
-    this.modelRoot.scale.setScalar(narrow ? 0.88 : 1);
-    this.modelRoot.position.y = narrow ? 0.3 : 0;
+    this.camera.position.set(0, 0, narrow ? 9.7 : 12.4);
+    this.camera.lookAt(0, 0, 0);
+    this.modelRoot.scale.setScalar(1);
+    this.modelRoot.position.y = 0;
     this.camera.updateProjectionMatrix();
   }
 
