@@ -122,7 +122,8 @@ void main() {
   test('single category uses one centered enlarged card and no all button', () {
     final source = File('lib/screens/search_screen.dart').readAsStringSync();
     expect(source, contains('final singleCategory = categories.length == 1;'));
-    expect(source, contains('singleCategory ? MainAxisAlignment.center'));
+    expect(source, contains('mainAxisAlignment: singleCategory'));
+    expect(source, contains('? MainAxisAlignment.center'));
     expect(source, contains('final singleCardWidth = min('));
     expect(source, contains("singleCategory ? 'ENTER CASTLE'"));
     expect(
