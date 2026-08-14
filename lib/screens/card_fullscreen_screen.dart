@@ -93,13 +93,8 @@ class _CardFullscreenScreenState extends State<CardFullscreenScreen> {
           onPressed: _close,
           icon: const Icon(Icons.close_rounded),
         ),
-        actions: [
-          IconButton(
-            tooltip: 'Share card',
-            onPressed: () => _share(card),
-            icon: const Icon(Icons.share_outlined),
-          ),
-          const Padding(
+        actions: const [
+          Padding(
             padding: EdgeInsets.only(right: 8),
             child: HomeNavigationButton(),
           ),
