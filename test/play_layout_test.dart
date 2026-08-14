@@ -59,8 +59,8 @@ void main() {
       tester.view.physicalSize = size;
       await tester.pump();
 
-      expect(find.text('HOME'), findsOneWidget);
-      expect(find.text('DJ WHO'), findsOneWidget);
+      expect(find.text('HOME'), findsNothing);
+      expect(find.text('DJ WHO'), findsNothing);
       expect(find.text('OPPONENT'), findsNothing);
       expect(find.text('RULES PILE'), findsOneWidget);
       expect(find.text('PLAY CARD'), findsOneWidget);
