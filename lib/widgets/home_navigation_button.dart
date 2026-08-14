@@ -101,7 +101,6 @@ class _HomeNavigationButtonState extends State<HomeNavigationButton> {
             : MainAxisAlignment.start,
         children: [
           _HomeControl(
-            theatrical: widget.theatricalSplit,
             hovered: hovered,
             focused: focused,
             onHover: (value) => setState(() => hovered = value),
@@ -112,7 +111,6 @@ class _HomeNavigationButtonState extends State<HomeNavigationButton> {
             if (!widget.theatricalSplit)
               const SizedBox(width: AppSpacing.small),
             _DjWhoControl(
-              theatrical: widget.theatricalSplit,
               active: isDjWhoActive,
               hovered: djHovered,
               focused: djFocused,
@@ -129,7 +127,6 @@ class _HomeNavigationButtonState extends State<HomeNavigationButton> {
 
 class _HomeControl extends StatelessWidget {
   const _HomeControl({
-    required this.theatrical,
     required this.hovered,
     required this.focused,
     required this.onHover,
@@ -137,7 +134,6 @@ class _HomeControl extends StatelessWidget {
     required this.onPressed,
   });
 
-  final bool theatrical;
   final bool hovered;
   final bool focused;
   final ValueChanged<bool> onHover;
@@ -146,18 +142,8 @@ class _HomeControl extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.sizeOf(context).width;
-    final width = theatrical
-        ? screenWidth < 380
-              ? 92.0
-              : screenWidth < 600
-              ? 110.0
-              : 170.0
-        : AppTouchTarget.minimum;
-    final radius = BorderRadius.circular(theatrical ? 15 : 999);
-    final shape = theatrical
-        ? RoundedRectangleBorder(borderRadius: radius)
-        : const CircleBorder();
+    const width = AppTouchTarget.minimum;
+    const shape = CircleBorder();
     return Semantics(
       button: true,
       label: 'Return to Home',
@@ -175,8 +161,7 @@ class _HomeControl extends StatelessWidget {
                 color: hovered
                     ? const Color(0xDD33210F)
                     : const Color(0xEE080604),
-                shape: theatrical ? BoxShape.rectangle : BoxShape.circle,
-                borderRadius: theatrical ? radius : null,
+                shape: BoxShape.circle,
                 border: Border.all(
                   color: focused ? AppTheme.brightGold : AppTheme.gold,
                   width: focused ? 2 : 1.2,
@@ -193,34 +178,12 @@ class _HomeControl extends StatelessWidget {
                   onPressed: onPressed,
                   style: TextButton.styleFrom(
                     foregroundColor: AppTheme.brightGold,
-                    minimumSize: Size(width, AppTouchTarget.minimum),
-                    padding: theatrical
-                        ? const EdgeInsets.symmetric(horizontal: 10)
-                        : EdgeInsets.zero,
+                    minimumSize: const Size(width, AppTouchTarget.minimum),
+                    padding: EdgeInsets.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     shape: shape,
                   ),
-                  child: theatrical
-                      ? const FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.home_rounded, size: 24),
-                              SizedBox(width: 9),
-                              Text(
-                                'HOME',
-                                style: TextStyle(
-                                  fontFamily: 'Georgia',
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: .7,
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                      : const Icon(Icons.home_rounded, size: 22),
+                  child: const Icon(Icons.home_rounded, size: 24),
                 ),
               ),
             ),
@@ -233,7 +196,6 @@ class _HomeControl extends StatelessWidget {
 
 class _DjWhoControl extends StatelessWidget {
   const _DjWhoControl({
-    required this.theatrical,
     required this.active,
     required this.hovered,
     required this.focused,
@@ -242,7 +204,6 @@ class _DjWhoControl extends StatelessWidget {
     required this.onPressed,
   });
 
-  final bool theatrical;
   final bool active;
   final bool hovered;
   final bool focused;
@@ -253,18 +214,8 @@ class _DjWhoControl extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final screenWidth = MediaQuery.sizeOf(context).width;
-    final width = theatrical
-        ? screenWidth < 380
-              ? 92.0
-              : screenWidth < 600
-              ? 110.0
-              : 170.0
-        : AppTouchTarget.minimum;
-    final radius = BorderRadius.circular(theatrical ? 15 : 999);
-    final shape = theatrical
-        ? RoundedRectangleBorder(borderRadius: radius)
-        : const CircleBorder();
+    const width = AppTouchTarget.minimum;
+    const shape = CircleBorder();
     return Semantics(
       button: true,
       selected: active,
@@ -285,8 +236,7 @@ class _DjWhoControl extends StatelessWidget {
                     : hovered
                     ? const Color(0xDD33210F)
                     : const Color(0xEE080604),
-                shape: theatrical ? BoxShape.rectangle : BoxShape.circle,
-                borderRadius: theatrical ? radius : null,
+                shape: BoxShape.circle,
                 border: Border.all(
                   color: focused || active ? colors.primary : AppTheme.gold,
                   width: focused || active ? 2 : 1.2,
@@ -302,28 +252,12 @@ class _DjWhoControl extends StatelessWidget {
                 child: TextButton(
                   onPressed: onPressed,
                   style: TextButton.styleFrom(
-                    minimumSize: Size(width, AppTouchTarget.minimum),
-                    padding: theatrical
-                        ? const EdgeInsets.symmetric(horizontal: 10)
-                        : EdgeInsets.zero,
+                    minimumSize: const Size(width, AppTouchTarget.minimum),
+                    padding: EdgeInsets.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     shape: shape,
                   ),
-                  child: theatrical
-                      ? const FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            'DJ WHO',
-                            style: TextStyle(
-                              color: AppTheme.brightGold,
-                              fontFamily: 'Georgia',
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: .7,
-                            ),
-                          ),
-                        )
-                      : const DjWhoAvatar(size: 32),
+                  child: const DjWhoAvatar(size: 32),
                 ),
               ),
             ),

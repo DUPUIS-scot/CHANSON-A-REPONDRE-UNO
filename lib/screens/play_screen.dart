@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../core/app_router.dart';
 import '../data/card_categories.dart';
 import '../models/card_image_model.dart';
 import '../providers/deck_provider.dart';
@@ -266,6 +264,10 @@ class _PlayScreenState extends State<PlayScreen> {
                                 : (constraints.maxHeight * .26)
                                       .clamp(176.0, 244.0);
                             final handBottom = actionHeight + (short ? 8 : 10);
+                            final canDraw =
+                                state.currentPlayerIndex == 0 &&
+                                player.hand.length < 5 &&
+                                !dealerBusy;
 
                             return Stack(
                               clipBehavior: Clip.none,
@@ -277,15 +279,11 @@ class _PlayScreenState extends State<PlayScreen> {
                                     scale: pileScale,
                                     alignment: Alignment.topLeft,
                                     child: DrawPileWidget(
+                                      key: const Key('draw-pile-left'),
                                       count: state.drawPile.length,
                                       topCard: state.drawPile.lastOrNull,
                                       backImagePath: activeDeck?.cardBack ?? '',
-                                      onDraw:
-                                          state.currentPlayerIndex == 0 &&
-                                              player.hand.length < 5 &&
-                                              !dealerBusy
-                                          ? drawWithDealer
-                                          : null,
+                                      onDraw: canDraw ? drawWithDealer : null,
                                     ),
                                   ),
                                 ),
@@ -295,9 +293,12 @@ class _PlayScreenState extends State<PlayScreen> {
                                   child: Transform.scale(
                                     scale: pileScale,
                                     alignment: Alignment.topRight,
-                                    child: _RulesPileWidget(
-                                      onTap: () =>
-                                          context.push(AppRoutes.rules),
+                                    child: DrawPileWidget(
+                                      key: const Key('draw-pile-right'),
+                                      count: state.drawPile.length,
+                                      topCard: state.drawPile.lastOrNull,
+                                      backImagePath: activeDeck?.cardBack ?? '',
+                                      onDraw: canDraw ? drawWithDealer : null,
                                     ),
                                   ),
                                 ),
@@ -377,151 +378,6 @@ class _TheatricalHeaderBackground extends StatelessWidget {
       boxShadow: [
         BoxShadow(color: Colors.black87, blurRadius: 10, offset: Offset(0, 4)),
       ],
-    ),
-  );
-}
-
-class _RulesPileWidget extends StatelessWidget {
-  const _RulesPileWidget({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => Semantics(
-    button: true,
-    label: 'Rules pile. Open rules.',
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        DecoratedBox(
-          decoration: BoxDecoration(
-            color: const Color(0xAA1B100A),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0x887D501C)),
-            boxShadow: const [
-              BoxShadow(
-                color: Colors.black87,
-                blurRadius: 13,
-                offset: Offset(0, 8),
-              ),
-            ],
-          ),
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(14),
-            child: SizedBox(
-              width: 102,
-              height: 145,
-              child: Stack(
-                children: [
-                  Positioned(
-                    left: 9,
-                    top: 8,
-                    right: 1,
-                    bottom: 0,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF3A1D0D),
-                        borderRadius: BorderRadius.circular(9),
-                        border: Border.all(color: const Color(0xFF9C6B28)),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    left: 1,
-                    top: 1,
-                    right: 8,
-                    bottom: 7,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            Color(0xFFF2D79B),
-                            Color(0xFFE2BD74),
-                            Color(0xFFC68B43),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(9),
-                        border: Border.all(
-                          color: const Color(0xFF4E260D),
-                          width: 2,
-                        ),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(7, 8, 7, 6),
-                        child: Column(
-                          children: [
-                            Image.asset(
-                              _playLogoAsset,
-                              height: 24,
-                              fit: BoxFit.contain,
-                              errorBuilder: (_, _, _) => const SizedBox.shrink(),
-                            ),
-                            const SizedBox(height: 4),
-                            const Divider(
-                              height: 6,
-                              thickness: 1.3,
-                              color: Color(0xFF9D491E),
-                            ),
-                            const Icon(
-                              Icons.menu_book_rounded,
-                              size: 30,
-                              color: Color(0xFF6F2717),
-                            ),
-                            const SizedBox(height: 3),
-                            for (var i = 0; i < 4; i++)
-                              Container(
-                                height: 2,
-                                margin: const EdgeInsets.only(bottom: 4),
-                                decoration: BoxDecoration(
-                                  color: i.isEven
-                                      ? const Color(0xFF8A4E29)
-                                      : const Color(0xFFB17442),
-                                  borderRadius: BorderRadius.circular(2),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        Transform.translate(
-          offset: const Offset(0, -5),
-          child: const _PilePlaque(label: 'RULES PILE'),
-        ),
-      ],
-    ),
-  );
-}
-
-class _PilePlaque extends StatelessWidget {
-  const _PilePlaque({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-    decoration: BoxDecoration(
-      color: const Color(0xEE24140C),
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: const Color(0xFF9C6B28)),
-    ),
-    child: Text(
-      label,
-      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-        color: const Color(0xFFF1D8A0),
-        fontFamily: 'Georgia',
-        fontWeight: FontWeight.w700,
-        letterSpacing: .7,
-      ),
     ),
   );
 }

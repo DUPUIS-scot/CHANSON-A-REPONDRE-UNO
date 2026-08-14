@@ -13,7 +13,7 @@ void main() {
     AppRouter.router.go(AppRoutes.play);
   });
 
-  testWidgets('Play uses official logo and theatrical labelled navigation', (
+  testWidgets('Play uses official logo and icon-only theatrical navigation', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(360, 800);
@@ -36,8 +36,9 @@ void main() {
     expect(navigation.theatricalSplit, isTrue);
     expect(find.byTooltip('Return to Home'), findsOneWidget);
     expect(find.byTooltip('Open DJ WHO Videos'), findsOneWidget);
-    expect(find.text('HOME'), findsOneWidget);
-    expect(find.text('DJ WHO'), findsOneWidget);
+    expect(find.byIcon(Icons.home_rounded), findsOneWidget);
+    expect(find.text('HOME'), findsNothing);
+    expect(find.text('DJ WHO'), findsNothing);
 
     expect(find.text('CHANSON A REPONDRE UNO'), findsNothing);
     expect(find.byKey(const Key('play-header-logo')), findsOneWidget);
@@ -64,8 +65,8 @@ void main() {
 
     tester.view.physicalSize = const Size(768, 1024);
     await tester.pump();
-    expect(find.text('HOME'), findsOneWidget);
-    expect(find.text('DJ WHO'), findsOneWidget);
+    expect(find.text('HOME'), findsNothing);
+    expect(find.text('DJ WHO'), findsNothing);
     expect(tester.getCenter(find.byKey(const Key('play-header-logo'))).dx, 384);
     expect(tester.takeException(), isNull);
 

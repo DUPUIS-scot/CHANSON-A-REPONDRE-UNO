@@ -61,10 +61,13 @@ void main() {
       // stable stage geometry after that deal/reflow animation has completed.
       await tester.pumpAndSettle();
 
-      expect(find.text('HOME'), findsOneWidget);
-      expect(find.text('DJ WHO'), findsOneWidget);
+      expect(find.text('HOME'), findsNothing);
+      expect(find.text('DJ WHO'), findsNothing);
       expect(find.text('OPPONENT'), findsNothing);
-      expect(find.text('RULES PILE'), findsOneWidget);
+      expect(find.text('RULES PILE'), findsNothing);
+      expect(find.text('DRAW PILE'), findsNWidgets(2));
+      expect(find.byKey(const Key('draw-pile-left')), findsOneWidget);
+      expect(find.byKey(const Key('draw-pile-right')), findsOneWidget);
       expect(find.text('PLAY CARD'), findsOneWidget);
       expect(find.text('CANCEL'), findsNothing);
       expect(find.byKey(const Key('played-card-recto')), findsOneWidget);
