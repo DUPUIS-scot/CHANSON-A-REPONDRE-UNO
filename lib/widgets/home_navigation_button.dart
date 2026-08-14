@@ -101,6 +101,7 @@ class _HomeNavigationButtonState extends State<HomeNavigationButton> {
             : MainAxisAlignment.start,
         children: [
           _HomeControl(
+            theatrical: widget.theatricalSplit,
             hovered: hovered,
             focused: focused,
             onHover: (value) => setState(() => hovered = value),
@@ -111,6 +112,7 @@ class _HomeNavigationButtonState extends State<HomeNavigationButton> {
             if (!widget.theatricalSplit)
               const SizedBox(width: AppSpacing.small),
             _DjWhoControl(
+              theatrical: widget.theatricalSplit,
               active: isDjWhoActive,
               hovered: djHovered,
               focused: djFocused,
@@ -127,6 +129,7 @@ class _HomeNavigationButtonState extends State<HomeNavigationButton> {
 
 class _HomeControl extends StatelessWidget {
   const _HomeControl({
+    required this.theatrical,
     required this.hovered,
     required this.focused,
     required this.onHover,
@@ -134,6 +137,7 @@ class _HomeControl extends StatelessWidget {
     required this.onPressed,
   });
 
+  final bool theatrical;
   final bool hovered;
   final bool focused;
   final ValueChanged<bool> onHover;
@@ -141,56 +145,95 @@ class _HomeControl extends StatelessWidget {
   final VoidCallback onPressed;
 
   @override
-  Widget build(BuildContext context) => Semantics(
-    button: true,
-    label: 'Return to Home',
-    child: MouseRegion(
-      onEnter: (_) => onHover(true),
-      onExit: (_) => onHover(false),
-      child: Focus(
-        onFocusChange: onFocus,
-        child: SizedBox.square(
-          dimension: AppTouchTarget.minimum,
-          child: AnimatedContainer(
-            duration: AppMotion.responsive(context, AppMotion.quick),
-            decoration: BoxDecoration(
-              color: hovered
-                  ? const Color(0xDD33210F)
-                  : const Color(0xAA100C08),
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: focused ? AppTheme.brightGold : AppTheme.gold,
-                width: focused ? 2 : 1,
-              ),
-              boxShadow: hovered
-                  ? const [
-                      BoxShadow(color: Color(0x66FFC928), blurRadius: 12),
-                    ]
-                  : null,
-            ),
-            child: Tooltip(
-              message: 'Return to Home',
-              child: TextButton(
-                onPressed: onPressed,
-                style: TextButton.styleFrom(
-                  foregroundColor: AppTheme.brightGold,
-                  minimumSize: AppTouchTarget.size,
-                  padding: EdgeInsets.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  shape: const CircleBorder(),
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final width = theatrical
+        ? screenWidth < 380
+              ? 92.0
+              : screenWidth < 600
+              ? 110.0
+              : 170.0
+        : AppTouchTarget.minimum;
+    final radius = BorderRadius.circular(theatrical ? 15 : 999);
+    final shape = theatrical
+        ? RoundedRectangleBorder(borderRadius: radius)
+        : const CircleBorder();
+    return Semantics(
+      button: true,
+      label: 'Return to Home',
+      child: MouseRegion(
+        onEnter: (_) => onHover(true),
+        onExit: (_) => onHover(false),
+        child: Focus(
+          onFocusChange: onFocus,
+          child: SizedBox(
+            width: width,
+            height: AppTouchTarget.minimum,
+            child: AnimatedContainer(
+              duration: AppMotion.responsive(context, AppMotion.quick),
+              decoration: BoxDecoration(
+                color: hovered
+                    ? const Color(0xDD33210F)
+                    : const Color(0xEE080604),
+                shape: theatrical ? BoxShape.rectangle : BoxShape.circle,
+                borderRadius: theatrical ? radius : null,
+                border: Border.all(
+                  color: focused ? AppTheme.brightGold : AppTheme.gold,
+                  width: focused ? 2 : 1.2,
                 ),
-                child: const Icon(Icons.home_rounded, size: 22),
+                boxShadow: hovered
+                    ? const [
+                        BoxShadow(color: Color(0x66FFC928), blurRadius: 12),
+                      ]
+                    : null,
+              ),
+              child: Tooltip(
+                message: 'Return to Home',
+                child: TextButton(
+                  onPressed: onPressed,
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppTheme.brightGold,
+                    minimumSize: Size(width, AppTouchTarget.minimum),
+                    padding: theatrical
+                        ? const EdgeInsets.symmetric(horizontal: 10)
+                        : EdgeInsets.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    shape: shape,
+                  ),
+                  child: theatrical
+                      ? const FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.home_rounded, size: 24),
+                              SizedBox(width: 9),
+                              Text(
+                                'HOME',
+                                style: TextStyle(
+                                  fontFamily: 'Georgia',
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: .7,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : const Icon(Icons.home_rounded, size: 22),
+                ),
               ),
             ),
           ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class _DjWhoControl extends StatelessWidget {
   const _DjWhoControl({
+    required this.theatrical,
     required this.active,
     required this.hovered,
     required this.focused,
@@ -199,6 +242,7 @@ class _DjWhoControl extends StatelessWidget {
     required this.onPressed,
   });
 
+  final bool theatrical;
   final bool active;
   final bool hovered;
   final bool focused;
@@ -209,6 +253,18 @@ class _DjWhoControl extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final width = theatrical
+        ? screenWidth < 380
+              ? 92.0
+              : screenWidth < 600
+              ? 110.0
+              : 170.0
+        : AppTouchTarget.minimum;
+    final radius = BorderRadius.circular(theatrical ? 15 : 999);
+    final shape = theatrical
+        ? RoundedRectangleBorder(borderRadius: radius)
+        : const CircleBorder();
     return Semantics(
       button: true,
       selected: active,
@@ -218,8 +274,9 @@ class _DjWhoControl extends StatelessWidget {
         onExit: (_) => onHover(false),
         child: Focus(
           onFocusChange: onFocus,
-          child: SizedBox.square(
-            dimension: AppTouchTarget.minimum,
+          child: SizedBox(
+            width: width,
+            height: AppTouchTarget.minimum,
             child: AnimatedContainer(
               duration: AppMotion.responsive(context, AppMotion.quick),
               decoration: BoxDecoration(
@@ -227,11 +284,12 @@ class _DjWhoControl extends StatelessWidget {
                     ? colors.primaryContainer.withValues(alpha: 0.72)
                     : hovered
                     ? const Color(0xDD33210F)
-                    : const Color(0xAA100C08),
-                shape: BoxShape.circle,
+                    : const Color(0xEE080604),
+                shape: theatrical ? BoxShape.rectangle : BoxShape.circle,
+                borderRadius: theatrical ? radius : null,
                 border: Border.all(
                   color: focused || active ? colors.primary : AppTheme.gold,
-                  width: focused || active ? 2 : 1,
+                  width: focused || active ? 2 : 1.2,
                 ),
                 boxShadow: hovered || active
                     ? const [
@@ -244,12 +302,28 @@ class _DjWhoControl extends StatelessWidget {
                 child: TextButton(
                   onPressed: onPressed,
                   style: TextButton.styleFrom(
-                    minimumSize: AppTouchTarget.size,
-                    padding: EdgeInsets.zero,
+                    minimumSize: Size(width, AppTouchTarget.minimum),
+                    padding: theatrical
+                        ? const EdgeInsets.symmetric(horizontal: 10)
+                        : EdgeInsets.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    shape: const CircleBorder(),
+                    shape: shape,
                   ),
-                  child: const DjWhoAvatar(size: 32),
+                  child: theatrical
+                      ? const FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            'DJ WHO',
+                            style: TextStyle(
+                              color: AppTheme.brightGold,
+                              fontFamily: 'Georgia',
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: .7,
+                            ),
+                          ),
+                        )
+                      : const DjWhoAvatar(size: 32),
                 ),
               ),
             ),
