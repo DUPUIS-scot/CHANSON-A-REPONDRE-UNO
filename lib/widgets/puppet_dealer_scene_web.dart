@@ -111,9 +111,30 @@ class _PuppetDealerSceneState extends State<PuppetDealerScene> {
 
   @override
   Widget build(BuildContext context) => IgnorePointer(
-    child: HtmlElementView(
-      viewType: _viewType,
-      onPlatformViewCreated: _mountDealer,
+    child: LayoutBuilder(
+      builder: (context, constraints) {
+        final narrow = constraints.maxWidth < 600;
+        final short = constraints.maxHeight < 650;
+        final heightFactor = short
+            ? .54
+            : narrow
+            ? .60
+            : .68;
+
+        return Align(
+          alignment: Alignment.topCenter,
+          child: FractionallySizedBox(
+            key: const Key('puppet-stage-slot'),
+            widthFactor: 1,
+            heightFactor: heightFactor,
+            alignment: Alignment.topCenter,
+            child: HtmlElementView(
+              viewType: _viewType,
+              onPlatformViewCreated: _mountDealer,
+            ),
+          ),
+        );
+      },
     ),
   );
 }
