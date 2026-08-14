@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:uno_chanson_2/app.dart';
 import 'package:uno_chanson_2/core/app_constants.dart';
-import 'package:uno_chanson_2/core/app_router.dart';
 import 'package:uno_chanson_2/providers/deck_provider.dart';
+import 'package:uno_chanson_2/screens/search_screen.dart';
+import 'package:uno_chanson_2/services/deck_import_service.dart';
+import 'package:uno_chanson_2/services/local_storage_service.dart';
 import 'package:uno_chanson_2/widgets/stored_image.dart';
 
 void main() {
@@ -19,37 +20,49 @@ void main() {
     'SAUVAGE',
   ];
 
-  Future<DeckProvider> readyDeckProvider(WidgetTester tester) async {
-    for (var attempt = 0; attempt < 100; attempt++) {
-      final materialApp = find.byType(MaterialApp);
-      if (materialApp.evaluate().isNotEmpty) {
-        final provider = tester.element(materialApp.last).read<DeckProvider>();
-        if (!provider.loading) return provider;
-      }
-      await tester.pump(const Duration(milliseconds: 50));
-    }
-    throw TestFailure('DeckProvider did not finish loading.');
+  Future<({LocalStorageService storage, DeckProvider decks})>
+  loadDeckHarness() async {
+    SharedPreferences.setMockInitialValues({});
+    final storage = LocalStorageService();
+    final decks = DeckProvider(storage, DeckImportService(storage));
+    await decks.load();
+    return (storage: storage, decks: decks);
   }
 
-  testWidgets('selecting BRIO makes Search category choices use BRIO verso', (
+  Future<void> pumpSearch(
+    WidgetTester tester, {
+    required LocalStorageService storage,
+    required DeckProvider decks,
+  }) async {
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<DeckProvider>.value(value: decks),
+          Provider<LocalStorageService>.value(value: storage),
+        ],
+        child: const MaterialApp(home: SearchScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('BRIO Search category choices render the BRIO card verso', (
     tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));
-    SharedPreferences.setMockInitialValues({});
 
-    await tester.pumpWidget(
-      const ChansonUnoApp(aiBackendUrlOverride: 'https://api.test'),
+    final harness = await loadDeckHarness();
+    addTearDown(harness.decks.dispose);
+    await harness.decks.select(AppConstants.brioDeckId);
+    expect(harness.decks.activeDeckId, AppConstants.brioDeckId);
+    expect(harness.decks.activeDeck?.hasExplicitCategories, isFalse);
+
+    await pumpSearch(
+      tester,
+      storage: harness.storage,
+      decks: harness.decks,
     );
-
-    final decks = await readyDeckProvider(tester);
-    await decks.select(AppConstants.brioDeckId);
-    await tester.pump();
-    expect(decks.activeDeckId, AppConstants.brioDeckId);
-    expect(decks.activeDeck?.hasExplicitCategories, isFalse);
-
-    AppRouter.router.go(AppRoutes.search);
-    await tester.pumpAndSettle();
 
     for (final label in categoryLabels) {
       final button = find.byKey(ValueKey('search-category-$label'));
@@ -69,24 +82,23 @@ void main() {
   ) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));
-    SharedPreferences.setMockInitialValues({});
 
-    await tester.pumpWidget(
-      const ChansonUnoApp(aiBackendUrlOverride: 'https://api.test'),
+    final harness = await loadDeckHarness();
+    addTearDown(harness.decks.dispose);
+    await harness.decks.select(AppConstants.productionDeckId);
+    expect(harness.decks.activeDeckId, AppConstants.productionDeckId);
+    expect(harness.decks.activeDeck?.hasExplicitCategories, isTrue);
+
+    await pumpSearch(
+      tester,
+      storage: harness.storage,
+      decks: harness.decks,
     );
-
-    final decks = await readyDeckProvider(tester);
-    await decks.select(AppConstants.productionDeckId);
-    await tester.pump();
-    expect(decks.activeDeckId, AppConstants.productionDeckId);
-    expect(decks.activeDeck?.hasExplicitCategories, isTrue);
-
-    AppRouter.router.go(AppRoutes.search);
-    await tester.pumpAndSettle();
 
     final sources = <String>{};
     for (final label in categoryLabels) {
       final button = find.byKey(ValueKey('search-category-$label'));
+      expect(button, findsOneWidget);
       final image = tester.widget<StoredImage>(
         find.descendant(of: button, matching: find.byType(StoredImage)),
       );
