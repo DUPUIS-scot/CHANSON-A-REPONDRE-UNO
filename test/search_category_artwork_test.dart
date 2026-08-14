@@ -1,11 +1,11 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uno_chanson_2/app.dart';
 import 'package:uno_chanson_2/core/app_constants.dart';
 import 'package:uno_chanson_2/core/app_router.dart';
+import 'package:uno_chanson_2/providers/deck_provider.dart';
 import 'package:uno_chanson_2/widgets/stored_image.dart';
 
 void main() {
@@ -19,19 +19,33 @@ void main() {
     'SAUVAGE',
   ];
 
-  testWidgets('BRIO Search category choices render the BRIO card verso', (
+  testWidgets('selecting BRIO makes Search category choices use BRIO verso', (
     tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));
-    SharedPreferences.setMockInitialValues({
-      'active_deck': jsonEncode(AppConstants.brioDeckId),
-    });
+    SharedPreferences.setMockInitialValues({});
 
     await tester.pumpWidget(
       const ChansonUnoApp(aiBackendUrlOverride: 'https://api.test'),
     );
     await tester.pump(const Duration(seconds: 2));
+
+    AppRouter.router.go(AppRoutes.decks);
+    await tester.pumpAndSettle();
+
+    final brioLabel = find.text('CHANSON A REPONDRE BRIO');
+    expect(brioLabel, findsOneWidget);
+    await tester.ensureVisible(brioLabel);
+    await tester.tap(brioLabel);
+    await tester.pump(const Duration(milliseconds: 300));
+
+    final deckContext = tester.element(brioLabel);
+    expect(
+      deckContext.read<DeckProvider>().activeDeckId,
+      AppConstants.brioDeckId,
+    );
+
     AppRouter.router.go(AppRoutes.search);
     await tester.pumpAndSettle();
 
@@ -53,9 +67,7 @@ void main() {
   ) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));
-    SharedPreferences.setMockInitialValues({
-      'active_deck': jsonEncode(AppConstants.productionDeckId),
-    });
+    SharedPreferences.setMockInitialValues({});
 
     await tester.pumpWidget(
       const ChansonUnoApp(aiBackendUrlOverride: 'https://api.test'),
@@ -74,6 +86,11 @@ void main() {
     }
 
     expect(sources, hasLength(5));
-    expect(sources.every((source) => source.startsWith('assets/cards/category_versos/')), isTrue);
+    expect(
+      sources.every(
+        (source) => source.startsWith('assets/cards/category_versos/'),
+      ),
+      isTrue,
+    );
   });
 }
