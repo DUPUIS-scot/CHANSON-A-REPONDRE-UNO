@@ -198,8 +198,13 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget build(BuildContext context) {
     final provider = context.watch<DeckProvider>();
     final activeDeck = provider.activeDeck;
-    final activeDecks =
-        activeDeck != null ? [activeDeck] : <Deck>[];
+    final activeDecks = activeDeck != null ? [activeDeck] : <Deck>[];
+    final categoryArtworkOverride =
+        activeDeck != null &&
+            !activeDeck.hasExplicitCategories &&
+            activeDeck.cardBack.isNotEmpty
+        ? activeDeck.cardBack
+        : null;
     final category = _category;
     final results = _castleActive
         ? _results(activeDecks)
@@ -215,20 +220,21 @@ class _SearchScreenState extends State<SearchScreen> {
       child: Scaffold(
         backgroundColor: const Color(0xFF05080C),
         body: !_castleActive
-              ? _SearchCategorySelection(
-                  categories: _categories,
-                  onAllCategoriesSelected: _openAllCategories,
-                  onCategorySelected: _openCategory,
-                )
-              : permanentCards.isEmpty
-              ? Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    const SafeArea(child: _EmptyResults()),
-                    _CastleFallbackBackButton(onPressed: _leaveCastle),
-                  ],
-                )
-              : _buildCastle(results, category ?? searchAllCategoriesLabel),
+            ? _SearchCategorySelection(
+                categories: _categories,
+                categoryArtworkOverride: categoryArtworkOverride,
+                onAllCategoriesSelected: _openAllCategories,
+                onCategorySelected: _openCategory,
+              )
+            : permanentCards.isEmpty
+            ? Stack(
+                fit: StackFit.expand,
+                children: [
+                  const SafeArea(child: _EmptyResults()),
+                  _CastleFallbackBackButton(onPressed: _leaveCastle),
+                ],
+              )
+            : _buildCastle(results, category ?? searchAllCategoriesLabel),
       ),
     );
   }
@@ -349,9 +355,7 @@ class _CastleActiveCardsHud extends StatelessWidget {
                                 color: cards[index].id == selectedCardId
                                     ? AppTheme.brightGold
                                     : const Color(0xFF637382),
-                                width: cards[index].id == selectedCardId
-                                    ? 3
-                                    : 1,
+                                width: cards[index].id == selectedCardId ? 3 : 1,
                               ),
                               boxShadow: cards[index].id == selectedCardId
                                   ? const [
@@ -422,11 +426,13 @@ class _SearchCategorySelection extends StatelessWidget {
     required this.onAllCategoriesSelected,
     required this.onCategorySelected,
     required this.categories,
+    this.categoryArtworkOverride,
   });
 
   final VoidCallback onAllCategoriesSelected;
   final ValueChanged<String> onCategorySelected;
   final List<CardCategoryDefinition> categories;
+  final String? categoryArtworkOverride;
 
   @override
   Widget build(BuildContext context) => Stack(
@@ -501,6 +507,8 @@ class _SearchCategorySelection extends StatelessWidget {
                           for (final category in categories)
                             _CategoryArtworkButton(
                               category: category,
+                              artworkSource:
+                                  categoryArtworkOverride ?? category.versoAsset,
                               width: cardWidth,
                               onPressed: () =>
                                   onCategorySelected(category.label),
@@ -544,11 +552,13 @@ class _SearchCategorySelection extends StatelessWidget {
 class _CategoryArtworkButton extends StatefulWidget {
   const _CategoryArtworkButton({
     required this.category,
+    required this.artworkSource,
     required this.width,
     required this.onPressed,
   });
 
   final CardCategoryDefinition category;
+  final String artworkSource;
   final double width;
   final VoidCallback onPressed;
 
@@ -596,13 +606,9 @@ class _CategoryArtworkButtonState extends State<_CategoryArtworkButton> {
                 width: widget.width,
                 child: AspectRatio(
                   aspectRatio: 2 / 3,
-                  child: Image.asset(
-                    widget.category.versoAsset,
+                  child: StoredImage(
+                    source: widget.artworkSource,
                     fit: BoxFit.contain,
-                    filterQuality: FilterQuality.high,
-                    cacheWidth: (widget.width *
-                            MediaQuery.devicePixelRatioOf(context))
-                        .round(),
                   ),
                 ),
               ),
