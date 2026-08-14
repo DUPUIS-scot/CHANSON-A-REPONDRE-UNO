@@ -93,7 +93,7 @@ void main() {
       expect(result.map((card) => card.category).toSet(), hasLength(5));
     });
 
-    test('Search source keeps category-only entry into the existing castle', () {
+    test('Search source keeps active-deck category entry into existing castle', () {
       final searchScreen = File(
         'lib/screens/search_screen.dart',
       ).readAsStringSync();
@@ -108,10 +108,13 @@ void main() {
       expect(searchScreen, contains('deck.cards'));
       expect(searchScreen, contains('.map((card) => card.category)'));
       expect(searchScreen, contains('.toSet()'));
-      expect(searchScreen, contains('_buildCastle(results, category)'));
-      expect(searchScreen, isNot(contains("ValueKey('search-all-categories')")));
-      expect(searchScreen, isNot(contains('onAllCategoriesSelected')));
-      expect(searchScreen, contains('categoryArtworkOverride ?? category.versoAsset'));
+      expect(searchScreen, contains('category ?? searchAllCategoriesLabel'));
+      expect(searchScreen, contains("ValueKey('search-all-categories')"));
+      expect(searchScreen, contains('onAllCategoriesSelected'));
+      expect(
+        searchScreen,
+        contains('categoryArtworkOverride ?? category.versoAsset'),
+      );
       expect(searchScreen, contains('final activeDeck = provider.activeDeck;'));
       expect(
         searchScreen,
