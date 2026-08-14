@@ -100,10 +100,10 @@ void main() {
       expect(homeRect.top, djWhoRect.top);
       expect(homeRect.right, lessThan(djWhoRect.left));
       expect(djWhoRect.right, lessThanOrEqualTo(378));
-      expect(find.text('ALL CATEGORIES'), findsOneWidget);
+      expect(find.text('ALL CATEGORIES'), findsNothing);
       expect(
         find.byKey(const ValueKey('search-all-categories')),
-        findsOneWidget,
+        findsNothing,
       );
       for (final category in const [
         'CLASSIQUE',
@@ -132,25 +132,27 @@ void main() {
       );
 
       tester
-          .widget<TextButton>(
-            find.byKey(const ValueKey('search-all-categories')),
+          .widget<InkWell>(
+            find.byKey(const ValueKey('search-category-CLASSIQUE')),
           )
-          .onPressed!();
+          .onTap!();
       await tester.pump(const Duration(milliseconds: 500));
       expect(
         find.byKey(const ValueKey('castle-back-to-categories')),
         findsOneWidget,
       );
-      expect(find.text('ALL CATEGORIES'), findsNothing);
       final preferences = await SharedPreferences.getInstance();
       final persisted =
           jsonDecode(preferences.getString('search_path_state_v1')!)
               as Map<String, dynamic>;
       expect(persisted['castleActive'], isTrue);
-      expect(persisted['category'], isNull);
+      expect(persisted['category'], 'CLASSIQUE');
       await tester.tap(find.byKey(const ValueKey('castle-back-to-categories')));
       await tester.pump(const Duration(milliseconds: 500));
-      expect(find.text('ALL CATEGORIES'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('search-category-CLASSIQUE')),
+        findsOneWidget,
+      );
 
       await tester.tap(find.byKey(const ValueKey('search-home-button')));
       await tester.pump(const Duration(seconds: 1));
@@ -335,7 +337,7 @@ void main() {
         contains("assets/images/search_castle_background.png"),
       );
       expect(searchScreen, contains('bool _castleActive = false'));
-      expect(searchScreen, contains('category ?? searchAllCategoriesLabel'));
+      expect(searchScreen, contains('_buildCastle(results, category)'));
       expect(searchScreen, contains("'castleActive': _castleActive"));
       expect(searchScreen, contains("'category': _category"));
       expect(
