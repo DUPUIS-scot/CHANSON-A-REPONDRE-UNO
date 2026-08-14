@@ -119,13 +119,14 @@ void main() {
     );
   });
 
-  test('single category uses one centered enlarged card and no all button', () {
+  test('single category uses one dedicated centered verso screen', () {
     final source = File('lib/screens/search_screen.dart').readAsStringSync();
     expect(source, contains('final singleCategory = categories.length == 1;'));
-    expect(source, contains('mainAxisAlignment: singleCategory'));
-    expect(source, contains('? MainAxisAlignment.center'));
-    expect(source, contains('final singleCardWidth = min('));
-    expect(source, contains("singleCategory ? 'ENTER CASTLE'"));
+    expect(source, contains('if (singleCategory) {'));
+    expect(source, contains('final category = categories.single;'));
+    expect(source, contains("ValueKey('search-single-category-screen')"));
+    expect(source, contains('child: Center('));
+    expect(source, isNot(contains("singleCategory ? 'ENTER CASTLE'")));
     expect(
       source,
       contains('categories.length > 1 ? _openAllCategories : null'),
