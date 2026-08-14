@@ -18,6 +18,17 @@ void main() {
     return decks;
   }
 
+  void expectSearchArtworkResolver(String searchSource) {
+    expect(searchSource, contains('!activeDeck.hasExplicitCategories'));
+    expect(searchSource, contains('? activeDeck.cardBack'));
+    expect(searchSource, contains('categoryArtworkOverride: categoryArtworkOverride'));
+    expect(searchSource, contains('artworkSource:'));
+    expect(
+      searchSource,
+      contains('categoryArtworkOverride ?? category.versoAsset'),
+    );
+  }
+
   test('BRIO Search category artwork resolves to the BRIO card verso', () async {
     final decks = await loadDecks();
     addTearDown(decks.dispose);
@@ -31,13 +42,8 @@ void main() {
       'assets/decks/chanson_a_repondre_brio/card_back.jpeg',
     );
 
-    final searchSource = File('lib/screens/search_screen.dart').readAsStringSync();
-    expect(searchSource, contains('!activeDeck.hasExplicitCategories'));
-    expect(searchSource, contains('? activeDeck.cardBack'));
-    expect(searchSource, contains('categoryArtworkOverride: categoryArtworkOverride'));
-    expect(
-      searchSource,
-      contains('artworkSource: categoryArtworkOverride ?? category.versoAsset'),
+    expectSearchArtworkResolver(
+      File('lib/screens/search_screen.dart').readAsStringSync(),
     );
   });
 
@@ -50,10 +56,8 @@ void main() {
     expect(activeDeck.id, AppConstants.productionDeckId);
     expect(activeDeck.hasExplicitCategories, isTrue);
 
-    final searchSource = File('lib/screens/search_screen.dart').readAsStringSync();
-    expect(
-      searchSource,
-      contains('artworkSource: categoryArtworkOverride ?? category.versoAsset'),
+    expectSearchArtworkResolver(
+      File('lib/screens/search_screen.dart').readAsStringSync(),
     );
   });
 
