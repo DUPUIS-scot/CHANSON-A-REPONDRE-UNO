@@ -105,6 +105,11 @@ jobs:
           CHROME_PATH: /usr/bin/google-chrome
         run: node scripts/verify_dealer_web.mjs
 
+      - name: Verify Search category castle runtime
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: node scripts/verify_search_category_web.mjs
+
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
