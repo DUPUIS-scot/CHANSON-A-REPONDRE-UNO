@@ -188,7 +188,7 @@ class _PlayScreenState extends State<PlayScreen> {
     final handBackImagePath = _handBackImagePath(activeDeck);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF080504),
+      backgroundColor: const Color(0xFF050302),
       appBar: AppBar(
         toolbarHeight: 82,
         automaticallyImplyLeading: false,
@@ -218,8 +218,8 @@ class _PlayScreenState extends State<PlayScreen> {
                       label: 'Chanson à Répondre UNO',
                       child: SizedBox(
                         key: const Key('play-header-logo'),
-                        width: mobile ? 130 : 224,
-                        height: mobile ? 52 : 66,
+                        width: mobile ? 142 : 236,
+                        height: mobile ? 54 : 68,
                         child: ExcludeSemantics(
                           child: Image.asset(
                             _playLogoAsset,
@@ -241,11 +241,11 @@ class _PlayScreenState extends State<PlayScreen> {
           ? _GameLauncher(decks: decks, game: game)
           : deckMismatch
           ? const ColoredBox(
-              color: Color(0xFF080504),
+              color: Color(0xFF050302),
               child: Center(child: CircularProgressIndicator()),
             )
           : ColoredBox(
-              color: const Color(0xFF080504),
+              color: const Color(0xFF050302),
               child: Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 1120),
@@ -278,25 +278,25 @@ class _PlayScreenState extends State<PlayScreen> {
                             final pileScale = veryNarrow
                                 ? .58
                                 : narrow
-                                ? .72
+                                ? .74
                                 : .92;
                             final pileTop = constraints.maxHeight *
                                 (short
-                                    ? .50
+                                    ? .53
                                     : narrow
-                                    ? .55
-                                    : .57);
+                                    ? .57
+                                    : .60);
                             final pileInset = veryNarrow
                                 ? 8.0
                                 : narrow
                                 ? 18.0
                                 : constraints.maxWidth * .055;
-                            final actionHeight = short ? 54.0 : 68.0;
+                            final actionHeight = short ? 56.0 : 72.0;
                             final handHeight = short
-                                ? 146.0
+                                ? 150.0
                                 : (constraints.maxHeight * .28)
-                                      .clamp(184.0, 264.0);
-                            final handBottom = actionHeight + (short ? 6 : 8);
+                                      .clamp(188.0, 270.0);
+                            final handBottom = actionHeight + (short ? 5 : 7);
                             final canDraw =
                                 state.currentPlayerIndex == 0 &&
                                 player.hand.length < 5 &&
@@ -341,10 +341,10 @@ class _PlayScreenState extends State<PlayScreen> {
                                   child: Padding(
                                     padding: EdgeInsets.symmetric(
                                       horizontal: veryNarrow
-                                          ? 6
+                                          ? 5
                                           : narrow
-                                          ? 12
-                                          : 28,
+                                          ? 10
+                                          : 24,
                                     ),
                                     child: PlayerHand(
                                       cards: player.hand
@@ -369,8 +369,8 @@ class _PlayScreenState extends State<PlayScreen> {
                                   ),
                                 ),
                                 Positioned(
-                                  left: narrow ? 22 : 58,
-                                  right: narrow ? 22 : 58,
+                                  left: narrow ? 18 : 46,
+                                  right: narrow ? 18 : 46,
                                   bottom: 8,
                                   height: actionHeight,
                                   child: _PlayActionBar(
@@ -401,13 +401,9 @@ class _TheatricalHeaderBackground extends StatelessWidget {
   @override
   Widget build(BuildContext context) => DecoratedBox(
     decoration: const BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [Color(0xFF130A06), Color(0xFF050302)],
-      ),
+      color: Color(0xFF050403),
       border: Border(
-        bottom: BorderSide(color: AppTheme.gold, width: 1.4),
+        bottom: BorderSide(color: AppTheme.gold, width: 1.5),
       ),
       boxShadow: [
         BoxShadow(color: Colors.black87, blurRadius: 12, offset: Offset(0, 4)),
@@ -424,24 +420,24 @@ class _PlayActionBar extends StatelessWidget {
 
   static const _textStyle = TextStyle(
     fontFamily: 'Georgia',
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: FontWeight.w800,
-    letterSpacing: 1.9,
+    letterSpacing: 2.0,
   );
 
   @override
   Widget build(BuildContext context) => FilledButton.icon(
     onPressed: canPlay ? onPlay : null,
-    icon: const Icon(Icons.play_arrow_rounded, size: 32),
+    icon: const Icon(Icons.play_arrow_rounded, size: 34),
     label: const FittedBox(child: Text('PLAY CARD')),
     style: FilledButton.styleFrom(
-      backgroundColor: const Color(0xFF74211D),
-      disabledBackgroundColor: const Color(0xFF401713),
+      backgroundColor: const Color(0xFF641C18),
+      disabledBackgroundColor: const Color(0xFF3A1714),
       foregroundColor: AppTheme.brightGold,
-      disabledForegroundColor: const Color(0xFF9A7844),
+      disabledForegroundColor: const Color(0xFF8F7443),
       side: const BorderSide(color: AppTheme.gold, width: 2),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(22),
       ),
       textStyle: _textStyle,
       elevation: 14,
@@ -510,24 +506,15 @@ class _GameLauncher extends StatelessWidget {
                       ? null
                       : () async {
                           final ok = await game.start(decks.activeDeck!);
-                          if (!ok && context.mounted) {
+                          if (!ok && context.mounted && game.message != null) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  game.message ?? 'Could not start game.',
-                                ),
-                              ),
+                              SnackBar(content: Text(game.message!)),
                             );
                           }
                         },
-                  icon: const Icon(Icons.play_arrow),
-                  label: const Text('NEW GAME'),
+                  icon: const Icon(Icons.play_arrow_rounded),
+                  label: const Text('START GAME'),
                 ),
-                if (decks.activeDeck == null)
-                  const Padding(
-                    padding: EdgeInsets.only(top: 12),
-                    child: Text('Select a deck before starting.'),
-                  ),
               ],
             ),
           ),
