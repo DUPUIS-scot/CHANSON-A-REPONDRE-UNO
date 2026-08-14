@@ -24,6 +24,7 @@ String buildCanonicalShareHtml({
   final imageUrl = publicBase.replace(
     pathSegments: [...root, 'assets', ...imagePath.split('/')],
   );
+  final imageMimeType = _imageMimeType(imagePath);
   final dimensions = StringBuffer();
   if (imageWidth != null && imageWidth > 0) {
     dimensions.writeln(
@@ -39,6 +40,8 @@ String buildCanonicalShareHtml({
   final escapedShareUrl = _html(shareUrl.toString());
   final escapedDeepLink = _html(deepLink.toString());
   final escapedImageUrl = _html(imageUrl.toString());
+  final escapedImageMimeType = _html(imageMimeType);
+  final deepLinkJson = jsonEncode(deepLink.toString());
 
   return '''<!doctype html>
 <html lang="fr">
@@ -48,18 +51,25 @@ String buildCanonicalShareHtml({
   <title>$escapedTitle</title>
   <meta name="description" content="Open $escapedTitle.">
   <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Chanson à Répondre">
   <meta property="og:title" content="$escapedTitle">
   <meta property="og:description" content="Open $escapedTitle.">
   <meta property="og:image" content="$escapedImageUrl">
+  <meta property="og:image:secure_url" content="$escapedImageUrl">
+  <meta property="og:image:type" content="$escapedImageMimeType">
+  <meta property="og:image:alt" content="$escapedTitle">
 ${dimensions.toString()}  <meta property="og:url" content="$escapedShareUrl">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="$escapedTitle">
   <meta name="twitter:description" content="Open $escapedTitle.">
   <meta name="twitter:image" content="$escapedImageUrl">
+  <meta name="twitter:image:alt" content="$escapedTitle">
   <link rel="canonical" href="$escapedShareUrl">
-  <meta http-equiv="refresh" content="0; url=$escapedDeepLink">
 </head>
-<body><p><a href="$escapedDeepLink">Open this card</a></p></body>
+<body>
+  <p><a href="$escapedDeepLink">Open this card</a></p>
+  <script>window.location.replace($deepLinkJson);</script>
+</body>
 </html>
 ''';
 }
@@ -78,10 +88,13 @@ String buildLegacyRedirectHtml({
   final imageUrl = publicBase.replace(
     pathSegments: [...root, 'assets', ...imagePath.split('/')],
   );
+  final imageMimeType = _imageMimeType(imagePath);
   final escapedTitle = _html(title);
   final escapedLegacy = _html(legacySlug);
   final escapedCanonical = _html(canonicalUrl.toString());
   final escapedImage = _html(imageUrl.toString());
+  final escapedImageMimeType = _html(imageMimeType);
+  final canonicalUrlJson = jsonEncode(canonicalUrl.toString());
 
   return '''<!doctype html>
 <html lang="fr">
@@ -91,16 +104,23 @@ String buildLegacyRedirectHtml({
   <title>$escapedTitle</title>
   <meta name="legacy-card-id" content="$escapedLegacy">
   <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Chanson à Répondre">
   <meta property="og:title" content="$escapedTitle">
   <meta property="og:image" content="$escapedImage">
+  <meta property="og:image:secure_url" content="$escapedImage">
+  <meta property="og:image:type" content="$escapedImageMimeType">
+  <meta property="og:image:alt" content="$escapedTitle">
   <meta property="og:url" content="$escapedCanonical">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="$escapedTitle">
   <meta name="twitter:image" content="$escapedImage">
+  <meta name="twitter:image:alt" content="$escapedTitle">
   <link rel="canonical" href="$escapedCanonical">
-  <meta http-equiv="refresh" content="0; url=$escapedCanonical">
 </head>
-<body><p><a href="$escapedCanonical">Open the canonical card link</a></p></body>
+<body>
+  <p><a href="$escapedCanonical">Open the canonical card link</a></p>
+  <script>window.location.replace($canonicalUrlJson);</script>
+</body>
 </html>
 ''';
 }
@@ -256,6 +276,17 @@ Map<String, String> _parseOptions(List<String> arguments) {
     result[arguments[index].substring(2)] = arguments[index + 1];
   }
   return result;
+}
+
+String _imageMimeType(String path) {
+  final normalized = path.toLowerCase();
+  if (normalized.endsWith('.png')) return 'image/png';
+  if (normalized.endsWith('.webp')) return 'image/webp';
+  if (normalized.endsWith('.gif')) return 'image/gif';
+  if (normalized.endsWith('.jpg') || normalized.endsWith('.jpeg')) {
+    return 'image/jpeg';
+  }
+  return 'image/jpeg';
 }
 
 String _html(String value) => value
