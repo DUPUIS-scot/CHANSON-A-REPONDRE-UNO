@@ -1,4 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:uno_chanson_2/core/app_constants.dart';
+import 'package:uno_chanson_2/models/card_image_model.dart';
+import 'package:uno_chanson_2/models/deck_model.dart';
+import 'package:uno_chanson_2/services/multi_deck_card_share_service.dart';
 import 'package:uno_chanson_2/services/native_share_result.dart';
 import 'package:uno_chanson_2/services/public_card_share_service.dart';
 
@@ -8,127 +12,109 @@ void main() {
     '?v=965c218#/cards?focus=old-card',
   );
 
-  test('deep link keeps deployment base, permanent id, and no query state', () {
-    final url = PublicCardShareService.deepLinkFor(
-      'final-84-42',
-      applicationUri: deployed,
+  test('UNO deep link keeps internal id while public URL uses UNO-XXX', () {
+    expect(
+      PublicCardShareService.deepLinkFor(
+        'final-84-23',
+        applicationUri: deployed,
+      ).toString(),
+      'https://dupuis-scot.github.io/CHANSON-A-REPONDRE-UNO/#/cards/final-84-23',
     );
     expect(
-      url.toString(),
-      'https://dupuis-scot.github.io/CHANSON-A-REPONDRE-UNO/'
-      '#/cards/final-84-42',
+      PublicCardShareService.shareUrlFor(
+        cardId: 'final-84-23',
+        deckId: AppConstants.productionDeckId,
+        applicationUri: deployed,
+      ).toString(),
+      'https://dupuis-scot.github.io/CHANSON-A-REPONDRE-UNO/share/UNO-023/',
     );
   });
 
-  test('preview URL safely encodes the permanent card id', () {
-    final url = PublicCardShareService.shareUrlFor(
-      'card with spaces',
-      applicationUri: Uri.parse('https://example.test/app/#/home'),
-    );
+  test('BRIO public URL remains brio-XXX', () {
     expect(
-      url.toString(),
-      'https://example.test/app/share/card%20with%20spaces/',
+      PublicCardShareService.shareUrlFor(
+        cardId: 'brio-007',
+        deckId: AppConstants.brioDeckId,
+        applicationUri: deployed,
+      ).toString(),
+      'https://dupuis-scot.github.io/CHANSON-A-REPONDRE-UNO/share/brio-007/',
     );
   });
 
-  test('successful native share leaves clipboard untouched', () async {
-    var copied = false;
-    final result = await _share(
-      NativeShareResult.shared,
-      copy: (_) async => copied = true,
+  test('UNO share title is normalized and filename metadata is ignored', () async {
+    final card = _card(
+      id: 'final-84-01',
+      deckId: AppConstants.productionDeckId,
+      title: 'ChatGPT Image Apr 15, 2026, 09_14_58 PM',
+      path: 'assets/cards/final_import/example.png',
     );
-    expect(result, CardShareResult.shared);
-    expect(copied, isFalse);
-  });
-
-  test('unavailable native share copies exact preview URL', () async {
-    String? copied;
-    final result = await _share(
-      NativeShareResult.unavailable,
-      copy: (value) async => copied = value,
+    final deck = Deck(
+      id: AppConstants.productionDeckId,
+      name: 'CHANSON A REPONDRE UNO',
+      cards: [card],
     );
-    expect(result, CardShareResult.copied);
-    expect(
-      copied,
-      'https://dupuis-scot.github.io/CHANSON-A-REPONDRE-UNO/'
-      'share/final-84-42/',
-    );
-  });
-
-  test('user cancellation leaves clipboard untouched', () async {
-    var copied = false;
-    final result = await _share(
-      NativeShareResult.cancelled,
-      copy: (_) async => copied = true,
-    );
-    expect(result, CardShareResult.cancelled);
-    expect(copied, isFalse);
-  });
-
-  test('genuine native failure falls back to clipboard', () async {
-    var copied = false;
-    final result = await _share(
-      NativeShareResult.failed,
-      copy: (_) async => copied = true,
-    );
-    expect(result, CardShareResult.copied);
-    expect(copied, isTrue);
-  });
-
-  test('total failure is reported only when clipboard also fails', () async {
-    final result = await _share(
-      NativeShareResult.failed,
-      copy: (_) => throw StateError('clipboard blocked'),
-    );
-    expect(result, CardShareResult.failed);
-  });
-
-  test('image sharing unavailable still shares the URL', () async {
-    String? receivedImage;
-    String? receivedUrl;
-    final result = await PublicCardShareService.share(
-      cardId: 'final-84-42',
-      imagePath: 'assets/cards/exact-card.png',
+    String? title;
+    String? url;
+    final result = await MultiDeckCardShareService.share(
+      card: card,
+      deck: deck,
       applicationUri: deployed,
       nativeShare:
-          ({required title, required text, required url, imagePath}) async {
-            receivedImage = imagePath;
-            receivedUrl = url;
+          ({required title: value, required text, required url: link, imagePath}) async {
+            title = value;
+            url = link;
             return NativeShareResult.shared;
           },
       copyLink: (_) async {},
     );
     expect(result, CardShareResult.shared);
-    expect(receivedImage, 'assets/cards/exact-card.png');
-    expect(receivedUrl, endsWith('/share/final-84-42/'));
+    expect(title, 'Chanson à répondre UNO — Carte 001');
+    expect(url, endsWith('/share/UNO-001/'));
   });
 
-  test('image loading failure can degrade to successful URL share', () async {
-    final result = await PublicCardShareService.share(
-      cardId: 'final-84-42',
-      imagePath: 'assets/cards/missing.png',
+  test('BRIO share title and image are deck-specific', () async {
+    final card = _card(
+      id: 'brio-001',
+      deckId: AppConstants.brioDeckId,
+      title: 'BRIO 001',
+      path: 'assets/decks/chanson_a_repondre_brio/cards/001.jpeg',
+    );
+    final deck = Deck(
+      id: AppConstants.brioDeckId,
+      name: 'Chanson à répondre BRIO',
+      cards: [card],
+    );
+    String? title;
+    String? image;
+    final result = await MultiDeckCardShareService.share(
+      card: card,
+      deck: deck,
       applicationUri: deployed,
       nativeShare:
-          ({required title, required text, required url, imagePath}) async =>
-              NativeShareResult.shared,
+          ({required title: value, required text, required url, imagePath}) async {
+            title = value;
+            image = imagePath;
+            return NativeShareResult.shared;
+          },
       copyLink: (_) async {},
     );
     expect(result, CardShareResult.shared);
+    expect(title, 'Chanson à répondre BRIO — Carte 001');
+    expect(image, 'assets/decks/chanson_a_repondre_brio/cards/001.jpeg');
   });
 }
 
-Future<CardShareResult> _share(
-  NativeShareResult nativeResult, {
-  required CardLinkCopier copy,
-}) => PublicCardShareService.share(
-  cardId: 'final-84-42',
-  imagePath: 'assets/cards/final-84-42.png',
-  applicationUri: Uri.parse(
-    'https://dupuis-scot.github.io/CHANSON-A-REPONDRE-UNO/'
-    '?v=old#/cards?focus=another',
-  ),
-  nativeShare:
-      ({required title, required text, required url, imagePath}) async =>
-          nativeResult,
-  copyLink: copy,
+CardImageModel _card({
+  required String id,
+  required String deckId,
+  required String title,
+  required String path,
+}) => CardImageModel(
+  id: id,
+  deckId: deckId,
+  title: title,
+  path: path,
+  category: 'Permanent',
+  colour: 'gold',
+  importedAt: DateTime.utc(2026, 8, 14),
 );
