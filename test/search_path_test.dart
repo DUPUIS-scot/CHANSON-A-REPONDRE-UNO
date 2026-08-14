@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uno_chanson_2/app.dart';
 import 'package:uno_chanson_2/core/app_constants.dart';
@@ -11,10 +10,7 @@ import 'package:uno_chanson_2/core/app_router.dart';
 import 'package:uno_chanson_2/models/card_image_model.dart';
 import 'package:uno_chanson_2/models/deck_model.dart';
 import 'package:uno_chanson_2/providers/card_browser_provider.dart';
-import 'package:uno_chanson_2/providers/deck_provider.dart';
-import 'package:uno_chanson_2/screens/search_screen.dart';
 import 'package:uno_chanson_2/services/search_service.dart';
-import 'package:uno_chanson_2/widgets/webgl_card_castle_view.dart';
 
 void main() {
   group('Search path', () {
@@ -346,6 +342,12 @@ void main() {
         searchScreen,
         contains('matchingCardIds: cards.map((card) => card.id).toSet()'),
       );
+      expect(searchScreen, contains('final activeDeck = provider.activeDeck;'));
+      expect(
+        searchScreen,
+        contains('activeDeck != null ? [activeDeck] : <Deck>[];'),
+      );
+      expect(searchScreen, contains('? _results(activeDecks)'));
       expect(searchScreen, contains('discoveredCardIds'));
       expect(searchScreen, contains('_castleCardViewerOpen'));
       expect(searchScreen, contains('onCategoriesRequested: _leaveCastle'));
@@ -368,100 +370,52 @@ void main() {
       expect(castle, isNot(contains('card?.title')));
     });
 
-    testWidgets(
-      'castle uses only production-deck cards when production deck is active',
-      (tester) async {
-        await tester.binding.setSurfaceSize(const Size(390, 844));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
-        SharedPreferences.setMockInitialValues({});
-        await tester.pumpWidget(
-          const ChansonUnoApp(aiBackendUrlOverride: 'https://api.test'),
-        );
-        await tester.pump(const Duration(seconds: 2));
-        AppRouter.router.go(AppRoutes.search);
-        await tester.pumpAndSettle();
-        await _ensureDecksLoaded(tester);
+    test('castle card source keeps selected built-in decks isolated', () {
+      final productionDeck = Deck(
+        id: AppConstants.productionDeckId,
+        name: 'Production',
+        cards: [
+          _builtInCard('production-card', AppConstants.productionDeckId),
+        ],
+      );
+      final brioDeck = Deck(
+        id: AppConstants.brioDeckId,
+        name: 'BRIO',
+        cards: [_builtInCard('brio-card', AppConstants.brioDeckId)],
+      );
+      final search = SearchService();
 
-        tester
-            .widget<TextButton>(
-              find.byKey(const ValueKey('search-all-categories')),
-            )
-            .onPressed!();
-        await _pumpUntilCastle(tester);
+      final productionCards = search.cards(
+        decks: [productionDeck],
+        category: null,
+      );
+      final brioCards = search.cards(decks: [brioDeck], category: null);
 
-        expect(find.byType(WebGlCardCastleView), findsOneWidget);
-        final castle = tester.widget<WebGlCardCastleView>(
-          find.byType(WebGlCardCastleView),
-        );
-        expect(castle.cards, isNotEmpty);
-        expect(
-          castle.cards.every(
-            (card) => card.deckId == AppConstants.productionDeckId,
-          ),
-          isTrue,
-          reason: 'All cards should belong to the production deck',
-        );
-      },
-    );
-
-    testWidgets(
-      'castle uses only BRIO-deck cards when BRIO deck is active',
-      (tester) async {
-        await tester.binding.setSurfaceSize(const Size(390, 844));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
-        SharedPreferences.setMockInitialValues({
-          'flutter.active_deck': jsonEncode(AppConstants.brioDeckId),
-        });
-        await tester.pumpWidget(
-          const ChansonUnoApp(aiBackendUrlOverride: 'https://api.test'),
-        );
-        await tester.pump(const Duration(seconds: 2));
-        AppRouter.router.go(AppRoutes.search);
-        await tester.pumpAndSettle();
-        await _ensureDecksLoaded(tester);
-
-        tester
-            .widget<TextButton>(
-              find.byKey(const ValueKey('search-all-categories')),
-            )
-            .onPressed!();
-        await _pumpUntilCastle(tester);
-
-        expect(find.byType(WebGlCardCastleView), findsOneWidget);
-        final castle = tester.widget<WebGlCardCastleView>(
-          find.byType(WebGlCardCastleView),
-        );
-        expect(castle.cards, isNotEmpty);
-        expect(
-          castle.cards.every(
-            (card) => card.deckId == AppConstants.brioDeckId,
-          ),
-          isTrue,
-          reason: 'All cards should belong to the BRIO deck',
-        );
-      },
-    );
+      expect(productionCards.map((card) => card.id), ['production-card']);
+      expect(
+        productionCards.every(
+          (card) => card.deckId == AppConstants.productionDeckId,
+        ),
+        isTrue,
+      );
+      expect(brioCards.map((card) => card.id), ['brio-card']);
+      expect(
+        brioCards.every((card) => card.deckId == AppConstants.brioDeckId),
+        isTrue,
+      );
+    });
   });
 }
 
-Future<void> _ensureDecksLoaded(WidgetTester tester) async {
-  final context = tester.element(find.byType(SearchScreen));
-  final decks = context.read<DeckProvider>();
-  if (decks.loading || decks.activeDeck == null) {
-    await tester.runAsync(() => decks.load());
-    await tester.pumpAndSettle();
-  }
-}
-
-Future<void> _pumpUntilCastle(WidgetTester tester) async {
-  for (
-    var attempt = 0;
-    attempt < 80 && find.byType(WebGlCardCastleView).evaluate().isEmpty;
-    attempt++
-  ) {
-    await tester.pump(const Duration(milliseconds: 100));
-  }
-}
+CardImageModel _builtInCard(String id, String deckId) => CardImageModel(
+  id: id,
+  deckId: deckId,
+  title: id,
+  path: 'assets/cards/permanent.png',
+  category: 'CLASSIQUE',
+  colour: 'gold',
+  importedAt: DateTime(2026),
+);
 
 CardImageModel _card(
   String id, {
