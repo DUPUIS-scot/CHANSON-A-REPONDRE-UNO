@@ -53,23 +53,23 @@ void main() {
       name: 'CHANSON A REPONDRE UNO',
       cards: [card],
     );
-    String? title;
-    String? url;
+    String? receivedTitle;
+    String? receivedUrl;
     final result = await MultiDeckCardShareService.share(
       card: card,
       deck: deck,
       applicationUri: deployed,
       nativeShare:
-          ({required title: value, required text, required url: link, imagePath}) async {
-            title = value;
-            url = link;
+          ({required title, required text, required url, imagePath}) async {
+            receivedTitle = title;
+            receivedUrl = url;
             return NativeShareResult.shared;
           },
       copyLink: (_) async {},
     );
     expect(result, CardShareResult.shared);
-    expect(title, 'Chanson à répondre UNO — Carte 001');
-    expect(url, endsWith('/share/UNO-001/'));
+    expect(receivedTitle, 'Chanson à répondre UNO — Carte 001');
+    expect(receivedUrl, endsWith('/share/UNO-001/'));
   });
 
   test('BRIO share title and image are deck-specific', () async {
@@ -84,23 +84,26 @@ void main() {
       name: 'Chanson à répondre BRIO',
       cards: [card],
     );
-    String? title;
-    String? image;
+    String? receivedTitle;
+    String? receivedImage;
     final result = await MultiDeckCardShareService.share(
       card: card,
       deck: deck,
       applicationUri: deployed,
       nativeShare:
-          ({required title: value, required text, required url, imagePath}) async {
-            title = value;
-            image = imagePath;
+          ({required title, required text, required url, imagePath}) async {
+            receivedTitle = title;
+            receivedImage = imagePath;
             return NativeShareResult.shared;
           },
       copyLink: (_) async {},
     );
     expect(result, CardShareResult.shared);
-    expect(title, 'Chanson à répondre BRIO — Carte 001');
-    expect(image, 'assets/decks/chanson_a_repondre_brio/cards/001.jpeg');
+    expect(receivedTitle, 'Chanson à répondre BRIO — Carte 001');
+    expect(
+      receivedImage,
+      'assets/decks/chanson_a_repondre_brio/cards/001.jpeg',
+    );
   });
 }
 
