@@ -28,15 +28,21 @@ Future<bool> requireRealAuthentication(
       AppRoutes.profile,
       extra: ProfileRouteArguments(
         message: AppConfig.shouldSkipAuthentication
-            ? 'Real Supabase login required\n\n'
+            ? 'A real Supabase session is required\n\n'
                   'This feature is unavailable in development UI mode.'
-            : 'Sign in through Profile to use $featureName.',
+            : 'A secure guest session could not be created for $featureName. '
+                  'Reload the app or sign in through Profile.',
         returnLabel: 'Return to $featureName',
       ),
     );
     if (!context.mounted || !auth.canUseProtectedAi) return false;
   }
 
+  // Anonymous visitors use the server-owned AI connection. They never need to
+  // see Profile or provide an OpenAI API key.
+  if (auth.isAnonymous) return true;
+
+  // Permanent accounts keep the existing BYOK behavior.
   final connection = context.read<OpenAiConnectionController>();
   if (!connection.connected && !connection.loading) await connection.refresh();
   if (!context.mounted || connection.connected) return context.mounted;

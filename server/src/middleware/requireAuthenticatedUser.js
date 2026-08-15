@@ -8,7 +8,7 @@ export function createRequireAuthenticatedUser(environment, authClient) {
     return response.status(401).json({
       error: {
         code: 'AUTHENTICATION_REQUIRED',
-        message: 'Sign in to use this feature.',
+        message: 'A valid app session is required.',
         requestId: request.requestId,
       },
     });
@@ -19,7 +19,7 @@ export function createRequireAuthenticatedUser(environment, authClient) {
     return response.status(401).json({
       error: {
         code: 'AUTHENTICATION_REQUIRED',
-        message: 'Sign in to use this feature.',
+        message: 'A valid app session is required.',
         requestId: request.requestId,
       },
     });
@@ -49,6 +49,7 @@ export function createRequireAuthenticatedUser(environment, authClient) {
     request.authUser = {
       id: data.user.id,
       email: data.user.email || null,
+      isAnonymous: data.user.is_anonymous === true,
     };
     return next();
   } catch (error) {

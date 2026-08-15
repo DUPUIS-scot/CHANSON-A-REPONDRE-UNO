@@ -30,17 +30,27 @@ export class UserOpenAiService {
       : { connected: false, maskedKey: null, updatedAt: null };
   }
 
-  async clientFor(userId) {
+  async clientFor(userId, { allowSharedKey = false } = {}) {
     const record = await this.store.get(userId);
-    if (!record) {
-      throw new AppError(
-        409,
-        'OPENAI_CONNECTION_REQUIRED',
-        'Connect your OpenAI API account in Profile to use this AI feature.',
-      );
+    if (record) {
+      const apiKey = decryptCredential(record, this.environment.credentialEncryptionKey);
+      return this.openAiFactory(apiKey);
     }
-    const apiKey = decryptCredential(record, this.environment.credentialEncryptionKey);
-    return this.openAiFactory(apiKey);
+    if (allowSharedKey) {
+      if (!this.environment.openAiApiKey) {
+        throw new AppError(
+          503,
+          'PUBLIC_AI_NOT_CONFIGURED',
+          'Public AI is not configured on the server.',
+        );
+      }
+      return this.openAiFactory(this.environment.openAiApiKey);
+    }
+    throw new AppError(
+      409,
+      'OPENAI_CONNECTION_REQUIRED',
+      'Connect your OpenAI API account in Profile to use this AI feature.',
+    );
   }
 
   async validate(apiKey) {

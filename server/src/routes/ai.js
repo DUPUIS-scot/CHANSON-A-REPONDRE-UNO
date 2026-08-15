@@ -46,7 +46,9 @@ export function createAiRouter(environment, dependencies = {}) {
       const timer = setTimeout(() => controller.abort(), environment.requestTimeoutMs);
       let result;
       try {
-        const openai = await userOpenAi.clientFor(request.authUser.id);
+        const openai = await userOpenAi.clientFor(request.authUser.id, {
+          allowSharedKey: request.authUser.isAnonymous,
+        });
         result = await openai.responses.create({
           model: environment.openaiModel,
           input: [{
@@ -122,7 +124,9 @@ export function createAiRouter(environment, dependencies = {}) {
       const timer = setTimeout(() => controller.abort(), environment.requestTimeoutMs);
       let result;
       try {
-        const openai = await userOpenAi.clientFor(request.authUser.id);
+        const openai = await userOpenAi.clientFor(request.authUser.id, {
+          allowSharedKey: request.authUser.isAnonymous,
+        });
         result = await openai.responses.create({
           model: environment.openaiModel,
           instructions,

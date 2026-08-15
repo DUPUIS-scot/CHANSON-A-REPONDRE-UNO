@@ -25,6 +25,7 @@ export function parseEnvironment(source, { allowTestValues = false } = {}) {
   const supabasePublishableKey = (source.SUPABASE_PUBLISHABLE_KEY || '').trim();
   const supabaseServiceRoleKey = (source.SUPABASE_SERVICE_ROLE_KEY || '').trim();
   const credentialEncryptionKey = (source.CREDENTIAL_ENCRYPTION_KEY || '').trim();
+  const openAiApiKey = (source.OPENAI_API_KEY || '').trim();
 
   let parsedSupabaseUrl;
   try {
@@ -69,6 +70,15 @@ export function parseEnvironment(source, { allowTestValues = false } = {}) {
   if (!decodedEncryptionKey || decodedEncryptionKey.length !== 32) {
     problems.push('CREDENTIAL_ENCRYPTION_KEY must be a base64-encoded 32-byte key');
   }
+  if (
+    openAiApiKey &&
+    (placeholderPattern.test(openAiApiKey) || !/^sk-[A-Za-z0-9_-]{12,}$/.test(openAiApiKey))
+  ) {
+    problems.push('OPENAI_API_KEY is invalid');
+  }
+  if (nodeEnvironment === 'production' && !openAiApiKey) {
+    problems.push('OPENAI_API_KEY is required for anonymous AI in production');
+  }
 
   const allowedOrigins = (source.ALLOWED_ORIGINS || '')
     .split(',')
@@ -84,9 +94,9 @@ export function parseEnvironment(source, { allowTestValues = false } = {}) {
   }
   if (
     nodeEnvironment === 'production' &&
-    !allowedOrigins.includes('https://jameshpdy-dev.github.io')
+    !allowedOrigins.some((origin) => origin.startsWith('https://'))
   ) {
-    problems.push('ALLOWED_ORIGINS must include https://jameshpdy-dev.github.io in production');
+    problems.push('ALLOWED_ORIGINS must include at least one HTTPS production origin');
   }
   if (
     nodeEnvironment === 'production' &&
@@ -116,6 +126,7 @@ export function parseEnvironment(source, { allowTestValues = false } = {}) {
     port,
     nodeEnvironment,
     openaiModel: (source.OPENAI_MODEL || 'gpt-4o-mini').trim(),
+    openAiApiKey,
     supabaseUrl,
     supabasePublishableKey,
     supabaseServiceRoleKey,

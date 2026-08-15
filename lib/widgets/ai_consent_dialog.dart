@@ -7,8 +7,23 @@ Future<AiConsentChoice> showAiConsentDialog(BuildContext context) async =>
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Send card to AI?'),
-        content: const Text(
-          'This card image and its extracted text will be sent to an AI service for processing.',
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'This card image and its extracted text will be sent to an AI service for processing.',
+            ),
+            SizedBox(height: 12),
+            Text(
+              'USE AI RESPONSIBLY',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 6),
+            Text(
+              'AI responses may be incomplete, mistaken or inappropriate. Think critically, respect others, protect personal information, and never use the service to harm, threaten or deceive. Human judgment comes first.',
+            ),
+          ],
         ),
         actions: [
           TextButton(

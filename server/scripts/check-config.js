@@ -13,6 +13,7 @@ const required = [
   'SUPABASE_PUBLISHABLE_KEY',
   'SUPABASE_SERVICE_ROLE_KEY',
   'CREDENTIAL_ENCRYPTION_KEY',
+  'OPENAI_API_KEY',
 ];
 
 function status(value) {
