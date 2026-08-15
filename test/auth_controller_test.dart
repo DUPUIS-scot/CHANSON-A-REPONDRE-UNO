@@ -7,11 +7,32 @@ import 'package:uno_chanson_2/services/auth_service.dart';
 
 void main() {
   const user = AuthUser(id: 'user-1', email: 'user@example.com');
+  const guest = AuthUser(
+    id: 'guest-1',
+    email: '',
+    provider: 'anonymous',
+    isAnonymous: true,
+  );
 
   test('restores an existing authenticated user', () {
     final controller = AuthController(_FakeAuthService(current: user));
     expect(controller.status, AuthStatus.authenticated);
     expect(controller.user?.id, user.id);
+    controller.dispose();
+  });
+
+  test('anonymous guest session authenticates without login', () async {
+    final service = _FakeAuthService(guestResult: guest);
+    final controller = AuthController(
+      service,
+      anonymousGuestEnabled: true,
+    );
+    expect(controller.status, AuthStatus.loading);
+    await Future<void>.delayed(Duration.zero);
+    expect(controller.status, AuthStatus.authenticated);
+    expect(controller.isAnonymous, isTrue);
+    expect(controller.canUseProtectedAi, isTrue);
+    expect(service.guestSignIns, 1);
     controller.dispose();
   });
 
@@ -45,12 +66,26 @@ void main() {
     controller.dispose();
   });
 
-  test('logout returns to unauthenticated state', () async {
+  test('logout returns to unauthenticated state when guest mode is off', () async {
     final service = _FakeAuthService(current: user);
     final controller = AuthController(service);
     await controller.signOut();
     expect(service.signedOut, isTrue);
     expect(controller.status, AuthStatus.unauthenticated);
+    controller.dispose();
+  });
+
+  test('logout falls back to a fresh guest session when guest mode is on', () async {
+    final service = _FakeAuthService(current: user, guestResult: guest);
+    final controller = AuthController(
+      service,
+      anonymousGuestEnabled: true,
+    );
+    await controller.signOut();
+    expect(service.signedOut, isTrue);
+    expect(controller.status, AuthStatus.authenticated);
+    expect(controller.isAnonymous, isTrue);
+    expect(service.guestSignIns, 1);
     controller.dispose();
   });
 
@@ -98,22 +133,36 @@ void main() {
 class _FakeAuthService implements AuthService {
   _FakeAuthService({
     this.current,
+    this.guestResult,
     this.signInResult,
     this.signInError,
     this.registerError,
   });
 
   final AuthUser? current;
+  final AuthUser? guestResult;
   final AuthUser? signInResult;
   final AuthException? signInError;
   final AuthException? registerError;
   final _changes = StreamController<AuthUser?>.broadcast();
   bool signedOut = false;
+  int guestSignIns = 0;
 
   @override
   Stream<AuthUser?> get authStateChanges => _changes.stream;
   @override
   AuthUser? get currentUser => current;
+  @override
+  Future<AuthUser> signInAnonymously() async {
+    guestSignIns++;
+    final result = guestResult;
+    if (result == null) {
+      throw const AuthException('Guest authentication unavailable.');
+    }
+    _changes.add(result);
+    return result;
+  }
+
   @override
   Future<AuthUser> signIn({
     required String email,
