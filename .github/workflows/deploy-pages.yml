@@ -66,15 +66,15 @@ jobs:
           test -f build/web/card_share.js
 
           test "$(find build/web/share -mindepth 1 -maxdepth 1 -type d -name 'UNO-*' | wc -l)" -eq 84
-          test "$(find build/web/share -mindepth 1 -maxdepth 1 -type d -name 'brio-*' | wc -l)" -eq 16
-          test "$(find build/web/share -mindepth 1 -maxdepth 1 -type d \( -name 'UNO-*' -o -name 'brio-*' \) | wc -l)" -eq 100
+          test "$(find build/web/share -mindepth 1 -maxdepth 1 -type d -name 'BRIO-*' | wc -l)" -eq 16
+          test "$(find build/web/share -mindepth 1 -maxdepth 1 -type d \( -name 'UNO-*' -o -name 'BRIO-*' \) | wc -l)" -eq 100
           test "$(find build/web/share -mindepth 1 -maxdepth 1 -type d -name 'final-84-*' | wc -l)" -eq 84
           test "$(find build/web/share -type f -name 'index.html' | wc -l)" -eq 184
 
           test -f build/web/share/UNO-001/index.html
           test -f build/web/share/UNO-084/index.html
-          test -f build/web/share/brio-001/index.html
-          test -f build/web/share/brio-016/index.html
+          test -f build/web/share/BRIO-001/index.html
+          test -f build/web/share/BRIO-016/index.html
           test -f build/web/share/final-84-01/index.html
           test -f build/web/share/final-84-84/index.html
 
@@ -84,12 +84,12 @@ jobs:
           grep -q '/share/UNO-001/' build/web/share/UNO-001/index.html
           grep -q '#/cards/final-84-84' build/web/share/UNO-084/index.html
 
-          grep -q 'Chanson à répondre BRIO — Carte 001' build/web/share/brio-001/index.html
-          grep -q 'property="og:image"' build/web/share/brio-001/index.html
-          grep -q 'name="twitter:image"' build/web/share/brio-016/index.html
-          grep -q '/share/brio-001/' build/web/share/brio-001/index.html
-          grep -q 'assets/assets/decks/chanson_a_repondre_brio/cards/001.jpeg' build/web/share/brio-001/index.html
-          grep -q '#/cards/brio-016' build/web/share/brio-016/index.html
+          grep -q 'Chanson à répondre BRIO — Carte 001' build/web/share/BRIO-001/index.html
+          grep -q 'property="og:image"' build/web/share/BRIO-001/index.html
+          grep -q 'name="twitter:image"' build/web/share/BRIO-016/index.html
+          grep -q '/share/BRIO-001/' build/web/share/BRIO-001/index.html
+          grep -q 'assets/assets/decks/chanson_a_repondre_brio/cards/001.jpeg' build/web/share/BRIO-001/index.html
+          grep -q '#/cards/brio-016' build/web/share/BRIO-016/index.html
 
           grep -q '/share/UNO-001/' build/web/share/final-84-01/index.html
           grep -q 'rel="canonical"' build/web/share/final-84-01/index.html
