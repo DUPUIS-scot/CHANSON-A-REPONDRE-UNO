@@ -36,11 +36,24 @@ class PersistentDjWhoPlayer extends StatelessWidget {
                 clipBehavior: Clip.hardEdge,
                 children: [
                   Positioned(
-                    top: onDjWhoRoute ? 146 : -10000,
-                    left: onDjWhoRoute ? 16 : -10000,
-                    right: onDjWhoRoute ? (desktop ? 422 : 16) : null,
-                    width: onDjWhoRoute ? null : 640,
-                    child: _ExpandedPlayerCard(player: player),
+                    top: onDjWhoRoute ? 146 : null,
+                    left: onDjWhoRoute ? 16 : null,
+                    right: onDjWhoRoute ? (desktop ? 422 : 16) : 0,
+                    bottom: onDjWhoRoute ? null : 0,
+                    width: onDjWhoRoute ? null : 1,
+                    height: onDjWhoRoute ? null : 1,
+                    child: IgnorePointer(
+                      ignoring: !onDjWhoRoute,
+                      child: Opacity(
+                        opacity: onDjWhoRoute ? 1 : 0.01,
+                        child: ClipRect(
+                          child: _ExpandedPlayerCard(
+                            player: player,
+                            visible: onDjWhoRoute,
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                   if (!onDjWhoRoute && desktop)
                     Positioned(
@@ -67,9 +80,13 @@ class PersistentDjWhoPlayer extends StatelessWidget {
 }
 
 class _ExpandedPlayerCard extends StatelessWidget {
-  const _ExpandedPlayerCard({required this.player});
+  const _ExpandedPlayerCard({
+    required this.player,
+    required this.visible,
+  });
 
   final DjWhoPlayerProvider player;
+  final bool visible;
 
   @override
   Widget build(BuildContext context) {
@@ -78,10 +95,10 @@ class _ExpandedPlayerCard extends StatelessWidget {
 
     return Material(
       key: const Key('persistent-dj-who-player'),
-      elevation: 6,
-      color: colors.surface,
-      borderRadius: BorderRadius.circular(12),
-      clipBehavior: Clip.antiAlias,
+      elevation: visible ? 6 : 0,
+      color: visible ? colors.surface : Colors.transparent,
+      borderRadius: BorderRadius.circular(visible ? 12 : 0),
+      clipBehavior: Clip.hardEdge,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -92,30 +109,31 @@ class _ExpandedPlayerCard extends StatelessWidget {
             aspectRatio: 16 / 9,
             keepAlive: true,
           ),
-          Padding(
-            padding: const EdgeInsets.all(14),
-            child: Row(
-              children: [
-                const DjWhoAvatar(size: 40),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        video.title,
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      Text(
-                        'Vidéo ${player.selectedIndex + 1} sur '
-                        '${player.videos.length} · lecture suivante auto',
-                      ),
-                    ],
+          if (visible)
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                children: [
+                  const DjWhoAvatar(size: 40),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          video.title,
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        Text(
+                          'Vidéo ${player.selectedIndex + 1} sur '
+                          '${player.videos.length} · lecture suivante auto',
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
         ],
       ),
     );
