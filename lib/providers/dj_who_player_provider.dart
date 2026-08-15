@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart' show TargetPlatform;
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 
 import '../data/dj_who_videos.dart';
@@ -33,6 +34,14 @@ class DjWhoPlayerProvider extends ChangeNotifier {
   VideoItem? get selectedVideo =>
       _videos.isEmpty ? null : _videos[_selectedIndex];
 
+  bool get _canCreateEmbeddedPlayer {
+    if (kIsWeb) return true;
+    return switch (defaultTargetPlatform) {
+      TargetPlatform.android || TargetPlatform.iOS || TargetPlatform.macOS => true,
+      _ => false,
+    };
+  }
+
   YoutubePlayerController _createController() {
     return YoutubePlayerController.fromVideoId(
       videoId: _videos[_selectedIndex].videoId,
@@ -50,6 +59,11 @@ class DjWhoPlayerProvider extends ChangeNotifier {
   Future<void> enterPlayerRoute() async {
     if (_videos.isEmpty) return;
     _playerRouteMounted = true;
+
+    if (!_canCreateEmbeddedPlayer) {
+      notifyListeners();
+      return;
+    }
 
     if (_controller == null) {
       _controller = _createController();
