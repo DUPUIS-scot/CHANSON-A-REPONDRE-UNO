@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../core/app_config.dart';
 import '../core/app_router.dart';
 import '../providers/auth_controller.dart';
 import '../providers/openai_connection_controller.dart';
@@ -24,22 +23,22 @@ Future<bool> requireRealAuthentication(
 }) async {
   final auth = context.read<AuthController>();
   if (!auth.canUseProtectedAi) {
-    await context.push<bool>(
-      AppRoutes.profile,
-      extra: ProfileRouteArguments(
-        message: AppConfig.shouldSkipAuthentication
-            ? 'A real Supabase session is required\n\n'
-                  'This feature is unavailable in development UI mode.'
-            : 'A secure guest session could not be created for $featureName. '
-                  'Reload the app or sign in through Profile.',
-        returnLabel: 'Return to $featureName',
-      ),
-    );
-    if (!context.mounted || !auth.canUseProtectedAi) return false;
+    final guestReady = await auth.ensureAnonymousSession();
+    if (!context.mounted) return false;
+    if (!guestReady || !auth.canUseProtectedAi) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Guest AI session is unavailable for $featureName. Please retry or reload the app.',
+          ),
+        ),
+      );
+      return false;
+    }
   }
 
   // Anonymous visitors use the server-owned AI connection. They never need to
-  // see Profile or provide an OpenAI API key.
+  // see Profile, sign in, or provide an OpenAI API key.
   if (auth.isAnonymous) return true;
 
   // Permanent accounts keep the existing BYOK behavior.
