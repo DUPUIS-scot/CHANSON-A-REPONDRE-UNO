@@ -18,21 +18,24 @@ class DjWhoPlayerProvider extends ChangeNotifier {
   int _selectedIndex = 0;
   bool _active = false;
   bool _isPlaying = false;
+  bool _shouldResumePlaying = false;
+  bool _playerRouteMounted = false;
   bool _advancing = false;
+  double _resumeSeconds = 0;
 
   List<VideoItem> get videos => _videos;
   YoutubePlayerController? get controller => _controller;
   int get selectedIndex => _selectedIndex;
   bool get isActive => _active;
-  bool get isPlaying => _isPlaying;
+  bool get isPlaying => _playerRouteMounted ? _isPlaying : _shouldResumePlaying;
+  bool get hasMountedPlayer => _playerRouteMounted && _controller != null;
+  double get resumeSeconds => _resumeSeconds;
   VideoItem? get selectedVideo =>
       _videos.isEmpty ? null : _videos[_selectedIndex];
 
-  void ensureInitialized() {
-    if (_controller != null || _videos.isEmpty) return;
-
-    _controller = YoutubePlayerController.fromVideoId(
-      videoId: _videos.first.videoId,
+  YoutubePlayerController _createController() {
+    return YoutubePlayerController.fromVideoId(
+      videoId: _videos[_selectedIndex].videoId,
       autoPlay: false,
       params: const YoutubePlayerParams(
         showControls: true,
@@ -42,7 +45,49 @@ class DjWhoPlayerProvider extends ChangeNotifier {
         interfaceLanguage: 'fr',
       ),
     );
-    _playerSubscription = _controller!.stream.listen(_onPlayerValue);
+  }
+
+  Future<void> enterPlayerRoute() async {
+    if (_videos.isEmpty) return;
+    _playerRouteMounted = true;
+
+    if (_controller == null) {
+      _controller = _createController();
+      _playerSubscription = _controller!.stream.listen(_onPlayerValue);
+    }
+
+    final controller = _controller!;
+    final resumeAt = _resumeSeconds;
+    final shouldPlay = _shouldResumePlaying;
+
+    if (resumeAt > 0) {
+      await controller.seekTo(seconds: resumeAt, allowSeekAhead: true);
+    }
+    if (shouldPlay) {
+      await controller.playVideo();
+    }
+    notifyListeners();
+  }
+
+  Future<void> leavePlayerRoute() async {
+    if (!_playerRouteMounted) return;
+    _playerRouteMounted = false;
+
+    final controller = _controller;
+    if (controller != null) {
+      try {
+        _resumeSeconds = await controller.currentTime;
+      } catch (_) {
+        // Keep the last known resume position if the iframe is already gone.
+      }
+      _shouldResumePlaying = _isPlaying;
+      _isPlaying = false;
+      await _playerSubscription?.cancel();
+      _playerSubscription = null;
+      await controller.close();
+      _controller = null;
+    }
+    notifyListeners();
   }
 
   void _onPlayerValue(YoutubePlayerValue value) {
@@ -51,6 +96,7 @@ class DjWhoPlayerProvider extends ChangeNotifier {
 
     if (_isPlaying != playing) {
       _isPlaying = playing;
+      _shouldResumePlaying = playing;
       changed = true;
     }
     if (playing && !_active) {
@@ -75,14 +121,17 @@ class DjWhoPlayerProvider extends ChangeNotifier {
 
   Future<void> selectVideo(int index) async {
     if (index < 0 || index >= _videos.length) return;
-    ensureInitialized();
-    final controller = _controller;
-    if (controller == null) return;
 
     _selectedIndex = index;
     _active = true;
+    _resumeSeconds = 0;
+    _shouldResumePlaying = true;
     notifyListeners();
-    await controller.loadVideoById(videoId: _videos[index].videoId);
+
+    final controller = _controller;
+    if (_playerRouteMounted && controller != null) {
+      await controller.loadVideoById(videoId: _videos[index].videoId);
+    }
   }
 
   Future<void> previous() async {
@@ -99,29 +148,42 @@ class DjWhoPlayerProvider extends ChangeNotifier {
   }
 
   Future<void> togglePlayback() async {
-    ensureInitialized();
-    final controller = _controller;
-    if (controller == null) return;
+    if (!_active) {
+      _active = true;
+    }
 
-    if (_isPlaying) {
-      await controller.pauseVideo();
+    final controller = _controller;
+    if (!_playerRouteMounted || controller == null) {
+      _shouldResumePlaying = !_shouldResumePlaying;
+      notifyListeners();
       return;
     }
 
-    if (!_active) {
-      _active = true;
-      notifyListeners();
+    if (_isPlaying) {
+      await controller.pauseVideo();
+      _shouldResumePlaying = false;
+      return;
     }
+
+    _shouldResumePlaying = true;
+    notifyListeners();
     await controller.playVideo();
   }
 
   Future<void> stopAndDismiss() async {
     final controller = _controller;
-    if (controller == null) return;
+    if (controller != null) {
+      try {
+        await controller.stopVideo();
+      } catch (_) {
+        // The route may be disappearing while the stop request is sent.
+      }
+    }
 
-    await controller.stopVideo();
     _active = false;
     _isPlaying = false;
+    _shouldResumePlaying = false;
+    _resumeSeconds = 0;
     notifyListeners();
   }
 
