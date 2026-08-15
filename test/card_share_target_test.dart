@@ -51,6 +51,48 @@ void main() {
     expect(shared?.imagePath, selected.imagePath);
   });
 
+  testWidgets('Browse exposes transcription and AI actions only in Browse', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1440, 1000));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final decks = (await tester.runAsync(_decks))!;
+    addTearDown(decks.dispose);
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: decks,
+        child: const MaterialApp(home: CardBrowserScreen()),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 250));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Transcribe'), findsNothing);
+    expect(find.text('Transcribe → Ask AI'), findsNothing);
+
+    final cards = find.byType(BrowseHandCard);
+    expect(cards, findsNWidgets(5));
+    tester.widget<BrowseHandCard>(cards.first).onTap();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Transcribe'), findsOneWidget);
+    expect(find.text('Transcribe → Ask AI'), findsOneWidget);
+
+    final card = decks.cards.first;
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: decks,
+        child: MaterialApp(home: CardFullscreenScreen(cardId: card.id)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Transcribe'), findsNothing);
+    expect(find.text('Transcribe → Ask AI'), findsNothing);
+    expect(find.text('Ask AI a question'), findsNothing);
+  });
+
   testWidgets('fullscreen keeps only bottom Share and targets visible card', (
     tester,
   ) async {

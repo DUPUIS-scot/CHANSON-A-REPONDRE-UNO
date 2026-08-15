@@ -3,8 +3,10 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/deck_provider.dart';
+import '../screens/ai_chat_screen.dart';
 import '../screens/card_browser_screen.dart';
 import '../screens/card_fullscreen_screen.dart';
+import '../screens/card_transcription_screen.dart';
 import '../screens/deck_selection_screen.dart';
 import '../screens/dj_who_videos_screen.dart';
 import '../screens/home_screen.dart';
@@ -80,11 +82,22 @@ abstract final class AppRouter {
         ),
         routes: [
           GoRoute(
+            path: ':cardId/transcription',
+            builder: (_, state) => CardTranscriptionScreen(
+              cardId: state.pathParameters['cardId']!,
+            ),
+          ),
+          GoRoute(
             path: ':cardId',
             builder: (_, state) =>
                 CardFullscreenScreen(cardId: state.pathParameters['cardId']!),
           ),
         ],
+      ),
+      GoRoute(
+        path: '${AppRoutes.aiChat}/:cardId',
+        builder: (_, state) =>
+            AiChatScreen(cardId: state.pathParameters['cardId']!),
       ),
       GoRoute(path: AppRoutes.search, builder: (_, _) => const SearchScreen()),
       GoRoute(
