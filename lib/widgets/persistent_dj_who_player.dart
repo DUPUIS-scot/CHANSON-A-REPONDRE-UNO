@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -31,44 +32,41 @@ class PersistentDjWhoPlayer extends StatelessWidget {
           return LayoutBuilder(
             builder: (context, constraints) {
               final desktop = constraints.maxWidth >= 850;
+              final miniWidth = math.min(
+                desktop ? 380.0 : constraints.maxWidth - 16,
+                constraints.maxWidth - (desktop ? 32 : 16),
+              );
+              final safeMiniWidth = math.max(200.0, miniWidth);
+              final miniVideoHeight = math.max(200.0, safeMiniWidth * 9 / 16);
+              const miniControlsHeight = 66.0;
+
               return Stack(
                 fit: StackFit.expand,
                 clipBehavior: Clip.hardEdge,
                 children: [
-                  Positioned(
-                    top: onDjWhoRoute ? 146 : null,
-                    left: onDjWhoRoute ? 16 : null,
-                    right: onDjWhoRoute ? (desktop ? 422 : 16) : 0,
-                    bottom: onDjWhoRoute ? null : 0,
-                    width: onDjWhoRoute ? null : 1,
-                    height: onDjWhoRoute ? null : 1,
-                    child: IgnorePointer(
-                      ignoring: !onDjWhoRoute,
-                      child: Opacity(
-                        opacity: onDjWhoRoute ? 1 : 0.01,
-                        child: ClipRect(
-                          child: _ExpandedPlayerCard(
-                            player: player,
-                            visible: onDjWhoRoute,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  if (!onDjWhoRoute && desktop)
+                  if (onDjWhoRoute)
                     Positioned(
-                      right: 16,
-                      bottom: 16,
-                      width: 460,
-                      child: _MiniPlayerBar(player: player),
+                      top: 146,
+                      left: 16,
+                      right: desktop ? 422 : 16,
+                      child: _ExpandedPlayerCard(player: player),
                     )
-                  else if (!onDjWhoRoute)
+                  else ...[
                     Positioned(
-                      left: 8,
-                      right: 8,
-                      bottom: 8,
+                      right: desktop ? 16 : 8,
+                      bottom: (desktop ? 16 : 8) + miniControlsHeight,
+                      width: safeMiniWidth,
+                      height: miniVideoHeight,
+                      child: _MiniVideoSurface(player: player),
+                    ),
+                    Positioned(
+                      right: desktop ? 16 : 8,
+                      bottom: desktop ? 16 : 8,
+                      width: safeMiniWidth,
+                      height: miniControlsHeight,
                       child: _MiniPlayerBar(player: player),
                     ),
+                  ],
                 ],
               );
             },
@@ -80,13 +78,9 @@ class PersistentDjWhoPlayer extends StatelessWidget {
 }
 
 class _ExpandedPlayerCard extends StatelessWidget {
-  const _ExpandedPlayerCard({
-    required this.player,
-    required this.visible,
-  });
+  const _ExpandedPlayerCard({required this.player});
 
   final DjWhoPlayerProvider player;
-  final bool visible;
 
   @override
   Widget build(BuildContext context) {
@@ -95,10 +89,10 @@ class _ExpandedPlayerCard extends StatelessWidget {
 
     return Material(
       key: const Key('persistent-dj-who-player'),
-      elevation: visible ? 6 : 0,
-      color: visible ? colors.surface : Colors.transparent,
-      borderRadius: BorderRadius.circular(visible ? 12 : 0),
-      clipBehavior: Clip.hardEdge,
+      elevation: 6,
+      color: colors.surface,
+      borderRadius: BorderRadius.circular(12),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -109,35 +103,54 @@ class _ExpandedPlayerCard extends StatelessWidget {
             aspectRatio: 16 / 9,
             keepAlive: true,
           ),
-          if (visible)
-            Padding(
-              padding: const EdgeInsets.all(14),
-              child: Row(
-                children: [
-                  const DjWhoAvatar(size: 40),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          video.title,
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        Text(
-                          'Vidéo ${player.selectedIndex + 1} sur '
-                          '${player.videos.length} · lecture suivante auto',
-                        ),
-                      ],
-                    ),
+          Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              children: [
+                const DjWhoAvatar(size: 40),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        video.title,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      Text(
+                        'Vidéo ${player.selectedIndex + 1} sur '
+                        '${player.videos.length} · lecture suivante auto',
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
+          ),
         ],
       ),
     );
   }
+}
+
+class _MiniVideoSurface extends StatelessWidget {
+  const _MiniVideoSurface({required this.player});
+
+  final DjWhoPlayerProvider player;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    elevation: 18,
+    color: Colors.black,
+    borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+    clipBehavior: Clip.antiAlias,
+    child: YoutubePlayer(
+      key: const Key('dj-who-persistent-youtube-player'),
+      controller: player.controller!,
+      aspectRatio: 16 / 9,
+      keepAlive: true,
+    ),
+  );
 }
 
 class _MiniPlayerBar extends StatelessWidget {
@@ -154,7 +167,7 @@ class _MiniPlayerBar extends StatelessWidget {
       key: const Key('persistent-dj-who-mini-player'),
       elevation: 18,
       color: colors.surface,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(14)),
       clipBehavior: Clip.antiAlias,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
