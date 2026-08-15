@@ -108,17 +108,9 @@ class GameProvider extends ChangeNotifier {
   bool canPlay(CardImageModel card) {
     final state = _state;
     if (state == null) return false;
-    if (card.category.toLowerCase() == 'sauvage' ||
-        card.colour.toLowerCase() == 'black') {
-      return true;
-    }
-    return switch (state.matchRule) {
-      MatchRule.colourOnly => _colour(card.colour) == state.currentColour,
-      MatchRule.categoryOnly => card.category == state.currentCategory,
-      MatchRule.colourOrCategory =>
-        _colour(card.colour) == state.currentColour ||
-            card.category == state.currentCategory,
-    };
+    return state.players.any(
+      (player) => player.hand.any((heldCard) => heldCard.id == card.id),
+    );
   }
 
   Future<bool> play(
@@ -128,28 +120,23 @@ class GameProvider extends ChangeNotifier {
   }) async {
     final state = _state;
     if (state == null) return false;
-    if (!canPlay(card)) {
-      _message =
-          'Illegal play: match ${state.matchRule == MatchRule.colourOnly
-              ? 'the colour'
-              : state.matchRule == MatchRule.categoryOnly
-              ? 'the category'
-              : 'the colour or category'}, or play a Sauvage card.';
+    final players = [...state.players];
+    final player = players[state.currentPlayerIndex];
+    if (!player.hand.any((item) => item.id == card.id)) {
+      _message = 'This card is not in the active player hand.';
       notifyListeners();
       return false;
     }
-    final players = [...state.players];
-    final player = players[state.currentPlayerIndex];
     final hand = [...player.hand]..removeWhere((item) => item.id == card.id);
     final drawPile = [...state.drawPile];
-    if (hand.length < 5 && drawPile.isNotEmpty) {
+    while (hand.length < 5 && drawPile.isNotEmpty) {
       hand.add(drawPile.removeLast());
     }
     players[state.currentPlayerIndex] = player.copyWith(hand: hand);
     final isWild =
         card.category.toLowerCase() == 'sauvage' ||
         card.colour.toLowerCase() == 'black';
-    var next = _advance(state);
+    final next = _advance(state);
     _state = state.copyWith(
       topCard: card,
       currentColour: isWild
@@ -162,13 +149,9 @@ class GameProvider extends ChangeNotifier {
       drawPile: drawPile,
       players: players,
       currentPlayerIndex: next,
-      winnerName: hand.isEmpty && !state.collaborativeMode ? player.name : null,
+      winnerName: null,
     );
-    _message = hand.isEmpty
-        ? (state.collaborativeMode
-              ? 'The group completed the deck.'
-              : '${player.name} wins!')
-        : null;
+    _message = null;
     await _save();
     return true;
   }
@@ -196,12 +179,9 @@ class GameProvider extends ChangeNotifier {
       return;
     }
     final hand = [...player.hand];
-    do {
+    while (hand.length < 5 && drawPile.isNotEmpty) {
       hand.add(drawPile.removeLast());
-    } while (state.drawRule == DrawRule.drawUntilPlayable &&
-        hand.length < 5 &&
-        drawPile.isNotEmpty &&
-        !canPlay(hand.last));
+    }
     players[state.currentPlayerIndex] = player.copyWith(hand: hand);
     state = state.copyWith(
       drawPile: drawPile,
