@@ -128,7 +128,9 @@ class _PlayScreenState extends State<PlayScreen> {
   Future<void> playSelected() async {
     final game = context.read<GameProvider>();
     final state = game.state;
-    final selected = state?.players.first.hand
+    if (state == null || state.players.isEmpty) return;
+    final player = state.players[state.currentPlayerIndex];
+    final selected = player.hand
         .where((card) => card.id == selectedCardId)
         .firstOrNull;
     if (selected == null) return;
@@ -260,7 +262,7 @@ class _PlayScreenState extends State<PlayScreen> {
                             final narrow = constraints.maxWidth < 600;
                             final veryNarrow = constraints.maxWidth < 380;
                             final short = constraints.maxHeight < 650;
-                            final player = state.players.first;
+                            final player = state.players[state.currentPlayerIndex];
                             final selected = player.hand
                                 .where((card) => card.id == selectedCardId)
                                 .firstOrNull;
@@ -288,7 +290,6 @@ class _PlayScreenState extends State<PlayScreen> {
                                       .clamp(188.0, 270.0);
                             final handBottom = actionHeight + (short ? 5 : 7);
                             final canDraw =
-                                state.currentPlayerIndex == 0 &&
                                 player.hand.length < 5 &&
                                 !dealerBusy;
 
