@@ -2,6 +2,12 @@ name: Check Render Diagnostics
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'server/**'
+      - '.github/workflows/render-diagnostics.yml'
 
 permissions:
   contents: read
@@ -18,6 +24,22 @@ jobs:
             echo "AI_BACKEND_URL repository variable is not configured."
             exit 1
           fi
+
+      - name: Wait for Render diagnostics endpoint
+        env:
+          AI_BACKEND_URL: ${{ vars.AI_BACKEND_URL }}
+        run: |
+          for attempt in $(seq 1 18); do
+            echo "Attempt $attempt/18"
+            if curl --fail --silent --show-error --max-time 20 \
+              "$AI_BACKEND_URL/diagnostics" > /tmp/diagnostics.json; then
+              jq . /tmp/diagnostics.json
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Render diagnostics endpoint did not become ready in time."
+          exit 1
 
       - name: Health
         env:
