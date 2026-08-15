@@ -185,6 +185,8 @@ class _FakeAuthService implements AuthService {
   AuthUser? get currentUser =>
       const AuthUser(id: 'user-1', email: 'user@example.com');
   @override
+  Future<AuthUser> signInAnonymously() => throw UnimplementedError();
+  @override
   Future<String?> getAccessToken() async => token;
   @override
   Future<String?> refreshAccessToken() async {
