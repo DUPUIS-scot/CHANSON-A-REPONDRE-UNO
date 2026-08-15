@@ -19,6 +19,10 @@ class AppConfig {
     'SUPABASE_PUBLISHABLE_KEY',
     defaultValue: '',
   );
+  static const turnstileSiteKey = String.fromEnvironment(
+    'TURNSTILE_SITE_KEY',
+    defaultValue: '0x4AAAAAAERKLvJuMsQpWZhI',
+  );
   static const skipAuthForDevelopment = bool.fromEnvironment(
     'SKIP_AUTH_FOR_DEVELOPMENT',
     defaultValue: false,
@@ -33,6 +37,9 @@ class AppConfig {
 
   static bool get shouldSkipAuthentication =>
       skipAuthForDevelopment && !kReleaseMode;
+
+  static bool get shouldUseTurnstile =>
+      kIsWeb && turnstileSiteKey.trim().isNotEmpty;
 
   static bool get hasAuthConfiguration =>
       isValidSupabaseUrl(supabaseUrl) &&
