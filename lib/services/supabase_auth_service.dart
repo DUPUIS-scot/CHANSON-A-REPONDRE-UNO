@@ -17,6 +17,24 @@ class SupabaseAuthService implements AuthService {
   AuthUser? get currentUser => _toUser(_client.auth.currentUser);
 
   @override
+  Future<AuthUser> signInAnonymously() async {
+    try {
+      final current = _client.auth.currentUser;
+      if (current != null) return _requireUser(current);
+      final response = await _client.auth.signInAnonymously();
+      final session = response.session ?? _client.auth.currentSession;
+      if (session == null || session.accessToken.trim().isEmpty) {
+        throw const AuthException(
+          'Guest authentication succeeded without a valid session.',
+        );
+      }
+      return _requireUser(response.user ?? session.user);
+    } on supabase.AuthException catch (error) {
+      throw AuthException(_friendly(error));
+    }
+  }
+
+  @override
   Future<AuthUser> signIn({
     required String email,
     required String password,
@@ -103,12 +121,15 @@ class SupabaseAuthService implements AuthService {
   }
 
   AuthUser? _toUser(supabase.User? user) {
-    if (user == null || user.email == null) return null;
+    if (user == null) return null;
     return AuthUser(
       id: user.id,
-      email: user.email!,
+      email: user.email ?? '',
       displayName: user.userMetadata?['display_name'] as String?,
-      provider: user.appMetadata['provider']?.toString() ?? 'email',
+      provider: user.isAnonymous
+          ? 'anonymous'
+          : user.appMetadata['provider']?.toString() ?? 'email',
+      isAnonymous: user.isAnonymous,
     );
   }
 
