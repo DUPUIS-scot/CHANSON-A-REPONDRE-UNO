@@ -30,14 +30,14 @@ void main() {
     );
   });
 
-  test('BRIO public URL remains brio-XXX', () {
+  test('BRIO public URL uses uppercase BRIO-XXX', () {
     expect(
       PublicCardShareService.shareUrlFor(
         cardId: 'brio-007',
         deckId: AppConstants.brioDeckId,
         applicationUri: deployed,
       ).toString(),
-      'https://dupuis-scot.github.io/CHANSON-A-REPONDRE-UNO/share/brio-007/',
+      'https://dupuis-scot.github.io/CHANSON-A-REPONDRE-UNO/share/BRIO-007/',
     );
   });
 
@@ -75,7 +75,7 @@ void main() {
     expect(receivedImage, 'assets/cards/final_import/example.png');
   });
 
-  test('BRIO shares canonical link without image attachment', () async {
+  test('BRIO shares canonical uppercase link without image attachment', () async {
     final card = _card(
       id: 'brio-001',
       deckId: AppConstants.brioDeckId,
@@ -105,7 +105,7 @@ void main() {
     );
     expect(result, CardShareResult.shared);
     expect(receivedTitle, 'Chanson à répondre BRIO — Carte 001');
-    expect(receivedUrl, endsWith('/share/brio-001/'));
+    expect(receivedUrl, endsWith('/share/BRIO-001/'));
     expect(receivedImage, isNull);
   });
 }

@@ -26,22 +26,16 @@ class FullscreenBrowseCard extends StatelessWidget {
         '${card.isFavourite ? 'favourite' : 'not favourite'}',
     child: ZoomableCardView(
       onZoomChanged: onZoomChanged,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(72, 84, 72, 72),
-        child: Center(
-          child: Hero(
-            tag: 'browse-hand-card-${card.id}',
-            child: AspectRatio(
-              aspectRatio: card.aspectRatio,
-              child: StoredImage(
-                source: card.imagePath,
-                fit: BoxFit.contain,
-                errorBuilder: (_, _, _) => const ColoredBox(
-                  color: Color(0xFF24170F),
-                  child: Center(
-                    child: Icon(Icons.broken_image_outlined, size: 64),
-                  ),
-                ),
+      child: SizedBox.expand(
+        child: Hero(
+          tag: 'browse-hand-card-${card.id}',
+          child: StoredImage(
+            source: card.imagePath,
+            fit: BoxFit.contain,
+            errorBuilder: (_, _, _) => const ColoredBox(
+              color: Color(0xFF24170F),
+              child: Center(
+                child: Icon(Icons.broken_image_outlined, size: 64),
               ),
             ),
           ),
