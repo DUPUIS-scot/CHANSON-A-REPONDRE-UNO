@@ -102,6 +102,11 @@ class _ChansonUnoAppState extends State<ChansonUnoApp> {
               widget.authServiceOverride == null &&
               widget.aiBackendUrlOverride == null) ||
           widget.authenticationInitializationError != null),
+      anonymousGuestEnabled:
+          AppConfig.hasAuthConfiguration &&
+          widget.authenticationInitializationError == null &&
+          widget.authServiceOverride == null &&
+          widget.aiBackendUrlOverride == null,
     );
     aiClient = AiRestClient(
       baseUrl: effectiveBackendUrl,
@@ -206,8 +211,7 @@ class _ChansonUnoAppState extends State<ChansonUnoApp> {
                     const SingleActivator(
                       LogicalKeyboardKey.keyH,
                       alt: true,
-                    ): () =>
-                        _returnHome(context),
+                    ): () => _returnHome(context),
                     const SingleActivator(
                       LogicalKeyboardKey.arrowLeft,
                       alt: true,
@@ -259,6 +263,8 @@ class _TestAuthService implements AuthService {
   @override
   AuthUser? get currentUser => _user;
   @override
+  Future<AuthUser> signInAnonymously() async => _user;
+  @override
   Future<String?> getAccessToken() async => 'test-token';
   @override
   Future<String?> refreshAccessToken() async => 'test-token';
@@ -285,6 +291,9 @@ class _DevelopmentUiAuthService implements AuthService {
   Stream<AuthUser?> get authStateChanges => const Stream.empty();
   @override
   AuthUser? get currentUser => null;
+  @override
+  Future<AuthUser> signInAnonymously() =>
+      throw const AuthException('Configure Supabase before creating a guest session.');
   @override
   Future<String?> getAccessToken() async => null;
   @override
