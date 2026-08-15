@@ -129,15 +129,15 @@ class _AiChatScreenState extends State<AiChatScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.lock_outline, size: 48),
+                    const Icon(Icons.cloud_off_outlined, size: 48),
                     const SizedBox(height: 12),
                     Text(
-                      'Real authentication required',
+                      'Guest AI session unavailable',
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      'This screen is available in development mode, but AI requests require a genuine Supabase account and session.',
+                      'No sign-in is required. Retry the anonymous session or reload the app.',
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 16),
@@ -146,8 +146,8 @@ class _AiChatScreenState extends State<AiChatScreen> {
                         context,
                         featureName: 'AI Chat',
                       ),
-                      icon: const Icon(Icons.person_outline),
-                      label: const Text('Open Profile'),
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Retry guest session'),
                     ),
                   ],
                 ),
