@@ -108,40 +108,29 @@ class _CardFullscreenScreenState extends State<CardFullscreenScreen> {
             controller: controller,
             itemCount: cards.length,
             onPageChanged: (index) => setState(() => currentIndex = index),
-            itemBuilder: (_, index) => LayoutBuilder(
-              builder: (context, constraints) => Stack(
-                fit: StackFit.expand,
-                children: [
-                  GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: _close,
-                  ),
-                  Center(
-                    child: GestureDetector(
-                      onTap: () {},
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          maxWidth: constraints.maxWidth * .92,
-                          maxHeight: constraints.maxHeight * .92,
-                        ),
-                        child: AspectRatio(
-                          aspectRatio: cards[index].aspectRatio,
-                          child: InteractiveViewer(
-                            minScale: .75,
-                            maxScale: 5,
-                            child: StoredImage(
-                              source: cards[index].path,
-                              fit: BoxFit.contain,
-                              errorBuilder: (_, _, _) =>
-                                  const Icon(Icons.broken_image, size: 80),
-                            ),
-                          ),
-                        ),
+            itemBuilder: (_, index) => Stack(
+              fit: StackFit.expand,
+              children: [
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: _close,
+                ),
+                GestureDetector(
+                  onTap: () {},
+                  child: InteractiveViewer(
+                    minScale: .75,
+                    maxScale: 5,
+                    child: SizedBox.expand(
+                      child: StoredImage(
+                        source: cards[index].imagePath,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, _, _) =>
+                            const Icon(Icons.broken_image, size: 80),
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
