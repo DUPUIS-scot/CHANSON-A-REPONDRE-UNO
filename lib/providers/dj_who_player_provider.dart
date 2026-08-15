@@ -58,13 +58,19 @@ class DjWhoPlayerProvider extends ChangeNotifier {
 
     final controller = _controller!;
     final resumeAt = _resumeSeconds;
+    final videoId = _videos[_selectedIndex].videoId;
     final shouldPlay = _shouldResumePlaying;
 
-    if (resumeAt > 0) {
-      await controller.seekTo(seconds: resumeAt, allowSeekAhead: true);
-    }
     if (shouldPlay) {
-      await controller.playVideo();
+      await controller.loadVideoById(
+        videoId: videoId,
+        startSeconds: resumeAt > 0 ? resumeAt : null,
+      );
+    } else if (resumeAt > 0) {
+      await controller.cueVideoById(
+        videoId: videoId,
+        startSeconds: resumeAt,
+      );
     }
     notifyListeners();
   }
