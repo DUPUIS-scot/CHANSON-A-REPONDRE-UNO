@@ -7,27 +7,12 @@ import '../data/dj_who_videos.dart';
 import '../models/video_item.dart';
 
 class DjWhoPlayerProvider extends ChangeNotifier {
-  DjWhoPlayerProvider() {
-    _videos = djWhoVideos
-        .where((video) => video.hasValidVideoId)
-        .toList(growable: false);
-    if (_videos.isEmpty) return;
+  DjWhoPlayerProvider()
+    : _videos = djWhoVideos
+          .where((video) => video.hasValidVideoId)
+          .toList(growable: false);
 
-    _controller = YoutubePlayerController.fromVideoId(
-      videoId: _videos.first.videoId,
-      autoPlay: false,
-      params: const YoutubePlayerParams(
-        showControls: true,
-        showFullscreenButton: true,
-        enableKeyboard: true,
-        strictRelatedVideos: true,
-        interfaceLanguage: 'fr',
-      ),
-    );
-    _playerSubscription = _controller!.stream.listen(_onPlayerValue);
-  }
-
-  late final List<VideoItem> _videos;
+  final List<VideoItem> _videos;
   YoutubePlayerController? _controller;
   StreamSubscription<YoutubePlayerValue>? _playerSubscription;
   int _selectedIndex = 0;
@@ -42,6 +27,23 @@ class DjWhoPlayerProvider extends ChangeNotifier {
   bool get isPlaying => _isPlaying;
   VideoItem? get selectedVideo =>
       _videos.isEmpty ? null : _videos[_selectedIndex];
+
+  void ensureInitialized() {
+    if (_controller != null || _videos.isEmpty) return;
+
+    _controller = YoutubePlayerController.fromVideoId(
+      videoId: _videos.first.videoId,
+      autoPlay: false,
+      params: const YoutubePlayerParams(
+        showControls: true,
+        showFullscreenButton: true,
+        enableKeyboard: true,
+        strictRelatedVideos: true,
+        interfaceLanguage: 'fr',
+      ),
+    );
+    _playerSubscription = _controller!.stream.listen(_onPlayerValue);
+  }
 
   void _onPlayerValue(YoutubePlayerValue value) {
     var changed = false;
@@ -72,8 +74,10 @@ class DjWhoPlayerProvider extends ChangeNotifier {
   }
 
   Future<void> selectVideo(int index) async {
+    if (index < 0 || index >= _videos.length) return;
+    ensureInitialized();
     final controller = _controller;
-    if (controller == null || index < 0 || index >= _videos.length) return;
+    if (controller == null) return;
 
     _selectedIndex = index;
     _active = true;
@@ -95,6 +99,7 @@ class DjWhoPlayerProvider extends ChangeNotifier {
   }
 
   Future<void> togglePlayback() async {
+    ensureInitialized();
     final controller = _controller;
     if (controller == null) return;
 
