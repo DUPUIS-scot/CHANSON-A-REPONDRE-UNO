@@ -31,11 +31,9 @@ export class UserOpenAiService {
   }
 
   async clientFor(userId, { allowSharedKey = false } = {}) {
-    const record = await this.store.get(userId);
-    if (record) {
-      const apiKey = decryptCredential(record, this.environment.credentialEncryptionKey);
-      return this.openAiFactory(apiKey);
-    }
+    // Anonymous visitors never have or need a personal BYOK credential. Route
+    // them directly to the server-owned key so guest AI does not depend on the
+    // credential table or expose a Profile/sign-in requirement.
     if (allowSharedKey) {
       if (!this.environment.openAiApiKey) {
         throw new AppError(
@@ -45,6 +43,12 @@ export class UserOpenAiService {
         );
       }
       return this.openAiFactory(this.environment.openAiApiKey);
+    }
+
+    const record = await this.store.get(userId);
+    if (record) {
+      const apiKey = decryptCredential(record, this.environment.credentialEncryptionKey);
+      return this.openAiFactory(apiKey);
     }
     throw new AppError(
       409,
