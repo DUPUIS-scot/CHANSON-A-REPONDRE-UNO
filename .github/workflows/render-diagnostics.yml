@@ -18,16 +18,16 @@ jobs:
     steps:
       - name: Validate backend URL
         env:
-          AI_BACKEND_URL: ${{ vars.AI_BACKEND_URL }}
+          AI_BACKEND_URL: ${{ secrets.AI_BACKEND_URL || vars.AI_BACKEND_URL }}
         run: |
           if [ -z "$AI_BACKEND_URL" ]; then
-            echo "AI_BACKEND_URL repository variable is not configured."
+            echo "AI_BACKEND_URL is not configured in GitHub Actions secrets or variables."
             exit 1
           fi
 
       - name: Wait for Render diagnostics endpoint
         env:
-          AI_BACKEND_URL: ${{ vars.AI_BACKEND_URL }}
+          AI_BACKEND_URL: ${{ secrets.AI_BACKEND_URL || vars.AI_BACKEND_URL }}
         run: |
           for attempt in $(seq 1 18); do
             echo "Attempt $attempt/18"
@@ -43,21 +43,21 @@ jobs:
 
       - name: Health
         env:
-          AI_BACKEND_URL: ${{ vars.AI_BACKEND_URL }}
+          AI_BACKEND_URL: ${{ secrets.AI_BACKEND_URL || vars.AI_BACKEND_URL }}
         run: |
           curl --fail-with-body --silent --show-error --max-time 30 \
             "$AI_BACKEND_URL/health" | jq .
 
       - name: Readiness
         env:
-          AI_BACKEND_URL: ${{ vars.AI_BACKEND_URL }}
+          AI_BACKEND_URL: ${{ secrets.AI_BACKEND_URL || vars.AI_BACKEND_URL }}
         run: |
           curl --fail-with-body --silent --show-error --max-time 30 \
             "$AI_BACKEND_URL/ready" | jq .
 
       - name: Diagnostics
         env:
-          AI_BACKEND_URL: ${{ vars.AI_BACKEND_URL }}
+          AI_BACKEND_URL: ${{ secrets.AI_BACKEND_URL || vars.AI_BACKEND_URL }}
         run: |
           curl --fail-with-body --silent --show-error --max-time 30 \
             "$AI_BACKEND_URL/diagnostics" | jq .
