@@ -132,16 +132,6 @@ class _PlayScreenState extends State<PlayScreen> {
         .where((card) => card.id == selectedCardId)
         .firstOrNull;
     if (selected == null) return;
-    if (!game.canPlay(selected)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'This card does not match the current colour or category.',
-          ),
-        ),
-      );
-      return;
-    }
 
     setState(() => dealerBusy = true);
     await puppetController.receiveFromPlayer(selected.imagePath);
@@ -352,7 +342,7 @@ class _PlayScreenState extends State<PlayScreen> {
                                           .toList(growable: false),
                                       backImagePath: handBackImagePath,
                                       selectedCardId: selectedCardId,
-                                      isPlayable: game.canPlay,
+                                      isPlayable: (_) => true,
                                       hideAll: hideHand,
                                       onSelectionChanged: (card) => setState(() {
                                         selectedCardId = card?.id;
@@ -374,10 +364,7 @@ class _PlayScreenState extends State<PlayScreen> {
                                   bottom: 8,
                                   height: actionHeight,
                                   child: _PlayActionBar(
-                                    canPlay:
-                                        selected != null &&
-                                        game.canPlay(selected) &&
-                                        !dealerBusy,
+                                    canPlay: selected != null && !dealerBusy,
                                     onPlay: playSelected,
                                   ),
                                 ),
@@ -512,8 +499,8 @@ class _GameLauncher extends StatelessWidget {
                             );
                           }
                         },
-                  icon: const Icon(Icons.play_arrow_rounded),
-                  label: const Text('START GAME'),
+                  icon: const Icon(Icons.play_arrow),
+                  label: const Text('Start game'),
                 ),
               ],
             ),
