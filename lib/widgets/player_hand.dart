@@ -60,27 +60,38 @@ class _PlayerHandState extends State<PlayerHand> {
         final count = widget.cards.length;
         final roomy = constraints.maxWidth >= 720;
         final overlapStep = roomy ? .78 : .70;
-        // Rotating the two outside cards adds a few visual pixels beyond their
-        // unrotated bounds. Reserve a small gutter on phones so the theatrical
-        // fan remains fully visible instead of clipping against the viewport.
-        final fanGutter = constraints.maxWidth < 560 ? 20.0 : 0.0;
-        final usableWidth = math.max(0.0, constraints.maxWidth - fanGutter);
+        const rotationReserve = 16.0;
+        final horizontalReserve = constraints.maxWidth < 560 ? 28.0 : 12.0;
+        final usableWidth = math.max(
+          0.0,
+          constraints.maxWidth - horizontalReserve - rotationReserve,
+        );
         final widthLimited = usableWidth /
             (1 + math.max(0, count - 1) * overlapStep);
-        final heightLimited = math.max(60.0, (constraints.maxHeight + 70) / 1.5);
+        final heightLimited = math.max(
+          60.0,
+          (constraints.maxHeight - 34) / 1.5,
+        );
         final desiredWidth = constraints.maxWidth >= 850
             ? 190.0
             : constraints.maxWidth >= 560
             ? 152.0
             : 110.0;
-        final cardWidth = math.min(
-          desiredWidth,
-          math.min(widthLimited, heightLimited),
+        final cardWidth = math.max(
+          48.0,
+          math.min(
+            desiredWidth,
+            math.min(widthLimited, heightLimited),
+          ),
         );
         final cardHeight = cardWidth * 1.5;
         final step = cardWidth * overlapStep;
         final contentWidth = cardWidth + step * (count - 1);
-        final centeredOffset = math.max(0, (constraints.maxWidth - contentWidth) / 2);
+        final centeredOffset = math.max(
+          horizontalReserve / 2,
+          (constraints.maxWidth - contentWidth) / 2,
+        );
+        final maxBottom = math.max(0.0, constraints.maxHeight - cardHeight - 4);
         final paintOrder = List<int>.generate(count, (index) => index);
         final selectedIndex = paintOrder.indexWhere(
           (index) => widget.cards[index].id == widget.selectedCardId,
@@ -88,57 +99,62 @@ class _PlayerHandState extends State<PlayerHand> {
         if (selectedIndex >= 0) {
           paintOrder.add(paintOrder.removeAt(selectedIndex));
         }
-        return SizedBox.expand(
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              for (final index in paintOrder)
-                _DealtCard(
-                  key: ValueKey(widget.cards[index].id),
-                  delay: Duration(milliseconds: index * 95),
-                  left: centeredOffset + index * step,
-                  bottom: () {
-                    final centerDistance =
-                        (index - (count - 1) / 2).abs() /
-                        math.max(1, count / 2);
-                    final base = 5 + (1 - centerDistance) * 12;
-                    return base +
-                        (widget.selectedCardId == widget.cards[index].id
-                            ? 17
-                            : 0);
-                  }(),
-                  rotation: (index - (count - 1) / 2) * .052,
-                  width: cardWidth,
-                  height: cardHeight,
-                  selected: widget.selectedCardId == widget.cards[index].id,
-                  child: FlippablePlayingCard(
-                    frontImagePath: widget.cards[index].imagePath,
-                    backImagePath: widget.backImagePath,
-                    category: widget.cards[index].category,
-                    isFaceUp: revealed.contains(widget.cards[index].id),
-                    isSelected:
-                        widget.selectedCardId == widget.cards[index].id,
-                    isPlayable: widget.isPlayable(widget.cards[index]),
-                    semanticLabel:
-                        'Card ${index + 1} of ${widget.cards.length}, '
-                        '${widget.cards[index].category}, '
-                        '${revealed.contains(widget.cards[index].id) ? 'face up' : 'face down'}, '
-                        '${widget.isPlayable(widget.cards[index]) ? 'playable' : 'unavailable'}',
-                    onTap: () => select(widget.cards[index]),
-                    onLongPress: widget.onLongPressCard == null
-                        ? null
-                        : () => widget.onLongPressCard!(
-                            List<CardImageModel>.unmodifiable(widget.cards),
-                            List<bool>.unmodifiable(
-                              widget.cards
-                                  .map((card) => revealed.contains(card.id))
-                                  .toList(),
+        return ClipRect(
+          child: SizedBox.expand(
+            child: Stack(
+              clipBehavior: Clip.hardEdge,
+              children: [
+                for (final index in paintOrder)
+                  _DealtCard(
+                    key: ValueKey(widget.cards[index].id),
+                    delay: Duration(milliseconds: index * 95),
+                    left: centeredOffset + index * step,
+                    bottom: math.min(
+                      maxBottom,
+                      () {
+                        final centerDistance =
+                            (index - (count - 1) / 2).abs() /
+                            math.max(1, count / 2);
+                        final base = 5 + (1 - centerDistance) * 12;
+                        return base +
+                            (widget.selectedCardId == widget.cards[index].id
+                                ? 12
+                                : 0);
+                      }(),
+                    ),
+                    rotation: (index - (count - 1) / 2) * .052,
+                    width: cardWidth,
+                    height: cardHeight,
+                    selected: widget.selectedCardId == widget.cards[index].id,
+                    child: FlippablePlayingCard(
+                      frontImagePath: widget.cards[index].imagePath,
+                      backImagePath: widget.backImagePath,
+                      category: widget.cards[index].category,
+                      isFaceUp: revealed.contains(widget.cards[index].id),
+                      isSelected:
+                          widget.selectedCardId == widget.cards[index].id,
+                      isPlayable: widget.isPlayable(widget.cards[index]),
+                      semanticLabel:
+                          'Card ${index + 1} of ${widget.cards.length}, '
+                          '${widget.cards[index].category}, '
+                          '${revealed.contains(widget.cards[index].id) ? 'face up' : 'face down'}, '
+                          '${widget.isPlayable(widget.cards[index]) ? 'playable' : 'unavailable'}',
+                      onTap: () => select(widget.cards[index]),
+                      onLongPress: widget.onLongPressCard == null
+                          ? null
+                          : () => widget.onLongPressCard!(
+                              List<CardImageModel>.unmodifiable(widget.cards),
+                              List<bool>.unmodifiable(
+                                widget.cards
+                                    .map((card) => revealed.contains(card.id))
+                                    .toList(),
+                              ),
+                              index,
                             ),
-                            index,
-                          ),
+                    ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
         );
       },
@@ -189,7 +205,7 @@ class _DealtCardState extends State<_DealtCard> {
     width: widget.width,
     height: widget.height,
     child: AnimatedScale(
-      scale: dealt ? (widget.selected ? 1.025 : 1) : .35,
+      scale: dealt ? (widget.selected ? 1.015 : 1) : .35,
       duration: const Duration(milliseconds: 420),
       child: AnimatedRotation(
         turns: dealt ? widget.rotation / (2 * math.pi) : .2,

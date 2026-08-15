@@ -80,6 +80,7 @@ void main() {
       for (final card in find.byType(FlippablePlayingCard).evaluate()) {
         final rect = tester.getRect(find.byWidget(card.widget));
         expect(rect.left, greaterThanOrEqualTo(0), reason: 'viewport $size');
+        expect(rect.top, greaterThanOrEqualTo(0), reason: 'viewport $size');
         expect(rect.right, lessThanOrEqualTo(size.width), reason: 'viewport $size');
         expect(rect.bottom, lessThanOrEqualTo(size.height), reason: 'viewport $size');
       }
