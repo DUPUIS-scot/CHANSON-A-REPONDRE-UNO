@@ -89,9 +89,9 @@ void main() {
       imagePath: path,
     );
 
-    expect(slug, 'brio-001');
+    expect(slug, 'BRIO-001');
     expect(title, 'Chanson à répondre BRIO — Carte 001');
-    expect(html, contains('/share/brio-001/'));
+    expect(html, contains('/share/BRIO-001/'));
     expect(html, contains('/assets/$path'));
     expect(html, contains('property="og:image:secure_url"'));
     expect(html, contains('property="og:image:type" content="image/jpeg"'));
