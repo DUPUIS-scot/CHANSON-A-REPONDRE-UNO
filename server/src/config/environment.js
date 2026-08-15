@@ -76,6 +76,9 @@ export function parseEnvironment(source, { allowTestValues = false } = {}) {
   ) {
     problems.push('OPENAI_API_KEY is invalid');
   }
+  if (nodeEnvironment === 'production' && !openAiApiKey) {
+    problems.push('OPENAI_API_KEY is required for anonymous AI in production');
+  }
 
   const allowedOrigins = (source.ALLOWED_ORIGINS || '')
     .split(',')
