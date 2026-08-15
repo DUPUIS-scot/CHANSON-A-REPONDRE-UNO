@@ -110,6 +110,14 @@ class AuthController extends ChangeNotifier {
     }
   }
 
+  Future<bool> ensureAnonymousSession() async {
+    if (_user != null) return true;
+    if (!anonymousGuestEnabled || configurationError || developmentBypassEnabled) {
+      return false;
+    }
+    return _startGuestSession();
+  }
+
   Future<bool> _startGuestSession() async {
     if (_user != null) return true;
     status = AuthStatus.loading;

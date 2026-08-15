@@ -222,12 +222,15 @@ class AiRestClient {
     var response = await _run(() => request(headers), timeout);
     if (response.statusCode != 401 || _authService == null) return response;
 
+    final wasAnonymous = _authService.currentUser?.isAnonymous ?? false;
     final refreshed = await _authService.refreshAccessToken();
     if (refreshed == null || refreshed.isEmpty) {
       await _authService.signOut();
-      throw const AiApiException(
+      throw AiApiException(
         AiApiErrorType.unauthorized,
-        'Your session has expired. Please sign in again.',
+        wasAnonymous
+            ? 'Your guest AI session expired. Please retry the card action or reload the app.'
+            : 'Your session has expired. Please sign in again.',
         statusCode: 401,
       );
     }
@@ -241,10 +244,13 @@ class AiRestClient {
     if (_authService == null) return const {};
     final token = await _authService.getAccessToken();
     if (token == null || token.isEmpty) {
+      final anonymous = _authService.currentUser?.isAnonymous ?? false;
       throw AiApiException(
         AiApiErrorType.unauthorized,
-        AppConfig.shouldSkipAuthentication
-            ? 'Real authentication required. This AI feature requires a genuine Supabase login.'
+        anonymous
+            ? 'Guest AI session is unavailable. Please retry the card action or reload the app.'
+            : AppConfig.shouldSkipAuthentication
+            ? 'AI authentication is unavailable in development mode.'
             : 'Authentication is required.',
       );
     }
