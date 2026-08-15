@@ -64,6 +64,17 @@ class _CardBrowserScreenState extends State<CardBrowserScreen> {
 
   void open(CardImageModel card) => context.go(AppRoutes.cardAlias(card.id));
 
+  void openTranscription(CardImageModel card) =>
+      context.push(AppRoutes.transcription(card.id));
+
+  void askAi(CardImageModel card) {
+    if (card.transcriptionReviewed) {
+      context.push(AppRoutes.cardChat(card.id));
+      return;
+    }
+    context.push(AppRoutes.transcription(card.id));
+  }
+
   Future<void> share(CardImageModel card) async {
     final customShare = widget.shareCard;
     final deck = context.read<DeckProvider>().deckForCard(card.id);
@@ -328,20 +339,48 @@ class _CardBrowserScreenState extends State<CardBrowserScreen> {
                               ),
                             ),
                           if (selected != null)
-                            SelectedCardActions(
-                              card: selected,
-                              deckName: deck.name,
-                              onOpen: () => open(selected),
-                              onShare: () => share(selected),
-                              onFavourite: () async {
-                                await decks.toggleFavourite(selected.id);
-                                final refreshed = decks.activeDeck;
-                                if (refreshed != null) {
-                                  browser.refreshAfterCardMovedOrDeleted(
-                                    refreshed.cards,
-                                  );
-                                }
-                              },
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                SelectedCardActions(
+                                  card: selected,
+                                  deckName: deck.name,
+                                  onOpen: () => open(selected),
+                                  onShare: () => share(selected),
+                                  onFavourite: () async {
+                                    await decks.toggleFavourite(selected.id);
+                                    final refreshed = decks.activeDeck;
+                                    if (refreshed != null) {
+                                      browser.refreshAfterCardMovedOrDeleted(
+                                        refreshed.cards,
+                                      );
+                                    }
+                                  },
+                                ),
+                                const SizedBox(height: 8),
+                                Wrap(
+                                  alignment: WrapAlignment.center,
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: [
+                                    FilledButton.tonalIcon(
+                                      onPressed: () =>
+                                          openTranscription(selected),
+                                      icon: const Icon(Icons.document_scanner),
+                                      label: const Text('Transcribe'),
+                                    ),
+                                    FilledButton.tonalIcon(
+                                      onPressed: () => askAi(selected),
+                                      icon: const Icon(Icons.auto_awesome),
+                                      label: Text(
+                                        selected.transcriptionReviewed
+                                            ? 'Ask AI a question'
+                                            : 'Transcribe → Ask AI',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
                         ],
                       ),
