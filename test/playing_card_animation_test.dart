@@ -120,7 +120,7 @@ void main() {
     }
   });
 
-  testWidgets('play fullscreen shows verso when down and recto when up', (
+  testWidgets('play fullscreen stays inside viewport and preserves artwork', (
     tester,
   ) async {
     final card = CardImageModel(
@@ -132,6 +132,9 @@ void main() {
       colour: 'green',
       importedAt: DateTime(2026),
     );
+
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
 
     await tester.pumpWidget(
       MaterialApp(
@@ -154,12 +157,16 @@ void main() {
       findsOneWidget,
     );
     expect(find.byType(AspectRatio), findsNothing);
+    expect(find.byType(ClipRect), findsWidgets);
     expect(
       find.byWidgetPredicate(
-        (widget) => widget is Image && widget.fit == BoxFit.cover,
+        (widget) => widget is Image && widget.fit == BoxFit.contain,
       ),
       findsOneWidget,
     );
+    final viewer = tester.widget<InteractiveViewer>(find.byType(InteractiveViewer));
+    expect(viewer.boundaryMargin, EdgeInsets.zero);
+    expect(viewer.clipBehavior, Clip.hardEdge);
     expect(find.byType(StoredImage), findsNothing);
 
     await tester.pumpWidget(
@@ -174,7 +181,7 @@ void main() {
     );
     expect(find.byType(StoredImage), findsOneWidget);
     final recto = tester.widget<StoredImage>(find.byType(StoredImage));
-    expect(recto.fit, BoxFit.cover);
+    expect(recto.fit, BoxFit.contain);
   });
 
   test('new Play games deal exactly five categorized cards per hand', () async {
