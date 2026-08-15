@@ -33,13 +33,7 @@ class DjWhoPlayerProvider extends ChangeNotifier {
   VideoItem? get selectedVideo =>
       _videos.isEmpty ? null : _videos[_selectedIndex];
 
-  bool get _canCreateEmbeddedPlayer {
-    if (kIsWeb) return true;
-    return switch (defaultTargetPlatform) {
-      TargetPlatform.android || TargetPlatform.iOS || TargetPlatform.macOS => true,
-      _ => false,
-    };
-  }
+  bool get _canCreateEmbeddedPlayer => kIsWeb;
 
   YoutubePlayerController _createController() {
     return YoutubePlayerController.fromVideoId(
