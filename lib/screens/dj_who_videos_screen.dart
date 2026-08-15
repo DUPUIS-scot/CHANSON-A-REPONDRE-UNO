@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../models/video_item.dart';
 import '../providers/dj_who_player_provider.dart';
 import '../widgets/app_page_shell.dart';
 import '../widgets/dj_who_avatar.dart';
@@ -141,7 +142,7 @@ class _Playlist extends StatelessWidget {
     required this.onSelected,
   });
 
-  final List<dynamic> videos;
+  final List<VideoItem> videos;
   final int selectedIndex;
   final Future<void> Function(int index) onSelected;
 
