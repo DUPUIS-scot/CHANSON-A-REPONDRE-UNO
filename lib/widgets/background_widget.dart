@@ -30,6 +30,8 @@ class _BackgroundWidgetState extends State<BackgroundWidget> {
   VideoPlayerController? controller;
   String? error;
   bool loading = false;
+  bool _firstPlaybackCompleted = false;
+  bool _transitioningToLoop = false;
 
   @override
   void initState() {
@@ -66,11 +68,51 @@ class _BackgroundWidgetState extends State<BackgroundWidget> {
     }
   }
 
+  void _watchForFirstPlaybackCompletion() {
+    final player = controller;
+    if (player == null ||
+        !player.value.isInitialized ||
+        _firstPlaybackCompleted ||
+        _transitioningToLoop) {
+      return;
+    }
+
+    final duration = player.value.duration;
+    if (duration <= Duration.zero) return;
+
+    final remaining = duration - player.value.position;
+    if (remaining > const Duration(milliseconds: 150)) return;
+
+    _transitioningToLoop = true;
+    _enableLoopAfterFirstPlayback(player);
+  }
+
+  Future<void> _enableLoopAfterFirstPlayback(
+    VideoPlayerController player,
+  ) async {
+    try {
+      if (!mounted || controller != player) return;
+      await player.pause();
+      await player.seekTo(Duration.zero);
+      await player.setLooping(true);
+      _firstPlaybackCompleted = true;
+      await player.play();
+    } on Object {
+      // Keep the final frame visible if the browser refuses to restart. The
+      // video can recover on the next user gesture without interrupting Home.
+    } finally {
+      _transitioningToLoop = false;
+    }
+  }
+
   Future<void> _configure() async {
+    controller?.removeListener(_watchForFirstPlaybackCompletion);
     await controller?.dispose();
     controller = null;
     error = null;
     loading = false;
+    _firstPlaybackCompleted = false;
+    _transitioningToLoop = false;
     if (widget.type != BackgroundType.video) {
       if (mounted) setState(() {});
       return;
@@ -90,7 +132,9 @@ class _BackgroundWidgetState extends State<BackgroundWidget> {
     if (mounted) setState(() => loading = true);
     try {
       await next.initialize();
-      await next.setLooping(true);
+      await next.setLooping(false);
+      await next.seekTo(Duration.zero);
+      next.addListener(_watchForFirstPlaybackCompletion);
       try {
         await next.setVolume(widget.muted ? 0 : 1);
         await next.play();
@@ -104,6 +148,7 @@ class _BackgroundWidgetState extends State<BackgroundWidget> {
       }
       if (mounted) setState(() => loading = false);
     } on Object {
+      next.removeListener(_watchForFirstPlaybackCompletion);
       await next.dispose();
       if (!mounted) return;
       setState(() {
@@ -116,6 +161,7 @@ class _BackgroundWidgetState extends State<BackgroundWidget> {
 
   @override
   void dispose() {
+    controller?.removeListener(_watchForFirstPlaybackCompletion);
     controller?.dispose();
     super.dispose();
   }
