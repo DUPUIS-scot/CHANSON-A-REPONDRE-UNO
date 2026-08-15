@@ -16,6 +16,9 @@ class PersistentDjWhoPlayer extends StatefulWidget {
 }
 
 class _PersistentDjWhoPlayerState extends State<PersistentDjWhoPlayer> {
+  final GlobalKey _youtubePlayerKey = GlobalKey(
+    debugLabel: 'dj-who-youtube-surface',
+  );
   DjWhoPlayerProvider? _player;
   bool? _onDjWhoRoute;
 
@@ -84,23 +87,52 @@ class _PersistentDjWhoPlayerState extends State<PersistentDjWhoPlayer> {
                       left: 16,
                       right: desktop ? 422 : 16,
                       child: player.hasMountedPlayer
-                          ? _ExpandedPlayerCard(player: player)
+                          ? _ExpandedPlayerCard(
+                              player: player,
+                              youtubePlayerKey: _youtubePlayerKey,
+                            )
                           : const _PlayerLoadingCard(),
                     )
-                  else if (desktop)
-                    Positioned(
-                      right: 16,
-                      bottom: 16,
-                      width: 460,
-                      child: _MiniPlayerBar(player: player),
-                    )
-                  else
-                    Positioned(
-                      left: 8,
-                      right: 8,
-                      bottom: 8,
-                      child: _MiniPlayerBar(player: player),
-                    ),
+                  else ...[
+                    if (player.hasMountedPlayer)
+                      Positioned(
+                        left: 0,
+                        bottom: 0,
+                        width: 1,
+                        height: 1,
+                        child: IgnorePointer(
+                          child: ClipRect(
+                            child: Opacity(
+                              opacity: 0.01,
+                              child: SizedBox(
+                                width: 1,
+                                height: 1,
+                                child: YoutubePlayer(
+                                  key: _youtubePlayerKey,
+                                  controller: player.controller!,
+                                  aspectRatio: 16 / 9,
+                                  keepAlive: true,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    if (desktop)
+                      Positioned(
+                        right: 16,
+                        bottom: 16,
+                        width: 460,
+                        child: _MiniPlayerBar(player: player),
+                      )
+                    else
+                      Positioned(
+                        left: 8,
+                        right: 8,
+                        bottom: 8,
+                        child: _MiniPlayerBar(player: player),
+                      ),
+                  ],
                 ],
               );
             },
@@ -128,9 +160,13 @@ class _PlayerLoadingCard extends StatelessWidget {
 }
 
 class _ExpandedPlayerCard extends StatelessWidget {
-  const _ExpandedPlayerCard({required this.player});
+  const _ExpandedPlayerCard({
+    required this.player,
+    required this.youtubePlayerKey,
+  });
 
   final DjWhoPlayerProvider player;
+  final Key youtubePlayerKey;
 
   @override
   Widget build(BuildContext context) {
@@ -148,7 +184,7 @@ class _ExpandedPlayerCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           YoutubePlayer(
-            key: const Key('dj-who-persistent-youtube-player'),
+            key: youtubePlayerKey,
             controller: player.controller!,
             aspectRatio: 16 / 9,
             keepAlive: true,
@@ -231,9 +267,7 @@ class _MiniPlayerBar extends StatelessWidget {
               onPressed: () => unawaited(player.previous()),
             ),
             _MiniButton(
-              tooltip: player.isPlaying
-                  ? 'Pause DJ WHO on return'
-                  : 'Resume DJ WHO on return',
+              tooltip: player.isPlaying ? 'Pause DJ WHO' : 'Play DJ WHO',
               icon: player.isPlaying
                   ? Icons.pause_rounded
                   : Icons.play_arrow_rounded,
