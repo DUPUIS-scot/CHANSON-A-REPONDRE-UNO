@@ -158,14 +158,18 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
                 child: Column(
                   children: [
                     const Text(
-                      'Real authentication required\n\n'
-                      'Sign in through Profile to use Card Transcription.',
+                      'Guest AI session unavailable.\n\n'
+                      'No sign-in is required. Retry the anonymous session or reload the app.',
+                      textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
                     TextButton.icon(
-                      onPressed: () => context.push(AppRoutes.profile),
-                      icon: const Icon(Icons.person_outline),
-                      label: const Text('Open Profile'),
+                      onPressed: () => requireRealAuthentication(
+                        context,
+                        featureName: 'Card Transcription',
+                      ),
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Retry guest session'),
                     ),
                   ],
                 ),
