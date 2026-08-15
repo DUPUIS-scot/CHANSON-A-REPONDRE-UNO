@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 
 import '../models/ai_health_status.dart';
 import '../models/card_chat_message.dart';
@@ -145,6 +146,17 @@ class CardAiApiService implements CardAiService {
       final comma = card.path.indexOf(',');
       if (comma < 0) throw const FormatException('Invalid image data.');
       return base64Decode(card.path.substring(comma + 1));
+    }
+    if (card.path.startsWith('assets/')) {
+      try {
+        final data = await rootBundle.load(card.path);
+        return data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+      } on FlutterError {
+        throw const AiApiException(
+          AiApiErrorType.invalidRequest,
+          'The card image could not be read.',
+        );
+      }
     }
     if (kIsWeb) {
       throw const AiApiException(
