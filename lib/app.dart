@@ -18,6 +18,7 @@ import 'providers/home_experience_provider.dart';
 import 'providers/journal_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/startup_video_provider.dart';
+import 'providers/dj_who_player_provider.dart';
 import 'providers/auth_controller.dart';
 import 'providers/openai_connection_controller.dart';
 import 'services/deck_import_service.dart';
@@ -35,6 +36,7 @@ import 'features/startup_media/startup_video_storage.dart';
 import 'theme/app_theme.dart';
 import 'screens/configuration_error_screen.dart';
 import 'widgets/development_auth_banner.dart';
+import 'widgets/persistent_dj_who_player.dart';
 
 class ChansonUnoApp extends StatefulWidget {
   const ChansonUnoApp({
@@ -65,6 +67,7 @@ class _ChansonUnoAppState extends State<ChansonUnoApp> {
   late final homeExperience = HomeExperienceProvider(storage)..initialize();
   late final startupVideo = StartupVideoProvider(StartupVideoStorage(storage))
     ..initialize();
+  late final djWhoPlayer = DjWhoPlayerProvider();
   late final CardAiProvider cardAi;
   late final AiRestClient aiClient;
   late final OpenAiConnectionController openAiConnection;
@@ -126,6 +129,12 @@ class _ChansonUnoAppState extends State<ChansonUnoApp> {
     unawaited(visitorAnalytics.recordVisit().catchError((_) {}));
   }
 
+  @override
+  void dispose() {
+    djWhoPlayer.dispose();
+    super.dispose();
+  }
+
   Future<void> _returnHome(BuildContext context) async {
     final path = AppRouter.router.state.uri.path;
     if (path == AppRoutes.play && game.state != null) {
@@ -170,6 +179,7 @@ class _ChansonUnoAppState extends State<ChansonUnoApp> {
         ChangeNotifierProvider.value(value: backgrounds),
         ChangeNotifierProvider.value(value: homeExperience),
         ChangeNotifierProvider.value(value: startupVideo),
+        ChangeNotifierProvider.value(value: djWhoPlayer),
         Provider.value(value: backgroundImporter),
         Provider.value(value: storage),
         Provider.value(value: visitorAnalytics),
@@ -223,7 +233,13 @@ class _ChansonUnoAppState extends State<ChansonUnoApp> {
                                   MediaQuery.disableAnimationsOf(context) ||
                                   settings.advanced.reducedMotion,
                             ),
-                            child: child!,
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                child!,
+                                const PersistentDjWhoPlayer(),
+                              ],
+                            ),
                           ),
                         ),
                       ),
