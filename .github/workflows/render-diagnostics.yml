@@ -1,0 +1,41 @@
+name: Check Render Diagnostics
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnostics:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate backend URL
+        env:
+          AI_BACKEND_URL: ${{ vars.AI_BACKEND_URL }}
+        run: |
+          if [ -z "$AI_BACKEND_URL" ]; then
+            echo "AI_BACKEND_URL repository variable is not configured."
+            exit 1
+          fi
+
+      - name: Health
+        env:
+          AI_BACKEND_URL: ${{ vars.AI_BACKEND_URL }}
+        run: |
+          curl --fail-with-body --silent --show-error --max-time 30 \
+            "$AI_BACKEND_URL/health" | jq .
+
+      - name: Readiness
+        env:
+          AI_BACKEND_URL: ${{ vars.AI_BACKEND_URL }}
+        run: |
+          curl --fail-with-body --silent --show-error --max-time 30 \
+            "$AI_BACKEND_URL/ready" | jq .
+
+      - name: Diagnostics
+        env:
+          AI_BACKEND_URL: ${{ vars.AI_BACKEND_URL }}
+        run: |
+          curl --fail-with-body --silent --show-error --max-time 30 \
+            "$AI_BACKEND_URL/diagnostics" | jq .
