@@ -4,6 +4,7 @@ abstract interface class AuthService {
   Stream<AuthUser?> get authStateChanges;
   AuthUser? get currentUser;
 
+  Future<AuthUser> signInAnonymously();
   Future<AuthUser> signIn({required String email, required String password});
   Future<AuthUser> register({required String email, required String password});
   Future<void> sendPasswordReset({required String email});
