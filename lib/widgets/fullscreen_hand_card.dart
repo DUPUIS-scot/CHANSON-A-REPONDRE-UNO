@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../data/card_categories.dart';
 import '../models/card_image_model.dart';
-import 'category_badge.dart';
 import 'stored_image.dart';
 
 class FullscreenHandCard extends StatefulWidget {
@@ -60,40 +59,25 @@ class _FullscreenHandCardState extends State<FullscreenHandCard> {
             if (zoomed != _zoomed) setState(() => _zoomed = zoomed);
           },
           child: SizedBox.expand(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 72, 12, 52),
-              child: Hero(
-                tag: 'play-hand-card-${widget.card.id}',
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    if (widget.faceUp)
-                      StoredImage(
-                        source: widget.card.imagePath,
-                        fit: BoxFit.contain,
-                        errorBuilder: (_, _, _) => const _MissingCard(),
-                      )
-                    else if (widget.backImagePath.isNotEmpty)
-                      Image.asset(
-                        widget.backImagePath,
-                        fit: BoxFit.contain,
-                        errorBuilder: (_, _, _) => const _MissingCard(),
-                      )
-                    else
-                      Image.asset(
-                        cardCategoryFor(widget.card.category).versoAsset,
-                        fit: BoxFit.contain,
-                        errorBuilder: (_, _, _) => const _MissingCard(),
-                      ),
-                    if (widget.faceUp)
-                      Positioned(
-                        left: 12,
-                        top: 12,
-                        child: CategoryBadge(category: widget.card.category),
-                      ),
-                  ],
-                ),
-              ),
+            child: Hero(
+              tag: 'play-hand-card-${widget.card.id}',
+              child: widget.faceUp
+                  ? StoredImage(
+                      source: widget.card.imagePath,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => const _MissingCard(),
+                    )
+                  : widget.backImagePath.isNotEmpty
+                  ? Image.asset(
+                      widget.backImagePath,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => const _MissingCard(),
+                    )
+                  : Image.asset(
+                      cardCategoryFor(widget.card.category).versoAsset,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => const _MissingCard(),
+                    ),
             ),
           ),
         ),
