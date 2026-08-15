@@ -48,36 +48,40 @@ class _FullscreenHandCardState extends State<FullscreenHandCard> {
           '${widget.card.isFavourite ? 'favourite' : 'not favourite'}',
       child: GestureDetector(
         onDoubleTap: _resetZoom,
-        child: InteractiveViewer(
-          transformationController: _transform,
-          minScale: 1,
-          maxScale: 5,
-          panEnabled: _zoomed,
-          boundaryMargin: const EdgeInsets.all(24),
-          onInteractionEnd: (_) {
-            final zoomed = _transform.value.getMaxScaleOnAxis() > 1.01;
-            if (zoomed != _zoomed) setState(() => _zoomed = zoomed);
-          },
-          child: SizedBox.expand(
-            child: Hero(
-              tag: 'play-hand-card-${widget.card.id}',
-              child: widget.faceUp
-                  ? StoredImage(
-                      source: widget.card.imagePath,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => const _MissingCard(),
-                    )
-                  : widget.backImagePath.isNotEmpty
-                  ? Image.asset(
-                      widget.backImagePath,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => const _MissingCard(),
-                    )
-                  : Image.asset(
-                      cardCategoryFor(widget.card.category).versoAsset,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => const _MissingCard(),
-                    ),
+        child: ClipRect(
+          child: InteractiveViewer(
+            transformationController: _transform,
+            minScale: 1,
+            maxScale: 5,
+            panEnabled: _zoomed,
+            constrained: true,
+            boundaryMargin: EdgeInsets.zero,
+            clipBehavior: Clip.hardEdge,
+            onInteractionEnd: (_) {
+              final zoomed = _transform.value.getMaxScaleOnAxis() > 1.01;
+              if (zoomed != _zoomed) setState(() => _zoomed = zoomed);
+            },
+            child: SizedBox.expand(
+              child: Hero(
+                tag: 'play-hand-card-${widget.card.id}',
+                child: widget.faceUp
+                    ? StoredImage(
+                        source: widget.card.imagePath,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, _, _) => const _MissingCard(),
+                      )
+                    : widget.backImagePath.isNotEmpty
+                    ? Image.asset(
+                        widget.backImagePath,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, _, _) => const _MissingCard(),
+                      )
+                    : Image.asset(
+                        cardCategoryFor(widget.card.category).versoAsset,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, _, _) => const _MissingCard(),
+                      ),
+              ),
             ),
           ),
         ),
