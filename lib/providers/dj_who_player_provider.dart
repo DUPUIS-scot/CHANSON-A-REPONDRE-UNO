@@ -27,8 +27,9 @@ class DjWhoPlayerProvider extends ChangeNotifier {
   YoutubePlayerController? get controller => _controller;
   int get selectedIndex => _selectedIndex;
   bool get isActive => _active;
-  bool get isPlaying => _playerRouteMounted ? _isPlaying : _shouldResumePlaying;
-  bool get hasMountedPlayer => _playerRouteMounted && _controller != null;
+  bool get isPlaying => _controller != null ? _isPlaying : _shouldResumePlaying;
+  bool get hasMountedPlayer => _controller != null;
+  bool get isPlayerRouteMounted => _playerRouteMounted;
   double get resumeSeconds => _resumeSeconds;
   VideoItem? get selectedVideo =>
       _videos.isEmpty ? null : _videos[_selectedIndex];
@@ -61,24 +62,22 @@ class DjWhoPlayerProvider extends ChangeNotifier {
     if (_controller == null) {
       _controller = _createController();
       _playerSubscription = _controller!.stream.listen(_onPlayerValue);
+
+      final resumeAt = _resumeSeconds;
+      final videoId = _videos[_selectedIndex].videoId;
+      if (_shouldResumePlaying) {
+        await _controller!.loadVideoById(
+          videoId: videoId,
+          startSeconds: resumeAt > 0 ? resumeAt : null,
+        );
+      } else if (resumeAt > 0) {
+        await _controller!.cueVideoById(
+          videoId: videoId,
+          startSeconds: resumeAt,
+        );
+      }
     }
 
-    final controller = _controller!;
-    final resumeAt = _resumeSeconds;
-    final videoId = _videos[_selectedIndex].videoId;
-    final shouldPlay = _shouldResumePlaying;
-
-    if (shouldPlay) {
-      await controller.loadVideoById(
-        videoId: videoId,
-        startSeconds: resumeAt > 0 ? resumeAt : null,
-      );
-    } else if (resumeAt > 0) {
-      await controller.cueVideoById(
-        videoId: videoId,
-        startSeconds: resumeAt,
-      );
-    }
     notifyListeners();
   }
 
@@ -91,15 +90,14 @@ class DjWhoPlayerProvider extends ChangeNotifier {
       try {
         _resumeSeconds = await controller.currentTime;
       } catch (_) {
-        // Keep the last known resume position if the iframe is already gone.
+        // Keep the last known position if the player is between frames.
       }
       _shouldResumePlaying = _isPlaying;
-      _isPlaying = false;
-      await _playerSubscription?.cancel();
-      _playerSubscription = null;
-      await controller.close();
-      _controller = null;
     }
+
+    // Intentionally keep the controller and iframe alive. The persistent
+    // widget moves the same player surface into a tiny clipped transparent
+    // host off-route so audio continues without exposing a platform view.
     notifyListeners();
   }
 
@@ -142,7 +140,7 @@ class DjWhoPlayerProvider extends ChangeNotifier {
     notifyListeners();
 
     final controller = _controller;
-    if (_playerRouteMounted && controller != null) {
+    if (controller != null) {
       await controller.loadVideoById(videoId: _videos[index].videoId);
     }
   }
@@ -166,15 +164,16 @@ class DjWhoPlayerProvider extends ChangeNotifier {
     }
 
     final controller = _controller;
-    if (!_playerRouteMounted || controller == null) {
+    if (controller == null) {
       _shouldResumePlaying = !_shouldResumePlaying;
       notifyListeners();
       return;
     }
 
     if (_isPlaying) {
-      await controller.pauseVideo();
       _shouldResumePlaying = false;
+      notifyListeners();
+      await controller.pauseVideo();
       return;
     }
 
@@ -189,8 +188,12 @@ class DjWhoPlayerProvider extends ChangeNotifier {
       try {
         await controller.stopVideo();
       } catch (_) {
-        // The route may be disappearing while the stop request is sent.
+        // The hidden player may be transitioning between route hosts.
       }
+      await _playerSubscription?.cancel();
+      _playerSubscription = null;
+      await controller.close();
+      _controller = null;
     }
 
     _active = false;
