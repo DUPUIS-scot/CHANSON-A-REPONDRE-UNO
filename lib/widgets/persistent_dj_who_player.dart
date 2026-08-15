@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -9,8 +8,51 @@ import '../core/app_router.dart';
 import '../providers/dj_who_player_provider.dart';
 import 'dj_who_avatar.dart';
 
-class PersistentDjWhoPlayer extends StatelessWidget {
+class PersistentDjWhoPlayer extends StatefulWidget {
   const PersistentDjWhoPlayer({super.key});
+
+  @override
+  State<PersistentDjWhoPlayer> createState() => _PersistentDjWhoPlayerState();
+}
+
+class _PersistentDjWhoPlayerState extends State<PersistentDjWhoPlayer> {
+  DjWhoPlayerProvider? _player;
+  bool? _onDjWhoRoute;
+
+  @override
+  void initState() {
+    super.initState();
+    AppRouter.router.routerDelegate.addListener(_handleRouteChange);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _player = context.read<DjWhoPlayerProvider>();
+    _handleRouteChange();
+  }
+
+  void _handleRouteChange() {
+    final player = _player;
+    if (player == null) return;
+
+    final onDjWhoRoute =
+        AppRouter.router.state.uri.path == AppRoutes.djWhoVideos;
+    if (_onDjWhoRoute == onDjWhoRoute) return;
+    _onDjWhoRoute = onDjWhoRoute;
+
+    if (onDjWhoRoute) {
+      unawaited(player.enterPlayerRoute());
+    } else {
+      unawaited(player.leavePlayerRoute());
+    }
+  }
+
+  @override
+  void dispose() {
+    AppRouter.router.routerDelegate.removeListener(_handleRouteChange);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
@@ -18,27 +60,19 @@ class PersistentDjWhoPlayer extends StatelessWidget {
     builder: (context, _) {
       final onDjWhoRoute =
           AppRouter.router.state.uri.path == AppRoutes.djWhoVideos;
+
       return Consumer<DjWhoPlayerProvider>(
         builder: (context, player, _) {
           if (!onDjWhoRoute && !player.isActive) {
             return const SizedBox.shrink();
           }
-
-          player.ensureInitialized();
-          if (player.controller == null || player.selectedVideo == null) {
+          if (player.selectedVideo == null) {
             return const SizedBox.shrink();
           }
 
           return LayoutBuilder(
             builder: (context, constraints) {
               final desktop = constraints.maxWidth >= 850;
-              final miniWidth = math.min(
-                desktop ? 380.0 : constraints.maxWidth - 16,
-                constraints.maxWidth - (desktop ? 32 : 16),
-              );
-              final safeMiniWidth = math.max(200.0, miniWidth);
-              final miniVideoHeight = math.max(200.0, safeMiniWidth * 9 / 16);
-              const miniControlsHeight = 66.0;
 
               return Stack(
                 fit: StackFit.expand,
@@ -49,24 +83,24 @@ class PersistentDjWhoPlayer extends StatelessWidget {
                       top: 146,
                       left: 16,
                       right: desktop ? 422 : 16,
-                      child: _ExpandedPlayerCard(player: player),
+                      child: player.hasMountedPlayer
+                          ? _ExpandedPlayerCard(player: player)
+                          : const _PlayerLoadingCard(),
                     )
-                  else ...[
+                  else if (desktop)
                     Positioned(
-                      right: desktop ? 16 : 8,
-                      bottom: (desktop ? 16 : 8) + miniControlsHeight,
-                      width: safeMiniWidth,
-                      height: miniVideoHeight,
-                      child: _MiniVideoSurface(player: player),
-                    ),
+                      right: 16,
+                      bottom: 16,
+                      width: 460,
+                      child: _MiniPlayerBar(player: player),
+                    )
+                  else
                     Positioned(
-                      right: desktop ? 16 : 8,
-                      bottom: desktop ? 16 : 8,
-                      width: safeMiniWidth,
-                      height: miniControlsHeight,
+                      left: 8,
+                      right: 8,
+                      bottom: 8,
                       child: _MiniPlayerBar(player: player),
                     ),
-                  ],
                 ],
               );
             },
@@ -74,6 +108,22 @@ class PersistentDjWhoPlayer extends StatelessWidget {
         },
       );
     },
+  );
+}
+
+class _PlayerLoadingCard extends StatelessWidget {
+  const _PlayerLoadingCard();
+
+  @override
+  Widget build(BuildContext context) => Material(
+    elevation: 6,
+    color: Theme.of(context).colorScheme.surface,
+    borderRadius: BorderRadius.circular(12),
+    clipBehavior: Clip.antiAlias,
+    child: const AspectRatio(
+      aspectRatio: 16 / 9,
+      child: Center(child: CircularProgressIndicator()),
+    ),
   );
 }
 
@@ -133,26 +183,6 @@ class _ExpandedPlayerCard extends StatelessWidget {
   }
 }
 
-class _MiniVideoSurface extends StatelessWidget {
-  const _MiniVideoSurface({required this.player});
-
-  final DjWhoPlayerProvider player;
-
-  @override
-  Widget build(BuildContext context) => Material(
-    elevation: 18,
-    color: Colors.black,
-    borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
-    clipBehavior: Clip.antiAlias,
-    child: YoutubePlayer(
-      key: const Key('dj-who-persistent-youtube-player'),
-      controller: player.controller!,
-      aspectRatio: 16 / 9,
-      keepAlive: true,
-    ),
-  );
-}
-
 class _MiniPlayerBar extends StatelessWidget {
   const _MiniPlayerBar({required this.player});
 
@@ -167,7 +197,7 @@ class _MiniPlayerBar extends StatelessWidget {
       key: const Key('persistent-dj-who-mini-player'),
       elevation: 18,
       color: colors.surface,
-      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(14)),
+      borderRadius: BorderRadius.circular(14),
       clipBehavior: Clip.antiAlias,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
@@ -201,7 +231,9 @@ class _MiniPlayerBar extends StatelessWidget {
               onPressed: () => unawaited(player.previous()),
             ),
             _MiniButton(
-              tooltip: player.isPlaying ? 'Pause DJ WHO' : 'Play DJ WHO',
+              tooltip: player.isPlaying
+                  ? 'Pause DJ WHO on return'
+                  : 'Resume DJ WHO on return',
               icon: player.isPlaying
                   ? Icons.pause_rounded
                   : Icons.play_arrow_rounded,
