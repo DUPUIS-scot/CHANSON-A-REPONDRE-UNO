@@ -153,9 +153,12 @@ void main() {
       ),
       findsOneWidget,
     );
+    expect(find.byType(AspectRatio), findsNothing);
     expect(
-      tester.widget<AspectRatio>(find.byType(AspectRatio)).aspectRatio,
-      closeTo(2 / 3, .0001),
+      find.byWidgetPredicate(
+        (widget) => widget is Image && widget.fit == BoxFit.cover,
+      ),
+      findsOneWidget,
     );
     expect(find.byType(StoredImage), findsNothing);
 
@@ -170,6 +173,8 @@ void main() {
       ),
     );
     expect(find.byType(StoredImage), findsOneWidget);
+    final recto = tester.widget<StoredImage>(find.byType(StoredImage));
+    expect(recto.fit, BoxFit.cover);
   });
 
   test('new Play games deal exactly five categorized cards per hand', () async {
