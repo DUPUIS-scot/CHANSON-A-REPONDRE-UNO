@@ -1,0 +1,5 @@
+import 'captcha_token_provider_stub.dart'
+    if (dart.library.js_interop) 'captcha_token_provider_web.dart' as implementation;
+
+Future<String?> requestCaptchaToken(String siteKey) =>
+    implementation.requestCaptchaToken(siteKey);
