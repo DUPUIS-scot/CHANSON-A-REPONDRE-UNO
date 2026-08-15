@@ -40,6 +40,12 @@ class EmptyCredentialStore {
   async delete() {}
 }
 
+class FailingCredentialStore extends EmptyCredentialStore {
+  async get() {
+    throw new Error('anonymous AI must not query the credential store');
+  }
+}
+
 const authClient = {
   auth: {
     getUser: async (token) => {
@@ -66,7 +72,7 @@ const authClient = {
   },
 };
 
-function dependencies() {
+function dependencies({ store = new EmptyCredentialStore() } = {}) {
   const calls = [];
   const openAiFactory = (apiKey) => ({
     responses: {
@@ -87,7 +93,7 @@ function dependencies() {
     calls,
     authClient,
     userOpenAiService: new UserOpenAiService(environment, {
-      store: new EmptyCredentialStore(),
+      store,
       openAiFactory,
     }),
   };
@@ -99,7 +105,7 @@ const jsonHeaders = (token) => ({
 });
 
 test('anonymous Supabase JWT can use shared server key for chat and transcription', () => {
-  const deps = dependencies();
+  const deps = dependencies({ store: new FailingCredentialStore() });
   return withServer(createApp(environment, deps), async (url) => {
     const chat = await fetch(`${url}/api/chat`, {
       method: 'POST',
