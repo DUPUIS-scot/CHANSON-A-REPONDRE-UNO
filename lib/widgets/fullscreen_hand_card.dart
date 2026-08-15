@@ -47,53 +47,51 @@ class _FullscreenHandCardState extends State<FullscreenHandCard> {
           'Card ${widget.position} of ${widget.total}, '
           '${widget.card.category}, ${widget.faceUp ? 'face up' : 'face down'}, '
           '${widget.card.isFavourite ? 'favourite' : 'not favourite'}',
-      child: Center(
-        child: GestureDetector(
-          onDoubleTap: _resetZoom,
-          child: InteractiveViewer(
-            transformationController: _transform,
-            minScale: 1,
-            maxScale: 5,
-            panEnabled: _zoomed,
-            onInteractionEnd: (_) {
-              final zoomed = _transform.value.getMaxScaleOnAxis() > 1.01;
-              if (zoomed != _zoomed) setState(() => _zoomed = zoomed);
-            },
+      child: GestureDetector(
+        onDoubleTap: _resetZoom,
+        child: InteractiveViewer(
+          transformationController: _transform,
+          minScale: 1,
+          maxScale: 5,
+          panEnabled: _zoomed,
+          boundaryMargin: const EdgeInsets.all(24),
+          onInteractionEnd: (_) {
+            final zoomed = _transform.value.getMaxScaleOnAxis() > 1.01;
+            if (zoomed != _zoomed) setState(() => _zoomed = zoomed);
+          },
+          child: SizedBox.expand(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(72, 88, 72, 76),
+              padding: const EdgeInsets.fromLTRB(12, 72, 12, 52),
               child: Hero(
                 tag: 'play-hand-card-${widget.card.id}',
-                child: AspectRatio(
-                  aspectRatio: widget.faceUp ? widget.card.aspectRatio : 2 / 3,
-                  child: widget.faceUp
-                      ? Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            StoredImage(
-                              source: widget.card.imagePath,
-                              fit: BoxFit.contain,
-                              errorBuilder: (_, _, _) => const _MissingCard(),
-                            ),
-                            Positioned(
-                              left: 12,
-                              top: 12,
-                              child: CategoryBadge(
-                                category: widget.card.category,
-                              ),
-                            ),
-                          ],
-                        )
-                      : widget.backImagePath.isNotEmpty
-                      ? Image.asset(
-                          widget.backImagePath,
-                          fit: BoxFit.contain,
-                          errorBuilder: (_, _, _) => const _MissingCard(),
-                        )
-                      : Image.asset(
-                          cardCategoryFor(widget.card.category).versoAsset,
-                          fit: BoxFit.contain,
-                          errorBuilder: (_, _, _) => const _MissingCard(),
-                        ),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    if (widget.faceUp)
+                      StoredImage(
+                        source: widget.card.imagePath,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, _, _) => const _MissingCard(),
+                      )
+                    else if (widget.backImagePath.isNotEmpty)
+                      Image.asset(
+                        widget.backImagePath,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, _, _) => const _MissingCard(),
+                      )
+                    else
+                      Image.asset(
+                        cardCategoryFor(widget.card.category).versoAsset,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, _, _) => const _MissingCard(),
+                      ),
+                    if (widget.faceUp)
+                      Positioned(
+                        left: 12,
+                        top: 12,
+                        child: CategoryBadge(category: widget.card.category),
+                      ),
+                  ],
                 ),
               ),
             ),
