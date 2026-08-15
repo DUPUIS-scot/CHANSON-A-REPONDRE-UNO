@@ -20,7 +20,7 @@ abstract final class CardShareIdentity {
       if (number == null || number < 1 || number > 16) {
         throw FormatException('Invalid built-in BRIO card id: $cardId');
       }
-      return 'brio-${number.toString().padLeft(3, '0')}';
+      return 'BRIO-${number.toString().padLeft(3, '0')}';
     }
     return cardId;
   }
