@@ -123,7 +123,7 @@ class AppConfig {
   }
 
   static const productionProfileRedirect =
-      'https://jameshpdy-dev.github.io/CHANSON-A-REPONDRE-UNO/#/profile';
+      'https://www.chanson-a-repondre-uno.scot/#/profile';
 
   static String get authenticationRedirectUrl {
     if (kIsWeb && kReleaseMode) return productionProfileRedirect;
