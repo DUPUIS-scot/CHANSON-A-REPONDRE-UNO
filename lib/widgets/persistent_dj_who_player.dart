@@ -19,8 +19,12 @@ class PersistentDjWhoPlayer extends StatelessWidget {
           AppRouter.router.state.uri.path == AppRoutes.djWhoVideos;
       return Consumer<DjWhoPlayerProvider>(
         builder: (context, player, _) {
-          if (player.controller == null ||
-              (!onDjWhoRoute && !player.isActive)) {
+          if (!onDjWhoRoute && !player.isActive) {
+            return const SizedBox.shrink();
+          }
+
+          player.ensureInitialized();
+          if (player.controller == null || player.selectedVideo == null) {
             return const SizedBox.shrink();
           }
 
