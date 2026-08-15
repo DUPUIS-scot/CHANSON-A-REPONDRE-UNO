@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 import '../models/auth_user.dart';
 import '../core/app_config.dart';
 import 'auth_service.dart';
+import 'captcha_token_provider.dart';
 
 class SupabaseAuthService implements AuthService {
   SupabaseAuthService(this._client);
@@ -21,7 +22,26 @@ class SupabaseAuthService implements AuthService {
     try {
       final current = _client.auth.currentUser;
       if (current != null) return _requireUser(current);
-      final response = await _client.auth.signInAnonymously();
+
+      String? captchaToken;
+      if (AppConfig.shouldUseTurnstile) {
+        try {
+          captchaToken = await requestCaptchaToken(AppConfig.turnstileSiteKey);
+        } catch (_) {
+          throw const AuthException(
+            'Guest security verification is temporarily unavailable. Retry the guest session.',
+          );
+        }
+        if (captchaToken == null || captchaToken.trim().isEmpty) {
+          throw const AuthException(
+            'Guest security verification did not complete. Retry the guest session.',
+          );
+        }
+      }
+
+      final response = await _client.auth.signInAnonymously(
+        captchaToken: captchaToken,
+      );
       final session = response.session ?? _client.auth.currentSession;
       if (session == null || session.accessToken.trim().isEmpty) {
         throw const AuthException(
@@ -135,6 +155,9 @@ class SupabaseAuthService implements AuthService {
 
   String _friendly(supabase.AuthException error, {bool login = false}) {
     final value = error.message.toLowerCase();
+    if (value.contains('captcha') || value.contains('verification')) {
+      return 'Guest security verification failed. Retry the guest session.';
+    }
     if (value.contains('rate') || value.contains('too many')) {
       return 'Too many attempts. Try again later.';
     }
