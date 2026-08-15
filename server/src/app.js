@@ -28,6 +28,7 @@ export function createApp(environment, dependencies = {}) {
         status: response.statusCode,
         durationMs: Date.now() - request.startedAt,
         authenticatedUserId: request.authUser?.id,
+        anonymousUser: request.authUser?.isAnonymous,
         errorCode: response.locals.errorCode,
       }));
     });
@@ -54,7 +55,11 @@ export function createApp(environment, dependencies = {}) {
   }));
   app.get('/ready', (_request, response) => response.json({
     status: 'ready',
-    configuration: { byok: true, supabase: true },
+    configuration: {
+      byok: true,
+      supabase: true,
+      anonymousAi: Boolean(environment.openAiApiKey),
+    },
   }));
 
   const aiLimiter = rateLimit({
