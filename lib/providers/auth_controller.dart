@@ -19,21 +19,31 @@ class AuthController extends ChangeNotifier {
     this.service, {
     this.developmentBypassEnabled = false,
     this.configurationError = false,
+    this.anonymousGuestEnabled = false,
   }) {
     _user = service.currentUser;
-    status = _user == null
-        ? AuthStatus.unauthenticated
-        : AuthStatus.authenticated;
+    status = _user != null
+        ? AuthStatus.authenticated
+        : anonymousGuestEnabled &&
+              !configurationError &&
+              !developmentBypassEnabled
+        ? AuthStatus.loading
+        : AuthStatus.unauthenticated;
     _subscription = service.authStateChanges.listen(_onAuthState);
+    if (_user == null && status == AuthStatus.loading) {
+      unawaited(_startGuestSession());
+    }
   }
 
   final AuthService service;
   final bool developmentBypassEnabled;
   final bool configurationError;
+  final bool anonymousGuestEnabled;
   late final StreamSubscription<AuthUser?> _subscription;
   AuthStatus status = AuthStatus.loading;
   AuthUser? _user;
   AuthUser? get user => _user;
+  bool get isAnonymous => _user?.isAnonymous ?? false;
   AuthenticationMode get mode {
     if (status == AuthStatus.loading) return AuthenticationMode.loading;
     if (_user != null) return AuthenticationMode.authenticated;
@@ -78,6 +88,11 @@ class AuthController extends ChangeNotifier {
   Future<void> signOut() async {
     await service.signOut();
     _onAuthState(null);
+    if (anonymousGuestEnabled &&
+        !configurationError &&
+        !developmentBypassEnabled) {
+      await _startGuestSession();
+    }
   }
 
   Future<bool> refreshSession() async {
@@ -90,6 +105,22 @@ class AuthController extends ChangeNotifier {
       return true;
     } on AuthException catch (exception) {
       error = exception.message;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> _startGuestSession() async {
+    if (_user != null) return true;
+    status = AuthStatus.loading;
+    error = null;
+    notifyListeners();
+    try {
+      _onAuthState(await service.signInAnonymously());
+      return true;
+    } on AuthException catch (exception) {
+      status = AuthStatus.unauthenticated;
+      error = 'Guest session unavailable. ${exception.message}';
       notifyListeners();
       return false;
     }
