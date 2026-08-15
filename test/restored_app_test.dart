@@ -73,6 +73,49 @@ void main() {
       expect(game.state?.discardPile, hasLength(1));
     });
 
+    test('played card becomes the recto-up discard top card', () async {
+      SharedPreferences.setMockInitialValues({});
+      final storage = LocalStorageService();
+      final game = GameProvider(GameStorageService(storage));
+      addTearDown(game.dispose);
+
+      final cards = List.generate(
+        12,
+        (index) => CardImageModel(
+          id: 'card-$index',
+          deckId: 'test-deck',
+          title: 'Card $index',
+          path: 'assets/cards/card_$index.png',
+          category: 'Classique',
+          colour: 'red',
+          importedAt: DateTime(2026),
+        ),
+      );
+      final deck = Deck(id: 'test-deck', name: 'Test deck', cards: cards);
+      expect(await game.start(deck), isTrue);
+      final played = game.state!.players.first.hand.first;
+
+      expect(await game.play(played), isTrue);
+      expect(game.state!.topCard.id, played.id);
+      expect(game.state!.discardPile.last.id, played.id);
+      expect(game.state!.topCard.imagePath, played.imagePath);
+
+      final discardWidget = File(
+        'lib/widgets/discard_pile_widget.dart',
+      ).readAsStringSync();
+      expect(discardWidget, contains("key: const Key('discard-pile-recto')"));
+      expect(discardWidget, contains('source: topCard.imagePath'));
+    });
+
+    test('Browse filter has no card title box', () {
+      final browserScreen = File(
+        'lib/screens/card_browser_screen.dart',
+      ).readAsStringSync();
+
+      expect(browserScreen, isNot(contains("labelText: 'Card title'")));
+      expect(browserScreen, isNot(contains('var title = browser.titleFilter')));
+    });
+
     test(
       'permanent deck cannot be renamed, deleted, or replaced by bad id',
       () async {

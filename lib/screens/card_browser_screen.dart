@@ -132,7 +132,6 @@ class _CardBrowserScreenState extends State<CardBrowserScreen> {
     final deck = context.read<DeckProvider>().activeDeck;
     if (deck == null) return;
     var category = browser.categoryFilter;
-    var title = browser.titleFilter;
     var favourites = browser.favouritesOnly;
     final categories = deck.cards.map((card) => card.category).toSet().toList()
       ..sort();
@@ -156,12 +155,6 @@ class _CardBrowserScreenState extends State<CardBrowserScreen> {
                   style: Theme.of(context).textTheme.headlineSmall,
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
-                  initialValue: title,
-                  decoration: const InputDecoration(labelText: 'Card title'),
-                  onChanged: (value) => title = value,
-                ),
-                const SizedBox(height: 10),
                 DropdownButtonFormField<String>(
                   initialValue: category,
                   decoration: const InputDecoration(labelText: 'Category'),
@@ -203,7 +196,7 @@ class _CardBrowserScreenState extends State<CardBrowserScreen> {
                       onPressed: () {
                         browser.applyFilters(
                           category: category,
-                          title: title,
+                          title: '',
                           favourites: favourites,
                           transcribed: false,
                           clearCategory: category == null,
@@ -224,7 +217,6 @@ class _CardBrowserScreenState extends State<CardBrowserScreen> {
 
   int get filterCount =>
       (browser.categoryFilter == null ? 0 : 1) +
-      (browser.titleFilter.isEmpty ? 0 : 1) +
       (browser.favouritesOnly ? 1 : 0);
 
   @override
