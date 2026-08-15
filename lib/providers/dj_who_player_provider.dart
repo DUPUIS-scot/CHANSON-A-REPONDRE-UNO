@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart' show TargetPlatform;
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 
 import '../data/dj_who_videos.dart';
