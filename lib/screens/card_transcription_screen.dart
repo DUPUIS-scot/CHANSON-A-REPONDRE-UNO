@@ -122,7 +122,7 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
                 ),
                 fit: BoxFit.cover,
                 alignment: Alignment.topCenter,
-                filterQuality: FilterQuality.medium,
+                filterQuality: FilterQuality.high,
               ),
             ),
           ),
@@ -134,12 +134,12 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Color(0x12000000),
-                      Color(0x26000000),
-                      Color(0xA4080302),
-                      Color(0xF2060302),
+                      Color(0x06000000),
+                      Color(0x10000000),
+                      Color(0x4D080302),
+                      Color(0xA6080302),
                     ],
-                    stops: [0, .44, .72, 1],
+                    stops: [0, .48, .76, 1],
                   ),
                 ),
               ),
@@ -149,12 +149,12 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
             builder: (context, box) {
               final mobile = box.maxWidth < 760;
               return Positioned(
-                left: mobile ? -140 : -55,
-                top: mobile ? 34 : 20,
-                width: mobile ? 620 : 760,
-                height: mobile ? 760 : box.maxHeight * .82,
+                left: mobile ? -70 : -20,
+                top: mobile ? 18 : 12,
+                width: mobile ? 500 : 720,
+                height: mobile ? 720 : box.maxHeight * .86,
                 child: const Opacity(
-                  opacity: .98,
+                  opacity: 1,
                   child: TranscriptionJesterScene(),
                 ),
               );
@@ -167,7 +167,7 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
                 return SingleChildScrollView(
                   padding: EdgeInsets.fromLTRB(
                     compact ? 18 : 36,
-                    compact ? 450 : 470,
+                    compact ? 430 : 470,
                     compact ? 18 : 36,
                     36,
                   ),
@@ -193,18 +193,15 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
                                       : 'Guest AI session unavailable. Retry the anonymous session or reload the app.',
                               action: !ai.isConfigured
                                   ? TextButton.icon(
-                                      onPressed: () =>
-                                          context.go(AppRoutes.settings),
+                                      onPressed: () => context.go(AppRoutes.settings),
                                       icon: const Icon(Icons.settings_outlined),
                                       label: const Text('Settings'),
                                     )
                                   : !canUseAi
                                       ? TextButton.icon(
-                                          onPressed: () =>
-                                              requireRealAuthentication(
+                                          onPressed: () => requireRealAuthentication(
                                             context,
-                                            featureName:
-                                                'Card Transcription',
+                                            featureName: 'Card Transcription',
                                           ),
                                           icon: const Icon(Icons.refresh_rounded),
                                           label: const Text('Retry'),
@@ -225,18 +222,14 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
                               children: [
                                 _TranscribeButton(
                                   style: _primaryButtonStyle(),
-                                  enabled: ai.isConfigured &&
-                                      !ai.isLoading &&
-                                      canUseAi,
+                                  enabled: ai.isConfigured && !ai.isLoading && canUseAi,
                                   onPressed: _transcribe,
                                 ),
                                 const SizedBox(height: 14),
                                 _DiscussButton(
                                   style: _secondaryButtonStyle(),
                                   enabled: hasText,
-                                  onPressed: () => context.go(
-                                    AppRoutes.cardChat(card.id),
-                                  ),
+                                  onPressed: () => context.go(AppRoutes.cardChat(card.id)),
                                 ),
                               ],
                             )
@@ -246,9 +239,7 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
                                 Expanded(
                                   child: _TranscribeButton(
                                     style: _primaryButtonStyle(),
-                                    enabled: ai.isConfigured &&
-                                        !ai.isLoading &&
-                                        canUseAi,
+                                    enabled: ai.isConfigured && !ai.isLoading && canUseAi,
                                     onPressed: _transcribe,
                                   ),
                                 ),
@@ -257,9 +248,7 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
                                   child: _DiscussButton(
                                     style: _secondaryButtonStyle(),
                                     enabled: hasText,
-                                    onPressed: () => context.go(
-                                      AppRoutes.cardChat(card.id),
-                                    ),
+                                    onPressed: () => context.go(AppRoutes.cardChat(card.id)),
                                   ),
                                 ),
                               ],
@@ -288,7 +277,7 @@ class _TranscriptionPanel extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.fromLTRB(28, 24, 28, 28),
         decoration: BoxDecoration(
-          color: const Color(0xE50A0806),
+          color: const Color(0xD80A0806),
           borderRadius: BorderRadius.circular(24),
           border: Border.all(color: _gold, width: 1.25),
           boxShadow: const [
