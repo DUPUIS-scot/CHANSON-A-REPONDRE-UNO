@@ -33,12 +33,27 @@ void main() {
     expect(sheet, isNot(contains('receives the direct public card-image URL')));
 
     expect(service, contains('publicImageUrlFor'));
+    expect(service, contains('previewImageUrlFor'));
     expect(service, contains('PublicCardShareService.shareUrlFor'));
+    expect(service, contains("'LIGHTWEIGHT CARD PREVIEW:'"));
+    expect(service, contains("'ORIGINAL FULL-RESOLUTION CARD IMAGE:'"));
     expect(service, contains("'CARD TEXT PROVIDED BY THE APP:'"));
-    expect(service, contains('reference-only'));
+    expect(service, contains('actual image attachment'));
     expect(service, contains('card.question'));
     expect(service, contains('card.answer'));
     expect(service, isNot(contains('Open and analyze the CARD IMAGE directly')));
+  });
+
+  test('AI preview URL is canonical-slug based and deck agnostic', () {
+    final service = File(
+      'lib/services/external_ai_handoff_service.dart',
+    ).readAsStringSync();
+
+    expect(service, contains("'assets', 'share-previews', '\$slug.jpg'"));
+    expect(service, contains('cardId: card.id'));
+    expect(service, contains('deckId: deck.id'));
+    expect(service, isNot(contains('UNO-')));
+    expect(service, isNot(contains('BRIO-')));
   });
 
   test('transcription AI provider flow is deck agnostic for UNO and BRIO', () {
