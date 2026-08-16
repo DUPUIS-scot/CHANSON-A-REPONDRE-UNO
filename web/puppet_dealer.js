@@ -3,7 +3,7 @@ import { GLTFLoader } from './vendor/GLTFLoader.js';
 
 const dealers = new Map();
 const pendingMounts = new Map();
-const MODEL_REVISION = 'play-jester-rigged-20260816h-contained-torso';
+const MODEL_REVISION = 'play-jester-rigged-20260816i-torso-only';
 const MODEL_URLS = [
   new URL('assets/assets/models/play_jester_rigged.glb', document.baseURI).href,
 ];
@@ -213,34 +213,36 @@ class JesterDealer {
     this.renderer.setSize(width, height, false);
     this.camera.aspect = width / height;
     const narrow = width < 720;
-    this.camera.fov = narrow ? 50 : 44;
+    this.camera.fov = narrow ? 44 : 40;
     this.modelRoot.scale.setScalar(1);
     this.modelRoot.position.set(0, 0, 0);
 
     if (this.puppetBounds && !this.puppetBounds.isEmpty()) {
       const center = this.puppetBounds.getCenter(new THREE.Vector3());
       const size = this.puppetBounds.getSize(new THREE.Vector3());
+      // Deliberately frame only the upper body: belt/waist at the bottom edge,
+      // hat fully visible at the top, with both shoulders and forearms retained.
       const targetCenter = new THREE.Vector3(
         center.x,
-        this.puppetBounds.min.y + size.y * (narrow ? 0.67 : 0.66),
+        this.puppetBounds.min.y + size.y * (narrow ? 0.735 : 0.72),
         center.z,
       );
-      const visibleHeight = Math.max(size.y * (narrow ? 0.84 : 0.78), 0.5);
-      const visibleWidth = Math.max(size.x * (narrow ? 1.22 : 1.12), 0.5);
+      const visibleHeight = Math.max(size.y * (narrow ? 0.50 : 0.54), 0.5);
+      const visibleWidth = Math.max(size.x * (narrow ? 1.02 : 0.98), 0.5);
       const verticalFov = THREE.MathUtils.degToRad(this.camera.fov);
       const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * this.camera.aspect);
       const distanceForHeight = (visibleHeight * 0.5) / Math.max(Math.tan(verticalFov / 2), 0.001);
       const distanceForWidth = (visibleWidth * 0.5) / Math.max(Math.tan(horizontalFov / 2), 0.001);
-      const distance = Math.max(distanceForHeight, distanceForWidth, 6.2) * (narrow ? 1.44 : 1.34);
+      const distance = Math.max(distanceForHeight, distanceForWidth, 4.6) * (narrow ? 1.06 : 1.04);
       this.camera.position.set(targetCenter.x, targetCenter.y, targetCenter.z + distance);
       this.camera.lookAt(targetCenter);
       this.camera.updateProjectionMatrix();
       this.camera.updateMatrixWorld(true);
-      this.host.dataset.puppetFit = 'torso-up-contained';
+      this.host.dataset.puppetFit = 'torso-up-only';
       this.host.dataset.puppetCameraDistance = distance.toFixed(3);
     } else {
-      this.camera.position.set(0, 2.2, narrow ? 13.6 : 13.0);
-      this.camera.lookAt(0, 2.2, 0);
+      this.camera.position.set(0, 2.8, narrow ? 9.2 : 9.6);
+      this.camera.lookAt(0, 2.8, 0);
       this.camera.updateProjectionMatrix();
     }
   }
