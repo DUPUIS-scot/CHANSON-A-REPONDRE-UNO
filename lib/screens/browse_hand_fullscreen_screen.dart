@@ -82,92 +82,101 @@ class _BrowseHandFullscreenScreenState
         child: Scaffold(
           backgroundColor: Colors.black,
           body: SafeArea(
-            child: Stack(
+            child: Column(
               children: [
-                PageView.builder(
-                  controller: pages,
-                  physics: zoomed
-                      ? const NeverScrollableScrollPhysics()
-                      : const PageScrollPhysics(),
-                  itemCount: cards.length,
-                  onPageChanged: (value) => setState(() {
-                    index = value;
-                    zoomed = false;
-                  }),
-                  itemBuilder: (_, page) => FullscreenBrowseCard(
-                    card: cards[page],
-                    position: page + 1,
-                    total: cards.length,
-                    deckName: widget.args.deckName,
-                    onZoomChanged: (value) {
-                      if (page == index && zoomed != value) {
-                        setState(() => zoomed = value);
-                      }
-                    },
-                  ),
-                ),
-                Align(
-                  alignment: Alignment.topCenter,
-                  child: FullscreenCardToolbar(
-                    title: card.category.toUpperCase(),
-                    favourite: card.isFavourite,
-                    onClose: () => Navigator.pop(context),
-                    onFavourite: () async {
-                      final decks = context.read<DeckProvider>();
-                      await decks.toggleFavourite(card.id);
-                      final updated = decks.cardById(card.id);
-                      if (updated != null && mounted) {
-                        setState(() => cards[index] = updated);
-                      }
-                    },
-                    onShare: () async {
-                      final result = await PublicCardShareService.share(
-                        cardId: card.id,
-                        imagePath: card.imagePath,
+                FullscreenCardToolbar(
+                  title: card.category.toUpperCase(),
+                  favourite: card.isFavourite,
+                  onClose: () => Navigator.pop(context),
+                  onFavourite: () async {
+                    final decks = context.read<DeckProvider>();
+                    await decks.toggleFavourite(card.id);
+                    final updated = decks.cardById(card.id);
+                    if (updated != null && mounted) {
+                      setState(() => cards[index] = updated);
+                    }
+                  },
+                  onShare: () async {
+                    final result = await PublicCardShareService.share(
+                      cardId: card.id,
+                      imagePath: card.imagePath,
+                    );
+                    if (!context.mounted) return;
+                    if (result == CardShareResult.copied) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Link copied')),
                       );
-                      if (!context.mounted) return;
-                      if (result == CardShareResult.copied) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Link copied')),
-                        );
-                      } else if (result == CardShareResult.failed) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Unable to share this card'),
+                    } else if (result == CardShareResult.failed) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Unable to share this card'),
+                        ),
+                      );
+                    }
+                  },
+                ),
+                Expanded(
+                  child: Stack(
+                    children: [
+                      PageView.builder(
+                        controller: pages,
+                        physics: zoomed
+                            ? const NeverScrollableScrollPhysics()
+                            : const PageScrollPhysics(),
+                        itemCount: cards.length,
+                        onPageChanged: (value) => setState(() {
+                          index = value;
+                          zoomed = false;
+                        }),
+                        itemBuilder: (_, page) => FullscreenBrowseCard(
+                          card: cards[page],
+                          position: page + 1,
+                          total: cards.length,
+                          deckName: widget.args.deckName,
+                          onZoomChanged: (value) {
+                            if (page == index && zoomed != value) {
+                              setState(() => zoomed = value);
+                            }
+                          },
+                        ),
+                      ),
+                      Align(
+                        alignment: Alignment.bottomCenter,
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 14),
+                          child: FullscreenCardPageIndicator(
+                            page: index + 1,
+                            total: cards.length,
                           ),
-                        );
-                      }
-                    },
+                        ),
+                      ),
+                      if (index > 0)
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: IconButton(
+                            tooltip: 'Previous card',
+                            onPressed: () => go(index - 1),
+                            icon: const Icon(
+                              Icons.chevron_left_rounded,
+                              size: 44,
+                            ),
+                          ),
+                        ),
+                      if (index < cards.length - 1)
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: IconButton(
+                            tooltip: 'Next card',
+                            onPressed: () => go(index + 1),
+                            icon: const Icon(
+                              Icons.chevron_right_rounded,
+                              size: 44,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
-                Align(
-                  alignment: Alignment.bottomCenter,
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 14),
-                    child: FullscreenCardPageIndicator(
-                      page: index + 1,
-                      total: cards.length,
-                    ),
-                  ),
-                ),
-                if (index > 0)
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: IconButton(
-                      tooltip: 'Previous card',
-                      onPressed: () => go(index - 1),
-                      icon: const Icon(Icons.chevron_left_rounded, size: 44),
-                    ),
-                  ),
-                if (index < cards.length - 1)
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: IconButton(
-                      tooltip: 'Next card',
-                      onPressed: () => go(index + 1),
-                      icon: const Icon(Icons.chevron_right_rounded, size: 44),
-                    ),
-                  ),
               ],
             ),
           ),
