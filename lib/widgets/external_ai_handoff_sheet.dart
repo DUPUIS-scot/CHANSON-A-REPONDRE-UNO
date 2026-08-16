@@ -19,8 +19,12 @@ Future<void> showExternalAiHandoffSheet({
   final shouldTranscribe =
       mode == CardAiHandoffMode.transcribe || existing.isEmpty;
 
-  if (shouldTranscribe) {
-    final cardAi = context.read<CardAiProvider>();
+  // CardAiProvider is always installed by the production app. Keeping this
+  // lookup nullable also lets isolated widget/test hosts present the handoff
+  // sheet without crashing when they intentionally omit the app-level AI
+  // provider.
+  final cardAi = context.read<CardAiProvider?>();
+  if (shouldTranscribe && cardAi != null) {
     final updated = await cardAi.transcribe(card.id, TranscriptionMode.exact);
     if (!context.mounted) return;
     final transcription = updated == null
@@ -74,7 +78,7 @@ class _ExternalAiHandoffSheet extends StatelessWidget {
   final ExternalAiHandoffService service;
 
   String get _purpose => mode == CardAiHandoffMode.transcribe
-      ? 'Transcription ready — continue with your AI'
+      ? 'Transcribe this card with your AI'
       : 'DIY with your AI';
 
   IconData _iconFor(ExternalAiProvider provider) => switch (provider) {
