@@ -3,7 +3,7 @@ import { GLTFLoader } from './vendor/GLTFLoader.js';
 
 const scenes = new Map();
 const MODEL_URL = new URL(
-  'assets/assets/models/jester_player_reupload.glb',
+  'assets/assets/models/transcription_jester.glb',
   document.baseURI,
 ).href;
 const MODEL_FACING_Y = -Math.PI / 2;
@@ -27,8 +27,37 @@ function disposeObject(root) {
 function stageRect() {
   const mobile = window.matchMedia('(max-width: 759px)').matches;
   return mobile
-    ? { left: 8, top: 170, width: Math.min(300, window.innerWidth * 0.42), height: Math.min(610, window.innerHeight * 0.72) }
-    : { left: 18, top: 118, width: Math.min(430, window.innerWidth * 0.34), height: Math.max(520, window.innerHeight - 150) };
+    ? {
+        left: 0,
+        top: 150,
+        width: Math.min(310, window.innerWidth * 0.48),
+        height: Math.min(620, window.innerHeight * 0.72),
+      }
+    : {
+        left: 10,
+        top: 104,
+        width: Math.min(445, window.innerWidth * 0.34),
+        height: Math.max(540, window.innerHeight - 130),
+      };
+}
+
+function ensureHost(id) {
+  let host = document.getElementById(id);
+  if (host) return host;
+  host = document.createElement('div');
+  host.id = id;
+  host.dataset.generatedBy = 'transcription-jester';
+  Object.assign(host.style, {
+    position: 'fixed',
+    width: '1px',
+    height: '1px',
+    left: '-9999px',
+    top: '-9999px',
+    pointerEvents: 'none',
+    overflow: 'hidden',
+  });
+  document.body.appendChild(host);
+  return host;
 }
 
 class TranscriptionJester {
@@ -39,11 +68,8 @@ class TranscriptionJester {
     this.frame = 0;
     this.clock = new THREE.Clock();
 
-    // The Flutter HtmlElementView lives inside a platform-view stacking context.
-    // On iOS Safari that context can stay underneath the Flutter canvas even
-    // with a huge z-index. Render the WebGL canvas directly on document.body
-    // instead so the puppet is guaranteed to remain visible while still being
-    // completely non-interactive.
+    // Render directly on document.body so the puppet remains visible on Flutter
+    // web/Safari even though the Dart widget itself is only a logical mount.
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(29, 1, 0.1, 100);
     this.camera.position.set(0, 0.08, 7.9);
@@ -57,7 +83,7 @@ class TranscriptionJester {
     this.renderer.setClearColor(0x000000, 0);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.26;
+    this.renderer.toneMappingExposure = 1.22;
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     Object.assign(this.renderer.domElement.style, {
       display: 'block',
@@ -65,8 +91,8 @@ class TranscriptionJester {
       pointerEvents: 'none',
       background: 'transparent',
       zIndex: '2147482500',
-      opacity: '0.96',
-      filter: 'drop-shadow(0 18px 18px rgba(0,0,0,.65))',
+      opacity: '0.94',
+      filter: 'drop-shadow(0 18px 20px rgba(0,0,0,.72))',
       transform: 'translateZ(0)',
     });
     this.renderer.domElement.setAttribute('aria-hidden', 'true');
@@ -76,14 +102,14 @@ class TranscriptionJester {
     this.pivot.rotation.y = MODEL_FACING_Y;
     this.scene.add(this.pivot);
 
-    this.scene.add(new THREE.HemisphereLight(0xffd6a1, 0x12070a, 2.7));
-    const key = new THREE.DirectionalLight(0xffa03e, 5.8);
+    this.scene.add(new THREE.HemisphereLight(0xffd6a1, 0x12070a, 2.55));
+    const key = new THREE.DirectionalLight(0xff9a3b, 5.4);
     key.position.set(-3.6, 5.2, 5.8);
     this.scene.add(key);
-    const rim = new THREE.DirectionalLight(0xff3214, 3.8);
+    const rim = new THREE.DirectionalLight(0xff3115, 3.5);
     rim.position.set(4, 4, -3);
     this.scene.add(rim);
-    const face = new THREE.PointLight(0xffc262, 2.8, 9);
+    const face = new THREE.PointLight(0xffc05f, 2.5, 9);
     face.position.set(0.2, 1.7, 4);
     this.scene.add(face);
 
@@ -114,6 +140,9 @@ class TranscriptionJester {
             object.visible = false;
           }
           if (object.isMesh) {
+            if (!object.geometry.getAttribute('normal')) {
+              object.geometry.computeVertexNormals();
+            }
             object.castShadow = true;
             object.receiveShadow = true;
           }
@@ -123,7 +152,7 @@ class TranscriptionJester {
         const size = bounds.getSize(new THREE.Vector3());
         const center = bounds.getCenter(new THREE.Vector3());
         this.model.position.sub(center);
-        this.model.scale.setScalar(7.05 / Math.max(size.y, 0.001));
+        this.model.scale.setScalar(7.0 / Math.max(size.y, 0.001));
         this.pivot.add(this.model);
 
         if (gltf.animations.length) {
@@ -139,6 +168,8 @@ class TranscriptionJester {
 
         this.host.dataset.transcriptionJester = 'ready';
         this.host.dataset.modelAsset = MODEL_URL;
+        this.host.dataset.modelAnimations = String(gltf.animations.length);
+        this.host.dataset.sourceModel = 'user-uploaded-glb-web-optimized';
         this.host.dataset.behavior = 'laughing-arrogantly-at-viewer';
         this.resume();
       },
@@ -180,6 +211,8 @@ class TranscriptionJester {
       ? Math.pow(Math.max(0, Math.sin(local * Math.PI * 9.0)), 1.25)
       : 0;
 
+    // A smug, viewer-directed laugh: the puppet leans toward the camera,
+    // rocks its shoulders/body and bounces through repeated laugh pulses.
     this.pivot.rotation.x =
       -envelope * 0.13 * amount - pulses * 0.075 * amount;
     this.pivot.rotation.y =
@@ -240,14 +273,15 @@ class TranscriptionJester {
     disposeObject(this.model);
     this.renderer.dispose();
     this.renderer.domElement.remove();
-    this.host.dataset.transcriptionJester = 'disposed';
+    if (this.host.dataset.generatedBy === 'transcription-jester') {
+      this.host.remove();
+    }
   }
 }
 
 window.transcriptionJesterCreate = (id) => {
   if (scenes.has(id)) return;
-  const host = document.getElementById(id);
-  if (!host) return;
+  const host = ensureHost(id);
   scenes.set(id, new TranscriptionJester(host));
 };
 
