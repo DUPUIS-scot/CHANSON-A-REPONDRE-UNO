@@ -5,7 +5,7 @@ import { GLTFLoader } from './vendor/GLTFLoader.js';
 // only mirrors each real draw/play action with a synchronized 3D performance.
 const dealers = new Map();
 const pendingMounts = new Map();
-const MODEL_REVISION = 'play-jester-rigged-20260816c';
+const MODEL_REVISION = 'play-jester-rigged-20260816d-torso';
 const MODEL_URLS = [
   new URL('assets/assets/models/play_jester_rigged.glb', document.baseURI).href,
 ];
@@ -248,31 +248,34 @@ class JesterDealer {
     this.renderer.setSize(width, height, false);
     this.camera.aspect = width / height;
     const narrow = width < 720;
-    this.camera.fov = narrow ? 39 : 32;
+    this.camera.fov = narrow ? 34 : 30;
     this.modelRoot.scale.setScalar(1);
     this.modelRoot.position.set(0, 0, 0);
 
     if (this.puppetBounds && !this.puppetBounds.isEmpty()) {
       const center = this.puppetBounds.getCenter(new THREE.Vector3());
       const size = this.puppetBounds.getSize(new THREE.Vector3());
-      const halfWidth = Math.max(size.x * 0.5, 0.001);
-      const halfHeight = Math.max(size.y * 0.5, 0.001);
+      const targetCenter = new THREE.Vector3(
+        center.x,
+        this.puppetBounds.min.y + size.y * (narrow ? 0.72 : 0.70),
+        center.z,
+      );
+      const visibleHeight = Math.max(size.y * (narrow ? 0.48 : 0.50), 0.5);
+      const visibleWidth = Math.max(size.x * (narrow ? 0.82 : 0.86), 0.5);
       const verticalFov = THREE.MathUtils.degToRad(this.camera.fov);
       const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * this.camera.aspect);
-      const distanceForHeight = halfHeight / Math.max(Math.tan(verticalFov / 2), 0.001);
-      const distanceForWidth = halfWidth / Math.max(Math.tan(horizontalFov / 2), 0.001);
-      const margin = narrow ? 1.18 : 1.12;
-      const distance = Math.max(distanceForHeight, distanceForWidth) * margin;
-      const targetCenter = new THREE.Vector3(center.x, center.y + size.y * 0.04, center.z);
-      this.camera.position.set(targetCenter.x, targetCenter.y, targetCenter.z + distance + 0.45);
+      const distanceForHeight = (visibleHeight * 0.5) / Math.max(Math.tan(verticalFov / 2), 0.001);
+      const distanceForWidth = (visibleWidth * 0.5) / Math.max(Math.tan(horizontalFov / 2), 0.001);
+      const distance = Math.max(distanceForHeight, distanceForWidth, 2.6) * (narrow ? 1.02 : 1.05);
+      this.camera.position.set(targetCenter.x, targetCenter.y, targetCenter.z + distance);
       this.camera.lookAt(targetCenter);
       this.camera.updateProjectionMatrix();
       this.camera.updateMatrixWorld(true);
-      this.host.dataset.puppetFit = 'full-body';
+      this.host.dataset.puppetFit = 'upper-torso';
       this.host.dataset.puppetCameraDistance = distance.toFixed(3);
     } else {
-      this.camera.position.set(0, 0.6, narrow ? 10.2 : 9.2);
-      this.camera.lookAt(0, 0.6, 0);
+      this.camera.position.set(0, 2.2, narrow ? 6.8 : 7.2);
+      this.camera.lookAt(0, 2.2, 0);
       this.camera.updateProjectionMatrix();
     }
   }
@@ -358,115 +361,99 @@ class JesterDealer {
     const lift = smoother(segment(t, 0.20, 0.48));
     const present = smoother(segment(t, 0.42, 0.72));
     const release = smoother(segment(t, 0.68, 0.92));
-    const settle = smoother(segment(t, 0.86, 1.0));
-
-    if (t < 0.28) this.setPhase('reachDrawPile');
-    else if (t < 0.48) this.setPhase('liftCard');
-    else if (t < 0.72) this.setPhase('presentCard');
-    else this.setPhase('releaseCard');
-
-    const a = new THREE.Vector3(-2.2, -1.8, 2.8);
-    const b = new THREE.Vector3(-1.25, -0.35, 2.1);
-    const c = new THREE.Vector3(-0.45, 0.3, 1.55);
-    const d = new THREE.Vector3(0.0, -2.7, 3.2);
-    cubicBezier(this.card.position, a, b, c, d, present);
-    this.card.position.y += lift * 0.8;
-    this.card.rotation.x = lerp(-0.35, -0.08, present);
-    this.card.rotation.y = lerp(Math.PI, 0.05, present);
-    this.card.rotation.z = -0.12 + pulse(t, 0.18, 0.48, 0.78) * 0.16;
-    this.card.scale.setScalar(1 - release * 0.10);
-    this.card.visible = release < 0.98;
-
-    const lean = pulse(t, 0.03, 0.25, 0.58);
-    const offer = pulse(t, 0.36, 0.62, 0.90);
+    const settle = smoother(segment(t, 0.80, 1.0));
     this.setGesturePose({
-      x: -0.38 * lean + 0.10 * offer,
-      y: -0.08 * lean + 0.16 * offer,
-      z: 0.12 * offer,
-      rx: -0.06 * offer,
-      ry: 0.12 * lean - 0.04 * offer,
-      rz: 0.08 * lean - 0.03 * offer,
-      squash: lean * 0.35,
+      x: lerp(0, -0.28, reach) + lerp(0, 0.20, present),
+      y: lerp(0, -0.12, reach) + lerp(0, 0.20, lift) - lerp(0, 0.16, release),
+      z: lerp(0, 0.12, reach) + lerp(0, 0.22, present),
+      rx: lerp(0, -0.04, lift),
+      ry: lerp(0, 0.12, present),
+      rz: lerp(0, -0.04, reach) + lerp(0, 0.03, release),
+      squash: pulse(t, 0.12, 0.35, 0.58) - pulse(t, 0.72, 0.84, 0.98),
     });
+    if (t < 0.22) this.setPhase('noticeDeck');
+    else if (t < 0.46) this.setPhase('reachToDeck');
+    else if (t < 0.70) this.setPhase('presentCard');
+    else if (t < 0.92) this.setPhase('releaseToPlayer');
+    else this.setPhase('returnToIdle');
 
-    if (settle > 0) {
-      this.gestureRoot.position.multiplyScalar(1 - settle);
-      this.gestureRoot.rotation.x *= 1 - settle;
-      this.gestureRoot.rotation.y *= 1 - settle;
-      this.gestureRoot.rotation.z *= 1 - settle;
-    }
+    const p0 = new THREE.Vector3(-2.5, -1.7, 2.6);
+    const p1 = new THREE.Vector3(-1.55, -0.8, 2.4);
+    const p2 = new THREE.Vector3(-0.9, -0.05, 2.2);
+    const p3 = new THREE.Vector3(0, 0.15, 2.7);
+    const p4 = new THREE.Vector3(0, -0.2, 2.8);
+    const p5 = new THREE.Vector3(0.2, -1.65, 2.9);
+    const p6 = new THREE.Vector3(0.2, -3.25, 2.8);
+    if (t < 0.58) cubicBezier(this.card.position, p0, p1, p2, p3, t / 0.58);
+    else cubicBezier(this.card.position, p4, p5, p5, p6, (t - 0.58) / 0.42);
+    this.card.rotation.x = lerp(-0.3, -0.08, lift);
+    this.card.rotation.y = lerp(Math.PI, 0.04, present);
+    this.card.rotation.z = Math.sin(t * Math.PI) * -0.08;
+    this.card.scale.setScalar(1 + pulse(t, 0.35, 0.58, 0.78) * 0.20);
+    if (t > 0.93) this.card.visible = false;
+    if (settle > 0.98) this.resetGesture();
   }
 
   updateReceive(t) {
-    const catchCard = smoother(segment(t, 0.03, 0.36));
-    const carry = smoother(segment(t, 0.28, 0.72));
-    const release = smoother(segment(t, 0.66, 0.96));
-
-    if (t < 0.36) this.setPhase('catchPlayerCard');
-    else if (t < 0.72) this.setPhase('carryToDiscard');
-    else this.setPhase('discardCard');
-
-    const a = new THREE.Vector3(0.0, -3.2, 2.8);
-    const b = new THREE.Vector3(0.0, -0.8, 1.9);
-    const c = new THREE.Vector3(1.25, -0.25, 1.5);
-    const d = new THREE.Vector3(2.35, -1.8, 2.8);
-    cubicBezier(this.card.position, a, b, c, d, carry);
-    this.card.position.y += catchCard * 0.5;
-    this.card.rotation.x = lerp(-0.30, -0.08, carry);
-    this.card.rotation.y = lerp(0.0, -Math.PI, carry);
-    this.card.rotation.z = pulse(t, 0.18, 0.54, 0.84) * -0.16;
-    this.card.scale.setScalar(1 - release * 0.08);
-    this.card.visible = release < 0.98;
-
-    const receiveLean = pulse(t, 0.04, 0.28, 0.56);
-    const discardLean = pulse(t, 0.38, 0.68, 0.94);
+    const catchPhase = smoother(segment(t, 0.05, 0.38));
+    const lift = smoother(segment(t, 0.30, 0.62));
+    const turn = smoother(segment(t, 0.52, 0.78));
+    const settle = smoother(segment(t, 0.75, 1.0));
     this.setGesturePose({
-      x: 0.16 * receiveLean + 0.42 * discardLean,
-      y: -0.05 * receiveLean + 0.03 * discardLean,
-      z: 0.08 * receiveLean,
-      rx: -0.04 * discardLean,
-      ry: -0.06 * receiveLean - 0.14 * discardLean,
-      rz: -0.03 * receiveLean - 0.08 * discardLean,
-      squash: receiveLean * 0.24,
+      x: lerp(0, 0.24, catchPhase) - lerp(0, 0.18, settle),
+      y: lerp(0, -0.08, catchPhase) + lerp(0, 0.22, lift) - lerp(0, 0.14, settle),
+      z: lerp(0, 0.18, catchPhase) + lerp(0, 0.10, lift),
+      rx: lerp(0, 0.05, lift),
+      ry: lerp(0, -0.12, turn),
+      rz: lerp(0, 0.04, catchPhase) - lerp(0, 0.03, settle),
+      squash: pulse(t, 0.10, 0.35, 0.55) - pulse(t, 0.72, 0.84, 0.98),
     });
+    if (t < 0.35) this.setPhase('catchPlayerCard');
+    else if (t < 0.66) this.setPhase('inspectPlayerCard');
+    else if (t < 0.88) this.setPhase('discardCard');
+    else this.setPhase('returnToIdle');
+
+    const p0 = new THREE.Vector3(0.2, -3.2, 2.8);
+    const p1 = new THREE.Vector3(0.25, -1.8, 2.8);
+    const p2 = new THREE.Vector3(0.8, -0.2, 2.4);
+    const p3 = new THREE.Vector3(1.8, -0.2, 2.2);
+    cubicBezier(this.card.position, p0, p1, p2, p3, t);
+    this.card.rotation.x = lerp(-0.3, -0.08, lift);
+    this.card.rotation.y = lerp(0, -0.20, turn);
+    this.card.rotation.z = lerp(0, 0.10, turn);
+    this.card.scale.setScalar(1 + pulse(t, 0.18, 0.42, 0.62) * 0.15);
+    if (t > 0.93) this.card.visible = false;
+    if (settle > 0.98) this.resetGesture();
   }
 
-  updateAnimation(now) {
-    if (!this.animation) return;
-    const t = clamp01((now - this.animation.started) / this.animation.duration);
-    if (this.animation.kind === 'receive') this.updateReceive(t);
-    else this.updateDeal(t);
-
-    if (t >= 1) {
-      this.animation = null;
-      this.card.visible = false;
-      this.resetGesture();
-      this.setPhase('idle');
-      if (this.activeAction) {
-        this.activeAction.fadeOut(0.15);
-        this.activeAction = null;
-      }
-      this.idleAction?.reset().fadeIn(0.15).play();
-    }
-  }
-
-  render = (now) => {
-    if (this.disposed || !this.visible || document.hidden) {
-      this.frame = 0;
-      return;
-    }
-    this.frame = requestAnimationFrame(this.render);
-    const delta = Math.min(this.clock.getDelta(), 0.05);
+  update(time) {
+    const delta = this.clock.getDelta();
     this.mixer?.update(delta);
-    this.updateAnimation(now);
+    if (this.animation) {
+      const t = clamp01((performance.now() - this.animation.started) / this.animation.duration);
+      if (this.animation.kind === 'receive') this.updateReceive(t);
+      else this.updateDeal(t);
+      if (t >= 1) {
+        this.animation = null;
+        this.card.visible = false;
+        this.resetGesture();
+        this.setPhase('idle');
+        this.idleAction?.reset().fadeIn(0.15).play();
+      }
+    }
+  }
+
+  render = () => {
+    if (this.disposed || !this.visible || document.hidden) return;
+    this.update();
     this.renderer.render(this.scene, this.camera);
+    this.frame = requestAnimationFrame(this.render);
   };
 
   resume() {
-    if (!this.frame && !this.disposed && this.visible && !document.hidden) {
-      this.clock.getDelta();
-      this.frame = requestAnimationFrame(this.render);
-    }
+    if (this.disposed || !this.visible || this.frame || document.hidden) return;
+    this.clock.getDelta();
+    this.frame = requestAnimationFrame(this.render);
   }
 
   pause() {
@@ -482,43 +469,63 @@ class JesterDealer {
   dispose() {
     this.disposed = true;
     this.pause();
-    this.resizeObserver?.disconnect();
-    this.intersectionObserver?.disconnect();
+    this.resizeObserver.disconnect();
+    this.intersectionObserver.disconnect();
     document.removeEventListener('visibilitychange', this.onVisibilityChange);
+    this.mixer?.stopAllAction();
+    this.card.userData.texture?.dispose();
+    this.card.userData.faceMaterial?.dispose();
+    disposeMaterial(this.card.userData.edgeMaterial);
+    disposeMaterial(this.card.userData.fallbackMaterial);
     disposeObject(this.model);
-    disposeObject(this.card);
     this.renderer.dispose();
-    this.renderer.domElement.remove();
-    this.status?.remove();
+    this.host.replaceChildren();
   }
 }
 
-function createDealer(id, quality = 'medium') {
+window.puppetDealerCreate = function puppetDealerCreate(id, quality) {
+  if (dealers.has(id)) return;
   const host = document.getElementById(id);
-  if (!host || dealers.has(id)) return;
-  const dealer = new JesterDealer(host, quality);
-  dealers.set(id, dealer);
-}
-
-window.puppetDealerCreate = (id, quality) => {
-  if (document.getElementById(id)) createDealer(id, quality);
-  else pendingMounts.set(id, quality);
-};
-window.puppetDealerDeal = (id, imageUrl) => dealers.get(id)?.deal(imageUrl, 'deal');
-window.puppetDealerReceive = (id, imageUrl) => dealers.get(id)?.deal(imageUrl, 'receive');
-window.puppetDealerSetQuality = (id, quality) => dealers.get(id)?.setQuality(quality);
-window.puppetDealerDestroy = (id) => {
-  dealers.get(id)?.dispose();
-  dealers.delete(id);
-  pendingMounts.delete(id);
-};
-
-const mountObserver = new MutationObserver(() => {
-  for (const [id, quality] of pendingMounts.entries()) {
-    if (document.getElementById(id)) {
-      pendingMounts.delete(id);
-      createDealer(id, quality);
+  if (!host) {
+    if (!pendingMounts.has(id)) {
+      let attempts = 0;
+      pendingMounts.set(id, setInterval(() => {
+        attempts += 1;
+        const mountedHost = document.getElementById(id);
+        if (mountedHost) {
+          clearInterval(pendingMounts.get(id));
+          pendingMounts.delete(id);
+          dealers.set(id, new JesterDealer(mountedHost, quality));
+        } else if (attempts > 30) {
+          clearInterval(pendingMounts.get(id));
+          pendingMounts.delete(id);
+        }
+      }, 100));
     }
+    return;
   }
-});
-mountObserver.observe(document.documentElement, { childList: true, subtree: true });
+  dealers.set(id, new JesterDealer(host, quality));
+};
+
+window.puppetDealerDeal = function puppetDealerDeal(id, imageUrl) {
+  dealers.get(id)?.deal(imageUrl, 'deal');
+};
+
+window.puppetDealerReceive = function puppetDealerReceive(id, imageUrl) {
+  dealers.get(id)?.deal(imageUrl, 'receive');
+};
+
+window.puppetDealerSetQuality = function puppetDealerSetQuality(id, quality) {
+  dealers.get(id)?.setQuality(quality);
+};
+
+window.puppetDealerDestroy = function puppetDealerDestroy(id) {
+  if (pendingMounts.has(id)) {
+    clearInterval(pendingMounts.get(id));
+    pendingMounts.delete(id);
+  }
+  const dealer = dealers.get(id);
+  if (!dealer) return;
+  dealer.dispose();
+  dealers.delete(id);
+};
