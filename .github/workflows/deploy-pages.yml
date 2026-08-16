@@ -232,6 +232,7 @@ jobs:
           grep -q '/share/UNO-001/' build/web/share/UNO-001/index.html
           grep -q '#/cards/final-84-84' build/web/share/UNO-084/index.html
           grep -q 'window.location.replace(' build/web/share/UNO-001/index.html
+          grep -q 'id="card-transcription"' build/web/share/UNO-001/index.html
 
           grep -q 'Chanson à répondre BRIO — Carte 001' build/web/share/BRIO-001/index.html
           grep -q 'property="og:image"' build/web/share/BRIO-001/index.html
@@ -240,6 +241,8 @@ jobs:
           grep -q '/share/BRIO-001/' build/web/share/BRIO-001/index.html
           grep -q '#/cards/brio-016' build/web/share/BRIO-016/index.html
           grep -q 'window.location.replace(' build/web/share/BRIO-001/index.html
+          grep -q 'id="card-image"' build/web/share/BRIO-001/index.html
+          grep -q 'id="card-transcription"' build/web/share/BRIO-001/index.html
 
           test "$(find build/web/assets/share-previews -type f -name 'BRIO-*.jpg' | wc -l)" -eq 16
           test -f build/web/assets/share-previews/BRIO-013.jpg
@@ -265,7 +268,35 @@ jobs:
           test -f build/web/assets/assets/models/search_castle.glb
           test -f build/web/assets/assets/images/closed_curtains.png
           test -f build/web/card_castle/card_castle.html
-          test "$(find build/web/assets/assets/cards/final_import -type f -name '*.png' | wc -l)" -eq 84
+
+          python3 <<'PY'
+          import json
+          from pathlib import Path
+
+          catalog = json.loads(Path('assets/json/cards.json').read_text(encoding='utf-8'))
+          deck = next(
+              item for item in catalog['decks']
+              if item.get('id') == 'chanson-a-repondre-uno'
+          )
+          cards = deck.get('cards', [])
+          if len(cards) != 84:
+              raise SystemExit(f'Expected 84 UNO catalog cards, found {len(cards)}.')
+
+          missing = []
+          for card in cards:
+              image_path = card.get('path') or card.get('image')
+              if not image_path:
+                  missing.append(f"{card.get('id', '<unknown>')}: no image path")
+                  continue
+              built_asset = Path('build/web/assets') / image_path
+              if not built_asset.is_file():
+                  missing.append(f"{card.get('id', '<unknown>')}: {built_asset}")
+
+          if missing:
+              raise SystemExit('Missing built UNO card assets:\n' + '\n'.join(missing))
+
+          print('Verified all 84 catalog-referenced UNO card images in build output.')
+          PY
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
