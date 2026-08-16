@@ -83,7 +83,7 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
       alignment: Alignment.topCenter,
       filterQuality: FilterQuality.high,
       gaplessPlayback: true,
-      errorBuilder: (_, __, ___) => Container(
+      errorBuilder: (_, _, _) => Container(
         decoration: const BoxDecoration(
           gradient: RadialGradient(
             center: Alignment(0, -0.45),
