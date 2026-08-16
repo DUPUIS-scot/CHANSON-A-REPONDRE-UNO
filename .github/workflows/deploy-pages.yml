@@ -131,6 +131,14 @@ jobs:
             --build-dir build/web \
             --public-base https://www.chanson-a-repondre-uno.scot/
 
+      - name: Apply social preview to every card share link
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/apply_global_share_previews.py \
+            build/web \
+            https://www.chanson-a-repondre-uno.scot/
+
       - name: Verify deployable output
         shell: bash
         run: |
@@ -162,6 +170,8 @@ jobs:
           test -f build/web/assets/share-previews/UNO-001.jpg
           test -f build/web/assets/share-previews/UNO-084.jpg
           test "$(stat -c%s build/web/assets/share-previews/UNO-001.jpg)" -le 350000
+          grep -Fq 'https://www.chanson-a-repondre-uno.scot/assets/share-previews/UNO-049.jpg' build/web/share/UNO-049/index.html
+          grep -Fq 'https://www.chanson-a-repondre-uno.scot/assets/share-previews/BRIO-012.jpg' build/web/share/BRIO-012/index.html
           if grep -Rqi 'http-equiv="refresh"' build/web/share; then
             echo "::error::Generated share pages must not use meta refresh."
             exit 1
