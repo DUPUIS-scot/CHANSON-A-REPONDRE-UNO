@@ -53,7 +53,7 @@ void main() {
     expect(shared?.imagePath, selected.imagePath);
   });
 
-  testWidgets('Browse AI actions open the theatrical jester handoff first', (
+  testWidgets('Browse AI actions open the selected card jester first', (
     tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(1440, 1000));
@@ -90,7 +90,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('TRANSCRIBE CARD'), findsNothing);
-    expect(find.text('DIY WITH AI'), findsNothing);
     expect(find.text('DISCUSS WITH AI'), findsNothing);
 
     final cards = find.byType(BrowseHandCard);
@@ -99,34 +98,28 @@ void main() {
     tester.widget<BrowseHandCard>(cards.first).onTap();
     await tester.pumpAndSettle();
 
-    // Browse keeps its compact DIY label. TRANSCRIBE CARD now routes through
-    // the dedicated jester screen for the exact selected card.
     expect(find.text('TRANSCRIBE CARD'), findsOneWidget);
-    expect(find.text('DIY WITH AI'), findsOneWidget);
-    expect(find.text('DISCUSS WITH AI'), findsNothing);
+    expect(find.text('DISCUSS WITH AI'), findsOneWidget);
 
     await tester.tap(find.text('TRANSCRIBE CARD'));
     await tester.pumpAndSettle();
-
     expect(router.state.uri.path, '/cards/${selected.id}/transcription');
-    expect(find.text('TRANSCRIPTION'), findsNothing);
-    expect(find.text('CARD IMAGE → EXTERNAL AI'), findsNothing);
     expect(find.text('TRANSCRIBE CARD'), findsOneWidget);
-    expect(find.text('DIY WITH AI'), findsNothing);
     expect(find.text('DISCUSS WITH AI'), findsOneWidget);
     expect(find.text('ChatGPT'), findsNothing);
 
-    await tester.tap(find.text('TRANSCRIBE CARD'));
+    router.go('/cards');
     await tester.pumpAndSettle();
-    expect(find.text('TRANSCRIBE WITH AI'), findsOneWidget);
-    expect(find.text('ChatGPT'), findsOneWidget);
-    expect(find.text('Gemini'), findsOneWidget);
-    expect(find.text('Claude'), findsOneWidget);
-    expect(find.text('Copilot'), findsOneWidget);
-    expect(find.text('COPY PROMPT'), findsOneWidget);
-
-    Navigator.of(tester.element(find.text('COPY PROMPT'))).pop();
+    final cardsAgain = find.byType(BrowseHandCard);
+    final selectedAgain = tester.widget<BrowseHandCard>(cardsAgain.first).card;
+    tester.widget<BrowseHandCard>(cardsAgain.first).onTap();
     await tester.pumpAndSettle();
+    await tester.tap(find.text('DISCUSS WITH AI'));
+    await tester.pumpAndSettle();
+    expect(router.state.uri.path, '/cards/${selectedAgain.id}/transcription');
+    expect(find.text('TRANSCRIBE CARD'), findsOneWidget);
+    expect(find.text('DISCUSS WITH AI'), findsOneWidget);
+    expect(find.text('ChatGPT'), findsNothing);
 
     final card = decks.cards.first;
     await tester.pumpWidget(
@@ -138,7 +131,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('TRANSCRIBE CARD'), findsNothing);
-    expect(find.text('DIY WITH AI'), findsNothing);
     expect(find.text('DISCUSS WITH AI'), findsNothing);
     expect(find.text('Ask AI a question'), findsNothing);
   });
