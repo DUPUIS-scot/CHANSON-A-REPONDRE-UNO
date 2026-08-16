@@ -1,48 +1,22 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta
-    name="description"
-    content="Chanson à Répondre UNO! — official web application."
-  >
+  <meta name="description" content="Chanson à Répondre UNO! — official web application.">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
 
-  <!-- Official main-URL social preview -->
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Chanson à Répondre UNO!">
   <meta property="og:title" content="Chanson à Répondre UNO!">
-  <meta
-    property="og:description"
-    content="Chanson à Répondre UNO! — official web application."
-  >
-  <meta
-    property="og:url"
-    content="https://dupuis-scot.github.io/CHANSON-A-REPONDRE-UNO/"
-  >
-  <meta
-    property="og:image"
-    content="https://dupuis-scot.github.io/CHANSON-A-REPONDRE-UNO/social/chanson-a-repondre-uno-share.png"
-  >
-  <meta
-    property="og:image:secure_url"
-    content="https://dupuis-scot.github.io/CHANSON-A-REPONDRE-UNO/social/chanson-a-repondre-uno-share.png"
-  >
+  <meta property="og:description" content="Chanson à Répondre UNO! — official web application.">
+  <meta property="og:url" content="https://dupuis-scot.github.io/CHANSON-A-REPONDRE-UNO/">
+  <meta property="og:image" content="https://dupuis-scot.github.io/CHANSON-A-REPONDRE-UNO/social/chanson-a-repondre-uno-share.png">
+  <meta property="og:image:secure_url" content="https://dupuis-scot.github.io/CHANSON-A-REPONDRE-UNO/social/chanson-a-repondre-uno-share.png">
   <meta property="og:image:type" content="image/png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -50,27 +24,27 @@
 
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Chanson à Répondre UNO!">
-  <meta
-    name="twitter:description"
-    content="Chanson à Répondre UNO! — official web application."
-  >
-  <meta
-    name="twitter:image"
-    content="https://dupuis-scot.github.io/CHANSON-A-REPONDRE-UNO/social/chanson-a-repondre-uno-share.png"
-  >
+  <meta name="twitter:description" content="Chanson à Répondre UNO! — official web application.">
+  <meta name="twitter:image" content="https://dupuis-scot.github.io/CHANSON-A-REPONDRE-UNO/social/chanson-a-repondre-uno-share.png">
   <meta name="twitter:image:alt" content="Chanson à Répondre UNO!">
 
-  <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="Chanson UNO">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
-
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="icon" type="image/png" href="favicon.png">
 
   <title>Chanson à Répondre UNO!</title>
   <link rel="manifest" href="manifest.json">
+  <style>
+    html, body { margin: 0; min-height: 100%; background: #090604; }
+    body {
+      background:
+        radial-gradient(circle at 18% 28%, rgba(122, 42, 10, .38), transparent 32%),
+        linear-gradient(180deg, #140805 0%, #090403 48%, #030201 100%);
+    }
+  </style>
+
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
   <script>
     window.requestTurnstileToken = async function(siteKey) {
@@ -132,6 +106,7 @@
       });
     };
   </script>
+
   <script type="importmap">
     {
       "imports": {
@@ -143,10 +118,21 @@
   <script type="module" src="transcription_jester.js"></script>
 </head>
 <body>
+  <script>
+    // Previous Flutter builds installed a service worker. On iOS Safari that
+    // worker can keep serving an older app shell after a successful Pages
+    // deployment, which made the transcription screen appear unchanged.
+    // Remove legacy app registrations/caches before booting the current build.
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        for (const registration of registrations) registration.unregister();
+      });
+    }
+    if ('caches' in window) {
+      caches.keys().then((keys) => Promise.all(keys.map((key) => caches.delete(key))));
+    }
+  </script>
   <script src="card_share.js"></script>
-  <!-- Inline Flutter bootstrap so ?v=<build> refreshes the loader together
-       with index.html; the custom bootstrap forwards that build ID to
-       main.dart.js as well. -->
   <script>
     {{flutter_bootstrap_js}}
   </script>
