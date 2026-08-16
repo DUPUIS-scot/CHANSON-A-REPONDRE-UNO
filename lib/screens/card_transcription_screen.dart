@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -17,7 +16,6 @@ const _gold = Color(0xFFE7A62C);
 const _brightGold = Color(0xFFFFD980);
 const _cream = Color(0xFFFFE8B4);
 const _ink = Color(0xFF090604);
-const _buildSha = String.fromEnvironment('APP_BUILD_SHA', defaultValue: 'dev');
 
 class CardTranscriptionScreen extends StatefulWidget {
   const CardTranscriptionScreen({required this.cardId, super.key});
@@ -64,36 +62,31 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       );
 
-  Widget _background() {
-    if (!kIsWeb) {
-      return Image.asset(
-        'assets/images/transcription_gothic_background.jpg',
-        fit: BoxFit.cover,
-        alignment: Alignment.topCenter,
-        filterQuality: FilterQuality.high,
-      );
-    }
-
-    final uri = Uri.base.resolve(
-      'assets/assets/images/transcription_gothic_background.jpg?v=$_buildSha',
-    );
-    return Image.network(
-      uri.toString(),
-      fit: BoxFit.cover,
-      alignment: Alignment.topCenter,
-      filterQuality: FilterQuality.high,
-      gaplessPlayback: true,
-      errorBuilder: (_, _, _) => Container(
-        decoration: const BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment(0, -0.45),
-            radius: 1.15,
-            colors: [Color(0xFF6D1F0D), Color(0xFF260A08), Color(0xFF090604)],
+  Widget _background() => Stack(
+        fit: StackFit.expand,
+        children: [
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                center: Alignment(0, -0.35),
+                radius: 1.18,
+                colors: [
+                  Color(0xFF7B210D),
+                  Color(0xFF330A08),
+                  Color(0xFF090604),
+                ],
+              ),
+            ),
           ),
-        ),
-      ),
-    );
-  }
+          Image.asset(
+            'assets/images/closed_curtains.png',
+            fit: BoxFit.cover,
+            alignment: Alignment.center,
+            filterQuality: FilterQuality.high,
+            errorBuilder: (_, _, _) => const SizedBox.shrink(),
+          ),
+        ],
+      );
 
   @override
   Widget build(BuildContext context) {
