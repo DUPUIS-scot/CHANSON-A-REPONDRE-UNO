@@ -25,7 +25,7 @@ Future<void> showTranscriptionAiProviderSheet({
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    barrierColor: const Color(0xCC000000),
+    barrierColor: const Color(0xFF000000),
     backgroundColor: const Color(0xFF0A0806),
     builder: (_) => _TranscriptionAiProviderSheet(
       card: card,
