@@ -2,6 +2,7 @@ import express from 'express';
 import multer from 'multer';
 
 import { createRequireAuthenticatedUser } from '../middleware/requireAuthenticatedUser.js';
+import { GeminiService } from '../services/gemini.js';
 import { UserOpenAiService } from '../services/user-openai.js';
 import { AppError, mapUpstreamError } from '../utilities/errors.js';
 
@@ -13,6 +14,7 @@ export function createAiRouter(environment, dependencies = {}) {
   const userOpenAi =
     dependencies.userOpenAiService ||
     new UserOpenAiService(environment, dependencies);
+  const gemini = dependencies.geminiService || new GeminiService(environment, dependencies);
   const authenticate = createRequireAuthenticatedUser(
     environment,
     dependencies.authClient,
@@ -44,29 +46,44 @@ export function createAiRouter(environment, dependencies = {}) {
         : 'Transcribe every readable word exactly. Preserve the original language, spelling, punctuation, headings, lists and meaningful line breaks. Do not summarize, explain, translate or invent. Mark uncertain text as [uncertain] and unreadable text as [unreadable]. Ignore decorative borders. Return plain UTF-8 text only.';
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), environment.requestTimeoutMs);
-      let result;
+      let transcription;
+      let model;
+      let requestId;
       try {
-        const openai = await userOpenAi.clientFor(request.authUser.id, {
-          allowSharedKey: request.authUser.isAnonymous,
-        });
-        result = await openai.responses.create({
-          model: environment.openaiModel,
-          input: [{
-            role: 'user',
-            content: [
-              { type: 'input_text', text: prompt },
-              {
-                type: 'input_image',
-                image_url: `data:${request.file.mimetype};base64,${request.file.buffer.toString('base64')}`,
-                detail: 'high',
-              },
-            ],
-          }],
-        }, { signal: controller.signal });
+        if (request.authUser.isAnonymous) {
+          const result = await gemini.transcribe({
+            prompt,
+            imageBytes: request.file.buffer,
+            mimeType: request.file.mimetype,
+            signal: controller.signal,
+          });
+          transcription = result.text;
+          model = result.model;
+          requestId = result.id;
+        } else {
+          const openai = await userOpenAi.clientFor(request.authUser.id);
+          const result = await openai.responses.create({
+            model: environment.openaiModel,
+            input: [{
+              role: 'user',
+              content: [
+                { type: 'input_text', text: prompt },
+                {
+                  type: 'input_image',
+                  image_url: `data:${request.file.mimetype};base64,${request.file.buffer.toString('base64')}`,
+                  detail: 'high',
+                },
+              ],
+            }],
+          }, { signal: controller.signal });
+          transcription = (result.output_text || '').trim();
+          model = result.model || environment.openaiModel;
+          requestId = result.id;
+        }
       } finally {
         clearTimeout(timer);
       }
-      const transcription = (result.output_text || '').trim();
+      transcription = (transcription || '').trim();
       if (!transcription) {
         throw new AppError(502, 'INVALID_UPSTREAM_RESPONSE', 'No readable text was detected.');
       }
@@ -79,8 +96,8 @@ export function createAiRouter(environment, dependencies = {}) {
         status: /\[(uncertain|unreadable)\]/i.test(transcription)
           ? 'needsReview'
           : 'unreviewed',
-        model: result.model || environment.openaiModel,
-        requestId: result.id || request.requestId,
+        model: model || (request.authUser.isAnonymous ? environment.geminiModel : environment.openaiModel),
+        requestId: requestId || request.requestId,
         createdAt: new Date().toISOString(),
       });
     } catch (error) {
@@ -122,20 +139,35 @@ export function createAiRouter(environment, dependencies = {}) {
         : 'Answer the user clearly. Do not claim access to card text that was not supplied.';
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), environment.requestTimeoutMs);
-      let result;
+      let reply;
+      let model;
+      let requestId;
       try {
-        const openai = await userOpenAi.clientFor(request.authUser.id, {
-          allowSharedKey: request.authUser.isAnonymous,
-        });
-        result = await openai.responses.create({
-          model: environment.openaiModel,
-          instructions,
-          input: [...history, { role: 'user', content: message }],
-        }, { signal: controller.signal });
+        if (request.authUser.isAnonymous) {
+          const result = await gemini.chat({
+            instructions,
+            history,
+            message,
+            signal: controller.signal,
+          });
+          reply = result.text;
+          model = result.model;
+          requestId = result.id;
+        } else {
+          const openai = await userOpenAi.clientFor(request.authUser.id);
+          const result = await openai.responses.create({
+            model: environment.openaiModel,
+            instructions,
+            input: [...history, { role: 'user', content: message }],
+          }, { signal: controller.signal });
+          reply = (result.output_text || '').trim();
+          model = result.model || environment.openaiModel;
+          requestId = result.id;
+        }
       } finally {
         clearTimeout(timer);
       }
-      const reply = (result.output_text || '').trim();
+      reply = (reply || '').trim();
       if (!reply) {
         throw new AppError(502, 'INVALID_UPSTREAM_RESPONSE', 'The AI response was empty.');
       }
@@ -143,8 +175,8 @@ export function createAiRouter(environment, dependencies = {}) {
         cardId: body.cardId || null,
         reply,
         message: reply,
-        model: result.model || environment.openaiModel,
-        requestId: result.id || request.requestId,
+        model: model || (request.authUser.isAnonymous ? environment.geminiModel : environment.openaiModel),
+        requestId: requestId || request.requestId,
         createdAt: new Date().toISOString(),
       });
     } catch (error) {

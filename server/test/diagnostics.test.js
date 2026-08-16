@@ -8,7 +8,7 @@ const secrets = {
   publishable: 'test-publishable-key',
   serviceRole: 'test-service-role-key',
   encryption: Buffer.alloc(32, 9).toString('base64'),
-  openai: 'sk-test-shared-key-1234567890',
+  gemini: 'test-gemini-secret-key',
 };
 
 const environment = parseEnvironment({
@@ -18,7 +18,8 @@ const environment = parseEnvironment({
   SUPABASE_PUBLISHABLE_KEY: secrets.publishable,
   SUPABASE_SERVICE_ROLE_KEY: secrets.serviceRole,
   CREDENTIAL_ENCRYPTION_KEY: secrets.encryption,
-  OPENAI_API_KEY: secrets.openai,
+  GEMINI_API_KEY: secrets.gemini,
+  GEMINI_MODEL: 'gemini-2.5-flash',
   ALLOWED_ORIGINS: 'https://www.chanson-a-repondre-uno.scot',
   REQUEST_TIMEOUT_MS: '1000',
   MAX_REQUEST_BODY_BYTES: '1048576',
@@ -49,25 +50,22 @@ const anonymousAuth = {
   },
 };
 
-test('diagnostics expose operational state without secrets or AI content', () => {
+test('diagnostics expose Gemini operational state without secrets or AI content', () => {
   const upstreamError = Object.assign(new Error('private upstream details'), {
+    name: 'GeminiApiError',
     status: 503,
-    code: 'ECONNRESET',
-    type: 'system_error',
+    code: 'UNAVAILABLE',
+    type: 'gemini_api_error',
   });
-  const userOpenAiService = {
-    clientFor: async () => ({
-      responses: {
-        create: async () => {
-          throw upstreamError;
-        },
-      },
-    }),
+  const geminiService = {
+    transcribe: async () => {
+      throw upstreamError;
+    },
   };
 
   return withServer(createApp(environment, {
     authClient: anonymousAuth,
-    userOpenAiService,
+    geminiService,
   }), async (url) => {
     const initial = await fetch(`${url}/diagnostics`);
     assert.equal(initial.status, 200);
@@ -75,6 +73,10 @@ test('diagnostics expose operational state without secrets or AI content', () =>
     for (const secret of Object.values(secrets)) {
       assert.equal(initialText.includes(secret), false);
     }
+
+    const initialBody = JSON.parse(initialText);
+    assert.equal(initialBody.configuration.geminiConfigured, true);
+    assert.equal(initialBody.configuration.geminiModel, 'gemini-2.5-flash');
 
     const form = new FormData();
     form.set('image', new Blob([Buffer.from('image')], { type: 'image/png' }), 'card.png');
@@ -95,13 +97,13 @@ test('diagnostics expose operational state without secrets or AI content', () =>
     }
 
     const diagnostics = JSON.parse(diagnosticsText);
-    assert.equal(diagnostics.configuration.openAiConfigured, true);
+    assert.equal(diagnostics.configuration.geminiConfigured, true);
     assert.equal(diagnostics.configuration.supabaseConfigured, true);
     assert.equal(diagnostics.ai.lastAiFailure.code, 'UPSTREAM_UNAVAILABLE');
     assert.equal(diagnostics.ai.lastAiFailure.status, 502);
     assert.equal(diagnostics.ai.lastAiFailure.anonymousUser, true);
     assert.equal(diagnostics.ai.lastAiFailure.upstream.status, 503);
-    assert.equal(diagnostics.ai.lastAiFailure.upstream.code, 'ECONNRESET');
-    assert.equal(diagnostics.ai.lastAiFailure.upstream.type, 'system_error');
+    assert.equal(diagnostics.ai.lastAiFailure.upstream.code, 'UNAVAILABLE');
+    assert.equal(diagnostics.ai.lastAiFailure.upstream.type, 'gemini_api_error');
   });
 });

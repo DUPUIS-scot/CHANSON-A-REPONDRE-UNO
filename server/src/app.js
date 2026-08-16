@@ -79,7 +79,8 @@ export function createApp(environment, dependencies = {}) {
     configuration: {
       byok: true,
       supabase: true,
-      anonymousAi: Boolean(environment.openAiApiKey),
+      anonymousAi: Boolean(environment.geminiApiKey),
+      anonymousAiProvider: 'gemini',
     },
   }));
   app.get('/diagnostics', (_request, response) => response.json({
@@ -93,6 +94,9 @@ export function createApp(environment, dependencies = {}) {
     },
     configuration: {
       nodeEnvironment: environment.nodeEnvironment,
+      geminiConfigured: Boolean(environment.geminiApiKey),
+      geminiModel: environment.geminiModel,
+      openAiByokSupported: true,
       openAiConfigured: Boolean(environment.openAiApiKey),
       openAiModel: environment.openaiModel,
       supabaseConfigured: Boolean(

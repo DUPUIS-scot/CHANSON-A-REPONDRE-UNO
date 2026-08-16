@@ -5,8 +5,6 @@ import { createApp } from '../src/app.js';
 import { parseEnvironment } from '../src/config/environment.js';
 import { UserOpenAiService } from '../src/services/user-openai.js';
 
-const sharedKey = 'sk-proj-public-guest-secret-1234';
-
 const environment = parseEnvironment({
   PORT: '3000',
   NODE_ENV: 'development',
@@ -14,7 +12,8 @@ const environment = parseEnvironment({
   SUPABASE_PUBLISHABLE_KEY: 'test-publishable-key',
   SUPABASE_SERVICE_ROLE_KEY: 'test-service-role-key',
   CREDENTIAL_ENCRYPTION_KEY: Buffer.alloc(32, 9).toString('base64'),
-  OPENAI_API_KEY: sharedKey,
+  GEMINI_API_KEY: 'test-gemini-key',
+  GEMINI_MODEL: 'gemini-2.5-flash',
   ALLOWED_ORIGINS: 'http://localhost:8080,https://www.chanson-a-repondre-uno.scot',
   REQUEST_TIMEOUT_MS: '1000',
   MAX_REQUEST_BODY_BYTES: '1048576',
@@ -73,28 +72,23 @@ const authClient = {
 };
 
 function dependencies({ store = new EmptyCredentialStore() } = {}) {
-  const calls = [];
-  const openAiFactory = (apiKey) => ({
-    responses: {
-      create: async (request) => {
-        calls.push({ apiKey, request });
-        return {
-          id: 'response-guest',
-          model: request.model,
-          output_text: request.input?.[0]?.content instanceof Array
-            ? 'Guest transcription'
-            : 'Guest assistant reply',
-        };
+  const geminiCalls = [];
+  return {
+    geminiCalls,
+    authClient,
+    geminiService: {
+      async chat(request) {
+        geminiCalls.push({ kind: 'chat', request });
+        return { text: 'Guest assistant reply', model: 'gemini-2.5-flash', id: 'gemini-chat' };
+      },
+      async transcribe(request) {
+        geminiCalls.push({ kind: 'transcribe', request });
+        return { text: 'Guest transcription', model: 'gemini-2.5-flash', id: 'gemini-transcribe' };
       },
     },
-    models: { list: async () => ({ data: [] }) },
-  });
-  return {
-    calls,
-    authClient,
     userOpenAiService: new UserOpenAiService(environment, {
       store,
-      openAiFactory,
+      openAiFactory: () => ({ models: { list: async () => ({ data: [] }) } }),
     }),
   };
 }
@@ -104,7 +98,7 @@ const jsonHeaders = (token) => ({
   'Content-Type': 'application/json',
 });
 
-test('anonymous Supabase JWT can use shared server key for chat and transcription', () => {
+test('anonymous Supabase JWT uses Gemini for chat and transcription without BYOK lookup', () => {
   const deps = dependencies({ store: new FailingCredentialStore() });
   return withServer(createApp(environment, deps), async (url) => {
     const chat = await fetch(`${url}/api/chat`, {
@@ -116,7 +110,9 @@ test('anonymous Supabase JWT can use shared server key for chat and transcriptio
       }),
     });
     assert.equal(chat.status, 200);
-    assert.equal((await chat.json()).reply, 'Guest assistant reply');
+    const chatBody = await chat.json();
+    assert.equal(chatBody.reply, 'Guest assistant reply');
+    assert.equal(chatBody.model, 'gemini-2.5-flash');
 
     const form = new FormData();
     form.set('image', new Blob([Buffer.from('image')], { type: 'image/png' }), 'card.png');
@@ -127,13 +123,15 @@ test('anonymous Supabase JWT can use shared server key for chat and transcriptio
       body: form,
     });
     assert.equal(transcription.status, 200);
-    assert.equal((await transcription.json()).transcription, 'Guest transcription');
+    const transcriptionBody = await transcription.json();
+    assert.equal(transcriptionBody.transcription, 'Guest transcription');
+    assert.equal(transcriptionBody.model, 'gemini-2.5-flash');
 
-    assert.deepEqual(deps.calls.map(({ apiKey }) => apiKey), [sharedKey, sharedKey]);
+    assert.deepEqual(deps.geminiCalls.map(({ kind }) => kind), ['chat', 'transcribe']);
   });
 });
 
-test('shared server key is not available to unauthenticated or permanent users', () => {
+test('Gemini shared key is not available to unauthenticated or permanent users', () => {
   const deps = dependencies();
   return withServer(createApp(environment, deps), async (url) => {
     const noSession = await fetch(`${url}/api/chat`, {
@@ -154,6 +152,6 @@ test('shared server key is not available to unauthenticated or permanent users',
       'OPENAI_CONNECTION_REQUIRED',
     );
 
-    assert.equal(deps.calls.length, 0);
+    assert.equal(deps.geminiCalls.length, 0);
   });
 });
