@@ -15,15 +15,27 @@ external void _setTranscriptionJesterSelectedCard(String cardId, String imagePat
 class TranscriptionJesterScene extends StatefulWidget {
   const TranscriptionJesterScene({super.key});
 
+  static String? _pendingCardId;
+  static String? _pendingImagePath;
+
   static void setSelectedCard({
     required String cardId,
     required String imagePath,
   }) {
+    _pendingCardId = cardId;
+    _pendingImagePath = imagePath;
+    _pushPendingCardToJs();
+  }
+
+  static void _pushPendingCardToJs() {
+    final cardId = _pendingCardId;
+    final imagePath = _pendingImagePath;
+    if (cardId == null || imagePath == null) return;
     try {
       _setTranscriptionJesterSelectedCard(cardId, imagePath);
     } catch (_) {
-      // The JS module may not have finished loading yet; the screen retries
-      // scene creation and the selected card can be supplied again on rebuild.
+      // The JS module may not have finished loading yet. The scene retries
+      // this handoff every time scene creation is attempted/succeeds.
     }
   }
 
@@ -58,6 +70,7 @@ class _TranscriptionJesterSceneState extends State<TranscriptionJesterScene> {
     if (!mounted || _mountedScene) return;
     try {
       _createTranscriptionJester(_elementId);
+      TranscriptionJesterScene._pushPendingCardToJs();
       _mountedScene = true;
       for (final timer in _retryTimers) {
         timer.cancel();
