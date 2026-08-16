@@ -32,11 +32,11 @@ void main() {
     expect(sheet, contains('No app AI backend is used.'));
     expect(sheet, isNot(contains('receives the direct public card-image URL')));
 
-    expect(service, contains('publicImageUrlFor'));
-    expect(service, contains('previewImageUrlFor'));
     expect(service, contains('PublicCardShareService.shareUrlFor'));
-    expect(service, contains("'LIGHTWEIGHT CARD PREVIEW:'"));
-    expect(service, contains("'ORIGINAL FULL-RESOLUTION CARD IMAGE:'"));
+    expect(service, contains("'CARD LINK:'"));
+    expect(service, isNot(contains("'LIGHTWEIGHT CARD PREVIEW:'")));
+    expect(service, isNot(contains("'ORIGINAL FULL-RESOLUTION CARD IMAGE:'")));
+    expect(service, isNot(contains('previewImageUrlFor')));
     expect(service, contains("'CARD TEXT PROVIDED BY THE APP:'"));
     expect(service, contains('actual image attachment'));
     expect(service, contains('card.question'));
@@ -44,14 +44,16 @@ void main() {
     expect(service, isNot(contains('Open and analyze the CARD IMAGE directly')));
   });
 
-  test('AI preview URL is canonical-slug based and deck agnostic', () {
+  test('AI prompt uses one canonical card link and remains deck agnostic', () {
     final service = File(
       'lib/services/external_ai_handoff_service.dart',
     ).readAsStringSync();
 
-    expect(service, contains("'assets', 'share-previews', '\$slug.jpg'"));
     expect(service, contains('cardId: card.id'));
     expect(service, contains('deckId: deck.id'));
+    expect(service, contains("'CARD LINK:'"));
+    expect(service, isNot(contains('share-previews')));
+    expect(service, isNot(contains('DIRECT PUBLIC CARD IMAGE:')));
     expect(service, isNot(contains('UNO-')));
     expect(service, isNot(contains('BRIO-')));
   });
