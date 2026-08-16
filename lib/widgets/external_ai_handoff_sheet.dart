@@ -127,12 +127,19 @@ class _ExternalAiJesterScreen extends StatelessWidget {
         );
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: Colors.black,
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // The theatrical reference and animated 3D jester remain the visual
-          // focus of this route. No transcription card is drawn over them.
+          Positioned.fill(
+            child: Image.asset(
+              'assets/images/ai_jester_stage_background.jpg',
+              fit: BoxFit.cover,
+              alignment: Alignment.topCenter,
+            ),
+          ),
+          // The provided theatrical room is the single background. The web
+          // scene now contributes only the animated 3D jester above it.
           const Positioned.fill(child: TranscriptionJesterScene()),
           const Positioned.fill(
             child: IgnorePointer(
