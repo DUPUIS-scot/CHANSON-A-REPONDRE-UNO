@@ -51,7 +51,7 @@ void main() {
     expect(shared?.imagePath, selected.imagePath);
   });
 
-  testWidgets('Browse exposes external AI handoff actions only in Browse', (
+  testWidgets('Browse AI actions open the theatrical jester handoff first', (
     tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(1440, 1000));
@@ -78,6 +78,14 @@ void main() {
 
     expect(find.text('TRANSCRIBE CARD'), findsOneWidget);
     expect(find.text('DIY WITH AI'), findsOneWidget);
+
+    await tester.tap(find.text('TRANSCRIBE CARD'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('TRANSCRIPTION'), findsOneWidget);
+    expect(find.text('TRANSCRIBE CARD'), findsOneWidget);
+    expect(find.text('DIY WITH AI'), findsOneWidget);
+    expect(find.text('ChatGPT'), findsNothing);
 
     await tester.tap(find.text('TRANSCRIBE CARD'));
     await tester.pumpAndSettle();
