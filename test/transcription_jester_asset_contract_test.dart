@@ -46,7 +46,7 @@ void main() {
     final rendererIndex = html.indexOf('transcription_jester.js');
     expect(bootstrapIndex, greaterThanOrEqualTo(0));
     expect(rendererIndex, greaterThan(bootstrapIndex));
-    expect(html, contains('transcription-jester-draco-2'));
+    expect(html, contains('jester-draco-20260816-play-1'));
     expect(html, contains('transcription-jester-rigged-2'));
   });
 }
