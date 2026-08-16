@@ -24,7 +24,7 @@ void main() {
     expect(rootName.toLowerCase(), isNot(contains('marionette')));
   });
 
-  test('Draco support is installed before the transcription renderer loads', () {
+  test('Draco support is installed before the jester renderers load', () {
     final bootstrap = File(
       'web/transcription_draco_bootstrap.js',
     ).readAsStringSync();
@@ -40,13 +40,17 @@ void main() {
     );
     expect(bootstrap, contains("'transcription_jester.glb'"));
     expect(bootstrap, contains("'transcription_jester_rigged.glb'"));
-    expect(bootstrap, contains('TRANSCRIPTION_MODELS.some'));
+    expect(bootstrap, contains("'play_jester_rigged.glb'"));
+    expect(bootstrap, contains('DRACO_MODELS.some'));
 
     final bootstrapIndex = html.indexOf('transcription_draco_bootstrap.js');
-    final rendererIndex = html.indexOf('transcription_jester.js');
+    final playRendererIndex = html.indexOf('puppet_dealer.js');
+    final transcriptionRendererIndex = html.indexOf('transcription_jester.js');
     expect(bootstrapIndex, greaterThanOrEqualTo(0));
-    expect(rendererIndex, greaterThan(bootstrapIndex));
-    expect(html, contains('transcription-jester-draco-2'));
+    expect(playRendererIndex, greaterThan(bootstrapIndex));
+    expect(transcriptionRendererIndex, greaterThan(bootstrapIndex));
+    expect(html, contains('jester-draco-3'));
+    expect(html, contains('play-jester-rigged-20260816c'));
     expect(html, contains('transcription-jester-rigged-2'));
   });
 }
