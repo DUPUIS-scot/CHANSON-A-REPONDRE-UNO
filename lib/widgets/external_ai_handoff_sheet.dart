@@ -132,32 +132,9 @@ class _ExternalAiJesterScreenState extends State<_ExternalAiJesterScreen> {
 
   void _syncSelectedCardToJester(CardImageModel card) {
     if (!mounted) return;
-    final cardId = card.id;
-    final imagePath = card.imagePath;
-    final route = Uri(
-      path: '/cards/$cardId/transcription',
-      queryParameters: {'selectedCardImage': imagePath},
-    ).toString();
-    try {
-      // The web jester resolves its selected card from the current URL. Keep
-      // Browse routing unchanged while giving the 3D scene a stable card id.
-      // This replacement is local to the full-screen handoff view and is
-      // restored automatically when Navigator pops back to Browse.
-      // ignore: avoid_dynamic_calls
-      final history = Uri.base;
-      // Use Router's URL indirectly by preserving the same app origin/hash.
-      // On non-web platforms this block has no effect because the jester scene
-      // is a stub.
-      if (history.scheme == 'http' || history.scheme == 'https') {
-        // no-op here; the scene gets the selected card through its JS bridge
-        // below once mounted.
-      }
-    } on Object {
-      // Best-effort web enhancement only.
-    }
     TranscriptionJesterScene.setSelectedCard(
-      cardId: cardId,
-      imagePath: imagePath,
+      cardId: card.id,
+      imagePath: card.imagePath,
     );
   }
 
@@ -165,6 +142,10 @@ class _ExternalAiJesterScreenState extends State<_ExternalAiJesterScreen> {
   Widget build(BuildContext context) {
     final refreshed =
         context.watch<DeckProvider>().cardById(widget.card.id) ?? widget.card;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _syncSelectedCardToJester(refreshed);
+    });
 
     Future<void> handoff(CardAiHandoffMode mode) => _showProviderChooser(
           context: context,
