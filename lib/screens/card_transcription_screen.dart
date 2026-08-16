@@ -100,6 +100,7 @@ class CardTranscriptionScreen extends StatelessWidget {
               fit: BoxFit.cover,
               alignment: Alignment.center,
               filterQuality: FilterQuality.high,
+              errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
             ),
           ),
           const Positioned.fill(child: TranscriptionJesterScene()),
