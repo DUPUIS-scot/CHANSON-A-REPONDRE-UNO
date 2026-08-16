@@ -135,7 +135,7 @@ jobs:
 
       - name: Generate multi-deck card share previews
         run: |
-          dart run scripts/generate_card_share_pages.dart \
+          dart run scripts/generate_multideck_share_pages.dart \
             --catalog assets/json/cards.json \
             --brio assets/decks/chanson_a_repondre_brio/deck.json \
             --build-dir build/web \
@@ -182,6 +182,7 @@ jobs:
           grep -q 'name="twitter:image"' build/web/share/UNO-084/index.html
           grep -q '/share/UNO-001/' build/web/share/UNO-001/index.html
           grep -q '#/cards/final-84-84' build/web/share/UNO-084/index.html
+          grep -q 'window.location.replace(' build/web/share/UNO-001/index.html
 
           grep -q 'Chanson à répondre BRIO — Carte 001' build/web/share/BRIO-001/index.html
           grep -q 'property="og:image"' build/web/share/BRIO-001/index.html
@@ -189,10 +190,17 @@ jobs:
           grep -q '/share/BRIO-001/' build/web/share/BRIO-001/index.html
           grep -q 'assets/assets/decks/chanson_a_repondre_brio/cards/001.jpeg' build/web/share/BRIO-001/index.html
           grep -q '#/cards/brio-016' build/web/share/BRIO-016/index.html
+          grep -q 'window.location.replace(' build/web/share/BRIO-001/index.html
 
           grep -q '/share/UNO-001/' build/web/share/final-84-01/index.html
           grep -q 'rel="canonical"' build/web/share/final-84-01/index.html
           grep -q '/share/UNO-084/' build/web/share/final-84-84/index.html
+          grep -q 'window.location.replace(' build/web/share/final-84-01/index.html
+
+          if grep -Rqi 'http-equiv="refresh"' build/web/share; then
+            echo "::error::A generated share page still uses meta refresh instead of preserving the card deep link."
+            exit 1
+          fi
 
           test -f build/web/assets/assets/models/jester_player.glb
           test -f build/web/assets/assets/models/jester_player_reupload.glb
