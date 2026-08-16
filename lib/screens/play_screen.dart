@@ -8,7 +8,6 @@ import '../models/deck_model.dart';
 import '../providers/deck_provider.dart';
 import '../providers/game_provider.dart';
 import '../providers/settings_provider.dart';
-import '../theme/app_theme.dart';
 import '../widgets/discard_pile_widget.dart';
 import '../widgets/draw_pile_widget.dart';
 import '../widgets/game_table_background.dart';
@@ -261,7 +260,6 @@ class _PlayScreenState extends State<PlayScreen> {
                           final state = game.state!;
                           final player = state.players[state.currentPlayerIndex];
                           final hand = hideHand ? <CardImageModel>[] : player.hand;
-                          final handFaceUp = List<bool>.filled(hand.length, false);
                           final selectedIndex = hand.indexWhere(
                             (card) => card.id == selectedCardId,
                           );
@@ -274,23 +272,22 @@ class _PlayScreenState extends State<PlayScreen> {
                                 top: narrow ? 122 : 142,
                                 child: DrawPileWidget(
                                   count: state.drawPile.length,
-                                  card: state.drawPile.isEmpty
+                                  topCard: state.drawPile.isEmpty
                                       ? null
                                       : state.drawPile.last,
                                   backImagePath: handBackImagePath,
-                                  onTap: dealerBusy ? null : drawWithDealer,
+                                  onDraw: dealerBusy ? null : drawWithDealer,
                                 ),
                               ),
-                              Positioned(
-                                right: narrow ? 12 : 28,
-                                top: narrow ? 122 : 142,
-                                child: DiscardPileWidget(
-                                  count: state.discardPile.length,
-                                  card: state.discardPile.isEmpty
-                                      ? null
-                                      : state.discardPile.last,
+                              if (state.discardPile.isNotEmpty)
+                                Positioned(
+                                  right: narrow ? 12 : 28,
+                                  top: narrow ? 122 : 142,
+                                  child: DiscardPileWidget(
+                                    count: state.discardPile.length,
+                                    topCard: state.discardPile.last,
+                                  ),
                                 ),
-                              ),
                               Positioned(
                                 left: narrow ? 12 : 24,
                                 right: narrow ? 12 : 24,
@@ -298,20 +295,19 @@ class _PlayScreenState extends State<PlayScreen> {
                                 child: PlayerHand(
                                   cards: hand,
                                   selectedCardId: selectedCardId,
-                                  faceUp: handFaceUp,
                                   backImagePath: handBackImagePath,
-                                  onSelect: dealerBusy
-                                      ? null
+                                  isPlayable: game.canPlay,
+                                  onSelectionChanged: dealerBusy
+                                      ? (_) {}
                                       : (card) {
                                           setState(() {
-                                            selectedCardId = selectedCardId == card.id
-                                                ? null
-                                                : card.id;
+                                            selectedCardId = card?.id;
                                           });
                                         },
-                                  onOpen: (index) => openHandPreview(
-                                    hand,
-                                    handFaceUp,
+                                  onLongPressCard: (cards, faceUp, index) =>
+                                      openHandPreview(
+                                    cards,
+                                    faceUp,
                                     index,
                                     handBackImagePath,
                                   ),
