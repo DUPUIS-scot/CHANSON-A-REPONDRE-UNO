@@ -67,7 +67,7 @@ function flutterAssetUrl(path) {
   if (!path) return null;
   const normalized = String(path).replace(/^\/+/, '');
   if (/^https?:\/\//i.test(normalized)) return normalized;
-  return new URL(normalized.startsWith('assets/') ? `assets/${normalized}` : normalized, document.baseURI).href;
+  return new URL(normalized, document.baseURI).href;
 }
 
 function stageRect() {
@@ -359,10 +359,9 @@ window.transcriptionJesterCreate = function transcriptionJesterCreate(ownerId) {
 
 window.transcriptionJesterDestroy = function transcriptionJesterDestroy(ownerId) {
   sceneOwners.delete(ownerId || 'flutter');
-  if (sceneOwners.size === 0 && sharedScene) {
-    sharedScene.dispose();
-    sharedScene = null;
-  }
+  if (sceneOwners.size || !sharedScene) return;
+  sharedScene.dispose();
+  sharedScene = null;
 };
 
 window.transcriptionJesterSetSelectedCard = function transcriptionJesterSetSelectedCard(cardId, imagePath) {
