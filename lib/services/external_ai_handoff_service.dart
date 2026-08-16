@@ -47,6 +47,8 @@ class ExternalAiHandoffService {
       transcriptionOverride,
       card.cleanedTranscription,
       card.transcription,
+      card.question,
+      card.answer,
     ]) {
       final text = value?.trim() ?? '';
       if (text.isNotEmpty) return text;
@@ -97,45 +99,61 @@ class ExternalAiHandoffService {
       card,
       transcriptionOverride: transcriptionOverride,
     );
-    final heading = <String>[
+    final metadata = <String>[
       '${deck.name} — ${card.displayTitle}',
       'Card ID: ${card.id}',
-      'SOURCE CARD:',
+      if (card.category.trim().isNotEmpty) 'Category: ${card.category.trim()}',
+      if (card.author.trim().isNotEmpty) 'Author: ${card.author.trim()}',
+      if (card.theme.trim().isNotEmpty) 'Theme: ${card.theme.trim()}',
+      '',
+      'REFERENCE LINK:',
       '$shareUrl',
-      'CARD IMAGE:',
+      'REFERENCE IMAGE URL:',
       '$imageUrl',
+      '',
+      'Important: these URLs are reference-only. Do not claim you opened, viewed, fetched, or inspected them unless your environment actually supports that.',
       '',
     ];
 
     if (mode == CardAiHandoffMode.transcribe) {
-      return <String>[
-        ...heading,
-        'Open and analyze the CARD IMAGE directly. The image is the primary source.',
-        'Transcribe every readable word from the image.',
-        'Preserve the original language, accents, spelling, punctuation, capitalization, headings, lists, and meaningful line breaks.',
-        'Do not summarize, rewrite, translate, or invent missing text. Mark anything you cannot read confidently as [unclear].',
-        'Do not depend on an app backend or on scraping the Flutter source page.',
-        if (existingTranscription.isNotEmpty) ...[
-          '',
-          'OPTIONAL EXISTING TEXT FOR COMPARISON:',
+      if (existingTranscription.isNotEmpty) {
+        return <String>[
+          ...metadata,
+          'CARD TEXT PROVIDED BY THE APP:',
           existingTranscription,
-          'Use the image to correct this text rather than treating it as authoritative.',
-        ],
+          '',
+          'Return a faithful transcription of the supplied card text.',
+          'Preserve the original language, accents, spelling, punctuation, capitalization, headings, lists, and meaningful line breaks.',
+          'Do not summarize, rewrite, translate, or invent missing text.',
+          'If the supplied text appears incomplete, say so instead of asking the user to upload the image merely because you cannot fetch the reference URL.',
+        ].join('\n');
+      }
+
+      return <String>[
+        ...metadata,
+        'No extracted card text is available in the app for this card.',
+        'Do not say you inspected the reference image URL if you cannot access external images.',
+        'Tell the user that an actual image attachment is required for visual transcription in this AI environment.',
+      ].join('\n');
+    }
+
+    if (existingTranscription.isNotEmpty) {
+      return <String>[
+        ...metadata,
+        'CARD TEXT PROVIDED BY THE APP:',
+        existingTranscription,
+        '',
+        'Discuss this card using the supplied card text as the primary source.',
+        'You may interpret, translate, fact-check, research, critique, or brainstorm from this text.',
+        'Use the links only as optional references; do not require opening them before discussing the card.',
       ].join('\n');
     }
 
     return <String>[
-      ...heading,
-      'Open and analyze the CARD IMAGE directly. Treat the image itself as the primary source.',
-      'Discuss this card with me based on what you can read and see in the image.',
-      'You can transcribe, interpret, translate, fact-check, research, critique, or brainstorm from the card.',
-      'Do not depend on an app backend or on scraping the Flutter source page.',
-      if (existingTranscription.isNotEmpty) ...[
-        '',
-        'OPTIONAL EXISTING TEXT FOR COMPARISON:',
-        existingTranscription,
-        'Verify it against the image before relying on it.',
-      ],
+      ...metadata,
+      'No extracted card text is available in the app for this card.',
+      'You may discuss the card metadata above, but do not pretend to have viewed the image from the URL.',
+      'If visual analysis is necessary, ask for the image to be attached directly in the AI conversation.',
     ].join('\n');
   }
 
@@ -145,8 +163,6 @@ class ExternalAiHandoffService {
     required ExternalAiProvider provider,
     required String prompt,
   }) async {
-    // Start both operations inside the original tap/click event so Web browsers
-    // do not treat the external tab as an unsolicited popup after an await.
     final copyFuture = _promptCopier(prompt);
     final launchFuture = _launcher(
       provider.uri,
