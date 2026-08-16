@@ -167,15 +167,15 @@ class TranscriptionJester {
         this.idleAction.play();
       }
 
-      this.attachSelectedCard();
       this.fitCamera();
+      this.attachSelectedCard();
       this.host.dataset.transcriptionJester = 'ready';
       this.host.dataset.modelAsset = 'assets/models/transcription_jester_rigged.glb';
       this.host.dataset.modelFacingAngle = String(MODEL_FACING_Y);
       this.host.dataset.modelAnimations = String(gltf.animations?.length || 0);
       this.host.dataset.modelMeshes = String(meshCount);
       this.host.dataset.modelSize = `${size.x.toFixed(3)},${size.y.toFixed(3)},${size.z.toFixed(3)}`;
-      this.host.dataset.behavior = 'rigged-centered-jester-holding-selected-card';
+      this.host.dataset.behavior = 'rigged-centered-jester-holding-selected-card-world-space';
       this.resume();
     }, undefined, (error) => {
       this.host.dataset.transcriptionJester = 'failed';
@@ -184,10 +184,15 @@ class TranscriptionJester {
     });
   }
 
-  fitCamera() {
-    if (!this.model) return;
+  modelBounds() {
+    if (!this.model) return null;
     this.pivot.updateMatrixWorld(true);
-    const bounds = new THREE.Box3().setFromObject(this.pivot);
+    return new THREE.Box3().setFromObject(this.pivot);
+  }
+
+  fitCamera() {
+    const bounds = this.modelBounds();
+    if (!bounds) return;
     const size = bounds.getSize(new THREE.Vector3());
     const target = new THREE.Vector3(
       (bounds.min.x + bounds.max.x) * 0.5,
@@ -210,33 +215,48 @@ class TranscriptionJester {
 
   createFallbackCard() {
     if (this.cardAnchor) {
-      this.pivot.remove(this.cardAnchor);
+      this.scene.remove(this.cardAnchor);
       disposeObject(this.cardAnchor);
       this.cardAnchor = null;
+      this.cardFace = null;
     }
+
+    const bounds = this.modelBounds();
+    if (!bounds) return;
+    const size = bounds.getSize(new THREE.Vector3());
+    const center = bounds.getCenter(new THREE.Vector3());
+
     const anchor = new THREE.Group();
     const backing = new THREE.Mesh(
-      new THREE.BoxGeometry(1.0, 1.5, 0.05),
+      new THREE.BoxGeometry(0.82, 1.24, 0.055),
       new THREE.MeshStandardMaterial({ color: 0x211008, roughness: 0.72 }),
     );
     anchor.add(backing);
+
     const faceMaterial = new THREE.MeshStandardMaterial({
       color: 0x8b1f1f,
       roughness: 0.55,
       side: THREE.DoubleSide,
     });
-    const card = new THREE.Mesh(new THREE.PlaneGeometry(0.96, 1.44), faceMaterial);
+    const card = new THREE.Mesh(new THREE.PlaneGeometry(0.78, 1.18), faceMaterial);
     card.position.z = 0.031;
     anchor.add(card);
-    anchor.position.set(-0.82, 0.10, 1.45);
-    anchor.rotation.set(0.04, 0.06, -0.18);
+
+    anchor.position.set(
+      center.x - size.x * 0.31,
+      bounds.min.y + size.y * 0.56,
+      bounds.max.z + Math.max(size.z * 0.08, 0.18),
+    );
+    anchor.rotation.set(-0.02, 0.02, -0.16);
+    anchor.lookAt(this.camera.position);
+    anchor.rotation.z = -0.16;
+
     this.cardAnchor = anchor;
     this.cardFace = card;
-    this.pivot.add(anchor);
-    this.pivot.updateMatrixWorld(true);
-    this.fitCamera();
+    this.scene.add(anchor);
     this.host.dataset.selectedCard = 'held-in-left-hand';
     this.host.dataset.selectedCardTexture = 'fallback';
+    this.host.dataset.selectedCardAnchor = 'scene-space-visible-left-hand';
   }
 
   attachSelectedCard() {
@@ -287,6 +307,11 @@ class TranscriptionJester {
     this.camera.fov = rect.width < 560 ? 32 : 28;
     this.camera.updateProjectionMatrix();
     this.fitCamera();
+    if (this.cardAnchor) {
+      const oldImage = this.selectedCardImage;
+      this.createFallbackCard();
+      this.selectedCardImage = oldImage;
+    }
   }
 
   update(time) {
