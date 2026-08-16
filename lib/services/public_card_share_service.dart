@@ -32,6 +32,14 @@ abstract final class PublicCardShareService {
     applicationUri: applicationUri,
   );
 
+  static Uri publicImageUrlFor({
+    required CardImageModel card,
+    Uri? applicationUri,
+  }) => MultiDeckCardShareService.publicImageUrlFor(
+    card: card,
+    applicationUri: applicationUri,
+  );
+
   static Future<CardShareResult> share({
     CardImageModel? card,
     Deck? deck,
