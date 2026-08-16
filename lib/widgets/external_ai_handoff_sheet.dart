@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -10,7 +8,6 @@ import '../providers/deck_provider.dart';
 import '../services/card_ai_service.dart';
 import '../services/external_ai_handoff_service.dart';
 import 'home_navigation_button.dart';
-import 'stored_image.dart';
 import 'transcription_jester_scene.dart';
 
 const _gold = Color(0xFFE7A62C);
@@ -96,7 +93,7 @@ Future<void> _showProviderChooser({
   );
 }
 
-class _ExternalAiJesterScreen extends StatelessWidget {
+class _ExternalAiJesterScreen extends StatefulWidget {
   const _ExternalAiJesterScreen({
     required this.card,
     required this.deck,
@@ -110,20 +107,52 @@ class _ExternalAiJesterScreen extends StatelessWidget {
   final ExternalAiHandoffService service;
 
   @override
+  State<_ExternalAiJesterScreen> createState() => _ExternalAiJesterScreenState();
+}
+
+class _ExternalAiJesterScreenState extends State<_ExternalAiJesterScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _syncSelectedCardToJester(widget.card);
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant _ExternalAiJesterScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.card.id != widget.card.id ||
+        oldWidget.card.imagePath != widget.card.imagePath) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _syncSelectedCardToJester(widget.card);
+      });
+    }
+  }
+
+  void _syncSelectedCardToJester(CardImageModel card) {
+    if (!mounted) return;
+    TranscriptionJesterScene.setSelectedCard(
+      cardId: card.id,
+      imagePath: card.imagePath,
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final refreshed = context.watch<DeckProvider>().cardById(card.id) ?? card;
-    final size = MediaQuery.sizeOf(context);
-    final compact = size.width < 760;
-    final cardWidth = compact
-        ? math.min(168.0, size.width * .36)
-        : math.min(230.0, size.width * .22);
+    final refreshed =
+        context.watch<DeckProvider>().cardById(widget.card.id) ?? widget.card;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _syncSelectedCardToJester(refreshed);
+    });
 
     Future<void> handoff(CardAiHandoffMode mode) => _showProviderChooser(
           context: context,
           card: refreshed,
-          deck: deck,
+          deck: widget.deck,
           mode: mode,
-          service: service,
+          service: widget.service,
         );
 
     return Scaffold(
@@ -131,8 +160,6 @@ class _ExternalAiJesterScreen extends StatelessWidget {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // The theatrical reference and animated 3D jester remain the visual
-          // focus of this route. No transcription card is drawn over them.
           const Positioned.fill(child: TranscriptionJesterScene()),
           const Positioned.fill(
             child: IgnorePointer(
@@ -148,38 +175,6 @@ class _ExternalAiJesterScreen extends StatelessWidget {
                       Color(0xD8050201),
                     ],
                     stops: [0, .58, .82, 1],
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            left: compact ? 22 : math.max(64, size.width * .075),
-            top: compact ? 155 : 150,
-            width: cardWidth,
-            child: IgnorePointer(
-              child: Transform.rotate(
-                angle: -.07,
-                child: AspectRatio(
-                  aspectRatio: 2 / 3,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0xC0000000),
-                          blurRadius: 24,
-                          offset: Offset(0, 14),
-                        ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(14),
-                      child: StoredImage(
-                        source: refreshed.imagePath,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
                   ),
                 ),
               ),
@@ -211,56 +206,56 @@ class _ExternalAiJesterScreen extends StatelessWidget {
                 ),
                 const Spacer(),
                 SingleChildScrollView(
-                  padding: EdgeInsets.fromLTRB(
-                    compact ? 16 : 34,
-                    8,
-                    compact ? 16 : 34,
-                    24,
-                  ),
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                   child: Center(
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 920),
-                      child: compact
-                          ? Column(
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final compact = constraints.maxWidth < 760;
+                          if (compact) {
+                            return Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 _TranscribeButton(
-                                  emphasized: initialMode ==
+                                  emphasized: widget.initialMode ==
                                       CardAiHandoffMode.transcribe,
                                   onPressed: () =>
                                       handoff(CardAiHandoffMode.transcribe),
                                 ),
                                 const SizedBox(height: 12),
                                 _DiyButton(
-                                  emphasized:
-                                      initialMode == CardAiHandoffMode.diy,
+                                  emphasized: widget.initialMode ==
+                                      CardAiHandoffMode.diy,
                                   onPressed: () =>
                                       handoff(CardAiHandoffMode.diy),
                                 ),
                               ],
-                            )
-                          : Row(
-                              children: [
-                                Expanded(
-                                  child: _TranscribeButton(
-                                    emphasized: initialMode ==
-                                        CardAiHandoffMode.transcribe,
-                                    onPressed: () => handoff(
+                            );
+                          }
+                          return Row(
+                            children: [
+                              Expanded(
+                                child: _TranscribeButton(
+                                  emphasized: widget.initialMode ==
                                       CardAiHandoffMode.transcribe,
-                                    ),
-                                  ),
+                                  onPressed: () =>
+                                      handoff(CardAiHandoffMode.transcribe),
                                 ),
-                                const SizedBox(width: 18),
-                                Expanded(
-                                  child: _DiyButton(
-                                    emphasized:
-                                        initialMode == CardAiHandoffMode.diy,
-                                    onPressed: () =>
-                                        handoff(CardAiHandoffMode.diy),
-                                  ),
+                              ),
+                              const SizedBox(width: 18),
+                              Expanded(
+                                child: _DiyButton(
+                                  emphasized: widget.initialMode ==
+                                      CardAiHandoffMode.diy,
+                                  onPressed: () =>
+                                      handoff(CardAiHandoffMode.diy),
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
                     ),
                   ),
                 ),
