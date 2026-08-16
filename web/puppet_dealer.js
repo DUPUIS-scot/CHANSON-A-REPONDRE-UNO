@@ -5,7 +5,7 @@ import { GLTFLoader } from './vendor/GLTFLoader.js';
 // only mirrors each real draw/play action with a synchronized 3D performance.
 const dealers = new Map();
 const pendingMounts = new Map();
-const MODEL_REVISION = 'play-jester-rigged-20260816b';
+const MODEL_REVISION = 'play-jester-rigged-20260816c';
 const MODEL_URLS = [
   new URL('assets/assets/models/play_jester_rigged.glb', document.baseURI).href,
 ];
@@ -83,6 +83,11 @@ class JesterDealer {
     this.animation = null;
     this.clock = new THREE.Clock();
 
+    this.status = document.createElement('div');
+    this.status.setAttribute('aria-live', 'polite');
+    this.status.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;text-align:center;font:600 14px Georgia,serif;letter-spacing:.04em;color:#f0c56b;background:rgba(5,3,2,.28);pointer-events:none;opacity:0;transition:opacity .2s ease;z-index:2';
+    host.appendChild(this.status);
+
     this.modelRoot = new THREE.Group();
     this.gestureRoot = new THREE.Group();
     this.puppetRoot = new THREE.Group();
@@ -109,7 +114,7 @@ class JesterDealer {
     this.renderer.domElement.id = `${host.id}-canvas`;
     this.renderer.domElement.dataset.renderer = 'three.js-gltf';
     this.renderer.domElement.style.cssText = 'display:block;width:100%;height:100%;pointer-events:none';
-    host.appendChild(this.renderer.domElement);
+    host.insertBefore(this.renderer.domElement, this.status);
 
     this.card = makeCard();
     this.scene.add(this.card);
@@ -127,6 +132,16 @@ class JesterDealer {
     document.addEventListener('visibilitychange', this.onVisibilityChange);
     this.resize();
     this.loadModel(0);
+  }
+
+  showError(message) {
+    this.status.textContent = message;
+    this.status.style.opacity = '1';
+  }
+
+  clearError() {
+    this.status.textContent = '';
+    this.status.style.opacity = '0';
   }
 
   setupLights() {
@@ -148,6 +163,7 @@ class JesterDealer {
     if (!modelUrl) {
       this.host.dataset.dealerStatus = 'failed';
       this.host.dataset.modelError = 'No rigged Play jester asset could be loaded.';
+      this.showError('3D jester unavailable.');
       return;
     }
     this.host.dataset.modelAsset = modelUrl;
@@ -192,6 +208,7 @@ class JesterDealer {
         this.host.dataset.modelAnimations = String(gltf.animations.length);
         this.host.dataset.modelFacingAngle = String(MODEL_FACING_Y);
         this.host.dataset.modelFallback = 'false';
+        this.clearError();
         this.resume();
       },
       (event) => {
@@ -202,6 +219,7 @@ class JesterDealer {
         this.host.dataset.dealerStatus = 'failed';
         this.host.dataset.modelAsset = modelUrl;
         this.host.dataset.modelError = String(error?.message || error);
+        this.showError('3D jester failed to load.');
       },
     );
   }
@@ -389,9 +407,9 @@ class JesterDealer {
     else this.setPhase('discardCard');
 
     const a = new THREE.Vector3(0.0, -3.2, 2.8);
-    const b = new THREE.Vector3(0.0, -0.65, 2.0);
-    const c = new THREE.Vector3(1.25, -0.15, 1.6);
-    const d = new THREE.Vector3(2.25, -1.8, 2.8);
+    const b = new THREE.Vector3(0.0, -0.8, 1.9);
+    const c = new THREE.Vector3(1.25, -0.25, 1.5);
+    const d = new THREE.Vector3(2.35, -1.8, 2.8);
     cubicBezier(this.card.position, a, b, c, d, carry);
     this.card.position.y += catchCard * 0.5;
     this.card.rotation.x = lerp(-0.30, -0.08, carry);
@@ -471,6 +489,7 @@ class JesterDealer {
     disposeObject(this.card);
     this.renderer.dispose();
     this.renderer.domElement.remove();
+    this.status?.remove();
   }
 }
 
