@@ -3,13 +3,13 @@ import { GLTFLoader } from './vendor/GLTFLoader.js';
 
 const AUTO_SCENE_ID = 'transcription-jester-route-auto';
 const MODEL_FACING_Y = 0;
-const MODEL_CHUNKS = Array.from({ length: 8 }, (_, i) =>
-  new URL(`transcription_assets/jester_${String(i).padStart(2, '0')}.txt`, document.baseURI).href,
-);
-const TRANSCRIPTION_BACKGROUND = new URL(
-  'assets/assets/images/transcription_stage_background.png',
+const JESTER_MODEL = new URL(
+  'assets/assets/models/39747ebee6214eba(4).glb',
   document.baseURI,
 ).href;
+const BACKGROUND_CHUNKS = Array.from({ length: 6 }, (_, i) =>
+  new URL(`transcription_assets/bg_${String(i).padStart(2, '0')}.txt`, document.baseURI).href,
+);
 
 let sharedScene = null;
 const sceneOwners = new Set();
@@ -123,7 +123,7 @@ class TranscriptionJester {
     this.clock = new THREE.Clock();
     this.selectedCardId = currentCardId();
     this.host.dataset.transcriptionJester = 'loading';
-    this.host.dataset.sourceModel = 'user-uploaded-39747ebee6214eba-web-optimized';
+    this.host.dataset.sourceModel = 'assets/models/39747ebee6214eba(4).glb';
     if (this.selectedCardId) this.host.dataset.selectedCardId = this.selectedCardId;
 
     this.previousBody = {
@@ -149,7 +149,7 @@ class TranscriptionJester {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.4));
     Object.assign(this.renderer.domElement.style, {
       display: 'block', position: 'fixed', pointerEvents: 'none', background: 'transparent',
-      zIndex: '2147483000', opacity: '0.34',
+      zIndex: '2147483000', opacity: '1',
       filter: 'drop-shadow(0 18px 24px rgba(0,0,0,.78))', transform: 'translateZ(0)',
     });
     this.renderer.domElement.setAttribute('aria-hidden', 'true');
@@ -174,51 +174,50 @@ class TranscriptionJester {
     this.loadModel();
   }
 
-  installReferenceBackground() {
-    Object.assign(document.body.style, {
-      backgroundImage: `url("${TRANSCRIPTION_BACKGROUND}")`,
-      backgroundSize: 'cover',
-      backgroundPosition: 'center top',
-      backgroundRepeat: 'no-repeat',
-      backgroundAttachment: 'fixed',
-      backgroundColor: '#050201',
-    });
-    this.host.dataset.referenceBackground = 'transcription-stage-background';
+  async installReferenceBackground() {
+    try {
+      this.backgroundObjectUrl = await blobUrlFromChunks(BACKGROUND_CHUNKS, 'image/jpeg');
+      if (this.disposed) return URL.revokeObjectURL(this.backgroundObjectUrl);
+      Object.assign(document.body.style, {
+        backgroundImage: `url("${this.backgroundObjectUrl}")`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center top',
+        backgroundRepeat: 'no-repeat',
+        backgroundAttachment: 'fixed',
+        backgroundColor: '#050201',
+      });
+      this.host.dataset.referenceBackground = 'user-provided-theatrical-image';
+    } catch (error) {
+      console.error('Unable to install transcription reference background.', error);
+    }
   }
 
-  async loadModel() {
-    try {
-      this.modelObjectUrl = await blobUrlFromChunks(MODEL_CHUNKS, 'model/gltf-binary');
-      if (this.disposed) return URL.revokeObjectURL(this.modelObjectUrl);
-      new GLTFLoader().load(this.modelObjectUrl, (gltf) => {
-        if (this.disposed) return disposeObject(gltf.scene);
-        this.model = gltf.scene;
-        this.model.traverse((object) => {
-          if (/string|marionette|control[_ -]?line/i.test(object.name)) object.visible = false;
-          if (object.isMesh && !object.geometry.getAttribute('normal')) object.geometry.computeVertexNormals();
-        });
-        const bounds = new THREE.Box3().setFromObject(this.model);
-        const size = bounds.getSize(new THREE.Vector3());
-        const center = bounds.getCenter(new THREE.Vector3());
-        this.model.position.sub(center);
-        this.model.scale.setScalar(7.8 / Math.max(size.y, 0.001));
-        this.model.position.set(0.2, -0.05, 0);
-        this.pivot.add(this.model);
-        this.fitCamera();
-        this.attachSelectedCard();
-        this.host.dataset.transcriptionJester = 'ready';
-        this.host.dataset.modelAsset = 'embedded-user-uploaded-glb';
-        this.host.dataset.behavior = 'laughing-at-viewer-with-selected-card';
-        this.resume();
-      }, undefined, (error) => {
-        this.host.dataset.transcriptionJester = 'failed';
-        this.host.dataset.modelError = String(error?.message || error);
-        console.error('Unable to load uploaded transcription jester.', error);
+  loadModel() {
+    new GLTFLoader().load(JESTER_MODEL, (gltf) => {
+      if (this.disposed) return disposeObject(gltf.scene);
+      this.model = gltf.scene;
+      this.model.traverse((object) => {
+        if (/string|marionette|control[_ -]?line/i.test(object.name)) object.visible = false;
+        if (object.isMesh && !object.geometry.getAttribute('normal')) object.geometry.computeVertexNormals();
       });
-    } catch (error) {
+      const bounds = new THREE.Box3().setFromObject(this.model);
+      const size = bounds.getSize(new THREE.Vector3());
+      const center = bounds.getCenter(new THREE.Vector3());
+      this.model.position.sub(center);
+      this.model.scale.setScalar(7.8 / Math.max(size.y, 0.001));
+      this.model.position.set(0.2, -0.05, 0);
+      this.pivot.add(this.model);
+      this.fitCamera();
+      this.attachSelectedCard();
+      this.host.dataset.transcriptionJester = 'ready';
+      this.host.dataset.modelAsset = 'assets/models/39747ebee6214eba(4).glb';
+      this.host.dataset.behavior = 'laughing-at-viewer-with-selected-card';
+      this.resume();
+    }, undefined, (error) => {
       this.host.dataset.transcriptionJester = 'failed';
-      console.error('Unable to reconstruct uploaded transcription jester.', error);
-    }
+      this.host.dataset.modelError = String(error?.message || error);
+      console.error('Unable to load uploaded transcription jester.', error);
+    });
   }
 
   fitCamera() {
@@ -243,10 +242,16 @@ class TranscriptionJester {
       if (this.disposed) return texture.dispose();
       texture.colorSpace = THREE.SRGBColorSpace;
       const anchor = new THREE.Group();
-      const backing = new THREE.Mesh(new THREE.PlaneGeometry(1.70, 2.55), new THREE.MeshStandardMaterial({ color: 0x211008, roughness: 0.72, side: THREE.DoubleSide }));
+      const backing = new THREE.Mesh(
+        new THREE.PlaneGeometry(1.70, 2.55),
+        new THREE.MeshStandardMaterial({ color: 0x211008, roughness: 0.72, side: THREE.DoubleSide }),
+      );
       backing.position.z = -0.024;
       anchor.add(backing);
-      const card = new THREE.Mesh(new THREE.PlaneGeometry(1.60, 2.40), new THREE.MeshStandardMaterial({ map: texture, roughness: 0.5, side: THREE.DoubleSide }));
+      const card = new THREE.Mesh(
+        new THREE.PlaneGeometry(1.60, 2.40),
+        new THREE.MeshStandardMaterial({ map: texture, roughness: 0.5, side: THREE.DoubleSide }),
+      );
       card.position.z = 0.006;
       anchor.add(card);
       anchor.rotation.set(0.02, -0.10, -0.08);
@@ -307,7 +312,7 @@ class TranscriptionJester {
     disposeObject(this.model);
     this.renderer.dispose();
     this.renderer.domElement.remove();
-    if (this.modelObjectUrl) URL.revokeObjectURL(this.modelObjectUrl);
+    if (this.backgroundObjectUrl) URL.revokeObjectURL(this.backgroundObjectUrl);
     Object.assign(document.body.style, this.previousBody);
     if (this.host.dataset.generatedBy === 'transcription-jester') this.host.remove();
   }
