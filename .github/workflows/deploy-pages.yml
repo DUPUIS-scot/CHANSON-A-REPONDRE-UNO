@@ -273,7 +273,7 @@ jobs:
           import json
           from pathlib import Path
 
-          catalog = json.loads(Path('assets/json/cards.json').read_text(encoding='utf-8'))
+          catalog = json.loads(Path('assets/json/cards.json').read_text(encoding='utf-8-sig'))
           deck = next((
               item for item in catalog.get('decks', [])
               if item.get('id') == 'sale-poete-final-84'
