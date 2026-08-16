@@ -28,7 +28,7 @@ void main() {
     expect(sheet, contains('ExternalAiHandoffService.buildPrompt'));
     expect(sheet, contains('ExternalAiProvider.values'));
     expect(sheet, contains("Text('COPY PROMPT')"));
-    expect(sheet, contains('selected card image'));
+    expect(sheet, contains('actual selected card file'));
     expect(sheet, contains('No app AI backend is used.'));
     expect(sheet, isNot(contains('receives the direct public card-image URL')));
 
@@ -57,6 +57,22 @@ void main() {
     expect(sheet, isNot(contains('AppConstants.productionDeckId')));
     expect(sheet, isNot(contains('AppConstants.brioDeckId')));
     expect(sheet, isNot(contains("deck.id == '")));
+  });
+
+  test('Transcribe and Discuss share the actual image before provider fallback', () {
+    final sheet = File(
+      'lib/widgets/transcription_ai_provider_sheet.dart',
+    ).readAsStringSync();
+
+    final shareIndex = sheet.indexOf('final shareResult = await sharePublicCard');
+    final modalIndex = sheet.indexOf('await showModalBottomSheet<void>');
+
+    expect(shareIndex, greaterThanOrEqualTo(0));
+    expect(modalIndex, greaterThan(shareIndex));
+    expect(sheet, contains('imagePath: card.imagePath'));
+    expect(sheet, contains('NativeShareResult.shared'));
+    expect(sheet, contains('NativeShareResult.cancelled'));
+    expect(sheet, contains('OPEN \${provider.label} WITHOUT IMAGE'));
   });
 
   test('Browse AI compatibility entry cannot trigger app transcription', () {
