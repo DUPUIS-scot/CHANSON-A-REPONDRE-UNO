@@ -257,6 +257,16 @@ class _PlayScreenState extends State<PlayScreen> {
                       child: LayoutBuilder(
                         builder: (context, constraints) {
                           final narrow = constraints.maxWidth < 600;
+                          final shortViewport = constraints.maxHeight < 700;
+                          final handHeight = narrow
+                              ? (shortViewport ? 196.0 : 220.0)
+                              : 280.0;
+                          final handBottom = narrow
+                              ? (shortViewport ? 104.0 : 114.0)
+                              : 128.0;
+                          final pileTop = narrow
+                              ? (shortViewport ? 112.0 : 122.0)
+                              : 142.0;
                           final state = game.state!;
                           final player = state.players[state.currentPlayerIndex];
                           final hand = hideHand ? <CardImageModel>[] : player.hand;
@@ -269,7 +279,7 @@ class _PlayScreenState extends State<PlayScreen> {
                             children: [
                               Positioned(
                                 left: narrow ? 12 : 28,
-                                top: narrow ? 122 : 142,
+                                top: pileTop,
                                 child: DrawPileWidget(
                                   count: state.drawPile.length,
                                   topCard: state.drawPile.isEmpty
@@ -282,7 +292,7 @@ class _PlayScreenState extends State<PlayScreen> {
                               if (state.discardPile.isNotEmpty)
                                 Positioned(
                                   right: narrow ? 12 : 28,
-                                  top: narrow ? 122 : 142,
+                                  top: pileTop,
                                   child: DiscardPileWidget(
                                     count: state.discardPile.length,
                                     topCard: state.discardPile.last,
@@ -291,10 +301,10 @@ class _PlayScreenState extends State<PlayScreen> {
                               Positioned(
                                 left: narrow ? 12 : 24,
                                 right: narrow ? 12 : 24,
-                                bottom: narrow ? 114 : 128,
+                                bottom: handBottom,
                                 child: SizedBox(
                                   // Keep PlayerHand in bounded layout across viewport changes.
-                                  height: narrow ? 220 : 280,
+                                  height: handHeight,
                                   child: PlayerHand(
                                     cards: hand,
                                     selectedCardId: selectedCardId,
