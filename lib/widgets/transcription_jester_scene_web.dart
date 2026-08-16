@@ -9,8 +9,23 @@ external void _createTranscriptionJester(String id);
 @JS('transcriptionJesterDestroy')
 external void _destroyTranscriptionJester(String id);
 
+@JS('transcriptionJesterSetSelectedCard')
+external void _setTranscriptionJesterSelectedCard(String cardId, String imagePath);
+
 class TranscriptionJesterScene extends StatefulWidget {
   const TranscriptionJesterScene({super.key});
+
+  static void setSelectedCard({
+    required String cardId,
+    required String imagePath,
+  }) {
+    try {
+      _setTranscriptionJesterSelectedCard(cardId, imagePath);
+    } catch (_) {
+      // The JS module may not have finished loading yet; the screen retries
+      // scene creation and the selected card can be supplied again on rebuild.
+    }
+  }
 
   @override
   State<TranscriptionJesterScene> createState() =>
@@ -28,9 +43,6 @@ class _TranscriptionJesterSceneState extends State<TranscriptionJesterScene> {
     _elementId =
         'transcription-jester-${DateTime.now().microsecondsSinceEpoch}';
 
-    // Module scripts can finish loading after Flutter has mounted this widget on
-    // slower browsers. Retry scene creation so a first-call timing race cannot
-    // leave the transcription route without its jester.
     for (final delay in const [
       Duration.zero,
       Duration(milliseconds: 250),
