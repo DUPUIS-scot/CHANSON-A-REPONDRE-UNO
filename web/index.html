@@ -43,95 +43,52 @@
         radial-gradient(circle at 18% 28%, rgba(122, 42, 10, .38), transparent 32%),
         linear-gradient(180deg, #140805 0%, #090403 48%, #030201 100%);
     }
+    /* The Three.js transcription canvas is scenery, never UI. Keep it below
+       Flutter so provider sheets, buttons and text remain readable/clickable. */
+    canvas[data-transcription-jester-canvas="true"] { z-index: 0 !important; }
+    flutter-view, flt-glass-pane { position: relative; z-index: 1; }
   </style>
 
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
   <script>
     window.requestTurnstileToken = async function(siteKey) {
       if (!siteKey) throw new Error('Turnstile site key is missing.');
-
-      for (let attempt = 0; attempt < 100 && !window.turnstile; attempt += 1) {
-        await new Promise((resolve) => setTimeout(resolve, 100));
-      }
+      for (let attempt = 0; attempt < 100 && !window.turnstile; attempt += 1) await new Promise((resolve) => setTimeout(resolve, 100));
       if (!window.turnstile) throw new Error('Turnstile did not load.');
-
       return new Promise((resolve, reject) => {
         const container = document.createElement('div');
         container.setAttribute('aria-label', 'Security verification');
-        Object.assign(container.style, {
-          position: 'fixed',
-          left: '50%',
-          top: '50%',
-          transform: 'translate(-50%, -50%)',
-          zIndex: '2147483647'
-        });
+        Object.assign(container.style, { position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', zIndex: '2147483647' });
         document.body.appendChild(container);
-
         let widgetId;
-        const cleanup = () => {
-          try {
-            if (widgetId !== undefined) window.turnstile.remove(widgetId);
-          } catch (_) {}
-          container.remove();
-        };
-
+        const cleanup = () => { try { if (widgetId !== undefined) window.turnstile.remove(widgetId); } catch (_) {} container.remove(); };
         try {
           widgetId = window.turnstile.render(container, {
-            sitekey: siteKey,
-            execution: 'execute',
-            appearance: 'interaction-only',
-            theme: 'auto',
-            callback: (token) => {
-              cleanup();
-              resolve(token);
-            },
-            'error-callback': (code) => {
-              cleanup();
-              reject(new Error(`Turnstile verification failed: ${code || 'unknown'}`));
-            },
-            'expired-callback': () => {
-              cleanup();
-              reject(new Error('Turnstile verification expired.'));
-            },
-            'timeout-callback': () => {
-              cleanup();
-              reject(new Error('Turnstile verification timed out.'));
-            }
+            sitekey: siteKey, execution: 'execute', appearance: 'interaction-only', theme: 'auto',
+            callback: (token) => { cleanup(); resolve(token); },
+            'error-callback': (code) => { cleanup(); reject(new Error(`Turnstile verification failed: ${code || 'unknown'}`)); },
+            'expired-callback': () => { cleanup(); reject(new Error('Turnstile verification expired.')); },
+            'timeout-callback': () => { cleanup(); reject(new Error('Turnstile verification timed out.')); }
           });
           window.turnstile.execute(widgetId);
-        } catch (error) {
-          cleanup();
-          reject(error);
-        }
+        } catch (error) { cleanup(); reject(error); }
       });
     };
   </script>
 
   <script type="importmap">
-    {
-      "imports": {
-        "three": "./vendor/three.module.js"
-      }
-    }
+    { "imports": { "three": "./vendor/three.module.js" } }
   </script>
   <script type="module" src="transcription_draco_bootstrap.js?v=jester-draco-20260816-play-1"></script>
   <script type="module" src="puppet_dealer.js?v=play-jester-rigged-20260816c"></script>
-  <script type="module" src="transcription_jester.js?v=transcription-jester-rigged-2"></script>
+  <script type="module" src="transcription_jester.js?v=transcription-jester-rigged-3"></script>
 </head>
 <body>
   <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then((registrations) => {
-        for (const registration of registrations) registration.unregister();
-      });
-    }
-    if ('caches' in window) {
-      caches.keys().then((keys) => Promise.all(keys.map((key) => caches.delete(key))));
-    }
+    if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().then((registrations) => { for (const registration of registrations) registration.unregister(); });
+    if ('caches' in window) caches.keys().then((keys) => Promise.all(keys.map((key) => caches.delete(key))));
   </script>
   <script src="card_share.js"></script>
-  <script>
-    {{flutter_bootstrap_js}}
-  </script>
+  <script>{{flutter_bootstrap_js}}</script>
 </body>
 </html>
