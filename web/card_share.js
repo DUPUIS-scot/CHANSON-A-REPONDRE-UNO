@@ -6,13 +6,18 @@ window.shareChansonCard = async function (title, text, url, imagePath) {
 
   if (imagePath && typeof navigator.canShare === 'function') {
     try {
-      const imageUrl = imagePath.startsWith('assets/')
-        ? new URL(`assets/${imagePath}`, document.baseURI).href
-        : new URL(imagePath, document.baseURI).href;
+      const normalizedImagePath = imagePath.startsWith('assets/')
+        ? imagePath
+        : imagePath.replace(/^\/+/, '');
+      const imageUrl = new URL(normalizedImagePath, document.baseURI).href;
       const response = await fetch(imageUrl);
       if (!response.ok) throw new Error(`Card image HTTP ${response.status}`);
       const blob = await response.blob();
-      const extension = blob.type === 'image/jpeg' ? 'jpg' : 'png';
+      const extension = blob.type === 'image/jpeg'
+        ? 'jpg'
+        : blob.type === 'image/webp'
+          ? 'webp'
+          : 'png';
       const file = new File([blob], `chanson-card.${extension}`, {
         type: blob.type || 'image/png',
       });
