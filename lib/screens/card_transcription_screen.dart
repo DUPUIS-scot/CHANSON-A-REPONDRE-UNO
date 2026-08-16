@@ -273,7 +273,12 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
                         ],
                         if (ai.error != null) ...[
                           const SizedBox(height: 12),
-                          _Panel(child: Text(ai.error!, style: const TextStyle(color: Color(0xFFFFB7A8), fontWeight: FontWeight.w600))),
+                          const _Panel(
+                            child: Text(
+                              'Sorry, not available for the moment. Cheers !',
+                              style: TextStyle(color: Color(0xFFFFB7A8), fontWeight: FontWeight.w600),
+                            ),
+                          ),
                         ],
                         const SizedBox(height: 18),
                         _Panel(
