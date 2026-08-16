@@ -102,7 +102,6 @@ class TranscriptionJester {
     this.selectedCardId = pendingSelectedCard?.cardId || currentCardId();
     this.selectedCardImage = pendingSelectedCard?.imagePath || null;
     this.cardLoadSerial = 0;
-    this.cardObjectUrl = null;
     this.host.dataset.transcriptionJester = 'loading';
     this.host.dataset.sourceModel = 'assets/models/transcription_jester_rigged.glb';
     this.host.dataset.framing = 'reference-card-presentation-cross-platform';
@@ -312,30 +311,38 @@ class TranscriptionJester {
     });
   }
 
-  async loadSelectedCardTexture(imageUrl, serial) {
-    try {
-      const response = await fetch(imageUrl, {
-        cache: 'no-store',
-        credentials: 'same-origin',
-        mode: 'same-origin',
-      });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const blob = await response.blob();
+  loadTextureViaImageElement(imageUrl, serial) {
+    const image = new Image();
+    image.decoding = 'async';
+    image.onload = () => {
       if (this.disposed || serial !== this.cardLoadSerial) return;
-      if (this.cardObjectUrl) URL.revokeObjectURL(this.cardObjectUrl);
-      this.cardObjectUrl = URL.createObjectURL(blob);
-      new THREE.TextureLoader().load(this.cardObjectUrl, (texture) => {
-        this.applyCardTexture(texture, imageUrl, serial);
-      }, undefined, (error) => {
-        if (serial !== this.cardLoadSerial) return;
-        console.warn('Blob texture decode failed; retrying direct URL.', { imageUrl, error });
+      const maxSide = 2048;
+      const scale = Math.min(1, maxSide / Math.max(image.naturalWidth || 1, image.naturalHeight || 1));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round((image.naturalWidth || 1) * scale));
+      canvas.height = Math.max(1, Math.round((image.naturalHeight || 1) * scale));
+      const context = canvas.getContext('2d', { alpha: false });
+      if (!context) {
         this.loadTextureDirect(imageUrl, serial);
-      });
-    } catch (error) {
+        return;
+      }
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      const texture = new THREE.CanvasTexture(canvas);
+      this.applyCardTexture(texture, imageUrl, serial);
+      this.host.dataset.selectedCardDecode = 'html-image-canvas';
+    };
+    image.onerror = (error) => {
       if (serial !== this.cardLoadSerial) return;
-      console.warn('Selected card fetch failed; retrying direct URL.', { imageUrl, error });
+      this.host.dataset.selectedCardDecode = 'html-image-failed';
+      console.warn('HTML image decode failed; retrying Three.js loader.', { imageUrl, error });
       this.loadTextureDirect(imageUrl, serial);
-    }
+    };
+    image.src = imageUrl;
+  }
+
+  loadSelectedCardTexture(imageUrl, serial) {
+    this.host.dataset.selectedCardDecode = 'html-image-loading';
+    this.loadTextureViaImageElement(imageUrl, serial);
   }
 
   attachSelectedCard() {
@@ -408,7 +415,6 @@ class TranscriptionJester {
     window.removeEventListener('resize', this.onWindowResize);
     window.removeEventListener('orientationchange', this.onWindowResize);
     this.mixer?.stopAllAction();
-    if (this.cardObjectUrl) URL.revokeObjectURL(this.cardObjectUrl);
     disposeObject(this.cardAnchor);
     disposeObject(this.model);
     this.renderer.dispose();
