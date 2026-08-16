@@ -24,6 +24,32 @@ Future<void> showTranscriptionAiProviderSheet({
     deck: deck,
   );
 
+  // The primary handoff is the real selected image file, not a remote image
+  // URL. This works identically for UNO, BRIO, and any other deck because the
+  // selected card's own imagePath is always the source of truth.
+  await service.copyPrompt(prompt);
+  final shareUrl = PublicCardShareService.shareUrlFor(
+    cardId: card.id,
+    deckId: deck.id,
+  ).toString();
+  final shareResult = await sharePublicCard(
+    title: '${deck.name} — ${card.displayTitle}',
+    text: prompt,
+    url: shareUrl,
+    imagePath: card.imagePath,
+  );
+
+  // When the browser/system share sheet accepted the file, the user can pick
+  // ChatGPT, Gemini, Claude, Copilot, or another compatible AI target there.
+  // Do not open a second provider URL afterwards: that would lose the file.
+  if (shareResult == NativeShareResult.shared ||
+      shareResult == NativeShareResult.cancelled) {
+    return;
+  }
+
+  // Fallback only: browsers that cannot share files still get provider links
+  // plus the copied card context, with an explicit manual-attachment warning.
+  if (!context.mounted) return;
   await showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
@@ -60,8 +86,8 @@ class _TranscriptionAiProviderSheet extends StatelessWidget {
       : 'DISCUSS WITH AI';
 
   String get _description => mode == CardAiHandoffMode.transcribe
-      ? '${card.displayTitle} · Share the selected card image to an AI app, or open a provider and paste the copied card context.'
-      : '${card.displayTitle} · Share the selected card image to an AI app for visual discussion, or open a provider and paste the copied card context.';
+      ? '${card.displayTitle} · Your browser could not pass the selected card image as a file. Open an AI provider below and attach the card image manually.'
+      : '${card.displayTitle} · Your browser could not pass the selected card image as a file. Open an AI provider below and attach the card image manually for visual discussion.';
 
   IconData _iconFor(ExternalAiProvider provider) => switch (provider) {
         ExternalAiProvider.chatgpt => Icons.auto_awesome_rounded,
@@ -80,7 +106,7 @@ class _TranscriptionAiProviderSheet extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Card context copied. Paste it in ${provider.label}. Use SHARE CARD IMAGE if the AI needs to see the card.',
+            'Card context copied. Paste it in ${provider.label} and attach the selected card image manually.',
           ),
         ),
       );
@@ -113,11 +139,11 @@ class _TranscriptionAiProviderSheet extends StatelessWidget {
 
     final message = switch (result) {
       NativeShareResult.shared =>
-        'Card image shared. Choose your AI app in the system share sheet; the card context is also copied.',
+        'Card image shared as a real file. Choose your AI app in the system share sheet; the card context is also copied.',
       NativeShareResult.unavailable =>
-        'Image sharing is unavailable in this browser. Card context was copied; open an AI provider and attach the card image manually.',
+        'Image-file sharing is unavailable in this browser. Attach the selected card image manually in the AI provider.',
       NativeShareResult.failed =>
-        'The card image could not be shared. Card context was copied; attach the card image manually in the AI provider.',
+        'The selected card image file could not be shared. Attach it manually in the AI provider.',
       NativeShareResult.cancelled => '',
     };
 
@@ -183,7 +209,7 @@ class _TranscriptionAiProviderSheet extends StatelessWidget {
                   icon: const Icon(Icons.ios_share_rounded),
                   label: const Padding(
                     padding: EdgeInsets.symmetric(vertical: 14),
-                    child: Text('SHARE CARD IMAGE TO AI'),
+                    child: Text('TRY SHARING CARD IMAGE AGAIN'),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -214,7 +240,7 @@ class _TranscriptionAiProviderSheet extends StatelessWidget {
                                   padding: const EdgeInsets.symmetric(
                                     vertical: 14,
                                   ),
-                                  child: Text(provider.label),
+                                  child: Text('OPEN ${provider.label} WITHOUT IMAGE'),
                                 ),
                               ),
                             ),
@@ -238,7 +264,7 @@ class _TranscriptionAiProviderSheet extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'No app AI backend is used. Provider buttons open the selected AI with card context copied. SHARE CARD IMAGE TO AI uses the browser/system share sheet so supported AI apps can receive the actual selected card image.',
+                  'No app AI backend is used. The primary Transcribe/Discuss action shares the actual selected card file first. Provider links appear only as a fallback when this browser cannot hand off image files.',
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: const Color(0xCCFFE8B4),
