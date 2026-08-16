@@ -24,6 +24,9 @@ external void _setDealerQuality(String id, String quality);
 @JS('puppetDealerDestroy')
 external void _destroyDealer(String id);
 
+const _playStageBackgroundWebAsset =
+    'assets/assets/images/play_stage_background.jpg';
+
 class PuppetDealerScene extends StatefulWidget {
   const PuppetDealerScene({
     required this.controller,
@@ -59,7 +62,14 @@ class _PuppetDealerSceneState extends State<PuppetDealerScene> {
         ..style.position = 'relative'
         ..style.pointerEvents = 'none'
         ..style.overflow = 'hidden'
-        ..style.backgroundColor = 'transparent';
+        // HtmlElementView is composited as a DOM layer above Flutter's canvas.
+        // Give that DOM layer the same stage artwork so its transparent WebGL
+        // regions never expose the browser/default grey surface.
+        ..style.backgroundImage = 'url("$_playStageBackgroundWebAsset")'
+        ..style.backgroundSize = 'cover'
+        ..style.backgroundPosition = 'center center'
+        ..style.backgroundRepeat = 'no-repeat'
+        ..style.backgroundColor = '#050302';
     });
     widget.controller.attach(
       deal: (path) => _animate(path, receive: false),
