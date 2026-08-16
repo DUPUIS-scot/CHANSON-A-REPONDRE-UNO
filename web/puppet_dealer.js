@@ -5,14 +5,12 @@ import { GLTFLoader } from './vendor/GLTFLoader.js';
 // only mirrors each real draw/play action with a synchronized 3D performance.
 const dealers = new Map();
 const pendingMounts = new Map();
-const MODEL_REVISION = 'jester-player-reupload-20260816';
+const MODEL_REVISION = 'play-jester-rigged-20260816';
 const MODEL_URLS = [
-  new URL('assets/assets/models/jester_player_reupload.glb', document.baseURI).href,
-  new URL('assets/assets/models/jester_player.glb', document.baseURI).href,
+  new URL('assets/assets/models/play_jester_rigged.glb', document.baseURI).href,
 ];
-// The supplied Tripo jester is a static single-mesh GLB facing +X. Rotate that
-// axis toward the Play camera (+Z) and animate the performance procedurally.
-const MODEL_FACING_Y = -Math.PI / 2;
+// Rigged Play jester. Use embedded animation clips when available.
+const MODEL_FACING_Y = 0;
 const DEAL_DURATION = 2350;
 const RECEIVE_DURATION = 1650;
 
@@ -161,7 +159,7 @@ class JesterDealer {
     const modelUrl = MODEL_URLS[index];
     if (!modelUrl) {
       this.host.dataset.dealerStatus = 'failed';
-      this.host.dataset.modelError = 'No 3D jester asset could be loaded.';
+      this.host.dataset.modelError = 'No rigged Play jester asset could be loaded.';
       return;
     }
 
@@ -208,7 +206,7 @@ class JesterDealer {
         this.host.dataset.modelAsset = modelUrl;
         this.host.dataset.modelAnimations = String(gltf.animations.length);
         this.host.dataset.modelFacingAngle = String(MODEL_FACING_Y);
-        this.host.dataset.modelFallback = index === 0 ? 'false' : 'true';
+        this.host.dataset.modelFallback = 'false';
         this.resume();
       },
       (event) => {
@@ -219,15 +217,7 @@ class JesterDealer {
         }
       },
       (error) => {
-        console.warn('Unable to load 3D jester candidate.', {
-          url: modelUrl,
-          error,
-        });
-        if (index + 1 < MODEL_URLS.length) {
-          this.host.dataset.modelFallback = 'loading';
-          this.loadModel(index + 1);
-          return;
-        }
+        console.warn('Unable to load rigged Play jester.', { url: modelUrl, error });
         this.host.dataset.dealerStatus = 'failed';
         this.host.dataset.modelAsset = modelUrl;
         this.host.dataset.modelError = String(error?.message || error);
@@ -269,50 +259,25 @@ class JesterDealer {
       const center = this.puppetBounds.getCenter(new THREE.Vector3());
       const min = this.puppetBounds.min;
       const max = this.puppetBounds.max;
-      const corners = [
-        new THREE.Vector3(min.x, min.y, min.z),
-        new THREE.Vector3(min.x, min.y, max.z),
-        new THREE.Vector3(min.x, max.y, min.z),
-        new THREE.Vector3(min.x, max.y, max.z),
-        new THREE.Vector3(max.x, min.y, min.z),
-        new THREE.Vector3(max.x, min.y, max.z),
-        new THREE.Vector3(max.x, max.y, min.z),
-        new THREE.Vector3(max.x, max.y, max.z),
-      ];
-      const edgeLimit = narrow ? 0.965 : 0.975;
-      const frontDepth = Math.max(0.1, max.z - center.z);
-      let low = frontDepth + 0.12;
-      let high = Math.max(10, low * 2);
-
-      const fitsAt = (distance) => {
-        this.camera.position.set(center.x, center.y, center.z + distance);
-        this.camera.lookAt(center);
-        this.camera.updateProjectionMatrix();
-        this.camera.updateMatrixWorld(true);
-        return corners.every((corner) => {
-          const projected = corner.clone().project(this.camera);
-          return (
-            projected.z >= -1 &&
-            projected.z <= 1 &&
-            Math.abs(projected.x) <= edgeLimit &&
-            Math.abs(projected.y) <= edgeLimit
-          );
-        });
-      };
-
-      while (!fitsAt(high) && high < 100) high *= 1.5;
-      for (let index = 0; index < 28; index += 1) {
-        const middle = (low + high) / 2;
-        if (fitsAt(middle)) high = middle;
-        else low = middle;
-      }
-      fitsAt(high);
-      this.host.dataset.puppetFit = 'full-body-maximized';
-      this.host.dataset.puppetCameraDistance = high.toFixed(3);
-      this.host.dataset.puppetEdgeLimit = String(edgeLimit);
+      const upperCenterY = lerp(min.y, max.y, 0.70);
+      const upperHeight = Math.max(0.001, max.y - upperCenterY);
+      const targetCenter = new THREE.Vector3(center.x, upperCenterY, center.z);
+      const halfWidth = Math.max(Math.abs(max.x - center.x), Math.abs(min.x - center.x));
+      const halfHeight = Math.max(upperHeight, (max.y - min.y) * 0.24);
+      const verticalFov = THREE.MathUtils.degToRad(this.camera.fov);
+      const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * this.camera.aspect);
+      const distanceForHeight = halfHeight / Math.tan(verticalFov / 2);
+      const distanceForWidth = halfWidth / Math.max(Math.tan(horizontalFov / 2), 0.001);
+      const distance = Math.max(distanceForHeight, distanceForWidth) * (narrow ? 1.08 : 1.02);
+      this.camera.position.set(targetCenter.x, targetCenter.y, targetCenter.z + distance + 0.35);
+      this.camera.lookAt(targetCenter);
+      this.camera.updateProjectionMatrix();
+      this.camera.updateMatrixWorld(true);
+      this.host.dataset.puppetFit = 'upper-torso';
+      this.host.dataset.puppetCameraDistance = distance.toFixed(3);
     } else {
-      this.camera.position.set(0, 0, narrow ? 9.7 : 12.4);
-      this.camera.lookAt(0, 0, 0);
+      this.camera.position.set(0, 1.25, narrow ? 7.4 : 8.6);
+      this.camera.lookAt(0, 1.2, 0);
       this.camera.updateProjectionMatrix();
     }
   }
@@ -395,176 +360,123 @@ class JesterDealer {
   setGesturePose({ x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, squash = 0 }) {
     this.gestureRoot.position.set(x, y, z);
     this.gestureRoot.rotation.set(rx, ry, rz);
-    this.gestureRoot.scale.set(1 + squash * 0.04, 1 - squash * 0.055, 1 + squash * 0.04);
+    this.gestureRoot.scale.set(1 + squash * 0.04, 1 - squash * 0.05, 1 + squash * 0.03);
   }
 
-  updateIdle(time) {
-    if (!this.model) return;
-    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const amount = reduced ? 0.25 : 1;
-    this.resetGesture();
-    this.modelRoot.position.y +=
-      (Math.sin(time * 1.15) * 0.025 * amount - this.modelRoot.position.y) * 0.05;
-    this.modelRoot.rotation.x = Math.sin(time * 0.44) * 0.006 * amount;
-    this.modelRoot.rotation.y = Math.sin(time * 0.38) * 0.018 * amount;
-    this.modelRoot.rotation.z = Math.sin(time * 0.52) * 0.008 * amount;
-  }
+  updateDeal(t) {
+    const reach = smoother(segment(t, 0.04, 0.28));
+    const lift = smoother(segment(t, 0.20, 0.48));
+    const present = smoother(segment(t, 0.42, 0.72));
+    const release = smoother(segment(t, 0.68, 0.92));
+    const settle = smoother(segment(t, 0.86, 1.0));
 
-  updateDeal(progress) {
-    const notice = pulse(progress, 0.00, 0.08, 0.18);
-    const reach = segment(progress, 0.08, 0.28);
-    const lift = segment(progress, 0.25, 0.43);
-    const present = segment(progress, 0.40, 0.62);
-    const flick = segment(progress, 0.60, 0.86);
-    const settle = segment(progress, 0.84, 1.00);
-    const recoil = pulse(progress, 0.62, 0.74, 0.92);
+    if (t < 0.28) this.setPhase('reachDrawPile');
+    else if (t < 0.48) this.setPhase('liftCard');
+    else if (t < 0.72) this.setPhase('presentCard');
+    else this.setPhase('releaseCard');
 
-    if (progress < 0.08) this.setPhase('noticeDeck');
-    else if (progress < 0.28) this.setPhase('reachForDeck');
-    else if (progress < 0.43) this.setPhase('liftCard');
-    else if (progress < 0.62) this.setPhase('presentCard');
-    else if (progress < 0.86) this.setPhase('flickCardToPlayer');
-    else this.setPhase('returnToIdle');
+    const a = new THREE.Vector3(-2.35, -2.15, 3.0);
+    const b = new THREE.Vector3(-1.25, -0.65, 2.2);
+    const c = new THREE.Vector3(-0.4, 0.15, 1.5);
+    const d = new THREE.Vector3(0.0, -2.9, 3.4);
+    cubicBezier(this.card.position, a, b, c, d, present);
+    this.card.position.y += lift * 0.8;
+    this.card.rotation.x = lerp(-0.35, -0.08, present);
+    this.card.rotation.y = lerp(Math.PI, 0.05, present);
+    this.card.rotation.z = -0.12 + pulse(t, 0.18, 0.48, 0.78) * 0.16;
+    this.card.scale.setScalar(1 - release * 0.10);
+    this.card.visible = release < 0.98;
 
-    const leftLean = reach * (1 - settle);
-    const forwardLean = present * (1 - settle);
+    const lean = pulse(t, 0.03, 0.25, 0.58);
+    const offer = pulse(t, 0.36, 0.62, 0.90);
     this.setGesturePose({
-      x: -0.34 * leftLean + 0.14 * recoil,
-      y: -0.12 * leftLean + 0.10 * recoil,
-      z: 0.28 * forwardLean + 0.16 * recoil,
-      rx: -0.10 * forwardLean + 0.055 * recoil,
-      ry: 0.11 * leftLean - 0.08 * recoil,
-      rz: 0.085 * leftLean - 0.045 * recoil + 0.02 * notice,
-      squash: 0.9 * reach - 0.6 * recoil,
+      x: -0.38 * lean + 0.10 * offer,
+      y: -0.08 * lean + 0.16 * offer,
+      z: 0.12 * offer,
+      rx: -0.06 * offer,
+      ry: 0.12 * lean - 0.04 * offer,
+      rz: 0.08 * lean - 0.03 * offer,
+      squash: lean * 0.35,
     });
 
-    const deck = new THREE.Vector3(-2.35, -2.15, 2.4);
-    const deckLift = new THREE.Vector3(-2.25, -1.1, 2.75);
-    const hand = new THREE.Vector3(-0.78, -0.62, 2.92);
-    const show = new THREE.Vector3(-0.10, -1.42, 3.28);
-    const player = new THREE.Vector3(0, -4.25, 3.25);
-
-    if (progress < 0.25) {
-      this.card.position.copy(deck);
-    } else if (progress < 0.43) {
-      const t = smoother((progress - 0.25) / 0.18);
-      cubicBezier(this.card.position, deck, deckLift, hand.clone().add(new THREE.Vector3(-0.32, 0.25, 0)), hand, t);
-    } else if (progress < 0.62) {
-      const t = smoother((progress - 0.43) / 0.19);
-      cubicBezier(this.card.position, hand, hand.clone().add(new THREE.Vector3(0.20, 0.55, 0.20)), show.clone().add(new THREE.Vector3(-0.15, 0.30, 0.25)), show, t);
-    } else {
-      const t = smoother((progress - 0.62) / 0.24);
-      const c1 = show.clone().add(new THREE.Vector3(0.45, -0.50, 0.55));
-      const c2 = player.clone().add(new THREE.Vector3(-0.40, 1.10, 0.70));
-      cubicBezier(this.card.position, show, c1, c2, player, t);
+    if (settle > 0) {
+      this.gestureRoot.position.multiplyScalar(1 - settle);
+      this.gestureRoot.rotation.x *= 1 - settle;
+      this.gestureRoot.rotation.y *= 1 - settle;
+      this.gestureRoot.rotation.z *= 1 - settle;
     }
-
-    this.card.rotation.x = lerp(-0.30, -0.56, lift);
-    this.card.rotation.y = lerp(Math.PI, 0, present);
-    this.card.rotation.z =
-      lerp(-0.10, 0.02, lift) + Math.sin(flick * Math.PI * 2) * 0.30 * flick;
-    const flyScale = 1 + Math.sin(flick * Math.PI) * 0.08;
-    this.card.scale.setScalar(flyScale);
   }
 
-  updateReceive(progress) {
-    const catchCard = segment(progress, 0.00, 0.30);
-    const pullIn = segment(progress, 0.26, 0.47);
-    const sweep = segment(progress, 0.44, 0.80);
-    const drop = segment(progress, 0.78, 0.91);
-    const settle = segment(progress, 0.89, 1.00);
-    const accent = pulse(progress, 0.45, 0.62, 0.84);
+  updateReceive(t) {
+    const catchCard = smoother(segment(t, 0.03, 0.36));
+    const carry = smoother(segment(t, 0.28, 0.72));
+    const release = smoother(segment(t, 0.66, 0.96));
 
-    if (progress < 0.30) this.setPhase('catchPlayerCard');
-    else if (progress < 0.47) this.setPhase('pullCardToChest');
-    else if (progress < 0.80) this.setPhase('sweepCardToDiscard');
-    else if (progress < 0.91) this.setPhase('dropOnDiscard');
-    else this.setPhase('returnToIdle');
+    if (t < 0.36) this.setPhase('catchPlayerCard');
+    else if (t < 0.72) this.setPhase('carryToDiscard');
+    else this.setPhase('discardCard');
 
-    const active = Math.max(catchCard * (1 - settle), sweep * (1 - settle));
+    const a = new THREE.Vector3(0.0, -4.25, 3.0);
+    const b = new THREE.Vector3(0.0, -1.0, 2.0);
+    const c = new THREE.Vector3(1.3, -0.35, 1.6);
+    const d = new THREE.Vector3(2.45, -2.15, 3.0);
+    cubicBezier(this.card.position, a, b, c, d, carry);
+    this.card.position.y += catchCard * 0.5;
+    this.card.rotation.x = lerp(-0.30, -0.08, carry);
+    this.card.rotation.y = lerp(0.0, -Math.PI, carry);
+    this.card.rotation.z = pulse(t, 0.18, 0.54, 0.84) * -0.16;
+    this.card.scale.setScalar(1 - release * 0.08);
+    this.card.visible = release < 0.98;
+
+    const receiveLean = pulse(t, 0.04, 0.28, 0.56);
+    const discardLean = pulse(t, 0.38, 0.68, 0.94);
     this.setGesturePose({
-      x: 0.26 * sweep - 0.10 * catchCard,
-      y: -0.10 * catchCard + 0.08 * accent,
-      z: 0.24 * active,
-      rx: -0.08 * active,
-      ry: -0.15 * sweep + 0.055 * catchCard,
-      rz: -0.07 * sweep + 0.035 * catchCard,
-      squash: 0.55 * catchCard - 0.35 * accent,
+      x: 0.16 * receiveLean + 0.42 * discardLean,
+      y: -0.05 * receiveLean + 0.03 * discardLean,
+      z: 0.08 * receiveLean,
+      rx: -0.04 * discardLean,
+      ry: -0.06 * receiveLean - 0.14 * discardLean,
+      rz: -0.03 * receiveLean - 0.08 * discardLean,
+      squash: receiveLean * 0.24,
     });
-
-    const player = new THREE.Vector3(0, -4.25, 3.25);
-    const catchPoint = new THREE.Vector3(0.72, -1.28, 3.20);
-    const chest = new THREE.Vector3(0.36, -0.48, 2.84);
-    const discard = new THREE.Vector3(2.40, -2.15, 2.40);
-
-    if (progress < 0.30) {
-      const t = smoother(progress / 0.30);
-      const c1 = player.clone().add(new THREE.Vector3(0.20, 1.20, 0.62));
-      const c2 = catchPoint.clone().add(new THREE.Vector3(-0.18, -0.10, 0.36));
-      cubicBezier(this.card.position, player, c1, c2, catchPoint, t);
-    } else if (progress < 0.47) {
-      const t = smoother((progress - 0.30) / 0.17);
-      cubicBezier(
-        this.card.position,
-        catchPoint,
-        catchPoint.clone().add(new THREE.Vector3(-0.10, 0.35, 0.05)),
-        chest.clone().add(new THREE.Vector3(0.18, 0.24, 0.10)),
-        chest,
-        t,
-      );
-    } else if (progress < 0.91) {
-      const t = smoother((progress - 0.47) / 0.44);
-      const c1 = chest.clone().add(new THREE.Vector3(0.60, 0.38, 0.48));
-      const c2 = discard.clone().add(new THREE.Vector3(-0.44, 0.78, 0.54));
-      cubicBezier(this.card.position, chest, c1, c2, discard, t);
-    } else {
-      this.card.position.copy(discard);
-      this.card.position.y += Math.sin((progress - 0.91) / 0.09 * Math.PI) * 0.08 * (1 - settle);
-    }
-
-    this.card.rotation.x = lerp(-0.50, -0.28, pullIn);
-    this.card.rotation.y = Math.sin(sweep * Math.PI) * 0.35;
-    this.card.rotation.z = Math.sin(sweep * Math.PI * 1.6) * 0.22;
-    this.card.scale.setScalar(1 + Math.sin(drop * Math.PI) * 0.045);
   }
 
-  finishAnimation() {
-    this.card.visible = false;
-    this.card.scale.setScalar(1);
-    this.animation = null;
-    this.resetGesture();
-    this.modelRoot.rotation.set(0, 0, 0);
-    this.modelRoot.position.set(0, 0, 0);
-    this.activeAction?.fadeOut(0.15);
-    this.idleAction?.reset().fadeIn(0.15).play();
-    this.activeAction = null;
-    this.setPhase('idle');
+  updateAnimation(now) {
+    if (!this.animation) return;
+    const t = clamp01((now - this.animation.started) / this.animation.duration);
+    if (this.animation.kind === 'receive') this.updateReceive(t);
+    else this.updateDeal(t);
+
+    if (t >= 1) {
+      this.animation = null;
+      this.card.visible = false;
+      this.resetGesture();
+      this.setPhase('idle');
+      if (this.activeAction) {
+        this.activeAction.fadeOut(0.15);
+        this.activeAction = null;
+      }
+      this.idleAction?.reset().fadeIn(0.15).play();
+    }
   }
 
-  render = () => {
-    this.frame = 0;
-    if (this.disposed || !this.visible || document.hidden) return;
-    const delta = Math.min(this.clock.getDelta(), 0.05);
-    const time = this.clock.elapsedTime;
-    this.mixer?.update(delta);
-    if (this.animation) {
-      const progress = clamp01(
-        (performance.now() - this.animation.started) / this.animation.duration,
-      );
-      if (this.animation.kind === 'deal') this.updateDeal(progress);
-      else this.updateReceive(progress);
-      if (progress >= 1) this.finishAnimation();
-    } else {
-      this.updateIdle(time);
+  render = (now) => {
+    if (this.disposed || !this.visible || document.hidden) {
+      this.frame = 0;
+      return;
     }
-    this.renderer.render(this.scene, this.camera);
     this.frame = requestAnimationFrame(this.render);
+    const delta = Math.min(this.clock.getDelta(), 0.05);
+    this.mixer?.update(delta);
+    this.updateAnimation(now);
+    this.renderer.render(this.scene, this.camera);
   };
 
   resume() {
-    if (this.disposed || !this.visible || document.hidden || this.frame) return;
-    this.clock.getDelta();
-    this.frame = requestAnimationFrame(this.render);
+    if (!this.frame && !this.disposed && this.visible && !document.hidden) {
+      this.clock.getDelta();
+      this.frame = requestAnimationFrame(this.render);
+    }
   }
 
   pause() {
@@ -580,64 +492,43 @@ class JesterDealer {
   dispose() {
     this.disposed = true;
     this.pause();
+    this.resizeObserver?.disconnect();
+    this.intersectionObserver?.disconnect();
     document.removeEventListener('visibilitychange', this.onVisibilityChange);
-    this.resizeObserver.disconnect();
-    this.intersectionObserver.disconnect();
-    this.mixer?.stopAllAction();
-    if (this.model) this.mixer?.uncacheRoot(this.model);
     disposeObject(this.model);
-    this.card.userData.texture?.dispose();
-    this.card.userData.faceMaterial?.dispose();
-    this.card.userData.fallbackMaterial?.dispose();
-    this.card.userData.edgeMaterial?.dispose();
-    this.card.geometry.dispose();
-    this.renderer.renderLists.dispose();
+    disposeObject(this.card);
     this.renderer.dispose();
-    this.renderer.forceContextLoss();
     this.renderer.domElement.remove();
   }
 }
 
-window.puppetDealerCreate = function (id, quality) {
-  if (dealers.has(id) || pendingMounts.has(id)) return;
-  const pending = { cancelled: false, frame: 0, started: performance.now() };
-  pendingMounts.set(id, pending);
-  const mount = () => {
-    if (pending.cancelled) return;
-    const host = document.getElementById(id);
-    if (host?.isConnected && host.clientWidth > 0 && host.clientHeight > 0) {
-      pendingMounts.delete(id);
-      try {
-        dealers.set(id, new JesterDealer(host, quality));
-      } catch (error) {
-        host.dataset.dealerStatus = 'failed';
-        console.error('Unable to create the 3D jester dealer.', error);
-      }
-      return;
-    }
-    if (performance.now() - pending.started > 8000) {
-      pendingMounts.delete(id);
-      if (host) host.dataset.dealerStatus = 'failed';
-      return;
-    }
-    pending.frame = requestAnimationFrame(mount);
-  };
-  pending.frame = requestAnimationFrame(mount);
+function createDealer(id, quality = 'medium') {
+  const host = document.getElementById(id);
+  if (!host || dealers.has(id)) return;
+  const dealer = new JesterDealer(host, quality);
+  dealers.set(id, dealer);
+}
+
+window.puppetDealerCreate = (id, quality) => {
+  if (document.getElementById(id)) createDealer(id, quality);
+  else pendingMounts.set(id, quality);
 };
 
-window.puppetDealerDeal = (id, imageUrl) =>
-  dealers.get(id)?.deal(imageUrl, 'deal') || false;
-window.puppetDealerReceive = (id, imageUrl) =>
-  dealers.get(id)?.deal(imageUrl, 'receive') || false;
-window.puppetDealerSetQuality = (id, quality) =>
-  dealers.get(id)?.setQuality(quality);
-window.puppetDealerDestroy = function (id) {
-  const pending = pendingMounts.get(id);
-  if (pending) {
-    pending.cancelled = true;
-    cancelAnimationFrame(pending.frame);
-    pendingMounts.delete(id);
-  }
+window.puppetDealerDeal = (id, imageUrl) => dealers.get(id)?.deal(imageUrl, 'deal');
+window.puppetDealerReceive = (id, imageUrl) => dealers.get(id)?.deal(imageUrl, 'receive');
+window.puppetDealerSetQuality = (id, quality) => dealers.get(id)?.setQuality(quality);
+window.puppetDealerDestroy = (id) => {
   dealers.get(id)?.dispose();
   dealers.delete(id);
+  pendingMounts.delete(id);
 };
+
+const mountObserver = new MutationObserver(() => {
+  for (const [id, quality] of pendingMounts.entries()) {
+    if (document.getElementById(id)) {
+      pendingMounts.delete(id);
+      createDealer(id, quality);
+    }
+  }
+});
+mountObserver.observe(document.documentElement, { childList: true, subtree: true });
