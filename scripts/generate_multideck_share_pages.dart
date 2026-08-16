@@ -14,6 +14,7 @@ String buildCanonicalShareHtml({
   required String title,
   required String imagePath,
   String? previewImagePath,
+  String? transcription,
   int? imageWidth,
   int? imageHeight,
 }) {
@@ -25,6 +26,9 @@ String buildCanonicalShareHtml({
   final socialImagePath = previewImagePath ?? imagePath;
   final imageUrl = publicBase.replace(
     pathSegments: [...root, 'assets', ...socialImagePath.split('/')],
+  );
+  final cardImageUrl = publicBase.replace(
+    pathSegments: [...root, 'assets', ...imagePath.split('/')],
   );
   final imageMimeType = _imageMimeType(socialImagePath);
   final dimensions = StringBuffer();
@@ -38,11 +42,19 @@ String buildCanonicalShareHtml({
       '  <meta property="og:image:height" content="$imageHeight">',
     );
   }
+  final normalizedTranscription = transcription?.trim() ?? '';
   final escapedTitle = _html(title);
+  final escapedCardId = _html(cardId);
   final escapedShareUrl = _html(shareUrl.toString());
   final escapedDeepLink = _html(deepLink.toString());
   final escapedImageUrl = _html(imageUrl.toString());
+  final escapedCardImageUrl = _html(cardImageUrl.toString());
   final escapedImageMimeType = _html(imageMimeType);
+  final escapedTranscription = _html(normalizedTranscription);
+  final description = normalizedTranscription.isEmpty
+      ? 'Open $title.'
+      : _plainSummary(normalizedTranscription);
+  final escapedDescription = _html(description);
   final deepLinkJson = jsonEncode(deepLink.toString());
 
   return '''<!doctype html>
@@ -51,11 +63,12 @@ String buildCanonicalShareHtml({
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>$escapedTitle</title>
-  <meta name="description" content="Open $escapedTitle.">
+  <meta name="description" content="$escapedDescription">
+  <meta name="card-id" content="$escapedCardId">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Chanson à Répondre">
   <meta property="og:title" content="$escapedTitle">
-  <meta property="og:description" content="Open $escapedTitle.">
+  <meta property="og:description" content="$escapedDescription">
   <meta property="og:image" content="$escapedImageUrl">
   <meta property="og:image:url" content="$escapedImageUrl">
   <meta property="og:image:secure_url" content="$escapedImageUrl">
@@ -64,13 +77,24 @@ String buildCanonicalShareHtml({
 ${dimensions.toString()}  <meta property="og:url" content="$escapedShareUrl">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="$escapedTitle">
-  <meta name="twitter:description" content="Open $escapedTitle.">
+  <meta name="twitter:description" content="$escapedDescription">
   <meta name="twitter:image" content="$escapedImageUrl">
   <meta name="twitter:image:alt" content="$escapedTitle">
   <link rel="canonical" href="$escapedShareUrl">
 </head>
 <body>
-  <p><a href="$escapedDeepLink">Open this card</a></p>
+  <main>
+    <h1>$escapedTitle</h1>
+    <p>Card ID: <span id="card-id">$escapedCardId</span></p>
+    <figure>
+      <img id="card-image" src="$escapedCardImageUrl" alt="$escapedTitle" style="max-width: min(100%, 600px); height: auto;">
+    </figure>
+    <section aria-labelledby="transcription-heading">
+      <h2 id="transcription-heading">Card transcription</h2>
+      <pre id="card-transcription" style="white-space: pre-wrap;">${escapedTranscription.isEmpty ? 'No static transcription is embedded for this card yet. Use the card image above or the in-app transcription.' : escapedTranscription}</pre>
+    </section>
+    <p><a href="$escapedDeepLink">Open this card in Chanson à Répondre</a></p>
+  </main>
   <script>window.location.replace($deepLinkJson);</script>
 </body>
 </html>
@@ -183,6 +207,7 @@ Future<void> main(List<String> arguments) async {
         title: title,
         imagePath: card.imagePath,
         previewImagePath: card.previewImagePath,
+        transcription: card.transcription,
         imageWidth: card.imageWidth,
         imageHeight: card.imageHeight,
       ),
@@ -236,6 +261,7 @@ Future<List<_ShareCard>> _loadUno(String path) async {
       deckId: AppConstants.productionDeckId,
       deckName: deck['name'] as String? ?? 'Chanson à répondre UNO',
       imagePath: (card['path'] ?? card['image']) as String? ?? '',
+      transcription: _transcriptionFromJson(card),
       imageWidth: (card['imageWidth'] as num?)?.toInt(),
       imageHeight: (card['imageHeight'] as num?)?.toInt(),
     );
@@ -268,6 +294,7 @@ Future<List<_ShareCard>> _loadBrio(String path) async {
       deckName: decoded['name'] as String? ?? 'Chanson à répondre BRIO',
       imagePath: (card['path'] ?? card['image']) as String? ?? '',
       previewImagePath: 'share-previews/$slug.jpg',
+      transcription: _transcriptionFromJson(card),
       imageWidth: 600,
       imageHeight: 900,
     );
@@ -276,6 +303,25 @@ Future<List<_ShareCard>> _loadBrio(String path) async {
     throw const FormatException('Expected 16 unique BRIO cards.');
   }
   return cards;
+}
+
+String? _transcriptionFromJson(Map<String, dynamic> card) {
+  for (final key in const ['cleanedTranscription', 'transcription']) {
+    final value = card[key];
+    if (value is String && value.trim().isNotEmpty) return value.trim();
+  }
+  final parts = <String>[];
+  for (final key in const ['title', 'question', 'answer']) {
+    final value = card[key];
+    if (value is String && value.trim().isNotEmpty) parts.add(value.trim());
+  }
+  return parts.isEmpty ? null : parts.join('\n\n');
+}
+
+String _plainSummary(String value) {
+  final normalized = value.replaceAll(RegExp(r'\s+'), ' ').trim();
+  if (normalized.length <= 180) return normalized;
+  return '${normalized.substring(0, 177)}...';
 }
 
 Map<String, String> _parseOptions(List<String> arguments) {
@@ -313,6 +359,7 @@ class _ShareCard {
     required this.deckName,
     required this.imagePath,
     this.previewImagePath,
+    this.transcription,
     this.imageWidth,
     this.imageHeight,
   });
@@ -322,6 +369,7 @@ class _ShareCard {
   final String deckName;
   final String imagePath;
   final String? previewImagePath;
+  final String? transcription;
   final int? imageWidth;
   final int? imageHeight;
 }
