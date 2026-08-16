@@ -34,7 +34,9 @@ void main() {
     expect(sheet, isNot(contains('transcriptionOverride: transcription')));
 
     expect(service, contains('publicImageUrlFor'));
-    expect(service, contains('canonical'));
+    expect(service, contains('PublicCardShareService.shareUrlFor'));
+    expect(service, contains("'SOURCE CARD:'"));
+    expect(service, contains("'CARD IMAGE:'"));
   });
 
   test('Browse AI compatibility entry cannot trigger app transcription', () {
