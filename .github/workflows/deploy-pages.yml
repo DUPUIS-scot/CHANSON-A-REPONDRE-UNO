@@ -112,7 +112,7 @@ jobs:
           test -f build/web/card_share.js
           test -f build/web/transcription_jester.js
           grep -q 'challenges.cloudflare.com/turnstile' build/web/index.html
-          grep -q 'jester_player_reupload.glb' build/web/transcription_jester.js
+          grep -q 'transcription_jester.glb' build/web/transcription_jester.js
 
           test "$(find build/web/share -mindepth 1 -maxdepth 1 -type d -name 'UNO-*' | wc -l)" -eq 84
           test "$(find build/web/share -mindepth 1 -maxdepth 1 -type d -name 'BRIO-*' | wc -l)" -eq 16
@@ -146,6 +146,7 @@ jobs:
 
           test -f build/web/assets/assets/models/jester_player.glb
           test -f build/web/assets/assets/models/jester_player_reupload.glb
+          test -f build/web/assets/assets/models/transcription_jester.glb
           test -f build/web/assets/assets/models/search_castle.glb
           test -f build/web/assets/assets/images/closed_curtains.png
           test -f build/web/card_castle/card_castle.html
