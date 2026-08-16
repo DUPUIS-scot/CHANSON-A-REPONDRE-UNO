@@ -292,24 +292,28 @@ class _PlayScreenState extends State<PlayScreen> {
                                 left: narrow ? 12 : 24,
                                 right: narrow ? 12 : 24,
                                 bottom: narrow ? 114 : 128,
-                                child: PlayerHand(
-                                  cards: hand,
-                                  selectedCardId: selectedCardId,
-                                  backImagePath: handBackImagePath,
-                                  isPlayable: game.canPlay,
-                                  onSelectionChanged: dealerBusy
-                                      ? (_) {}
-                                      : (card) {
-                                          setState(() {
-                                            selectedCardId = card?.id;
-                                          });
-                                        },
-                                  onLongPressCard: (cards, faceUp, index) =>
-                                      openHandPreview(
-                                    cards,
-                                    faceUp,
-                                    index,
-                                    handBackImagePath,
+                                child: SizedBox(
+                                  // Keep PlayerHand in bounded layout across viewport changes.
+                                  height: narrow ? 220 : 280,
+                                  child: PlayerHand(
+                                    cards: hand,
+                                    selectedCardId: selectedCardId,
+                                    backImagePath: handBackImagePath,
+                                    isPlayable: game.canPlay,
+                                    onSelectionChanged: dealerBusy
+                                        ? (_) {}
+                                        : (card) {
+                                            setState(() {
+                                              selectedCardId = card?.id;
+                                            });
+                                          },
+                                    onLongPressCard: (cards, faceUp, index) =>
+                                        openHandPreview(
+                                      cards,
+                                      faceUp,
+                                      index,
+                                      handBackImagePath,
+                                    ),
                                   ),
                                 ),
                               ),
