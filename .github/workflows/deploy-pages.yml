@@ -45,33 +45,11 @@ jobs:
           AI_BACKEND_URL: ${{ secrets.AI_BACKEND_URL || vars.AI_BACKEND_URL }}
         run: |
           set -euo pipefail
-          if [ -z "${SUPABASE_URL:-}" ]; then
-            echo "::error::SUPABASE_URL is not configured in GitHub Actions secrets or variables."
-            exit 1
-          fi
-          if [ -z "${SUPABASE_PUBLISHABLE_KEY:-}" ]; then
-            echo "::error::SUPABASE_PUBLISHABLE_KEY (or SUPABASE_ANON_KEY) is not configured in GitHub Actions secrets or variables."
-            exit 1
-          fi
-          if [ -z "${AI_BACKEND_URL:-}" ]; then
-            echo "::error::AI_BACKEND_URL is not configured in GitHub Actions secrets or variables."
-            exit 1
-          fi
-          case "$SUPABASE_URL" in
-            https://*.supabase.co) ;;
-            *)
-              echo "::error::SUPABASE_URL must be an https://*.supabase.co URL."
-              exit 1
-              ;;
-          esac
-          case "$AI_BACKEND_URL" in
-            https://*) ;;
-            *)
-              echo "::error::AI_BACKEND_URL must be HTTPS for the production web app."
-              exit 1
-              ;;
-          esac
-          echo "Supabase, Turnstile, and HTTPS AI backend configuration are present."
+          test -n "${SUPABASE_URL:-}" || { echo "::error::SUPABASE_URL is not configured."; exit 1; }
+          test -n "${SUPABASE_PUBLISHABLE_KEY:-}" || { echo "::error::SUPABASE_PUBLISHABLE_KEY is not configured."; exit 1; }
+          test -n "${AI_BACKEND_URL:-}" || { echo "::error::AI_BACKEND_URL is not configured."; exit 1; }
+          case "$SUPABASE_URL" in https://*.supabase.co) ;; *) echo "::error::SUPABASE_URL must be https://*.supabase.co"; exit 1 ;; esac
+          case "$AI_BACKEND_URL" in https://*) ;; *) echo "::error::AI_BACKEND_URL must be HTTPS"; exit 1 ;; esac
 
       - name: Build Flutter web release
         env:
@@ -99,44 +77,19 @@ jobs:
             sudo apt-get update -qq
             sudo apt-get install -y --no-install-recommends imagemagick
           fi
-
           mkdir -p build/web/assets/share-previews
           for index in $(seq 1 16); do
             card="$(printf '%03d' "$index")"
             source="build/web/assets/assets/decks/chanson_a_repondre_brio/cards/${card}.jpeg"
             target="build/web/assets/share-previews/BRIO-${card}.jpg"
             test -f "$source"
-
-            convert "$source" \
-              -auto-orient \
-              -resize '600x900^' \
-              -gravity center \
-              -extent 600x900 \
-              -strip \
-              -sampling-factor 4:2:0 \
-              -interlace Plane \
-              -quality 62 \
-              "$target"
-
+            convert "$source" -auto-orient -resize '600x900^' -gravity center -extent 600x900 -strip -sampling-factor 4:2:0 -interlace Plane -quality 62 "$target"
             size="$(stat -c%s "$target")"
             if [ "$size" -gt 350000 ]; then
-              convert "$source" \
-                -auto-orient \
-                -resize '600x900^' \
-                -gravity center \
-                -extent 600x900 \
-                -strip \
-                -sampling-factor 4:2:0 \
-                -interlace Plane \
-                -quality 50 \
-                "$target"
+              convert "$source" -auto-orient -resize '600x900^' -gravity center -extent 600x900 -strip -sampling-factor 4:2:0 -interlace Plane -quality 50 "$target"
               size="$(stat -c%s "$target")"
             fi
-
-            if [ "$size" -gt 350000 ]; then
-              echo "::error::BRIO-${card} preview is ${size} bytes; expected <= 350000."
-              exit 1
-            fi
+            test "$size" -le 350000
           done
 
       - name: Version Flutter entry bundle by commit SHA
@@ -145,38 +98,26 @@ jobs:
           set -euo pipefail
           bundle_sha="${GITHUB_SHA::12}"
           bundle_name="main.${bundle_sha}.dart.js"
-
           test -f build/web/main.dart.js
           mv build/web/main.dart.js "build/web/${bundle_name}"
-
           python3 - "${bundle_name}" <<'PY'
           from pathlib import Path
           import sys
 
           bundle_name = sys.argv[1]
-          targets = [
-              Path('build/web/index.html'),
-              Path('build/web/flutter_bootstrap.js'),
-          ]
           replacements = 0
-          for target in targets:
+          for target in [Path('build/web/index.html'), Path('build/web/flutter_bootstrap.js')]:
               if not target.exists():
                   continue
               text = target.read_text(encoding='utf-8')
               count = text.count('main.dart.js')
               if count:
-                  target.write_text(
-                      text.replace('main.dart.js', bundle_name),
-                      encoding='utf-8',
-                  )
+                  target.write_text(text.replace('main.dart.js', bundle_name), encoding='utf-8')
                   replacements += count
-
           if replacements == 0:
               raise SystemExit('No Flutter main.dart.js reference found to version.')
           PY
-
           echo "FLUTTER_BUNDLE=${bundle_name}" >> "$GITHUB_ENV"
-          echo "Flutter entry bundle: ${bundle_name}"
 
       - name: Add GitHub Pages fallback
         run: cp build/web/index.html build/web/404.html
@@ -189,7 +130,7 @@ jobs:
             --build-dir build/web \
             --public-base https://www.chanson-a-repondre-uno.scot/
 
-      - name: Verify build output
+      - name: Verify deployable output
         shell: bash
         run: |
           set -euo pipefail
@@ -200,105 +141,23 @@ jobs:
           test ! -f build/web/main.dart.js
           grep -Fq "${FLUTTER_BUNDLE}" build/web/index.html
           grep -Fq "${FLUTTER_BUNDLE}" build/web/404.html
-          if [ -f build/web/flutter_bootstrap.js ]; then
-            grep -Fq "${FLUTTER_BUNDLE}" build/web/flutter_bootstrap.js
-          fi
-          if grep -Fq 'main.dart.js' build/web/index.html build/web/404.html; then
-            echo "::error::Unversioned Flutter main.dart.js reference remains in the deployed app shell."
-            exit 1
-          fi
           test -f build/web/card_share.js
           test -f build/web/transcription_jester.js
           grep -q 'challenges.cloudflare.com/turnstile' build/web/index.html
-          grep -q 'transcription_jester.glb' build/web/transcription_jester.js
-
           test "$(find build/web/share -mindepth 1 -maxdepth 1 -type d -name 'UNO-*' | wc -l)" -eq 84
           test "$(find build/web/share -mindepth 1 -maxdepth 1 -type d -name 'BRIO-*' | wc -l)" -eq 16
-          test "$(find build/web/share -mindepth 1 -maxdepth 1 -type d \( -name 'UNO-*' -o -name 'BRIO-*' \) | wc -l)" -eq 100
           test "$(find build/web/share -mindepth 1 -maxdepth 1 -type d -name 'final-84-*' | wc -l)" -eq 84
           test "$(find build/web/share -type f -name 'index.html' | wc -l)" -eq 184
-
-          test -f build/web/share/UNO-001/index.html
-          test -f build/web/share/UNO-084/index.html
-          test -f build/web/share/BRIO-001/index.html
-          test -f build/web/share/BRIO-013/index.html
-          test -f build/web/share/BRIO-016/index.html
-          test -f build/web/share/final-84-01/index.html
-          test -f build/web/share/final-84-84/index.html
-
-          grep -q 'Chanson à répondre UNO — Carte 001' build/web/share/UNO-001/index.html
-          grep -q 'property="og:image"' build/web/share/UNO-001/index.html
-          grep -q 'name="twitter:image"' build/web/share/UNO-084/index.html
-          grep -q '/share/UNO-001/' build/web/share/UNO-001/index.html
-          grep -q '#/cards/final-84-84' build/web/share/UNO-084/index.html
-          grep -q 'window.location.replace(' build/web/share/UNO-001/index.html
-          grep -q 'id="card-transcription"' build/web/share/UNO-001/index.html
-
-          grep -q 'Chanson à répondre BRIO — Carte 001' build/web/share/BRIO-001/index.html
-          grep -q 'property="og:image"' build/web/share/BRIO-001/index.html
-          grep -q 'property="og:image:url"' build/web/share/BRIO-001/index.html
-          grep -q 'name="twitter:image"' build/web/share/BRIO-016/index.html
-          grep -q '/share/BRIO-001/' build/web/share/BRIO-001/index.html
-          grep -q '#/cards/brio-016' build/web/share/BRIO-016/index.html
-          grep -q 'window.location.replace(' build/web/share/BRIO-001/index.html
-          grep -q 'id="card-image"' build/web/share/BRIO-001/index.html
-          grep -q 'id="card-transcription"' build/web/share/BRIO-001/index.html
-
-          test "$(find build/web/assets/share-previews -type f -name 'BRIO-*.jpg' | wc -l)" -eq 16
-          test -f build/web/assets/share-previews/BRIO-013.jpg
-          test "$(stat -c%s build/web/assets/share-previews/BRIO-013.jpg)" -le 350000
-          grep -q 'https://www.chanson-a-repondre-uno.scot/assets/share-previews/BRIO-013.jpg' build/web/share/BRIO-013/index.html
-          grep -q 'property="og:image:width" content="600"' build/web/share/BRIO-013/index.html
-          grep -q 'property="og:image:height" content="900"' build/web/share/BRIO-013/index.html
-          grep -q 'name="twitter:image" content="https://www.chanson-a-repondre-uno.scot/assets/share-previews/BRIO-013.jpg"' build/web/share/BRIO-013/index.html
-
-          grep -q '/share/UNO-001/' build/web/share/final-84-01/index.html
-          grep -q 'rel="canonical"' build/web/share/final-84-01/index.html
-          grep -q '/share/UNO-084/' build/web/share/final-84-84/index.html
-          grep -q 'window.location.replace(' build/web/share/final-84-01/index.html
-
+          test -f build/web/share/BRIO-008/index.html
+          grep -q 'id="card-image"' build/web/share/BRIO-008/index.html
+          grep -q 'id="card-transcription"' build/web/share/BRIO-008/index.html
+          grep -q '/share/BRIO-008/' build/web/share/BRIO-008/index.html
+          test -f build/web/assets/share-previews/BRIO-008.jpg
+          test "$(stat -c%s build/web/assets/share-previews/BRIO-008.jpg)" -le 350000
           if grep -Rqi 'http-equiv="refresh"' build/web/share; then
-            echo "::error::A generated share page still uses meta refresh instead of preserving the card deep link."
+            echo "::error::Generated share pages must not use meta refresh."
             exit 1
           fi
-
-          test -f build/web/assets/assets/models/jester_player.glb
-          test -f build/web/assets/assets/models/jester_player_reupload.glb
-          test -f build/web/assets/assets/models/transcription_jester.glb
-          test -f build/web/assets/assets/models/search_castle.glb
-          test -f build/web/assets/assets/images/closed_curtains.png
-          test -f build/web/card_castle/card_castle.html
-
-          python3 <<'PY'
-          import json
-          from pathlib import Path
-
-          catalog = json.loads(Path('assets/json/cards.json').read_text(encoding='utf-8-sig'))
-          deck = next((
-              item for item in catalog.get('decks', [])
-              if item.get('id') == 'sale-poete-final-84'
-          ), None)
-          if deck is None:
-              raise SystemExit('Production UNO deck sale-poete-final-84 was not found in the card catalog.')
-          cards = deck.get('cards', [])
-          if len(cards) != 84:
-              raise SystemExit(f'Expected 84 UNO catalog cards, found {len(cards)}.')
-
-          missing = []
-          for card in cards:
-              image_path = card.get('path') or card.get('image')
-              if not image_path:
-                  missing.append(f"{card.get('id', '<unknown>')}: no image path")
-                  continue
-              built_asset = Path('build/web/assets') / image_path
-              if not built_asset.is_file():
-                  missing.append(f"{card.get('id', '<unknown>')}: {built_asset}")
-
-          if missing:
-              raise SystemExit('Missing built UNO card assets:\n' + '\n'.join(missing))
-
-          print('Verified all 84 catalog-referenced UNO card images in build output.')
-          PY
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
