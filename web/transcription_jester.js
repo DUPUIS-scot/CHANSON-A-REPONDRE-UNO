@@ -3,7 +3,7 @@ import { GLTFLoader } from './vendor/GLTFLoader.js';
 
 const scenes = new Map();
 const MODEL_URL = new URL(
-  'assets/assets/models/jester_player.glb',
+  'assets/assets/models/jester_player_reupload.glb',
   document.baseURI,
 ).href;
 const MODEL_FACING_Y = -Math.PI / 2;
@@ -34,9 +34,9 @@ class TranscriptionJester {
     this.clock = new THREE.Clock();
 
     this.scene = new THREE.Scene();
-    this.camera = new THREE.PerspectiveCamera(31, 1, 0.1, 100);
-    this.camera.position.set(0, 0.15, 9.2);
-    this.camera.lookAt(0, 0.55, 0);
+    this.camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
+    this.camera.position.set(0, 0.05, 8.7);
+    this.camera.lookAt(0, 0.45, 0);
 
     this.renderer = new THREE.WebGLRenderer({
       alpha: true,
@@ -46,7 +46,7 @@ class TranscriptionJester {
     this.renderer.setClearColor(0x000000, 0);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.12;
+    this.renderer.toneMappingExposure = 1.16;
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     this.renderer.domElement.style.cssText =
       'display:block;width:100%;height:100%;pointer-events:none';
@@ -56,15 +56,15 @@ class TranscriptionJester {
     this.pivot.rotation.y = MODEL_FACING_Y;
     this.scene.add(this.pivot);
 
-    this.scene.add(new THREE.HemisphereLight(0xffd8aa, 0x12080b, 2.3));
-    const key = new THREE.DirectionalLight(0xffa244, 4.5);
-    key.position.set(-3.5, 5.0, 5.5);
+    this.scene.add(new THREE.HemisphereLight(0xffd6a1, 0x12070a, 2.35));
+    const key = new THREE.DirectionalLight(0xffa03e, 4.8);
+    key.position.set(-3.6, 5.2, 5.8);
     this.scene.add(key);
-    const rim = new THREE.DirectionalLight(0xff3a1a, 2.8);
+    const rim = new THREE.DirectionalLight(0xff3214, 3.1);
     rim.position.set(4, 4, -3);
     this.scene.add(rim);
-    const face = new THREE.PointLight(0xffcb72, 1.8, 8.0);
-    face.position.set(0.4, 1.8, 4.0);
+    const face = new THREE.PointLight(0xffc262, 2.0, 9);
+    face.position.set(0.2, 1.7, 4);
     this.scene.add(face);
 
     this.resizeObserver = new ResizeObserver(() => this.resize());
@@ -80,7 +80,6 @@ class TranscriptionJester {
       else if (this.visible) this.resume();
     };
     document.addEventListener('visibilitychange', this.onVisibility);
-
     this.resize();
     this.loadModel();
   }
@@ -108,24 +107,24 @@ class TranscriptionJester {
         const size = bounds.getSize(new THREE.Vector3());
         const center = bounds.getCenter(new THREE.Vector3());
         this.model.position.sub(center);
-        const scale = 6.35 / Math.max(size.y, 0.001);
-        this.model.scale.setScalar(scale);
+        this.model.scale.setScalar(6.55 / Math.max(size.y, 0.001));
         this.pivot.add(this.model);
 
         if (gltf.animations.length) {
           this.mixer = new THREE.AnimationMixer(this.model);
           this.clips = gltf.animations;
-          const laughClip = gltf.animations.find((clip) => /laugh|giggle|chuckle|taunt/i.test(clip.name));
-          const idleClip = gltf.animations.find((clip) => /idle/i.test(clip.name));
-          this.idleAction = this.mixer.clipAction(idleClip || gltf.animations[0]);
+          const laugh = gltf.animations.find((clip) =>
+            /laugh|giggle|chuckle|taunt|mock/i.test(clip.name),
+          );
+          const idle = gltf.animations.find((clip) => /idle/i.test(clip.name));
+          this.idleAction = this.mixer.clipAction(idle || gltf.animations[0]);
           this.idleAction.play();
-          if (laughClip) this.laughAction = this.mixer.clipAction(laughClip);
+          if (laugh) this.laughAction = this.mixer.clipAction(laugh);
         }
 
         this.host.dataset.transcriptionJester = 'ready';
         this.host.dataset.modelAsset = MODEL_URL;
-        this.host.dataset.modelAnimations = String(gltf.animations.length);
-        this.host.dataset.behavior = 'arrogant-laugh-at-viewer';
+        this.host.dataset.behavior = 'laughing-arrogantly-at-viewer';
         this.resume();
       },
       undefined,
@@ -142,7 +141,8 @@ class TranscriptionJester {
     const height = Math.max(this.host.clientHeight, 1);
     this.renderer.setSize(width, height, false);
     this.camera.aspect = width / height;
-    this.camera.fov = width < 500 ? 37 : 31;
+    this.camera.fov = width < 500 ? 34 : 30;
+    this.camera.position.z = width < 500 ? 8.15 : 8.7;
     this.camera.updateProjectionMatrix();
   }
 
@@ -152,36 +152,43 @@ class TranscriptionJester {
 
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const amount = reduced ? 0.22 : 1;
-    const cycle = (time % 5.8) / 5.8;
-    const active = cycle > 0.13 && cycle < 0.80;
-    const local = active ? (cycle - 0.13) / 0.67 : 0;
+    const cycle = (time % 5.35) / 5.35;
+    const active = cycle > 0.08 && cycle < 0.82;
+    const local = active ? (cycle - 0.08) / 0.74 : 0;
     const envelope = active ? Math.sin(Math.PI * local) : 0;
     const pulses = active
-      ? Math.pow(Math.max(0, Math.sin(local * Math.PI * 7.0)), 1.7)
+      ? Math.pow(Math.max(0, Math.sin(local * Math.PI * 8.0)), 1.45)
       : 0;
 
-    // Keep the puppet's eye-line on the viewer, then lean in with three smug
-    // laugh pulses. It reads as the character laughing at the person behind
-    // the screen without intercepting any UI pointer events.
-    this.pivot.rotation.x = -envelope * 0.075 * amount - pulses * 0.045 * amount;
-    this.pivot.rotation.y = MODEL_FACING_Y + Math.sin(time * 0.72) * 0.025 * amount;
-    this.pivot.rotation.z = Math.sin(time * 1.45) * 0.012 * amount + pulses * 0.016 * amount;
-    this.pivot.position.y = Math.sin(time * 1.15) * 0.045 * amount + pulses * 0.065 * amount;
-    this.pivot.position.z = envelope * 0.28 * amount;
-    const squash = 1 + pulses * 0.016 * amount;
-    this.pivot.scale.set(1 - pulses * 0.008 * amount, squash, 1);
+    this.pivot.rotation.x =
+      -envelope * 0.095 * amount - pulses * 0.052 * amount;
+    this.pivot.rotation.y =
+      MODEL_FACING_Y + Math.sin(time * 0.62) * 0.035 * amount;
+    this.pivot.rotation.z =
+      Math.sin(time * 1.4) * 0.015 * amount + pulses * 0.024 * amount;
+    this.pivot.position.y =
+      Math.sin(time * 1.05) * 0.05 * amount + pulses * 0.075 * amount;
+    this.pivot.position.z =
+      envelope * 0.34 * amount + pulses * 0.08 * amount;
+    const squash = 1 + pulses * 0.022 * amount;
+    this.pivot.scale.set(1 - pulses * 0.012 * amount, squash, 1);
 
     if (active && this.laughAction && !this.laughing) {
       this.laughing = true;
-      this.idleAction?.fadeOut(0.15);
-      this.laughAction.reset().setLoop(THREE.LoopRepeat, 2).fadeIn(0.15).play();
+      this.idleAction?.fadeOut(0.12);
+      this.laughAction
+        .reset()
+        .setLoop(THREE.LoopRepeat, 3)
+        .fadeIn(0.12)
+        .play();
     } else if (!active && this.laughing) {
       this.laughing = false;
-      this.laughAction?.fadeOut(0.2);
-      this.idleAction?.reset().fadeIn(0.2).play();
+      this.laughAction?.fadeOut(0.18);
+      this.idleAction?.reset().fadeIn(0.18).play();
     }
+
     this.host.dataset.laughPhase = active
-      ? pulses > 0.35
+      ? pulses > 0.32
         ? 'laughing-at-viewer'
         : 'smirking'
       : 'idle';
