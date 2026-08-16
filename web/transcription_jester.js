@@ -51,10 +51,10 @@ function ensureHost() {
 function flutterAssetUrl(path) {
   if (!path) return null;
   const normalized = String(path).trim().replace(/^\/+/, '');
-  if (/^https?:\/\//i.test(normalized) || normalized.startsWith('data:')) return normalized;
+  if (/^(https?:|data:)/i.test(normalized)) return normalized;
   const deDuplicated = normalized.replace(/^assets\/assets\//, 'assets/');
   const webPath = deDuplicated.startsWith('assets/')
-    ? `assets/${deDuplicated}`
+    ? deDuplicated
     : `assets/${deDuplicated}`;
   return new URL(webPath, document.baseURI).href;
 }
@@ -155,8 +155,8 @@ class TranscriptionJester {
       const center = bounds.getCenter(new THREE.Vector3());
       const maxDimension = Math.max(size.x, size.y, size.z, 0.001);
       this.model.position.sub(center);
-      this.model.scale.setScalar(6.6 / maxDimension);
-      this.model.position.set(0, -0.08, 0);
+      this.model.scale.setScalar(5.8 / maxDimension);
+      this.model.position.set(0, -0.12, 0);
       this.pivot.add(this.model);
       this.pivot.updateMatrixWorld(true);
 
@@ -194,13 +194,13 @@ class TranscriptionJester {
       bounds.min.y + size.y * 0.64,
       (bounds.min.z + bounds.max.z) * 0.5,
     );
-    const visibleHeight = Math.max(size.y * 0.62, 0.5);
-    const visibleWidth = Math.max(size.x * 0.92, 0.5);
+    const visibleHeight = Math.max(size.y * 0.56, 0.5);
+    const visibleWidth = Math.max(size.x * 0.88, 0.5);
     const verticalFov = THREE.MathUtils.degToRad(this.camera.fov);
     const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * Math.max(this.camera.aspect, 0.2));
     const verticalDistance = (visibleHeight * 0.5) / Math.tan(verticalFov * 0.5);
     const horizontalDistance = (visibleWidth * 0.5) / Math.tan(Math.max(horizontalFov, 0.2) * 0.5);
-    const distance = Math.max(verticalDistance, horizontalDistance, 2.9) * 1.08;
+    const distance = Math.max(verticalDistance, horizontalDistance, 3.6) * 1.12;
     this.camera.position.set(target.x, target.y, target.z + distance);
     this.camera.near = Math.max(0.01, distance / 100);
     this.camera.far = Math.max(100, distance * 20);
@@ -216,6 +216,7 @@ class TranscriptionJester {
       disposeObject(this.cardAnchor);
       this.cardAnchor = null;
     }
+    this.host.dataset.selectedCardTexture = 'loading';
     new THREE.TextureLoader().load(imageUrl, (texture) => {
       if (this.disposed) return texture.dispose();
       texture.colorSpace = THREE.SRGBColorSpace;
@@ -239,9 +240,11 @@ class TranscriptionJester {
       this.fitCamera();
       this.host.dataset.selectedCard = 'held-in-left-hand';
       this.host.dataset.selectedCardImage = imageUrl;
+      this.host.dataset.selectedCardTexture = 'ready';
     }, undefined, (error) => {
       this.host.dataset.selectedCard = 'failed';
       this.host.dataset.selectedCardImage = imageUrl;
+      this.host.dataset.selectedCardTexture = 'failed';
       console.warn('Unable to load selected card texture.', { imageUrl, error });
     });
   }
