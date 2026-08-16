@@ -254,13 +254,14 @@ class _PlayScreenState extends State<PlayScreen> {
                     stageLayer: LayoutBuilder(
                       builder: (context, stageConstraints) {
                         final narrow = stageConstraints.maxWidth < 600;
-                        final stageHeight = stageConstraints.maxHeight;
-                        final torsoHeight = (stageHeight * (narrow ? 0.52 : 0.58))
-                            .clamp(300.0, narrow ? 460.0 : 620.0);
-                        final torsoWidth = (stageConstraints.maxWidth * (narrow ? 0.72 : 0.58))
-                            .clamp(280.0, narrow ? 520.0 : 680.0);
+                        final torsoHeight = (stageConstraints.maxHeight *
+                                (narrow ? 0.36 : 0.42))
+                            .clamp(220.0, narrow ? 320.0 : 430.0);
+                        final torsoWidth = (stageConstraints.maxWidth *
+                                (narrow ? 0.46 : 0.42))
+                            .clamp(190.0, narrow ? 330.0 : 470.0);
                         return Align(
-                          alignment: const Alignment(0, -0.12),
+                          alignment: const Alignment(0, -0.34),
                           child: SizedBox(
                             key: const Key('play-puppet-torso-viewport'),
                             width: torsoWidth,
@@ -328,7 +329,6 @@ class _PlayScreenState extends State<PlayScreen> {
                                 right: narrow ? 12 : 24,
                                 bottom: handBottom,
                                 child: SizedBox(
-                                  // Keep PlayerHand in bounded layout across viewport changes.
                                   height: handHeight,
                                   child: PlayerHand(
                                     cards: hand,
