@@ -13,13 +13,10 @@ const BACKGROUND_CHUNKS = Array.from({ length: 6 }, (_, i) =>
 
 let sharedScene = null;
 const sceneOwners = new Set();
+let pendingSelectedCard = null;
 
 function routeText() {
   return decodeURIComponent(`${window.location.pathname || ''}${window.location.hash || ''}`);
-}
-
-function isTranscriptionRoute() {
-  return /\/cards\/[^/?#]+\/transcription(?:[/?#]|$)/i.test(routeText());
 }
 
 function currentCardId() {
@@ -121,7 +118,8 @@ class TranscriptionJester {
     this.disposed = false;
     this.frame = 0;
     this.clock = new THREE.Clock();
-    this.selectedCardId = currentCardId();
+    this.selectedCardId = pendingSelectedCard?.cardId || currentCardId();
+    this.selectedCardImage = pendingSelectedCard?.imagePath || null;
     this.host.dataset.transcriptionJester = 'loading';
     this.host.dataset.sourceModel = 'assets/models/transcription_jester.glb';
     if (this.selectedCardId) this.host.dataset.selectedCardId = this.selectedCardId;
@@ -236,7 +234,7 @@ class TranscriptionJester {
       this.host.dataset.modelFallback = 'false';
       this.host.dataset.modelMeshes = String(meshCount);
       this.host.dataset.modelSize = `${size.x.toFixed(3)},${size.y.toFixed(3)},${size.z.toFixed(3)}`;
-      this.host.dataset.behavior = 'facing-viewer-with-selected-card';
+      this.host.dataset.behavior = 'facing-viewer-holding-selected-browse-card';
       this.resume();
     }, (event) => {
       if (event.total) this.host.dataset.modelProgress = String(Math.round((event.loaded / event.total) * 100));
@@ -266,30 +264,47 @@ class TranscriptionJester {
   }
 
   async attachSelectedCard() {
-    const imageUrl = await resolveSelectedCardImage(this.selectedCardId);
+    const explicit = flutterAssetUrl(this.selectedCardImage);
+    const imageUrl = explicit || await resolveSelectedCardImage(this.selectedCardId);
     if (this.disposed || !imageUrl) return;
+    if (this.cardAnchor) {
+      this.pivot.remove(this.cardAnchor);
+      disposeObject(this.cardAnchor);
+      this.cardAnchor = null;
+    }
     new THREE.TextureLoader().load(imageUrl, (texture) => {
       if (this.disposed) return texture.dispose();
       texture.colorSpace = THREE.SRGBColorSpace;
       const anchor = new THREE.Group();
       const backing = new THREE.Mesh(
-        new THREE.PlaneGeometry(1.70, 2.55),
+        new THREE.PlaneGeometry(1.46, 2.18),
         new THREE.MeshStandardMaterial({ color: 0x211008, roughness: 0.72, side: THREE.DoubleSide }),
       );
-      backing.position.z = -0.024;
+      backing.position.z = -0.018;
       anchor.add(backing);
       const card = new THREE.Mesh(
-        new THREE.PlaneGeometry(1.60, 2.40),
-        new THREE.MeshStandardMaterial({ map: texture, roughness: 0.5, side: THREE.DoubleSide }),
+        new THREE.PlaneGeometry(1.38, 2.07),
+        new THREE.MeshStandardMaterial({ map: texture, roughness: 0.48, side: THREE.DoubleSide }),
       );
-      card.position.z = 0.006;
+      card.position.z = 0.008;
       anchor.add(card);
-      anchor.rotation.set(0.02, -0.10, -0.08);
-      anchor.position.set(-2.05, 0.55, 1.15);
+      anchor.position.set(-0.62, 0.18, 1.62);
+      anchor.rotation.set(0.08, -0.04, -0.03);
       this.cardAnchor = anchor;
       this.pivot.add(anchor);
-      this.host.dataset.selectedCard = 'ready';
-    }, undefined, (error) => console.warn('Unable to load selected card texture.', error));
+      this.host.dataset.selectedCard = 'held-in-3d-hand';
+      this.host.dataset.selectedCardImage = imageUrl;
+    }, undefined, (error) => {
+      this.host.dataset.selectedCard = 'failed';
+      console.warn('Unable to load selected card texture.', error);
+    });
+  }
+
+  setSelectedCard(cardId, imagePath) {
+    this.selectedCardId = cardId || null;
+    this.selectedCardImage = imagePath || null;
+    if (this.selectedCardId) this.host.dataset.selectedCardId = this.selectedCardId;
+    if (this.model) this.attachSelectedCard();
   }
 
   resize() {
@@ -343,40 +358,28 @@ class TranscriptionJester {
     this.renderer.dispose();
     this.renderer.domElement.remove();
     if (this.backgroundObjectUrl) URL.revokeObjectURL(this.backgroundObjectUrl);
-    Object.assign(document.body.style, this.previousBody);
-    if (this.host.dataset.generatedBy === 'transcription-jester') this.host.remove();
   }
 }
 
-window.transcriptionJesterCreate = (id) => {
-  sceneOwners.add(id || AUTO_SCENE_ID);
-  if (sharedScene) return;
-  try {
-    sharedScene = new TranscriptionJester(ensureHost());
-  } catch (error) {
-    const host = ensureHost();
-    host.dataset.transcriptionJester = 'failed';
-    host.dataset.modelError = String(error?.message || error);
-    console.error('Unable to create transcription jester scene.', error);
-  }
+function ensureScene(ownerId) {
+  sceneOwners.add(ownerId);
+  if (!sharedScene) sharedScene = new TranscriptionJester(ensureHost());
+  return sharedScene;
+}
+
+window.transcriptionJesterCreate = function transcriptionJesterCreate(ownerId) {
+  ensureScene(ownerId || 'flutter');
 };
 
-window.transcriptionJesterDestroy = (id) => {
-  sceneOwners.delete(id || AUTO_SCENE_ID);
-  if (sharedScene && sceneOwners.size === 0) {
+window.transcriptionJesterDestroy = function transcriptionJesterDestroy(ownerId) {
+  sceneOwners.delete(ownerId || 'flutter');
+  if (sceneOwners.size === 0 && sharedScene) {
     sharedScene.dispose();
     sharedScene = null;
   }
 };
 
-function syncAutonomousRouteScene() {
-  if (isTranscriptionRoute()) window.transcriptionJesterCreate(AUTO_SCENE_ID);
-  else window.transcriptionJesterDestroy(AUTO_SCENE_ID);
-}
-
-window.addEventListener('hashchange', syncAutonomousRouteScene);
-window.addEventListener('popstate', syncAutonomousRouteScene);
-document.addEventListener('visibilitychange', () => { if (!document.hidden) sharedScene?.resume(); });
-queueMicrotask(syncAutonomousRouteScene);
-setTimeout(syncAutonomousRouteScene, 250);
-setTimeout(syncAutonomousRouteScene, 1000);
+window.transcriptionJesterSetSelectedCard = function transcriptionJesterSetSelectedCard(cardId, imagePath) {
+  pendingSelectedCard = { cardId: String(cardId || ''), imagePath: String(imagePath || '') };
+  if (sharedScene) sharedScene.setSelectedCard(pendingSelectedCard.cardId, pendingSelectedCard.imagePath);
+};
