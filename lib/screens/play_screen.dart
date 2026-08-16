@@ -268,27 +268,27 @@ class _PlayScreenState extends State<PlayScreen> {
                                 .firstOrNull;
 
                             final pileScale = veryNarrow
-                                ? .58
+                                ? .56
                                 : narrow
-                                ? .74
-                                : .92;
+                                ? .70
+                                : .88;
                             final pileTop = constraints.maxHeight *
                                 (short
-                                    ? .53
+                                    ? .44
                                     : narrow
-                                    ? .57
-                                    : .60);
+                                    ? .49
+                                    : .53);
                             final pileInset = veryNarrow
                                 ? 8.0
                                 : narrow
-                                ? 18.0
+                                ? 16.0
                                 : constraints.maxWidth * .055;
                             final actionHeight = short ? 56.0 : 72.0;
                             final handHeight = short
-                                ? 150.0
-                                : (constraints.maxHeight * .28)
-                                      .clamp(188.0, 270.0);
-                            final handBottom = actionHeight + (short ? 5 : 7);
+                                ? 136.0
+                                : (constraints.maxHeight * .24)
+                                      .clamp(158.0, 228.0);
+                            final handBottom = actionHeight + (short ? 10 : 14);
                             final canDraw =
                                 player.hand.length < 5 &&
                                 !dealerBusy;
