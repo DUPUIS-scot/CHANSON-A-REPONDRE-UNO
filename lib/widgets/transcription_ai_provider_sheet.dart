@@ -12,23 +12,13 @@ Future<void> showTranscriptionAiProviderSheet({
   required BuildContext context,
   required CardImageModel card,
   required Deck deck,
+  required CardAiHandoffMode mode,
   ExternalAiHandoffService service = const ExternalAiHandoffService(),
 }) async {
-  final transcription = ExternalAiHandoffService.transcriptionFor(card);
-  if (transcription.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Transcribe the card before discussing it with AI.'),
-      ),
-    );
-    return;
-  }
-
   final prompt = ExternalAiHandoffService.buildPrompt(
-    mode: CardAiHandoffMode.diy,
+    mode: mode,
     card: card,
     deck: deck,
-    transcriptionOverride: transcription,
   );
 
   await showModalBottomSheet<void>(
@@ -38,6 +28,7 @@ Future<void> showTranscriptionAiProviderSheet({
     backgroundColor: const Color(0xF20A0806),
     builder: (_) => _TranscriptionAiProviderSheet(
       card: card,
+      mode: mode,
       prompt: prompt,
       service: service,
     ),
@@ -47,13 +38,23 @@ Future<void> showTranscriptionAiProviderSheet({
 class _TranscriptionAiProviderSheet extends StatelessWidget {
   const _TranscriptionAiProviderSheet({
     required this.card,
+    required this.mode,
     required this.prompt,
     required this.service,
   });
 
   final CardImageModel card;
+  final CardAiHandoffMode mode;
   final String prompt;
   final ExternalAiHandoffService service;
+
+  String get _title => mode == CardAiHandoffMode.transcribe
+      ? 'TRANSCRIBE WITH AI'
+      : 'DISCUSS WITH AI';
+
+  String get _description => mode == CardAiHandoffMode.transcribe
+      ? '${card.displayTitle} · The chosen AI receives the direct public card-image URL and is asked to transcribe the image itself.'
+      : '${card.displayTitle} · The chosen AI receives the direct public card-image URL and is asked to analyze the image itself.';
 
   IconData _iconFor(ExternalAiProvider provider) => switch (provider) {
         ExternalAiProvider.chatgpt => Icons.auto_awesome_rounded,
@@ -69,7 +70,7 @@ class _TranscriptionAiProviderSheet extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Full transcription prompt copied. Paste it in ${provider.label} if it is not inserted automatically.',
+            'Card-image prompt copied. Paste it in ${provider.label} if it is not inserted automatically.',
           ),
         ),
       );
@@ -78,7 +79,7 @@ class _TranscriptionAiProviderSheet extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Full transcription prompt copied, but ${provider.label} could not be opened automatically.',
+            'Card-image prompt copied, but ${provider.label} could not be opened automatically.',
           ),
         ),
       );
@@ -90,7 +91,7 @@ class _TranscriptionAiProviderSheet extends StatelessWidget {
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('AI prompt with full transcription copied'),
+        content: Text('AI prompt with direct card-image URL copied'),
       ),
     );
   }
@@ -114,7 +115,7 @@ class _TranscriptionAiProviderSheet extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  'DISCUSS WITH AI',
+                  _title,
                   textAlign: TextAlign.center,
                   style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w900,
@@ -124,7 +125,7 @@ class _TranscriptionAiProviderSheet extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '${card.displayTitle} · The full saved transcription, card metadata, and canonical source link are prepared for the AI you choose.',
+                  _description,
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: _cream,
@@ -182,7 +183,7 @@ class _TranscriptionAiProviderSheet extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'The source webpage is reference context only. The external AI receives the transcription directly and never needs to scrape the card page.',
+                  'No app AI backend is used. The external AI is given the direct public image URL, plus the canonical card link for reference.',
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: const Color(0xCCFFE8B4),

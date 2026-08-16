@@ -1,130 +1,129 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:uno_chanson_2/core/app_router.dart';
+import 'package:uno_chanson_2/core/app_constants.dart';
 import 'package:uno_chanson_2/models/card_image_model.dart';
 import 'package:uno_chanson_2/models/deck_model.dart';
-import 'package:uno_chanson_2/services/external_ai_handoff_service.dart';
+import 'package:uno_chanson_2/services/multi_deck_card_share_service.dart';
+import 'package:uno_chanson_2/services/native_share_result.dart';
+import 'package:uno_chanson_2/services/public_card_share_service.dart';
 
 void main() {
-  final applicationUri = Uri(
-    scheme: 'https',
-    host: 'www.chanson-a-repondre-uno.scot',
-    path: '/',
+  final deployed = Uri.parse(
+    'https://dupuis-scot.github.io/CHANSON-A-REPONDRE-UNO/'
+    '?v=965c218#/cards?focus=old-card',
   );
 
-  test('transcription handoff includes stored text and canonical BRIO URL', () {
-    final prompt = ExternalAiHandoffService.buildPrompt(
-      mode: CardAiHandoffMode.transcribe,
-      card: _card(transcription: 'LE KRAKEN\nLe Kraken rêve.'),
-      deck: _deck(),
-      applicationUri: applicationUri,
-    );
-
+  test('UNO deep link keeps internal id while public URL uses UNO-XXX', () {
     expect(
-      prompt,
-      contains('https://www.chanson-a-repondre-uno.scot/share/BRIO-013/'),
+      PublicCardShareService.deepLinkFor(
+        'final-84-23',
+        applicationUri: deployed,
+      ).toString(),
+      'https://dupuis-scot.github.io/CHANSON-A-REPONDRE-UNO/#/cards/final-84-23',
     );
-    expect(prompt, contains('CARD TRANSCRIPTION:'));
-    expect(prompt, contains('LE KRAKEN\nLe Kraken rêve.'));
-    expect(prompt, contains('Do not summarize, rewrite, translate'));
-  });
-
-  test('DIY handoff includes transcription as primary source', () {
-    final prompt = ExternalAiHandoffService.buildPrompt(
-      mode: CardAiHandoffMode.diy,
-      card: _card(transcription: 'LE KRAKEN\nLe Kraken rêve.'),
-      deck: _deck(),
-      applicationUri: applicationUri,
-    );
-
-    expect(prompt, contains('CARD TRANSCRIPTION:'));
-    expect(prompt, contains('LE KRAKEN\nLe Kraken rêve.'));
     expect(
-      prompt,
-      contains('using the transcription above as the primary source'),
+      PublicCardShareService.shareUrlFor(
+        cardId: 'final-84-23',
+        deckId: AppConstants.productionDeckId,
+        applicationUri: deployed,
+      ).toString(),
+      'https://dupuis-scot.github.io/CHANSON-A-REPONDRE-UNO/share/UNO-023/',
     );
-    expect(prompt, contains('Do not ask me to paste or upload the card text again.'));
-    expect(prompt, isNot(contains('Inspect the public card link first')));
   });
 
-  test('DIY handoff never falls back to scraping when transcription is absent', () {
-    final prompt = ExternalAiHandoffService.buildPrompt(
-      mode: CardAiHandoffMode.diy,
-      card: _card(),
-      deck: _deck(),
-      applicationUri: applicationUri,
-    );
-
-    expect(prompt, contains('[not available]'));
-    expect(prompt, contains('do not depend on scraping the source webpage'));
-    expect(prompt, isNot(contains('Inspect the public card link')));
-  });
-
-  test('explicit transcription override is preferred for the handoff', () {
-    final prompt = ExternalAiHandoffService.buildPrompt(
-      mode: CardAiHandoffMode.diy,
-      card: _card(transcription: 'old text'),
-      deck: _deck(),
-      transcriptionOverride: 'fresh exact transcription',
-      applicationUri: applicationUri,
-    );
-
-    expect(prompt, contains('fresh exact transcription'));
-    expect(prompt, isNot(contains('old text')));
-  });
-
-  test('legacy transcription navigation stays in focused Browse', () {
-    expect(AppRoutes.transcription('brio-013'), '/cards?focus=brio-013');
+  test('BRIO public URL uses uppercase BRIO-XXX', () {
     expect(
-      AppRoutes.transcription('final-84-01'),
-      '/cards?focus=final-84-01',
+      PublicCardShareService.shareUrlFor(
+        cardId: 'brio-007',
+        deckId: AppConstants.brioDeckId,
+        applicationUri: deployed,
+      ).toString(),
+      'https://dupuis-scot.github.io/CHANSON-A-REPONDRE-UNO/share/BRIO-007/',
     );
   });
 
-  test('provider handoff copies the prompt and opens the provider', () async {
-    String? copied;
-    Uri? launched;
-    LaunchMode? launchMode;
-    final service = ExternalAiHandoffService(
-      promptCopier: (value) async => copied = value,
-      launcher: (uri, {required mode}) async {
-        launched = uri;
-        launchMode = mode;
-        return true;
-      },
+  test('UNO share title is normalized and filename metadata is ignored', () async {
+    final card = _card(
+      id: 'final-84-01',
+      deckId: AppConstants.productionDeckId,
+      title: 'ChatGPT Image Apr 15, 2026, 09_14_58 PM',
+      path: 'assets/cards/final_import/example.png',
     );
-
-    await service.openProvider(
-      provider: ExternalAiProvider.chatgpt,
-      prompt: 'prepared prompt',
+    final deck = Deck(
+      id: AppConstants.productionDeckId,
+      name: 'CHANSON A REPONDRE UNO',
+      cards: [card],
     );
-
-    expect(copied, 'prepared prompt');
-    expect(launched, Uri.parse('https://chatgpt.com/'));
-    expect(launchMode, LaunchMode.externalApplication);
+    String? receivedTitle;
+    String? receivedUrl;
+    String? receivedImage;
+    final result = await MultiDeckCardShareService.share(
+      card: card,
+      deck: deck,
+      applicationUri: deployed,
+      nativeShare:
+          ({required title, required text, required url, imagePath}) async {
+            receivedTitle = title;
+            receivedUrl = url;
+            receivedImage = imagePath;
+            return NativeShareResult.shared;
+          },
+      copyLink: (_) async {},
+    );
+    expect(result, CardShareResult.shared);
+    expect(receivedTitle, 'Chanson à répondre UNO — Carte 001');
+    expect(receivedUrl, endsWith('/share/UNO-001/'));
+    expect(receivedImage, 'assets/cards/final_import/example.png');
   });
 
-  test('all supported DIY providers have external entry URLs', () {
-    expect(ExternalAiProvider.chatgpt.uri.host, 'chatgpt.com');
-    expect(ExternalAiProvider.gemini.uri.host, 'gemini.google.com');
-    expect(ExternalAiProvider.claude.uri.host, 'claude.ai');
-    expect(ExternalAiProvider.copilot.uri.host, 'copilot.microsoft.com');
+  test('BRIO shares canonical uppercase link with image attachment', () async {
+    final card = _card(
+      id: 'brio-001',
+      deckId: AppConstants.brioDeckId,
+      title: 'BRIO 001',
+      path: 'assets/decks/chanson_a_repondre_brio/cards/001.jpeg',
+    );
+    final deck = Deck(
+      id: AppConstants.brioDeckId,
+      name: 'Chanson à répondre BRIO',
+      cards: [card],
+    );
+    String? receivedTitle;
+    String? receivedUrl;
+    String? receivedImage;
+    final result = await MultiDeckCardShareService.share(
+      card: card,
+      deck: deck,
+      applicationUri: deployed,
+      nativeShare:
+          ({required title, required text, required url, imagePath}) async {
+            receivedTitle = title;
+            receivedUrl = url;
+            receivedImage = imagePath;
+            return NativeShareResult.shared;
+          },
+      copyLink: (_) async {},
+    );
+    expect(result, CardShareResult.shared);
+    expect(receivedTitle, 'Chanson à répondre BRIO — Carte 001');
+    expect(receivedUrl, endsWith('/share/BRIO-001/'));
+    expect(
+      receivedImage,
+      'assets/decks/chanson_a_repondre_brio/cards/001.jpeg',
+    );
   });
 }
 
-CardImageModel _card({String? transcription}) => CardImageModel(
-  id: 'brio-013',
-  deckId: 'chanson-a-repondre-brio',
-  title: 'Le Kraken',
-  path: 'assets/decks/chanson_a_repondre_brio/cards/013.jpeg',
-  category: 'CYBERPUNK',
-  colour: 'green',
-  importedAt: DateTime.fromMillisecondsSinceEpoch(0),
-  transcription: transcription,
-);
-
-Deck _deck() => Deck(
-  id: 'chanson-a-repondre-brio',
-  name: 'Chanson à répondre BRIO',
-  cards: [_card()],
+CardImageModel _card({
+  required String id,
+  required String deckId,
+  required String title,
+  required String path,
+}) => CardImageModel(
+  id: id,
+  deckId: deckId,
+  title: title,
+  path: path,
+  category: 'Permanent',
+  colour: 'gold',
+  importedAt: DateTime.utc(2026, 8, 14),
 );

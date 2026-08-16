@@ -6,6 +6,7 @@ import '../providers/deck_provider.dart';
 import '../screens/ai_chat_screen.dart';
 import '../screens/card_browser_screen.dart';
 import '../screens/card_fullscreen_screen.dart';
+import '../screens/card_transcription_screen.dart';
 import '../screens/deck_selection_screen.dart';
 import '../screens/dj_who_videos_screen.dart';
 import '../screens/home_screen.dart';
@@ -37,11 +38,7 @@ abstract final class AppRoutes {
   static const register = '/register';
   static const forgotPassword = '/forgot-password';
   static String card(String id) => '$cards/$id';
-
-  // Keep the legacy helper name, but never navigate to the retired in-app
-  // transcription/jester page. All card AI handoffs now start from Browse.
-  static String transcription(String id) => browseCard(id);
-
+  static String transcription(String id) => '$cards/$id/transcription';
   static String cardChat(String id) => '$aiChat/$id';
   static String cardAlias(String id) => '/card/$id';
   static String deck(String id) => '/deck/$id';
@@ -86,8 +83,9 @@ abstract final class AppRouter {
         routes: [
           GoRoute(
             path: ':cardId/transcription',
-            redirect: (_, state) =>
-                AppRoutes.browseCard(state.pathParameters['cardId']!),
+            builder: (_, state) => CardTranscriptionScreen(
+              cardId: state.pathParameters['cardId']!,
+            ),
           ),
           GoRoute(
             path: ':cardId',
