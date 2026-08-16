@@ -69,6 +69,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('TRANSCRIBE CARD'), findsNothing);
+    expect(find.text('DIY WITH AI'), findsNothing);
     expect(find.text('DISCUSS WITH AI'), findsNothing);
 
     final cards = find.byType(BrowseHandCard);
@@ -76,8 +77,11 @@ void main() {
     tester.widget<BrowseHandCard>(cards.first).onTap();
     await tester.pumpAndSettle();
 
+    // Browse keeps its compact DIY label. Entering either action opens the
+    // backend-free jester screen, whose secondary action is DISCUSS WITH AI.
     expect(find.text('TRANSCRIBE CARD'), findsOneWidget);
-    expect(find.text('DISCUSS WITH AI'), findsOneWidget);
+    expect(find.text('DIY WITH AI'), findsOneWidget);
+    expect(find.text('DISCUSS WITH AI'), findsNothing);
 
     await tester.tap(find.text('TRANSCRIBE CARD'));
     await tester.pumpAndSettle();
@@ -85,6 +89,7 @@ void main() {
     expect(find.text('TRANSCRIPTION'), findsNothing);
     expect(find.text('CARD IMAGE → EXTERNAL AI'), findsOneWidget);
     expect(find.text('TRANSCRIBE CARD'), findsOneWidget);
+    expect(find.text('DIY WITH AI'), findsNothing);
     expect(find.text('DISCUSS WITH AI'), findsOneWidget);
     expect(find.text('ChatGPT'), findsNothing);
 
@@ -112,6 +117,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('TRANSCRIBE CARD'), findsNothing);
+    expect(find.text('DIY WITH AI'), findsNothing);
     expect(find.text('DISCUSS WITH AI'), findsNothing);
     expect(find.text('Ask AI a question'), findsNothing);
   });
