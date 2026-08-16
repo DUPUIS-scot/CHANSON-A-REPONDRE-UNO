@@ -24,17 +24,26 @@ void main() {
     expect(rootName.toLowerCase(), isNot(contains('marionette')));
   });
 
-  test('transcription renderer configures a Draco decoder before GLTF load', () {
-    final js = File('web/transcription_jester.js').readAsStringSync();
+  test('Draco support is installed before the transcription renderer loads', () {
+    final bootstrap = File(
+      'web/transcription_draco_bootstrap.js',
+    ).readAsStringSync();
+    final html = File('web/index.html').readAsStringSync();
 
-    expect(js, contains('KHR_draco_mesh_compression'));
-    expect(js, contains('DRACOLoader'));
-    expect(js, contains('setDRACOLoader'));
-    expect(js, contains('setDecoderPath(DRACO_DECODER_PATH)'));
+    expect(bootstrap, contains('KHR_draco_mesh_compression'));
+    expect(bootstrap, contains('DRACOLoader'));
+    expect(bootstrap, contains('setDRACOLoader'));
+    expect(bootstrap, contains('setDecoderPath(DRACO_DECODER_PATH)'));
     expect(
-      js,
-      contains('https://www.gstatic.com/draco/versioned/decoders/1.5.7/'),
+      bootstrap,
+      contains('three@0.160.0/examples/jsm/libs/draco/'),
     );
+    expect(bootstrap, contains("TRANSCRIPTION_MODEL = 'transcription_jester.glb'"));
+
+    final bootstrapIndex = html.indexOf('transcription_draco_bootstrap.js');
+    final rendererIndex = html.indexOf('transcription_jester.js');
+    expect(bootstrapIndex, greaterThanOrEqualTo(0));
+    expect(rendererIndex, greaterThan(bootstrapIndex));
   });
 }
 
