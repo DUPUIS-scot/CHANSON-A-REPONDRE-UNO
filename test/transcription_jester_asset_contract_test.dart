@@ -49,7 +49,7 @@ void main() {
     expect(bootstrapIndex, greaterThanOrEqualTo(0));
     expect(playRendererIndex, greaterThan(bootstrapIndex));
     expect(transcriptionRendererIndex, greaterThan(bootstrapIndex));
-    expect(html, contains('transcription-jester-draco-2'));
+    expect(html, contains('jester-draco-20260816-play-1'));
     expect(html, contains('transcription-jester-rigged-2'));
   });
 }
