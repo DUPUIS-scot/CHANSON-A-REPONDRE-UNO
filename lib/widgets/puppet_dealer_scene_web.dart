@@ -113,9 +113,15 @@ class _PuppetDealerSceneState extends State<PuppetDealerScene> {
   Widget build(BuildContext context) => IgnorePointer(
     child: SizedBox.expand(
       key: const Key('puppet-stage-slot'),
-      child: HtmlElementView(
-        viewType: _viewType,
-        onPlatformViewCreated: _mountDealer,
+      child: ClipRect(
+        child: Transform.scale(
+          scale: 1.55,
+          alignment: Alignment.topCenter,
+          child: HtmlElementView(
+            viewType: _viewType,
+            onPlatformViewCreated: _mountDealer,
+          ),
+        ),
       ),
     ),
   );
