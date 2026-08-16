@@ -9,7 +9,6 @@ import '../widgets/transcription_jester_scene.dart';
 
 const _gold = Color(0xFFE7A62C);
 const _brightGold = Color(0xFFFFD980);
-const _cream = Color(0xFFFFE8B4);
 const _ink = Color(0xFF090604);
 
 class CardTranscriptionScreen extends StatelessWidget {
@@ -21,8 +20,8 @@ class CardTranscriptionScreen extends StatelessWidget {
         foregroundColor: _ink,
         disabledBackgroundColor: const Color(0x66352A1B),
         disabledForegroundColor: const Color(0x888F816A),
-        minimumSize: const Size.fromHeight(88),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+        minimumSize: const Size.fromHeight(78),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         side: const BorderSide(color: _brightGold, width: 1.4),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
@@ -33,8 +32,8 @@ class CardTranscriptionScreen extends StatelessWidget {
         foregroundColor: _gold,
         disabledForegroundColor: const Color(0x887F735F),
         backgroundColor: const Color(0xE20A0806),
-        minimumSize: const Size.fromHeight(88),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+        minimumSize: const Size.fromHeight(78),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         side: const BorderSide(color: _gold, width: 1.4),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
@@ -60,7 +59,6 @@ class CardTranscriptionScreen extends StatelessWidget {
       );
     });
 
-    final imageUrl = ExternalAiHandoffService.publicImageUrlFor(card: card);
     final canHandoff = deck != null;
 
     void openAi(CardAiHandoffMode mode) {
@@ -105,10 +103,10 @@ class CardTranscriptionScreen extends StatelessWidget {
                     colors: [
                       Color(0x00000000),
                       Color(0x00000000),
-                      Color(0x26000000),
-                      Color(0xA0000000),
+                      Color(0x1A000000),
+                      Color(0x8A000000),
                     ],
-                    stops: [0, .48, .72, 1],
+                    stops: [0, .62, .82, 1],
                   ),
                 ),
               ),
@@ -121,9 +119,9 @@ class CardTranscriptionScreen extends StatelessWidget {
                 return SingleChildScrollView(
                   padding: EdgeInsets.fromLTRB(
                     compact ? 18 : 36,
-                    compact ? 430 : 500,
+                    compact ? 500 : 580,
                     compact ? 18 : 36,
-                    36,
+                    28,
                   ),
                   child: Center(
                     child: ConstrainedBox(
@@ -131,8 +129,6 @@ class CardTranscriptionScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          _ImageHandoffPanel(imageUrl: imageUrl.toString()),
-                          const SizedBox(height: 18),
                           if (compact) ...[
                             _TranscribeButton(
                               style: _primaryStyle(),
@@ -140,7 +136,7 @@ class CardTranscriptionScreen extends StatelessWidget {
                               onPressed: () =>
                                   openAi(CardAiHandoffMode.transcribe),
                             ),
-                            const SizedBox(height: 14),
+                            const SizedBox(height: 12),
                             _DiscussButton(
                               style: _secondaryStyle(),
                               enabled: canHandoff,
@@ -180,67 +176,6 @@ class CardTranscriptionScreen extends StatelessWidget {
       ),
     );
   }
-}
-
-class _ImageHandoffPanel extends StatelessWidget {
-  const _ImageHandoffPanel({required this.imageUrl});
-  final String imageUrl;
-
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.fromLTRB(28, 22, 28, 24),
-        decoration: BoxDecoration(
-          color: const Color(0xE30A0806),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: _gold, width: 1.25),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0xB0000000),
-              blurRadius: 28,
-              offset: Offset(0, 14),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            const Text(
-              'CARD IMAGE → EXTERNAL AI',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: _cream,
-                fontFamily: 'serif',
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.1,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Container(height: 1, color: const Color(0x77E7A62C)),
-            const SizedBox(height: 14),
-            const Text(
-              'No app AI backend is used. Choose an external AI and it will receive the direct public card-image URL so it can read and analyze the image itself.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: _cream,
-                fontSize: 16,
-                height: 1.35,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              imageUrl,
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Color(0xCCFFE8B4),
-                fontSize: 12,
-                height: 1.25,
-              ),
-            ),
-          ],
-        ),
-      );
 }
 
 class _TranscribeButton extends StatelessWidget {
