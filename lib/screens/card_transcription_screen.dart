@@ -17,6 +17,14 @@ class CardTranscriptionScreen extends StatelessWidget {
   const CardTranscriptionScreen({required this.cardId, super.key});
   final String cardId;
 
+  String _jesterTexturePath(String cardId, String imagePath) {
+    final match = RegExp(r'^final-84-(\d{2})$').firstMatch(cardId);
+    if (match == null) return imagePath;
+    final number = int.tryParse(match.group(1) ?? '');
+    if (number == null || number < 1 || number > 84) return imagePath;
+    return 'share-previews/UNO-${number.toString().padLeft(3, '0')}.jpg';
+  }
+
   ButtonStyle _primaryStyle() => FilledButton.styleFrom(
         backgroundColor: const Color(0xA6E7A62C),
         foregroundColor: _ink,
@@ -53,16 +61,15 @@ class CardTranscriptionScreen extends StatelessWidget {
       );
     }
 
-    // Keep the Flutter -> JavaScript bridge payload small on mobile Safari.
-    // Three.js receives the selected card's real Flutter asset key and resolves
-    // it to the packaged web URL (assets/assets/...) itself. Passing the whole
-    // 2-4 MB JPEG as a base64 data URL made this bridge exceed 4 MB per card
-    // and was unreliable on iOS even though Browse could render the same asset.
+    // Keep the WebGL texture small on mobile Safari. Permanent UNO source PNGs
+    // are several megabytes each, so the Pages build produces a 600x900 JPEG
+    // preview for the jester while Browse/share keep using the original image.
+    final jesterTexturePath = _jesterTexturePath(card.id, card.imagePath);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!context.mounted) return;
       TranscriptionJesterScene.setSelectedCard(
         cardId: card.id,
-        imagePath: card.imagePath,
+        imagePath: jesterTexturePath,
       );
     });
 
