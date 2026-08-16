@@ -51,7 +51,7 @@ void main() {
     expect(shared?.imagePath, selected.imagePath);
   });
 
-  testWidgets('Browse exposes external AI handoff actions only in Browse', (
+  testWidgets('Browse AI actions open the theatrical jester handoff first', (
     tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(1440, 1000));
@@ -81,13 +81,24 @@ void main() {
 
     await tester.tap(find.text('TRANSCRIBE CARD'));
     await tester.pumpAndSettle();
+
+    expect(find.text('TRANSCRIPTION'), findsOneWidget);
+    expect(find.text('TRANSCRIBE CARD'), findsOneWidget);
+    expect(find.text('DIY WITH AI'), findsOneWidget);
+    expect(find.text('ChatGPT'), findsNothing);
+
+    await tester.tap(find.text('TRANSCRIBE CARD'));
+    await tester.pumpAndSettle();
     expect(find.text('Transcribe this card with your AI'), findsOneWidget);
     expect(find.text('ChatGPT'), findsOneWidget);
     expect(find.text('Gemini'), findsOneWidget);
     expect(find.text('Claude'), findsOneWidget);
     expect(find.text('Copilot'), findsOneWidget);
     expect(find.text('COPY PROMPT'), findsOneWidget);
+
     Navigator.of(tester.element(find.text('COPY PROMPT'))).pop();
+    await tester.pumpAndSettle();
+    Navigator.of(tester.element(find.text('TRANSCRIBE CARD'))).pop();
     await tester.pumpAndSettle();
 
     final card = decks.cards.first;
