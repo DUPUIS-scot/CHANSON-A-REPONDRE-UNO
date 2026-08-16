@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -99,15 +100,17 @@ class CardTranscriptionScreen extends StatelessWidget {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          Positioned.fill(
-            child: Image.asset(
-              _transcriptionStageBackgroundAsset,
-              fit: BoxFit.cover,
-              alignment: Alignment.center,
-              filterQuality: FilterQuality.high,
-              errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+          if (!kIsWeb)
+            Positioned.fill(
+              child: Image.asset(
+                _transcriptionStageBackgroundAsset,
+                fit: BoxFit.cover,
+                alignment: Alignment.center,
+                filterQuality: FilterQuality.high,
+                errorBuilder: (context, error, stackTrace) =>
+                    const ColoredBox(color: Color(0xFF050302)),
+              ),
             ),
-          ),
           const Positioned.fill(child: TranscriptionJesterScene()),
           const Positioned.fill(
             child: IgnorePointer(
@@ -151,13 +154,15 @@ class CardTranscriptionScreen extends StatelessWidget {
                                 _TranscribeButton(
                                   style: _primaryStyle(),
                                   enabled: canHandoff,
-                                  onPressed: () => openAi(CardAiHandoffMode.transcribe),
+                                  onPressed: () =>
+                                      openAi(CardAiHandoffMode.transcribe),
                                 ),
                                 const SizedBox(height: 12),
                                 _DiscussButton(
                                   style: _secondaryStyle(),
                                   enabled: canHandoff,
-                                  onPressed: () => openAi(CardAiHandoffMode.diy),
+                                  onPressed: () =>
+                                      openAi(CardAiHandoffMode.diy),
                                 ),
                               ],
                             )
@@ -167,7 +172,8 @@ class CardTranscriptionScreen extends StatelessWidget {
                                   child: _TranscribeButton(
                                     style: _primaryStyle(),
                                     enabled: canHandoff,
-                                    onPressed: () => openAi(CardAiHandoffMode.transcribe),
+                                    onPressed: () =>
+                                        openAi(CardAiHandoffMode.transcribe),
                                   ),
                                 ),
                                 const SizedBox(width: 18),
@@ -175,7 +181,8 @@ class CardTranscriptionScreen extends StatelessWidget {
                                   child: _DiscussButton(
                                     style: _secondaryStyle(),
                                     enabled: canHandoff,
-                                    onPressed: () => openAi(CardAiHandoffMode.diy),
+                                    onPressed: () =>
+                                        openAi(CardAiHandoffMode.diy),
                                   ),
                                 ),
                               ],
@@ -193,7 +200,11 @@ class CardTranscriptionScreen extends StatelessWidget {
 }
 
 class _TranscribeButton extends StatelessWidget {
-  const _TranscribeButton({required this.style, required this.enabled, required this.onPressed});
+  const _TranscribeButton({
+    required this.style,
+    required this.enabled,
+    required this.onPressed,
+  });
   final ButtonStyle style;
   final bool enabled;
   final VoidCallback onPressed;
@@ -211,7 +222,11 @@ class _TranscribeButton extends StatelessWidget {
 }
 
 class _DiscussButton extends StatelessWidget {
-  const _DiscussButton({required this.style, required this.enabled, required this.onPressed});
+  const _DiscussButton({
+    required this.style,
+    required this.enabled,
+    required this.onPressed,
+  });
   final ButtonStyle style;
   final bool enabled;
   final VoidCallback onPressed;
@@ -229,7 +244,11 @@ class _DiscussButton extends StatelessWidget {
 }
 
 class _ActionLabel extends StatelessWidget {
-  const _ActionLabel({required this.icon, required this.title, required this.subtitle});
+  const _ActionLabel({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
   final IconData icon;
   final String title;
   final String subtitle;
@@ -248,14 +267,22 @@ class _ActionLabel extends StatelessWidget {
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, letterSpacing: .3),
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: .3,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, height: 1.2),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    height: 1.2,
+                  ),
                 ),
               ],
             ),

@@ -60,14 +60,14 @@ function stageRect() {
   const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
   const stageWidth = mobile
-    ? Math.min(viewportWidth * 0.96, 720)
-    : Math.min(viewportWidth * 0.74, 960);
+    ? Math.min(viewportWidth * 0.94, 700)
+    : Math.min(viewportWidth * 0.70, 920);
   const stageHeight = mobile
-    ? Math.min(viewportHeight * 0.67, 720)
-    : Math.min(viewportHeight * 0.78, 820);
+    ? Math.min(viewportHeight * 0.60, 650)
+    : Math.min(viewportHeight * 0.74, 780);
   return {
     left: (viewportWidth - stageWidth) * 0.5,
-    top: mobile ? Math.max(10, viewportHeight * 0.035) : Math.max(8, viewportHeight * 0.02),
+    top: mobile ? Math.max(26, viewportHeight * 0.055) : Math.max(16, viewportHeight * 0.03),
     width: stageWidth,
     height: stageHeight,
   };
@@ -99,7 +99,7 @@ class TranscriptionJester {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.4));
     Object.assign(this.renderer.domElement.style, {
       display: 'block', position: 'fixed', pointerEvents: 'none', background: 'transparent',
-      zIndex: '0', opacity: '1',
+      zIndex: '2', opacity: '1',
       filter: 'drop-shadow(0 18px 24px rgba(0,0,0,.78))', transform: 'translateZ(0)',
     });
     this.renderer.domElement.setAttribute('aria-hidden', 'true');
