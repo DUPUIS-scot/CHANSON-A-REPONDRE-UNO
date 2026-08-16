@@ -269,36 +269,7 @@ jobs:
           test -f build/web/assets/assets/images/closed_curtains.png
           test -f build/web/card_castle/card_castle.html
 
-          python3 <<'PY'
-          import json
-          from pathlib import Path
-
-          catalog = json.loads(Path('assets/json/cards.json').read_text(encoding='utf-8-sig'))
-          deck = next((
-              item for item in catalog.get('decks', [])
-              if item.get('id') == 'sale-poete-final-84'
-          ), None)
-          if deck is None:
-              raise SystemExit('Production UNO deck sale-poete-final-84 was not found in the card catalog.')
-          cards = deck.get('cards', [])
-          if len(cards) != 84:
-              raise SystemExit(f'Expected 84 UNO catalog cards, found {len(cards)}.')
-
-          missing = []
-          for card in cards:
-              image_path = card.get('path') or card.get('image')
-              if not image_path:
-                  missing.append(f"{card.get('id', '<unknown>')}: no image path")
-                  continue
-              built_asset = Path('build/web/assets') / image_path
-              if not built_asset.is_file():
-                  missing.append(f"{card.get('id', '<unknown>')}: {built_asset}")
-
-          if missing:
-              raise SystemExit('Missing built UNO card assets:\n' + '\n'.join(missing))
-
-          print('Verified all 84 catalog-referenced UNO card images in build output.')
-          PY
+          python3 scripts/verify_production_uno_assets.py
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
