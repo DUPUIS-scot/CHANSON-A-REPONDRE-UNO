@@ -64,6 +64,30 @@ class ExternalAiHandoffService {
     applicationUri: applicationUri,
   );
 
+  static Uri previewImageUrlFor({
+    required String cardId,
+    required String deckId,
+    Uri? applicationUri,
+  }) {
+    final shareUrl = PublicCardShareService.shareUrlFor(
+      cardId: cardId,
+      deckId: deckId,
+      applicationUri: applicationUri,
+    );
+    final segments = shareUrl.pathSegments
+        .where((segment) => segment.isNotEmpty)
+        .toList(growable: false);
+    final slug = segments.isEmpty ? cardId : segments.last;
+    final root = segments.length >= 2
+        ? segments.sublist(0, segments.length - 2)
+        : const <String>[];
+    return shareUrl.replace(
+      pathSegments: [...root, 'assets', 'share-previews', '$slug.jpg'],
+      query: null,
+      fragment: null,
+    );
+  }
+
   static String buildPrompt({
     required CardAiHandoffMode mode,
     required CardImageModel card,
@@ -72,6 +96,11 @@ class ExternalAiHandoffService {
     Uri? applicationUri,
   }) {
     final shareUrl = PublicCardShareService.shareUrlFor(
+      cardId: card.id,
+      deckId: deck.id,
+      applicationUri: applicationUri,
+    );
+    final previewUrl = previewImageUrlFor(
       cardId: card.id,
       deckId: deck.id,
       applicationUri: applicationUri,
@@ -93,10 +122,13 @@ class ExternalAiHandoffService {
       '',
       'REFERENCE LINK:',
       '$shareUrl',
-      'DIRECT PUBLIC CARD IMAGE:',
+      'LIGHTWEIGHT CARD PREVIEW:',
+      '$previewUrl',
+      'ORIGINAL FULL-RESOLUTION CARD IMAGE:',
       '$imageUrl',
       '',
-      'Important: the image URL points directly to the selected public card asset. It is still reference-only for AI providers that do not support fetching external images. Do not claim you viewed it unless your environment actually opened it.',
+      'If this prompt arrived with an actual image attachment, use the attachment as the primary visual source.',
+      'The preview and original image URLs are reference fallbacks for environments that can fetch external images. Do not claim you viewed either URL unless your environment actually opened it.',
       '',
     ];
 
@@ -110,15 +142,15 @@ class ExternalAiHandoffService {
           'Return a faithful transcription of the supplied card text.',
           'Preserve the original language, accents, spelling, punctuation, capitalization, headings, lists, and meaningful line breaks.',
           'Do not summarize, rewrite, translate, or invent missing text.',
-          'If the supplied text appears incomplete, say so instead of asking the user to upload the image merely because you cannot fetch the reference URL.',
+          'If the supplied text appears incomplete, say so instead of asking the user to upload the image merely because you cannot fetch the reference URLs.',
         ].join('\n');
       }
 
       return <String>[
         ...metadata,
         'No extracted card text is available in the app for this card.',
-        'Do not say you inspected the direct card image URL if you cannot access external images.',
-        'Tell the user that an actual image attachment is required for visual transcription in this AI environment.',
+        'If an image attachment is present, transcribe that image directly.',
+        'If there is no attachment and you cannot fetch the preview/original URLs, say that an actual image attachment is required for visual transcription.',
       ].join('\n');
     }
 
@@ -137,8 +169,8 @@ class ExternalAiHandoffService {
     return <String>[
       ...metadata,
       'No extracted card text is available in the app for this card.',
-      'You may discuss the card metadata above, but do not pretend to have viewed the image from the URL.',
-      'If visual analysis is necessary, ask for the image to be attached directly in the AI conversation.',
+      'If an image attachment is present, analyze that image directly.',
+      'Otherwise, you may discuss the metadata above, but do not pretend to have viewed the preview or original image URL unless you actually fetched it.',
     ].join('\n');
   }
 
