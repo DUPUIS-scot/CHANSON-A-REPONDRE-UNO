@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -16,14 +17,14 @@ const _gold = Color(0xFFE7A62C);
 const _brightGold = Color(0xFFFFD980);
 const _cream = Color(0xFFFFE8B4);
 const _ink = Color(0xFF090604);
+const _buildSha = String.fromEnvironment('APP_BUILD_SHA', defaultValue: 'dev');
 
 class CardTranscriptionScreen extends StatefulWidget {
   const CardTranscriptionScreen({required this.cardId, super.key});
   final String cardId;
 
   @override
-  State<CardTranscriptionScreen> createState() =>
-      _CardTranscriptionScreenState();
+  State<CardTranscriptionScreen> createState() => _CardTranscriptionScreenState();
 }
 
 class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
@@ -32,24 +33,14 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
     if (await provider.hasConsent()) return true;
     if (!mounted) return false;
     final choice = await showAiConsentDialog(context);
-    if (choice == AiConsentChoice.remember) {
-      await provider.rememberConsent();
-    }
+    if (choice == AiConsentChoice.remember) await provider.rememberConsent();
     return choice != AiConsentChoice.cancel;
   }
 
   Future<void> _transcribe() async {
-    if (!await requireRealAuthentication(
-          context,
-          featureName: 'Card Transcription',
-        ) ||
-        !mounted) {
-      return;
-    }
+    if (!await requireRealAuthentication(context, featureName: 'Card Transcription') || !mounted) return;
     if (!await _consent() || !mounted) return;
-    await context
-        .read<CardAiProvider>()
-        .transcribe(widget.cardId, TranscriptionMode.exact);
+    await context.read<CardAiProvider>().transcribe(widget.cardId, TranscriptionMode.exact);
   }
 
   ButtonStyle _primaryButtonStyle() => FilledButton.styleFrom(
@@ -60,9 +51,7 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
         minimumSize: const Size.fromHeight(88),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
         side: const BorderSide(color: _brightGold, width: 1.4),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       );
 
   ButtonStyle _secondaryButtonStyle() => OutlinedButton.styleFrom(
@@ -72,10 +61,39 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
         minimumSize: const Size.fromHeight(88),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
         side: const BorderSide(color: _gold, width: 1.4),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       );
+
+  Widget _background() {
+    if (!kIsWeb) {
+      return Image.asset(
+        'assets/images/transcription_gothic_background.jpg',
+        fit: BoxFit.cover,
+        alignment: Alignment.topCenter,
+        filterQuality: FilterQuality.high,
+      );
+    }
+
+    final uri = Uri.base.resolve(
+      'assets/assets/images/transcription_gothic_background.jpg?v=$_buildSha',
+    );
+    return Image.network(
+      uri.toString(),
+      fit: BoxFit.cover,
+      alignment: Alignment.topCenter,
+      filterQuality: FilterQuality.high,
+      gaplessPlayback: true,
+      errorBuilder: (_, __, ___) => Container(
+        decoration: const BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment(0, -0.45),
+            radius: 1.15,
+            colors: [Color(0xFF6D1F0D), Color(0xFF260A08), Color(0xFF090604)],
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -85,13 +103,10 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
     final canUseAi = auth.canUseProtectedAi;
 
     if (card == null) {
-      return const Scaffold(
-        body: Center(child: Text('This card no longer exists.')),
-      );
+      return const Scaffold(body: Center(child: Text('This card no longer exists.')));
     }
 
-    final transcription = (card.transcription ?? card.cleanedTranscription ?? '')
-        .trim();
+    final transcription = (card.transcription ?? card.cleanedTranscription ?? '').trim();
     final hasText = transcription.isNotEmpty;
 
     return Scaffold(
@@ -114,18 +129,7 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          const Positioned.fill(
-            child: IgnorePointer(
-              child: Image(
-                image: AssetImage(
-                  'assets/images/transcription_gothic_background.jpg',
-                ),
-                fit: BoxFit.cover,
-                alignment: Alignment.topCenter,
-                filterQuality: FilterQuality.high,
-              ),
-            ),
-          ),
+          Positioned.fill(child: IgnorePointer(child: _background())),
           const Positioned.fill(
             child: IgnorePointer(
               child: DecoratedBox(
@@ -134,12 +138,12 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Color(0x06000000),
-                      Color(0x10000000),
-                      Color(0x4D080302),
-                      Color(0xA6080302),
+                      Color(0x00000000),
+                      Color(0x08000000),
+                      Color(0x36080302),
+                      Color(0x8A080302),
                     ],
-                    stops: [0, .48, .76, 1],
+                    stops: [0, .50, .78, 1],
                   ),
                 ),
               ),
@@ -153,10 +157,7 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
                 top: mobile ? 18 : 12,
                 width: mobile ? 500 : 720,
                 height: mobile ? 720 : box.maxHeight * .86,
-                child: const Opacity(
-                  opacity: 1,
-                  child: TranscriptionJesterScene(),
-                ),
+                child: const Opacity(opacity: 1, child: TranscriptionJesterScene()),
               );
             },
           ),
@@ -178,9 +179,7 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           _TranscriptionPanel(
-                            text: hasText
-                                ? transcription
-                                : 'Select a card and transcribe it to reveal its text here.',
+                            text: hasText ? transcription : 'Select a card and transcribe it to reveal its text here.',
                             hasText: hasText,
                           ),
                           if (!canUseAi || !ai.isConfigured || ai.error != null) ...[
@@ -199,10 +198,7 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
                                     )
                                   : !canUseAi
                                       ? TextButton.icon(
-                                          onPressed: () => requireRealAuthentication(
-                                            context,
-                                            featureName: 'Card Transcription',
-                                          ),
+                                          onPressed: () => requireRealAuthentication(context, featureName: 'Card Transcription'),
                                           icon: const Icon(Icons.refresh_rounded),
                                           label: const Text('Retry'),
                                         )
@@ -269,7 +265,6 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
 
 class _TranscriptionPanel extends StatelessWidget {
   const _TranscriptionPanel({required this.text, required this.hasText});
-
   final String text;
   final bool hasText;
 
@@ -281,11 +276,7 @@ class _TranscriptionPanel extends StatelessWidget {
           borderRadius: BorderRadius.circular(24),
           border: Border.all(color: _gold, width: 1.25),
           boxShadow: const [
-            BoxShadow(
-              color: Color(0xA0000000),
-              blurRadius: 28,
-              offset: Offset(0, 14),
-            ),
+            BoxShadow(color: Color(0xA0000000), blurRadius: 28, offset: Offset(0, 14)),
           ],
         ),
         child: Column(
@@ -322,12 +313,7 @@ class _TranscriptionPanel extends StatelessWidget {
 }
 
 class _TranscribeButton extends StatelessWidget {
-  const _TranscribeButton({
-    required this.style,
-    required this.enabled,
-    required this.onPressed,
-  });
-
+  const _TranscribeButton({required this.style, required this.enabled, required this.onPressed});
   final ButtonStyle style;
   final bool enabled;
   final VoidCallback onPressed;
@@ -345,12 +331,7 @@ class _TranscribeButton extends StatelessWidget {
 }
 
 class _DiscussButton extends StatelessWidget {
-  const _DiscussButton({
-    required this.style,
-    required this.enabled,
-    required this.onPressed,
-  });
-
+  const _DiscussButton({required this.style, required this.enabled, required this.onPressed});
   final ButtonStyle style;
   final bool enabled;
   final VoidCallback onPressed;
@@ -368,12 +349,7 @@ class _DiscussButton extends StatelessWidget {
 }
 
 class _ActionButtonLabel extends StatelessWidget {
-  const _ActionButtonLabel({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-  });
-
+  const _ActionButtonLabel({required this.icon, required this.title, required this.subtitle});
   final IconData icon;
   final String title;
   final String subtitle;
@@ -392,22 +368,14 @@ class _ActionButtonLabel extends StatelessWidget {
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: .3,
-                  ),
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, letterSpacing: .3),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    height: 1.2,
-                  ),
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, height: 1.2),
                 ),
               ],
             ),
@@ -418,7 +386,6 @@ class _ActionButtonLabel extends StatelessWidget {
 
 class _StatusBar extends StatelessWidget {
   const _StatusBar({required this.message, this.action});
-
   final String message;
   final Widget? action;
 
@@ -432,12 +399,7 @@ class _StatusBar extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Expanded(
-              child: Text(
-                message,
-                style: const TextStyle(color: _cream, height: 1.3),
-              ),
-            ),
+            Expanded(child: Text(message, style: const TextStyle(color: _cream, height: 1.3))),
             if (action != null) ...[
               const SizedBox(width: 8),
               Theme(
