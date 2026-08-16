@@ -15,8 +15,18 @@
   <style>
     html, body { margin: 0; min-height: 100%; background: #090604; }
     body { background: radial-gradient(circle at 18% 28%, rgba(122, 42, 10, .38), transparent 32%), linear-gradient(180deg, #140805 0%, #090403 48%, #030201 100%); }
-    canvas[data-transcription-jester-canvas="true"] { z-index: 0 !important; }
-    flutter-view, flt-glass-pane { position: relative; z-index: 1; }
+    #shared-stage-background {
+      position: fixed;
+      inset: 0;
+      background-image: url('assets/assets/images/shared_stage_background_user.jpg');
+      background-size: cover;
+      background-position: center center;
+      background-repeat: no-repeat;
+      pointer-events: none;
+      z-index: 0;
+    }
+    flutter-view, flt-glass-pane { position: relative; z-index: 1; background: transparent !important; }
+    canvas[data-transcription-jester-canvas="true"] { z-index: 2 !important; }
   </style>
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
   <script>
@@ -33,10 +43,11 @@
   </script>
   <script type="importmap">{ "imports": { "three": "./vendor/three.module.js" } }</script>
   <script type="module" src="transcription_draco_bootstrap.js?v=jester-draco-20260816-play-1"></script>
-  <script type="module" src="puppet_dealer.js?v=play-jester-rigged-20260816d-torso"></script>
-  <script type="module" src="transcription_jester.js?v=transcription-jester-centered-card-20260816"></script>
+  <script type="module" src="puppet_dealer.js?v=play-jester-rigged-20260816e-torso-runtime"></script>
+  <script type="module" src="transcription_jester.js?v=transcription-jester-runtime-layer-20260816"></script>
 </head>
 <body>
+  <div id="shared-stage-background" aria-hidden="true"></div>
   <script>
     if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().then((registrations) => { for (const registration of registrations) registration.unregister(); });
     if ('caches' in window) caches.keys().then((keys) => Promise.all(keys.map((key) => caches.delete(key))));
