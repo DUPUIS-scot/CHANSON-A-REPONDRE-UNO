@@ -103,10 +103,10 @@ class CardTranscriptionScreen extends StatelessWidget {
                     colors: [
                       Color(0x00000000),
                       Color(0x00000000),
-                      Color(0x1A000000),
-                      Color(0x8A000000),
+                      Color(0x16000000),
+                      Color(0x82000000),
                     ],
-                    stops: [0, .62, .82, 1],
+                    stops: [0, .68, .86, 1],
                   ),
                 ),
               ),
@@ -116,34 +116,38 @@ class CardTranscriptionScreen extends StatelessWidget {
             child: LayoutBuilder(
               builder: (context, box) {
                 final compact = box.maxWidth < 760;
-                return SingleChildScrollView(
-                  padding: EdgeInsets.fromLTRB(
-                    compact ? 18 : 36,
-                    compact ? 500 : 580,
-                    compact ? 18 : 36,
-                    28,
-                  ),
-                  child: Center(
+                return Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      compact ? 18 : 36,
+                      0,
+                      compact ? 18 : 36,
+                      compact ? 22 : 30,
+                    ),
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 920),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          if (compact) ...[
-                            _TranscribeButton(
-                              style: _primaryStyle(),
-                              enabled: canHandoff,
-                              onPressed: () =>
-                                  openAi(CardAiHandoffMode.transcribe),
-                            ),
-                            const SizedBox(height: 12),
-                            _DiscussButton(
-                              style: _secondaryStyle(),
-                              enabled: canHandoff,
-                              onPressed: () => openAi(CardAiHandoffMode.diy),
-                            ),
-                          ] else
-                            Row(
+                      child: compact
+                          ? Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                _TranscribeButton(
+                                  style: _primaryStyle(),
+                                  enabled: canHandoff,
+                                  onPressed: () =>
+                                      openAi(CardAiHandoffMode.transcribe),
+                                ),
+                                const SizedBox(height: 12),
+                                _DiscussButton(
+                                  style: _secondaryStyle(),
+                                  enabled: canHandoff,
+                                  onPressed: () =>
+                                      openAi(CardAiHandoffMode.diy),
+                                ),
+                              ],
+                            )
+                          : Row(
                               children: [
                                 Expanded(
                                   child: _TranscribeButton(
@@ -164,8 +168,6 @@ class CardTranscriptionScreen extends StatelessWidget {
                                 ),
                               ],
                             ),
-                        ],
-                      ),
                     ),
                   ),
                 );
