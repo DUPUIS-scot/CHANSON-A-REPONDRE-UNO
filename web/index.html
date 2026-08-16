@@ -114,15 +114,11 @@
       }
     }
   </script>
-  <script type="module" src="puppet_dealer.js"></script>
-  <script type="module" src="transcription_jester.js"></script>
+  <script type="module" src="puppet_dealer.js?v=transcription-visual-3"></script>
+  <script type="module" src="transcription_jester.js?v=transcription-visual-3"></script>
 </head>
 <body>
   <script>
-    // Previous Flutter builds installed a service worker. On iOS Safari that
-    // worker can keep serving an older app shell after a successful Pages
-    // deployment, which made the transcription screen appear unchanged.
-    // Remove legacy app registrations/caches before booting the current build.
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then((registrations) => {
         for (const registration of registrations) registration.unregister();
