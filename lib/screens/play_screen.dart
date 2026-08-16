@@ -255,13 +255,13 @@ class _PlayScreenState extends State<PlayScreen> {
                       builder: (context, stageConstraints) {
                         final narrow = stageConstraints.maxWidth < 600;
                         final torsoHeight = (stageConstraints.maxHeight *
-                                (narrow ? 0.36 : 0.42))
-                            .clamp(220.0, narrow ? 320.0 : 430.0);
+                                (narrow ? 0.50 : 0.56))
+                            .clamp(300.0, narrow ? 440.0 : 600.0);
                         final torsoWidth = (stageConstraints.maxWidth *
-                                (narrow ? 0.46 : 0.42))
-                            .clamp(190.0, narrow ? 330.0 : 470.0);
+                                (narrow ? 0.70 : 0.64))
+                            .clamp(280.0, narrow ? 500.0 : 720.0);
                         return Align(
-                          alignment: const Alignment(0, -0.34),
+                          alignment: const Alignment(0, -0.20),
                           child: SizedBox(
                             key: const Key('play-puppet-torso-viewport'),
                             width: torsoWidth,
