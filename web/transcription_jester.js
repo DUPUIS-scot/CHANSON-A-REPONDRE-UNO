@@ -56,12 +56,12 @@ function flutterAssetUrl(path) {
   try {
     const parsed = new URL(raw, document.baseURI);
     if (parsed.origin === window.location.origin) {
-      let normalizedPath = parsed.pathname.replace(/^\/+/, '');
+      const normalizedPath = parsed.pathname.replace(/^\/+/, '');
       if (normalizedPath.startsWith('assets/assets/')) {
-        return new URL(`/${normalizedPath}`, window.location.origin).href;
+        return new URL(normalizedPath, document.baseURI).href;
       }
       if (normalizedPath.startsWith('assets/')) {
-        return new URL(`/assets/${normalizedPath}`, window.location.origin).href;
+        return new URL(`assets/${normalizedPath}`, document.baseURI).href;
       }
     }
     if (/^https?:/i.test(raw)) return parsed.href;
@@ -101,9 +101,11 @@ class TranscriptionJester {
     this.clock = new THREE.Clock();
     this.selectedCardId = pendingSelectedCard?.cardId || currentCardId();
     this.selectedCardImage = pendingSelectedCard?.imagePath || null;
+    this.cardLoadSerial = 0;
+    this.cardObjectUrl = null;
     this.host.dataset.transcriptionJester = 'loading';
     this.host.dataset.sourceModel = 'assets/models/transcription_jester_rigged.glb';
-    this.host.dataset.framing = 'reference-card-presentation';
+    this.host.dataset.framing = 'reference-card-presentation-cross-platform';
     if (this.selectedCardId) this.host.dataset.selectedCardId = this.selectedCardId;
 
     this.scene = new THREE.Scene();
@@ -195,7 +197,7 @@ class TranscriptionJester {
       this.host.dataset.modelAnimations = String(gltf.animations?.length || 0);
       this.host.dataset.modelMeshes = String(meshCount);
       this.host.dataset.modelSize = `${size.x.toFixed(3)},${size.y.toFixed(3)},${size.z.toFixed(3)}`;
-      this.host.dataset.behavior = 'reference-framed-jester-selected-card-right-hand';
+      this.host.dataset.behavior = 'reference-framed-jester-selected-card-right-hand-cross-platform';
       this.resume();
     }, undefined, (error) => {
       this.host.dataset.transcriptionJester = 'failed';
@@ -233,6 +235,21 @@ class TranscriptionJester {
     this.camera.updateProjectionMatrix();
   }
 
+  positionCardAnchor() {
+    if (!this.cardAnchor) return;
+    const bounds = this.modelBounds();
+    if (!bounds) return;
+    const size = bounds.getSize(new THREE.Vector3());
+    const center = bounds.getCenter(new THREE.Vector3());
+    this.cardAnchor.position.set(
+      center.x + size.x * 0.24,
+      bounds.min.y + size.y * 0.72,
+      bounds.max.z + Math.max(size.z * 0.06, 0.14),
+    );
+    this.cardAnchor.lookAt(this.camera.position);
+    this.cardAnchor.rotation.z = 0.035;
+  }
+
   createFallbackCard() {
     if (this.cardAnchor) {
       this.scene.remove(this.cardAnchor);
@@ -240,11 +257,6 @@ class TranscriptionJester {
       this.cardAnchor = null;
       this.cardFace = null;
     }
-
-    const bounds = this.modelBounds();
-    if (!bounds) return;
-    const size = bounds.getSize(new THREE.Vector3());
-    const center = bounds.getCenter(new THREE.Vector3());
 
     const anchor = new THREE.Group();
     const backing = new THREE.Mesh(
@@ -262,26 +274,75 @@ class TranscriptionJester {
     card.position.z = 0.027;
     anchor.add(card);
 
-    anchor.position.set(
-      center.x + size.x * 0.24,
-      bounds.min.y + size.y * 0.72,
-      bounds.max.z + Math.max(size.z * 0.06, 0.14),
-    );
-    anchor.lookAt(this.camera.position);
-    anchor.rotation.z = 0.035;
-
     this.cardAnchor = anchor;
     this.cardFace = card;
     this.scene.add(anchor);
+    this.positionCardAnchor();
     this.host.dataset.selectedCard = 'held-in-right-hand';
     this.host.dataset.selectedCardTexture = 'fallback';
     this.host.dataset.selectedCardAnchor = 'scene-space-reference-right-hand';
+  }
+
+  applyCardTexture(texture, imageUrl, serial) {
+    if (this.disposed || serial !== this.cardLoadSerial) return texture.dispose();
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.flipY = false;
+    texture.needsUpdate = true;
+    if (!this.cardFace) return texture.dispose();
+    const oldMaterial = this.cardFace.material;
+    this.cardFace.material = new THREE.MeshBasicMaterial({
+      map: texture,
+      side: THREE.DoubleSide,
+      toneMapped: false,
+    });
+    disposeMaterial(oldMaterial);
+    this.host.dataset.selectedCard = 'held-in-right-hand';
+    this.host.dataset.selectedCardImage = imageUrl;
+    this.host.dataset.selectedCardTexture = 'ready';
+  }
+
+  loadTextureDirect(imageUrl, serial) {
+    new THREE.TextureLoader().load(imageUrl, (texture) => {
+      this.applyCardTexture(texture, imageUrl, serial);
+    }, undefined, (error) => {
+      if (serial !== this.cardLoadSerial) return;
+      this.host.dataset.selectedCard = 'held-in-right-hand-fallback';
+      this.host.dataset.selectedCardTexture = 'failed-fallback-visible';
+      console.warn('Unable to load selected card texture.', { imageUrl, error });
+    });
+  }
+
+  async loadSelectedCardTexture(imageUrl, serial) {
+    try {
+      const response = await fetch(imageUrl, {
+        cache: 'no-store',
+        credentials: 'same-origin',
+        mode: 'same-origin',
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const blob = await response.blob();
+      if (this.disposed || serial !== this.cardLoadSerial) return;
+      if (this.cardObjectUrl) URL.revokeObjectURL(this.cardObjectUrl);
+      this.cardObjectUrl = URL.createObjectURL(blob);
+      new THREE.TextureLoader().load(this.cardObjectUrl, (texture) => {
+        this.applyCardTexture(texture, imageUrl, serial);
+      }, undefined, (error) => {
+        if (serial !== this.cardLoadSerial) return;
+        console.warn('Blob texture decode failed; retrying direct URL.', { imageUrl, error });
+        this.loadTextureDirect(imageUrl, serial);
+      });
+    } catch (error) {
+      if (serial !== this.cardLoadSerial) return;
+      console.warn('Selected card fetch failed; retrying direct URL.', { imageUrl, error });
+      this.loadTextureDirect(imageUrl, serial);
+    }
   }
 
   attachSelectedCard() {
     const imageUrl = flutterAssetUrl(this.selectedCardImage);
     if (this.disposed) return;
     this.createFallbackCard();
+    const serial = ++this.cardLoadSerial;
     if (!imageUrl) {
       this.host.dataset.selectedCardImage = '';
       this.host.dataset.selectedCardTexture = 'fallback-no-image';
@@ -290,33 +351,17 @@ class TranscriptionJester {
     this.host.dataset.selectedCardImage = imageUrl;
     this.host.dataset.selectedCardResolvedUrl = imageUrl;
     this.host.dataset.selectedCardTexture = 'loading';
-    new THREE.TextureLoader().load(imageUrl, (texture) => {
-      if (this.disposed) return texture.dispose();
-      texture.colorSpace = THREE.SRGBColorSpace;
-      texture.flipY = false;
-      texture.needsUpdate = true;
-      if (!this.cardFace) return texture.dispose();
-      const oldMaterial = this.cardFace.material;
-      this.cardFace.material = new THREE.MeshBasicMaterial({
-        map: texture,
-        side: THREE.DoubleSide,
-        toneMapped: false,
-      });
-      disposeMaterial(oldMaterial);
-      this.host.dataset.selectedCard = 'held-in-right-hand';
-      this.host.dataset.selectedCardTexture = 'ready';
-    }, undefined, (error) => {
-      this.host.dataset.selectedCard = 'held-in-right-hand-fallback';
-      this.host.dataset.selectedCardTexture = 'failed-fallback-visible';
-      console.warn('Unable to load selected card texture.', { imageUrl, error });
-    });
+    this.loadSelectedCardTexture(imageUrl, serial);
   }
 
   setSelectedCard(cardId, imagePath) {
-    this.selectedCardId = cardId || null;
-    this.selectedCardImage = imagePath || null;
+    const nextId = cardId || null;
+    const nextImage = imagePath || null;
+    const changed = nextId !== this.selectedCardId || nextImage !== this.selectedCardImage;
+    this.selectedCardId = nextId;
+    this.selectedCardImage = nextImage;
     if (this.selectedCardId) this.host.dataset.selectedCardId = this.selectedCardId;
-    if (this.model) this.attachSelectedCard();
+    if (this.model && (changed || !this.cardAnchor)) this.attachSelectedCard();
   }
 
   resize() {
@@ -329,7 +374,7 @@ class TranscriptionJester {
     this.camera.fov = rect.width < 560 ? 35 : 31;
     this.camera.updateProjectionMatrix();
     this.fitCamera();
-    if (this.cardAnchor) this.attachSelectedCard();
+    this.positionCardAnchor();
   }
 
   update(time) {
@@ -358,10 +403,12 @@ class TranscriptionJester {
 
   dispose() {
     this.disposed = true;
+    this.cardLoadSerial += 1;
     if (this.frame) cancelAnimationFrame(this.frame);
     window.removeEventListener('resize', this.onWindowResize);
     window.removeEventListener('orientationchange', this.onWindowResize);
     this.mixer?.stopAllAction();
+    if (this.cardObjectUrl) URL.revokeObjectURL(this.cardObjectUrl);
     disposeObject(this.cardAnchor);
     disposeObject(this.model);
     this.renderer.dispose();
