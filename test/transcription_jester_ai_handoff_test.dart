@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('3D jester page uses external image analysis with no app AI backend', () {
+  test('3D jester page uses external AI without claiming URL image access', () {
     final screen = File(
       'lib/screens/card_transcription_screen.dart',
     ).readAsStringSync();
@@ -28,15 +28,17 @@ void main() {
     expect(sheet, contains('ExternalAiHandoffService.buildPrompt'));
     expect(sheet, contains('ExternalAiProvider.values'));
     expect(sheet, contains("Text('COPY PROMPT')"));
-    expect(sheet, contains('direct public card-image URL'));
+    expect(sheet, contains('reference-only'));
     expect(sheet, contains('No app AI backend is used.'));
-    expect(sheet, isNot(contains('Transcribe the card before discussing it')));
-    expect(sheet, isNot(contains('transcriptionOverride: transcription')));
+    expect(sheet, isNot(contains('receives the direct public card-image URL')));
 
     expect(service, contains('publicImageUrlFor'));
     expect(service, contains('PublicCardShareService.shareUrlFor'));
-    expect(service, contains("'SOURCE CARD:'"));
-    expect(service, contains("'CARD IMAGE:'"));
+    expect(service, contains("'CARD TEXT PROVIDED BY THE APP:'"));
+    expect(service, contains('reference-only'));
+    expect(service, contains('card.question'));
+    expect(service, contains('card.answer'));
+    expect(service, isNot(contains('Open and analyze the CARD IMAGE directly')));
   });
 
   test('Browse AI compatibility entry cannot trigger app transcription', () {
