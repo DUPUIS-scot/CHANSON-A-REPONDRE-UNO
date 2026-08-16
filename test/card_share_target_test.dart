@@ -82,7 +82,7 @@ void main() {
     await tester.tap(find.text('TRANSCRIBE CARD'));
     await tester.pumpAndSettle();
 
-    expect(find.text('TRANSCRIPTION'), findsOneWidget);
+    expect(find.text('TRANSCRIPTION'), findsNothing);
     expect(find.text('TRANSCRIBE CARD'), findsOneWidget);
     expect(find.text('DIY WITH AI'), findsOneWidget);
     expect(find.text('ChatGPT'), findsNothing);
