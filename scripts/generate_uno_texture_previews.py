@@ -4,8 +4,7 @@ import subprocess
 from pathlib import Path
 
 CATALOG = Path('assets/json/cards.json')
-BUILD = Path('build/web')
-TARGET_DIR = BUILD / 'assets/share-previews'
+TARGET_DIR = Path('build/web/assets/share-previews')
 MAX_BYTES = 350_000
 
 with CATALOG.open('r', encoding='utf-8-sig') as handle:
@@ -26,10 +25,10 @@ for index, card in enumerate(cards, start=1):
     if not image_path:
         raise SystemExit(f'Missing image path for UNO-{index:03d}')
 
-    source = BUILD / 'assets' / image_path
+    source = Path(image_path)
     target = TARGET_DIR / f'UNO-{index:03d}.jpg'
     if not source.is_file():
-        raise SystemExit(f'Missing built UNO source: {source}')
+        raise SystemExit(f'Missing repository UNO source: {source}')
 
     def convert(quality: int) -> None:
         subprocess.run([
