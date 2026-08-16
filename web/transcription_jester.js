@@ -202,7 +202,10 @@ class TranscriptionJester {
       this.model = gltf.scene;
       let meshCount = 0;
       this.model.traverse((object) => {
-        if (/string|marionette|control[_ -]?line/i.test(object.name)) object.visible = false;
+        // This dedicated transcription model may itself be named "marionette".
+        // Keep the entire imported hierarchy visible; hiding by node name can
+        // suppress the root and make the successfully loaded jester disappear.
+        object.visible = true;
         if (object.isMesh) {
           meshCount += 1;
           if (!object.geometry.getAttribute('normal')) object.geometry.computeVertexNormals();
