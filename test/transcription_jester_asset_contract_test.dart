@@ -38,12 +38,16 @@ void main() {
       bootstrap,
       contains('three@0.160.0/examples/jsm/libs/draco/'),
     );
-    expect(bootstrap, contains("TRANSCRIPTION_MODEL = 'transcription_jester.glb'"));
+    expect(bootstrap, contains("'transcription_jester.glb'"));
+    expect(bootstrap, contains("'transcription_jester_rigged.glb'"));
+    expect(bootstrap, contains('TRANSCRIPTION_MODELS.some'));
 
     final bootstrapIndex = html.indexOf('transcription_draco_bootstrap.js');
     final rendererIndex = html.indexOf('transcription_jester.js');
     expect(bootstrapIndex, greaterThanOrEqualTo(0));
     expect(rendererIndex, greaterThan(bootstrapIndex));
+    expect(html, contains('transcription-jester-draco-2'));
+    expect(html, contains('transcription-jester-rigged-2'));
   });
 }
 
