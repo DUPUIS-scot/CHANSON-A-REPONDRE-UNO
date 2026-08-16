@@ -180,7 +180,7 @@ class _PlayScreenState extends State<PlayScreen> {
     final handBackImagePath = _handBackImagePath(activeDeck);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF050302),
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         toolbarHeight: 82,
         automaticallyImplyLeading: false,
@@ -236,143 +236,121 @@ class _PlayScreenState extends State<PlayScreen> {
               color: Color(0xFF050302),
               child: Center(child: CircularProgressIndicator()),
             )
-          : ColoredBox(
-              color: const Color(0xFF050302),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1120),
-                  child: DecoratedBox(
-                    decoration: const BoxDecoration(
-                      border: Border.symmetric(
-                        vertical: BorderSide(color: Color(0xFF8D6124)),
-                      ),
-                      boxShadow: [
-                        BoxShadow(color: Colors.black, blurRadius: 30),
-                      ],
+          : Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1120),
+                child: DecoratedBox(
+                  decoration: const BoxDecoration(
+                    border: Border.symmetric(
+                      vertical: BorderSide(color: Color(0xFF8D6124)),
                     ),
-                    child: GameTableBackground(
-                      stageLayer: PuppetDealerScene(
-                        controller: puppetController,
-                        quality: puppetQuality,
-                      ),
-                      child: SafeArea(
-                        top: false,
-                        child: LayoutBuilder(
-                          builder: (context, constraints) {
-                            final narrow = constraints.maxWidth < 600;
-                            final veryNarrow = constraints.maxWidth < 380;
-                            final short = constraints.maxHeight < 650;
-                            final player = state.players[state.currentPlayerIndex];
-                            final selected = player.hand
-                                .where((card) => card.id == selectedCardId)
-                                .firstOrNull;
+                    boxShadow: [
+                      BoxShadow(color: Colors.black, blurRadius: 30),
+                    ],
+                  ),
+                  child: GameTableBackground(
+                    stageLayer: PuppetDealerScene(
+                      controller: puppetController,
+                      quality: puppetQuality,
+                    ),
+                    child: SafeArea(
+                      top: false,
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final narrow = constraints.maxWidth < 600;
+                          final state = game.state!;
+                          final player = state.players[state.currentPlayerIndex];
+                          final hand = hideHand ? <CardImageModel>[] : player.hand;
+                          final handFaceUp = List<bool>.filled(hand.length, false);
+                          final selectedIndex = hand.indexWhere(
+                            (card) => card.id == selectedCardId,
+                          );
 
-                            final pileScale = veryNarrow
-                                ? .56
-                                : narrow
-                                ? .70
-                                : .88;
-                            final pileTop = constraints.maxHeight *
-                                (short
-                                    ? .44
-                                    : narrow
-                                    ? .49
-                                    : .53);
-                            final pileInset = veryNarrow
-                                ? 8.0
-                                : narrow
-                                ? 16.0
-                                : constraints.maxWidth * .055;
-                            final actionHeight = short ? 56.0 : 72.0;
-                            final handHeight = short
-                                ? 136.0
-                                : (constraints.maxHeight * .24)
-                                      .clamp(158.0, 228.0);
-                            final handBottom = actionHeight + (short ? 10 : 14);
-                            final canDraw =
-                                player.hand.length < 5 &&
-                                !dealerBusy;
-
-                            return Stack(
-                              clipBehavior: Clip.none,
-                              children: [
-                                Positioned(
-                                  top: pileTop,
-                                  left: pileInset,
-                                  child: Transform.scale(
-                                    scale: pileScale,
-                                    alignment: Alignment.topLeft,
-                                    child: DrawPileWidget(
-                                      key: const Key('draw-pile-left'),
-                                      count: state.drawPile.length,
-                                      topCard: state.drawPile.lastOrNull,
-                                      backImagePath: handBackImagePath,
-                                      onDraw: canDraw ? drawWithDealer : null,
+                          return Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              Positioned(
+                                left: narrow ? 12 : 28,
+                                top: narrow ? 122 : 142,
+                                child: DrawPileWidget(
+                                  count: state.drawPile.length,
+                                  card: state.drawPile.isEmpty
+                                      ? null
+                                      : state.drawPile.last,
+                                  backImagePath: handBackImagePath,
+                                  onTap: dealerBusy ? null : drawWithDealer,
+                                ),
+                              ),
+                              Positioned(
+                                right: narrow ? 12 : 28,
+                                top: narrow ? 122 : 142,
+                                child: DiscardPileWidget(
+                                  count: state.discardPile.length,
+                                  card: state.discardPile.isEmpty
+                                      ? null
+                                      : state.discardPile.last,
+                                ),
+                              ),
+                              Positioned(
+                                left: narrow ? 12 : 24,
+                                right: narrow ? 12 : 24,
+                                bottom: narrow ? 114 : 128,
+                                child: PlayerHand(
+                                  cards: hand,
+                                  selectedCardId: selectedCardId,
+                                  faceUp: handFaceUp,
+                                  backImagePath: handBackImagePath,
+                                  onSelect: dealerBusy
+                                      ? null
+                                      : (card) {
+                                          setState(() {
+                                            selectedCardId = selectedCardId == card.id
+                                                ? null
+                                                : card.id;
+                                          });
+                                        },
+                                  onOpen: (index) => openHandPreview(
+                                    hand,
+                                    handFaceUp,
+                                    index,
+                                    handBackImagePath,
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                left: narrow ? 16 : 32,
+                                right: narrow ? 16 : 32,
+                                bottom: narrow ? 18 : 28,
+                                child: FilledButton.icon(
+                                  onPressed: dealerBusy || selectedIndex < 0
+                                      ? null
+                                      : playSelected,
+                                  icon: const Icon(Icons.play_arrow_rounded),
+                                  label: const Text('PLAY CARD'),
+                                  style: FilledButton.styleFrom(
+                                    minimumSize: const Size.fromHeight(72),
+                                    backgroundColor: const Color(0xB8471515),
+                                    foregroundColor: const Color(0xFFE6B04A),
+                                    disabledBackgroundColor: const Color(0x773A1717),
+                                    disabledForegroundColor: const Color(0x778F7141),
+                                    side: const BorderSide(
+                                      color: Color(0xFFE0A735),
+                                      width: 2,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(24),
+                                    ),
+                                    textStyle: TextStyle(
+                                      fontSize: narrow ? 25 : 30,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 1.2,
                                     ),
                                   ),
                                 ),
-                                Positioned(
-                                  top: pileTop,
-                                  right: pileInset,
-                                  child: Transform.scale(
-                                    scale: pileScale,
-                                    alignment: Alignment.topRight,
-                                    child: DiscardPileWidget(
-                                      key: const Key('discard-pile-right'),
-                                      topCard: state.topCard,
-                                      count: state.discardPile.length,
-                                    ),
-                                  ),
-                                ),
-                                Positioned(
-                                  left: 0,
-                                  right: 0,
-                                  bottom: handBottom,
-                                  height: handHeight,
-                                  child: Padding(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: veryNarrow
-                                          ? 5
-                                          : narrow
-                                          ? 10
-                                          : 24,
-                                    ),
-                                    child: PlayerHand(
-                                      cards: player.hand
-                                          .take(5)
-                                          .toList(growable: false),
-                                      backImagePath: handBackImagePath,
-                                      selectedCardId: selectedCardId,
-                                      isPlayable: (_) => true,
-                                      hideAll: hideHand,
-                                      onSelectionChanged: (card) => setState(() {
-                                        selectedCardId = card?.id;
-                                        hideHand = false;
-                                      }),
-                                      onLongPressCard: (cards, faceUp, index) =>
-                                          openHandPreview(
-                                            cards,
-                                            faceUp,
-                                            index,
-                                            handBackImagePath,
-                                          ),
-                                    ),
-                                  ),
-                                ),
-                                Positioned(
-                                  left: narrow ? 18 : 46,
-                                  right: narrow ? 18 : 46,
-                                  bottom: 8,
-                                  height: actionHeight,
-                                  child: _PlayActionBar(
-                                    canPlay: selected != null && !dealerBusy,
-                                    onPlay: playSelected,
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
+                              ),
+                            ],
+                          );
+                        },
                       ),
                     ),
                   ),
@@ -387,51 +365,16 @@ class _TheatricalHeaderBackground extends StatelessWidget {
   const _TheatricalHeaderBackground();
 
   @override
-  Widget build(BuildContext context) => DecoratedBox(
-    decoration: const BoxDecoration(
-      color: Color(0xFF050403),
-      border: Border(
-        bottom: BorderSide(color: AppTheme.gold, width: 1.5),
-      ),
-      boxShadow: [
-        BoxShadow(color: Colors.black87, blurRadius: 12, offset: Offset(0, 4)),
-      ],
-    ),
-  );
-}
-
-class _PlayActionBar extends StatelessWidget {
-  const _PlayActionBar({required this.canPlay, required this.onPlay});
-
-  final bool canPlay;
-  final VoidCallback onPlay;
-
-  static const _textStyle = TextStyle(
-    fontFamily: 'Georgia',
-    fontSize: 21,
-    fontWeight: FontWeight.w800,
-    letterSpacing: 2.0,
-  );
-
-  @override
-  Widget build(BuildContext context) => FilledButton.icon(
-    onPressed: canPlay ? onPlay : null,
-    icon: const Icon(Icons.play_arrow_rounded, size: 34),
-    label: const FittedBox(child: Text('PLAY CARD')),
-    style: FilledButton.styleFrom(
-      backgroundColor: const Color(0xFF641C18),
-      disabledBackgroundColor: const Color(0xFF3A1714),
-      foregroundColor: AppTheme.brightGold,
-      disabledForegroundColor: const Color(0xFF8F7443),
-      side: const BorderSide(color: AppTheme.gold, width: 2),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(22),
-      ),
-      textStyle: _textStyle,
-      elevation: 14,
-      shadowColor: Colors.black,
-    ),
-  );
+  Widget build(BuildContext context) => const DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xD9060302), Color(0xC9120804)],
+          ),
+          border: Border(
+            bottom: BorderSide(color: Color(0xFF5A2F13), width: .7),
+          ),
+        ),
+      );
 }
 
 class _GameLauncher extends StatelessWidget {
@@ -441,73 +384,15 @@ class _GameLauncher extends StatelessWidget {
   final GameProvider game;
 
   @override
-  Widget build(BuildContext context) => Center(
-    child: SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 430),
-        child: Card(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Semantics(
-                  image: true,
-                  label: 'Chanson à Répondre UNO',
-                  child: FractionallySizedBox(
-                    widthFactor: .72,
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 280),
-                      child: AspectRatio(
-                        key: const Key('play-launcher-logo'),
-                        aspectRatio: 836 / 303,
-                        child: ExcludeSemantics(
-                          child: Image.asset(
-                            _playLogoAsset,
-                            fit: BoxFit.contain,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 18),
-                DropdownButtonFormField<String>(
-                  initialValue: decks.activeDeckId,
-                  decoration: const InputDecoration(labelText: 'Active deck'),
-                  items: decks.decks
-                      .map(
-                        (deck) => DropdownMenuItem(
-                          value: deck.id,
-                          child: Text('${deck.name} (${deck.cards.length})'),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (id) {
-                    if (id != null) decks.select(id);
-                  },
-                ),
-                const SizedBox(height: 18),
-                FilledButton.icon(
-                  onPressed: decks.activeDeck == null
-                      ? null
-                      : () async {
-                          final ok = await game.start(decks.activeDeck!);
-                          if (!ok && context.mounted && game.message != null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(game.message!)),
-                            );
-                          }
-                        },
-                  icon: const Icon(Icons.play_arrow),
-                  label: const Text('Start game'),
-                ),
-              ],
-            ),
+  Widget build(BuildContext context) => ColoredBox(
+        color: const Color(0xFF050302),
+        child: Center(
+          child: FilledButton(
+            onPressed: decks.activeDeck == null
+                ? null
+                : () => game.start(decks.activeDeck!),
+            child: const Text('START GAME'),
           ),
         ),
-      ),
-    ),
-  );
+      );
 }
