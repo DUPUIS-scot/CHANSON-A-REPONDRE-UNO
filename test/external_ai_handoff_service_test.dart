@@ -12,10 +12,10 @@ void main() {
     path: '/',
   );
 
-  test('transcription handoff uses the canonical BRIO share URL', () {
+  test('transcription handoff includes stored text and canonical BRIO URL', () {
     final prompt = ExternalAiHandoffService.buildPrompt(
       mode: CardAiHandoffMode.transcribe,
-      card: _card(),
+      card: _card(transcription: 'LE KRAKEN\nLe Kraken rêve.'),
       deck: _deck(),
       applicationUri: applicationUri,
     );
@@ -24,11 +24,12 @@ void main() {
       prompt,
       contains('https://www.chanson-a-repondre-uno.scot/share/BRIO-013/'),
     );
-    expect(prompt, contains('transcribe all visible text'));
+    expect(prompt, contains('CARD TRANSCRIPTION:'));
+    expect(prompt, contains('LE KRAKEN\nLe Kraken rêve.'));
     expect(prompt, contains('Do not summarize, rewrite, translate'));
   });
 
-  test('DIY handoff includes an existing transcription when available', () {
+  test('DIY handoff includes transcription as primary source', () {
     final prompt = ExternalAiHandoffService.buildPrompt(
       mode: CardAiHandoffMode.diy,
       card: _card(transcription: 'LE KRAKEN\nLe Kraken rêve.'),
@@ -36,9 +37,40 @@ void main() {
       applicationUri: applicationUri,
     );
 
-    expect(prompt, contains('Existing transcription:'));
+    expect(prompt, contains('CARD TRANSCRIPTION:'));
     expect(prompt, contains('LE KRAKEN\nLe Kraken rêve.'));
-    expect(prompt, contains('Help me explore this card DIY'));
+    expect(
+      prompt,
+      contains('using the transcription above as the primary source'),
+    );
+    expect(prompt, contains('Do not ask me to paste or upload the card text again.'));
+    expect(prompt, isNot(contains('Inspect the public card link first')));
+  });
+
+  test('DIY handoff never falls back to scraping when transcription is absent', () {
+    final prompt = ExternalAiHandoffService.buildPrompt(
+      mode: CardAiHandoffMode.diy,
+      card: _card(),
+      deck: _deck(),
+      applicationUri: applicationUri,
+    );
+
+    expect(prompt, contains('[not available]'));
+    expect(prompt, contains('do not depend on scraping the source webpage'));
+    expect(prompt, isNot(contains('Inspect the public card link')));
+  });
+
+  test('explicit transcription override is preferred for the handoff', () {
+    final prompt = ExternalAiHandoffService.buildPrompt(
+      mode: CardAiHandoffMode.diy,
+      card: _card(transcription: 'old text'),
+      deck: _deck(),
+      transcriptionOverride: 'fresh exact transcription',
+      applicationUri: applicationUri,
+    );
+
+    expect(prompt, contains('fresh exact transcription'));
+    expect(prompt, isNot(contains('old text')));
   });
 
   test('legacy transcription navigation stays in focused Browse', () {
