@@ -4,7 +4,7 @@ import { GLTFLoader } from './vendor/GLTFLoader.js';
 const AUTO_SCENE_ID = 'transcription-jester-route-auto';
 const MODEL_FACING_Y = 0;
 const JESTER_MODEL = new URL(
-  'assets/assets/models/39747ebee6214eba(4).glb',
+  'assets/assets/models/transcription_jester.glb',
   document.baseURI,
 ).href;
 const BACKGROUND_CHUNKS = Array.from({ length: 6 }, (_, i) =>
@@ -123,7 +123,7 @@ class TranscriptionJester {
     this.clock = new THREE.Clock();
     this.selectedCardId = currentCardId();
     this.host.dataset.transcriptionJester = 'loading';
-    this.host.dataset.sourceModel = 'assets/models/39747ebee6214eba(4).glb';
+    this.host.dataset.sourceModel = 'assets/models/transcription_jester.glb';
     if (this.selectedCardId) this.host.dataset.selectedCardId = this.selectedCardId;
 
     this.previousBody = {
@@ -210,7 +210,7 @@ class TranscriptionJester {
       this.fitCamera();
       this.attachSelectedCard();
       this.host.dataset.transcriptionJester = 'ready';
-      this.host.dataset.modelAsset = 'assets/models/39747ebee6214eba(4).glb';
+      this.host.dataset.modelAsset = 'assets/models/transcription_jester.glb';
       this.host.dataset.behavior = 'laughing-at-viewer-with-selected-card';
       this.resume();
     }, undefined, (error) => {
@@ -349,4 +349,4 @@ window.addEventListener('popstate', syncAutonomousRouteScene);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) sharedScene?.resume(); });
 queueMicrotask(syncAutonomousRouteScene);
 setTimeout(syncAutonomousRouteScene, 250);
-setTimeout(syncAutonomousRouteScene, 1200);
+setTimeout(syncAutonomousRouteScene, 1000);
