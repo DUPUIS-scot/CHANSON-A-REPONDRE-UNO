@@ -8,6 +8,8 @@ class TranscriptionJesterScene extends StatelessWidget {
     required String imagePath,
   }) {}
 
+  static void setOverlayVisible(bool visible) {}
+
   @override
   Widget build(BuildContext context) => const SizedBox.expand();
 }
