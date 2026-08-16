@@ -59,25 +59,10 @@ class ExternalAiHandoffService {
   static Uri publicImageUrlFor({
     required CardImageModel card,
     Uri? applicationUri,
-  }) {
-    final source = applicationUri ?? Uri.base;
-    final base = Uri(
-      scheme: source.scheme,
-      userInfo: source.userInfo,
-      host: source.host,
-      port: source.hasPort ? source.port : null,
-      path: source.path,
-    );
-    final root = base.pathSegments.where((segment) => segment.isNotEmpty);
-    final imageSegments = card.imagePath
-        .split('/')
-        .where((segment) => segment.isNotEmpty);
-    return base.replace(
-      pathSegments: [...root, 'assets', ...imageSegments],
-      query: null,
-      fragment: null,
-    );
-  }
+  }) => PublicCardShareService.publicImageUrlFor(
+    card: card,
+    applicationUri: applicationUri,
+  );
 
   static String buildPrompt({
     required CardAiHandoffMode mode,
@@ -108,10 +93,10 @@ class ExternalAiHandoffService {
       '',
       'REFERENCE LINK:',
       '$shareUrl',
-      'REFERENCE IMAGE URL:',
+      'DIRECT PUBLIC CARD IMAGE:',
       '$imageUrl',
       '',
-      'Important: these URLs are reference-only. Do not claim you opened, viewed, fetched, or inspected them unless your environment actually supports that.',
+      'Important: the image URL points directly to the selected public card asset. It is still reference-only for AI providers that do not support fetching external images. Do not claim you viewed it unless your environment actually opened it.',
       '',
     ];
 
@@ -132,7 +117,7 @@ class ExternalAiHandoffService {
       return <String>[
         ...metadata,
         'No extracted card text is available in the app for this card.',
-        'Do not say you inspected the reference image URL if you cannot access external images.',
+        'Do not say you inspected the direct card image URL if you cannot access external images.',
         'Tell the user that an actual image attachment is required for visual transcription in this AI environment.',
       ].join('\n');
     }
