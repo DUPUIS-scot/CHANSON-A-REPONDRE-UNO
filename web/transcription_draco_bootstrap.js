@@ -1,28 +1,29 @@
 import { GLTFLoader } from './vendor/GLTFLoader.js';
 import { DRACOLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/DRACOLoader.js';
 
-const TRANSCRIPTION_MODELS = [
+const DRACO_MODELS = [
   'transcription_jester.glb',
   'transcription_jester_rigged.glb',
+  'play_jester_rigged.glb',
 ];
 const DRACO_DECODER_PATH =
   'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/';
-const PATCH_MARKER = Symbol.for('chanson.transcriptionDracoLoaderPatched');
+const PATCH_MARKER = Symbol.for('chanson.dracoLoaderPatched');
 
-// The transcription jester assets may use KHR_draco_mesh_compression.
+// These rigged jester assets may use KHR_draco_mesh_compression.
 // GLTFLoader does not decode that extension unless a DRACOLoader has been
-// attached first. Patch only the transcription jester model URLs so the
-// existing Play/Search GLBs keep their current loading behavior.
+// attached first. Patch only the known jester model URLs so Search/other GLBs
+// keep their current loading behavior.
 if (!GLTFLoader.prototype[PATCH_MARKER]) {
   const originalLoad = GLTFLoader.prototype.load;
 
-  GLTFLoader.prototype.load = function loadWithTranscriptionDraco(
+  GLTFLoader.prototype.load = function loadWithDraco(
     url,
     onLoad,
     onProgress,
     onError,
   ) {
-    const needsDraco = TRANSCRIPTION_MODELS.some((model) =>
+    const needsDraco = DRACO_MODELS.some((model) =>
       String(url).includes(model),
     );
     if (!needsDraco) {
