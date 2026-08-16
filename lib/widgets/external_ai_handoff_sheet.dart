@@ -112,7 +112,6 @@ class _ExternalAiJesterScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final refreshed = context.watch<DeckProvider>().cardById(card.id) ?? card;
-    final transcription = ExternalAiHandoffService.transcriptionFor(refreshed);
     final size = MediaQuery.sizeOf(context);
     final compact = size.width < 760;
     final cardWidth = compact
@@ -132,10 +131,8 @@ class _ExternalAiJesterScreen extends StatelessWidget {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // On web TranscriptionJesterScene installs the supplied theatrical
-          // reference image on the document body and mounts the uploaded 3D
-          // jester over it. Keeping this route transparent exposes that exact
-          // background instead of duplicating it as a Flutter bitmap.
+          // The theatrical reference and animated 3D jester remain the visual
+          // focus of this route. No transcription card is drawn over them.
           const Positioned.fill(child: TranscriptionJesterScene()),
           const Positioned.fill(
             child: IgnorePointer(
@@ -145,12 +142,12 @@ class _ExternalAiJesterScreen extends StatelessWidget {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Color(0x06000000),
-                      Color(0x12000000),
-                      Color(0x52050201),
-                      Color(0xE8050201),
+                      Color(0x00000000),
+                      Color(0x08000000),
+                      Color(0x32050201),
+                      Color(0xD8050201),
                     ],
-                    stops: [0, .46, .72, 1],
+                    stops: [0, .58, .82, 1],
                   ),
                 ),
               ),
@@ -216,37 +213,33 @@ class _ExternalAiJesterScreen extends StatelessWidget {
                 SingleChildScrollView(
                   padding: EdgeInsets.fromLTRB(
                     compact ? 16 : 34,
-                    18,
+                    8,
                     compact ? 16 : 34,
                     24,
                   ),
                   child: Center(
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 920),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          _TranscriptionPanel(
-                            text: transcription.isEmpty
-                                ? 'Choose TRANSCRIBE CARD to extract the selected card text, or DIY WITH AI to prepare it automatically and continue with the AI of your choice.'
-                                : transcription,
-                            hasText: transcription.isNotEmpty,
-                          ),
-                          const SizedBox(height: 16),
-                          if (compact) ...[
-                            _TranscribeButton(
-                              emphasized:
-                                  initialMode == CardAiHandoffMode.transcribe,
-                              onPressed: () =>
-                                  handoff(CardAiHandoffMode.transcribe),
-                            ),
-                            const SizedBox(height: 12),
-                            _DiyButton(
-                              emphasized: initialMode == CardAiHandoffMode.diy,
-                              onPressed: () => handoff(CardAiHandoffMode.diy),
-                            ),
-                          ] else
-                            Row(
+                      child: compact
+                          ? Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                _TranscribeButton(
+                                  emphasized: initialMode ==
+                                      CardAiHandoffMode.transcribe,
+                                  onPressed: () =>
+                                      handoff(CardAiHandoffMode.transcribe),
+                                ),
+                                const SizedBox(height: 12),
+                                _DiyButton(
+                                  emphasized:
+                                      initialMode == CardAiHandoffMode.diy,
+                                  onPressed: () =>
+                                      handoff(CardAiHandoffMode.diy),
+                                ),
+                              ],
+                            )
+                          : Row(
                               children: [
                                 Expanded(
                                   child: _TranscribeButton(
@@ -268,8 +261,6 @@ class _ExternalAiJesterScreen extends StatelessWidget {
                                 ),
                               ],
                             ),
-                        ],
-                      ),
                     ),
                   ),
                 ),
@@ -280,60 +271,6 @@ class _ExternalAiJesterScreen extends StatelessWidget {
       ),
     );
   }
-}
-
-class _TranscriptionPanel extends StatelessWidget {
-  const _TranscriptionPanel({required this.text, required this.hasText});
-
-  final String text;
-  final bool hasText;
-
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.fromLTRB(26, 20, 26, 24),
-        decoration: BoxDecoration(
-          color: const Color(0xE90A0806),
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: _gold, width: 1.2),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0xA8000000),
-              blurRadius: 26,
-              offset: Offset(0, 12),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            const Text(
-              'TRANSCRIPTION',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: _cream,
-                fontFamily: 'serif',
-                fontSize: 24,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.2,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Container(height: 1, color: const Color(0x77E7A62C)),
-            const SizedBox(height: 14),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                text,
-                style: TextStyle(
-                  color: hasText ? _cream : const Color(0xCCFFE8B4),
-                  fontSize: 19,
-                  height: 1.4,
-                  fontStyle: hasText ? FontStyle.normal : FontStyle.italic,
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
 }
 
 class _TranscribeButton extends StatelessWidget {
@@ -347,8 +284,8 @@ class _TranscribeButton extends StatelessWidget {
         style: FilledButton.styleFrom(
           backgroundColor: _gold,
           foregroundColor: _ink,
-          minimumSize: const Size.fromHeight(88),
-          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
+          minimumSize: const Size.fromHeight(82),
+          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
           side: BorderSide(
             color: emphasized ? _brightGold : _gold,
             width: emphasized ? 2.2 : 1.2,
@@ -377,8 +314,8 @@ class _DiyButton extends StatelessWidget {
         style: OutlinedButton.styleFrom(
           foregroundColor: _gold,
           backgroundColor: const Color(0xE70A0806),
-          minimumSize: const Size.fromHeight(88),
-          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
+          minimumSize: const Size.fromHeight(82),
+          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
           side: BorderSide(
             color: emphasized ? _brightGold : _gold,
             width: emphasized ? 2.2 : 1.3,
