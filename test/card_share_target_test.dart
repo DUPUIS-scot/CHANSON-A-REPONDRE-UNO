@@ -89,9 +89,6 @@ void main() {
     await tester.pump(const Duration(milliseconds: 250));
     await tester.pumpAndSettle();
 
-    expect(find.text('TRANSCRIBE CARD'), findsNothing);
-    expect(find.text('DISCUSS WITH AI'), findsNothing);
-
     final cards = find.byType(BrowseHandCard);
     expect(cards, findsNWidgets(5));
     final selected = tester.widget<BrowseHandCard>(cards.first).card;
@@ -111,9 +108,13 @@ void main() {
     router.go('/cards');
     await tester.pumpAndSettle();
     final cardsAgain = find.byType(BrowseHandCard);
+    expect(cardsAgain, findsNWidgets(5));
     final selectedAgain = tester.widget<BrowseHandCard>(cardsAgain.first).card;
     tester.widget<BrowseHandCard>(cardsAgain.first).onTap();
     await tester.pumpAndSettle();
+
+    expect(find.text('TRANSCRIBE CARD'), findsOneWidget);
+    expect(find.text('DISCUSS WITH AI'), findsOneWidget);
     await tester.tap(find.text('DISCUSS WITH AI'));
     await tester.pumpAndSettle();
     expect(router.state.uri.path, '/cards/${selectedAgain.id}/transcription');
