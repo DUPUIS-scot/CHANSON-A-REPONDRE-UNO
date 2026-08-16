@@ -72,11 +72,20 @@ function flutterAssetUrl(path) {
 
 function stageRect() {
   const mobile = window.matchMedia('(max-width: 759px)').matches;
-  const width = window.innerWidth;
-  const height = window.innerHeight;
-  return mobile
-    ? { left: -width * 0.08, top: 18, width: width * 1.16, height: Math.min(640, height * 0.64) }
-    : { left: Math.max(0, width * 0.04), top: 12, width: Math.min(860, width * 0.68), height: Math.min(760, height * 0.72) };
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  const stageWidth = mobile
+    ? Math.min(viewportWidth * 1.12, 760)
+    : Math.min(viewportWidth * 0.78, 980);
+  const stageHeight = mobile
+    ? Math.min(700, viewportHeight * 0.76)
+    : Math.min(820, viewportHeight * 0.82);
+  return {
+    left: (viewportWidth - stageWidth) * 0.5,
+    top: mobile ? 10 : 6,
+    width: stageWidth,
+    height: stageHeight,
+  };
 }
 
 class TranscriptionJester {
@@ -231,8 +240,6 @@ class TranscriptionJester {
       (bounds.min.z + bounds.max.z) * 0.5,
     );
 
-    // Frame only the upper torso/head while keeping the entire rig loaded.
-    // The lower body remains available to the skeleton but sits below viewport.
     const visibleHeight = Math.max(size.y * 0.55, 0.5);
     const visibleWidth = Math.max(size.x * 0.86, 0.5);
     const verticalFov = THREE.MathUtils.degToRad(this.camera.fov);
@@ -246,7 +253,7 @@ class TranscriptionJester {
     this.camera.far = Math.max(100, distance * 20);
     this.camera.lookAt(target);
     this.camera.updateProjectionMatrix();
-    this.host.dataset.cameraFraming = 'head-shoulders-chest';
+    this.host.dataset.cameraFraming = 'head-shoulders-chest-centered';
   }
 
   async attachSelectedCard() {
