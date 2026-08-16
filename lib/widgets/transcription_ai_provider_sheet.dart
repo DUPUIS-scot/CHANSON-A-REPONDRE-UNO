@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import '../models/card_image_model.dart';
 import '../models/deck_model.dart';
 import '../services/external_ai_handoff_service.dart';
+import '../services/native_share.dart';
+import '../services/native_share_result.dart';
+import '../services/public_card_share_service.dart';
 
 const _gold = Color(0xFFE7A62C);
 const _brightGold = Color(0xFFFFD980);
@@ -29,6 +32,7 @@ Future<void> showTranscriptionAiProviderSheet({
     backgroundColor: const Color(0xFF0A0806),
     builder: (_) => _TranscriptionAiProviderSheet(
       card: card,
+      deck: deck,
       mode: mode,
       prompt: prompt,
       service: service,
@@ -39,12 +43,14 @@ Future<void> showTranscriptionAiProviderSheet({
 class _TranscriptionAiProviderSheet extends StatelessWidget {
   const _TranscriptionAiProviderSheet({
     required this.card,
+    required this.deck,
     required this.mode,
     required this.prompt,
     required this.service,
   });
 
   final CardImageModel card;
+  final Deck deck;
   final CardAiHandoffMode mode;
   final String prompt;
   final ExternalAiHandoffService service;
@@ -53,17 +59,9 @@ class _TranscriptionAiProviderSheet extends StatelessWidget {
       ? 'TRANSCRIBE WITH AI'
       : 'DISCUSS WITH AI';
 
-  String get _description {
-    final hasText = ExternalAiHandoffService.transcriptionFor(card).isNotEmpty;
-    if (mode == CardAiHandoffMode.transcribe) {
-      return hasText
-          ? '${card.displayTitle} · The chosen AI receives the card text already available in the app. Image and share URLs are reference-only.'
-          : '${card.displayTitle} · No extracted card text is currently available. The chosen AI will be told not to pretend it can read the image URL.';
-    }
-    return hasText
-        ? '${card.displayTitle} · The chosen AI discusses the card from the text already available in the app. URLs are optional references.'
-        : '${card.displayTitle} · The chosen AI receives card metadata and reference links without being told it has viewed the image.';
-  }
+  String get _description => mode == CardAiHandoffMode.transcribe
+      ? '${card.displayTitle} · The selected card image can be shared as an actual attachment, with the card context copied for the AI.'
+      : '${card.displayTitle} · Share the selected card image itself, then paste the copied context into the AI conversation.';
 
   IconData _iconFor(ExternalAiProvider provider) => switch (provider) {
         ExternalAiProvider.chatgpt => Icons.auto_awesome_rounded,
@@ -73,13 +71,30 @@ class _TranscriptionAiProviderSheet extends StatelessWidget {
       };
 
   Future<void> _open(BuildContext context, ExternalAiProvider provider) async {
+    await service.copyPrompt(prompt);
+    final shareUrl = PublicCardShareService.shareUrlFor(
+      cardId: card.id,
+      deckId: deck.id,
+    ).toString();
+    final shareResult = await sharePublicCard(
+      title: '${deck.name} — ${card.displayTitle}',
+      text: prompt,
+      url: shareUrl,
+      imagePath: card.imagePath,
+    );
+
+    if (shareResult == NativeShareResult.cancelled) return;
+
     try {
       await service.openProvider(provider: provider, prompt: prompt);
       if (!context.mounted) return;
+      final attachmentNote = shareResult == NativeShareResult.shared
+          ? ' The selected card image was also sent through the system share sheet; choose ${provider.label} there when available.'
+          : ' Image attachment is not supported by this browser/provider handoff, so attach the selected card image manually if visual analysis is needed.';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Card context copied. Paste it in ${provider.label} if it is not inserted automatically.',
+            'Card context copied and ${provider.label} opened.$attachmentNote',
           ),
         ),
       );
@@ -88,7 +103,7 @@ class _TranscriptionAiProviderSheet extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Card context copied, but ${provider.label} could not be opened automatically.',
+            'Card context copied. Use the system share sheet for the image, but ${provider.label} could not be opened automatically.',
           ),
         ),
       );
@@ -190,7 +205,7 @@ class _TranscriptionAiProviderSheet extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'No app AI backend is used. Available card text is handed off directly; image and share URLs are reference-only.',
+                  'No app AI backend is used. The selected card image is handed to the browser share sheet when supported, while the AI context remains copied for pasting.',
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: const Color(0xCCFFE8B4),
