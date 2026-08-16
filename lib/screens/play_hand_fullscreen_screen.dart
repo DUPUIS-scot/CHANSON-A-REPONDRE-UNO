@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 
 import '../models/card_image_model.dart';
 import '../widgets/fullscreen_hand_card.dart';
-import '../widgets/fullscreen_hand_toolbar.dart';
 import '../widgets/fullscreen_page_indicator.dart';
 
 class PlayHandFullscreenScreen extends StatefulWidget {
@@ -65,6 +64,7 @@ class _PlayHandFullscreenScreenState extends State<PlayHandFullscreenScreen> {
         body: Center(child: Text('No cards to preview.')),
       );
     }
+
     return CallbackShortcuts(
       bindings: {
         const SingleActivator(LogicalKeyboardKey.escape): () =>
@@ -81,8 +81,18 @@ class _PlayHandFullscreenScreenState extends State<PlayHandFullscreenScreen> {
         autofocus: true,
         child: Scaffold(
           backgroundColor: Colors.black,
-          body: SafeArea(
+          appBar: AppBar(
+            backgroundColor: Colors.black,
+            title: Text(widget.cards[_index].category.toUpperCase()),
+            leading: IconButton(
+              tooltip: 'Close fullscreen card',
+              onPressed: () => Navigator.pop(context),
+              icon: const Icon(Icons.close_rounded),
+            ),
+          ),
+          body: ClipRect(
             child: Stack(
+              fit: StackFit.expand,
               children: [
                 PageView.builder(
                   controller: _pages,
@@ -96,23 +106,6 @@ class _PlayHandFullscreenScreenState extends State<PlayHandFullscreenScreen> {
                         ? widget.faceUp[index]
                         : true,
                     backImagePath: widget.backImagePath,
-                  ),
-                ),
-                Align(
-                  alignment: Alignment.topCenter,
-                  child: FullscreenHandToolbar(
-                    title: widget.cards[_index].category.toUpperCase(),
-                    onClose: () => Navigator.pop(context),
-                  ),
-                ),
-                Align(
-                  alignment: Alignment.bottomCenter,
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: FullscreenPageIndicator(
-                      current: _index + 1,
-                      total: widget.cards.length,
-                    ),
                   ),
                 ),
                 if (_index > 0)
@@ -134,6 +127,22 @@ class _PlayHandFullscreenScreenState extends State<PlayHandFullscreenScreen> {
                     ),
                   ),
               ],
+            ),
+          ),
+          bottomNavigationBar: SafeArea(
+            top: false,
+            child: ColoredBox(
+              color: Colors.black,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+                child: Center(
+                  heightFactor: 1,
+                  child: FullscreenPageIndicator(
+                    current: _index + 1,
+                    total: widget.cards.length,
+                  ),
+                ),
+              ),
             ),
           ),
         ),
