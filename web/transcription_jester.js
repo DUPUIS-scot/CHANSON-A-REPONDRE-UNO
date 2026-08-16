@@ -2,11 +2,13 @@ import * as THREE from 'three';
 import { GLTFLoader } from './vendor/GLTFLoader.js';
 
 const AUTO_SCENE_ID = 'transcription-jester-route-auto';
-const MODEL_FACING_Y = 0;
-const JESTER_MODEL = new URL(
-  'assets/assets/models/transcription_jester.glb',
-  document.baseURI,
-).href;
+// The uploaded Tripo jester faces +X, so rotate it toward the camera (+Z).
+const MODEL_FACING_Y = -Math.PI / 2;
+const MODEL_URLS = [
+  new URL('assets/assets/models/jester_player_reupload.glb', document.baseURI).href,
+  new URL('assets/assets/models/jester_player.glb', document.baseURI).href,
+  new URL('assets/assets/models/transcription_jester.glb', document.baseURI).href,
+];
 const BACKGROUND_CHUNKS = Array.from({ length: 6 }, (_, i) =>
   new URL(`transcription_assets/bg_${String(i).padStart(2, '0')}.txt`, document.baseURI).href,
 );
@@ -123,7 +125,7 @@ class TranscriptionJester {
     this.clock = new THREE.Clock();
     this.selectedCardId = currentCardId();
     this.host.dataset.transcriptionJester = 'loading';
-    this.host.dataset.sourceModel = 'assets/models/transcription_jester.glb';
+    this.host.dataset.sourceModel = 'assets/models/jester_player_reupload.glb';
     if (this.selectedCardId) this.host.dataset.selectedCardId = this.selectedCardId;
 
     this.previousBody = {
@@ -171,7 +173,7 @@ class TranscriptionJester {
     window.addEventListener('resize', this.onWindowResize);
     window.addEventListener('orientationchange', this.onWindowResize);
     this.resize();
-    this.loadModel();
+    this.loadModel(0);
   }
 
   async installReferenceBackground() {
@@ -192,13 +194,28 @@ class TranscriptionJester {
     }
   }
 
-  loadModel() {
-    new GLTFLoader().load(JESTER_MODEL, (gltf) => {
+  loadModel(index) {
+    const modelUrl = MODEL_URLS[index];
+    if (!modelUrl) {
+      this.host.dataset.transcriptionJester = 'failed';
+      this.host.dataset.modelError = 'No 3D jester asset could be loaded.';
+      return;
+    }
+
+    this.host.dataset.modelAsset = modelUrl;
+    new GLTFLoader().load(modelUrl, (gltf) => {
       if (this.disposed) return disposeObject(gltf.scene);
       this.model = gltf.scene;
       this.model.traverse((object) => {
         if (/string|marionette|control[_ -]?line/i.test(object.name)) object.visible = false;
-        if (object.isMesh && !object.geometry.getAttribute('normal')) object.geometry.computeVertexNormals();
+        if (object.isMesh) {
+          if (!object.geometry.getAttribute('normal')) object.geometry.computeVertexNormals();
+          const materials = Array.isArray(object.material) ? object.material : [object.material];
+          materials.filter(Boolean).forEach((material) => {
+            material.side = THREE.DoubleSide;
+            material.needsUpdate = true;
+          });
+        }
       });
       const bounds = new THREE.Box3().setFromObject(this.model);
       const size = bounds.getSize(new THREE.Vector3());
@@ -210,13 +227,16 @@ class TranscriptionJester {
       this.fitCamera();
       this.attachSelectedCard();
       this.host.dataset.transcriptionJester = 'ready';
-      this.host.dataset.modelAsset = 'assets/models/transcription_jester.glb';
+      this.host.dataset.modelAsset = modelUrl;
+      this.host.dataset.modelFacingAngle = String(MODEL_FACING_Y);
+      this.host.dataset.modelFallback = index === 0 ? 'false' : 'true';
       this.host.dataset.behavior = 'laughing-at-viewer-with-selected-card';
       this.resume();
-    }, undefined, (error) => {
-      this.host.dataset.transcriptionJester = 'failed';
-      this.host.dataset.modelError = String(error?.message || error);
-      console.error('Unable to load uploaded transcription jester.', error);
+    }, (event) => {
+      if (event.total) this.host.dataset.modelProgress = String(Math.round((event.loaded / event.total) * 100));
+    }, (error) => {
+      console.warn(`Unable to load transcription jester candidate ${index + 1}.`, error);
+      this.loadModel(index + 1);
     });
   }
 
