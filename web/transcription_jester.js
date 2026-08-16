@@ -52,11 +52,13 @@ function flutterAssetUrl(path) {
   if (!path) return null;
   const normalized = String(path).trim().replace(/^\/+/, '');
   if (/^(https?:|data:)/i.test(normalized)) return normalized;
-  const deDuplicated = normalized.replace(/^assets\/assets\//, 'assets/');
-  const webPath = deDuplicated.startsWith('assets/')
-    ? deDuplicated
-    : `assets/${deDuplicated}`;
-  return new URL(webPath, document.baseURI).href;
+  if (normalized.startsWith('assets/assets/')) {
+    return new URL(normalized, document.baseURI).href;
+  }
+  if (normalized.startsWith('assets/')) {
+    return new URL(`assets/${normalized}`, document.baseURI).href;
+  }
+  return new URL(`assets/${normalized}`, document.baseURI).href;
 }
 
 function stageRect() {
@@ -156,7 +158,7 @@ class TranscriptionJester {
       const maxDimension = Math.max(size.x, size.y, size.z, 0.001);
       this.model.position.sub(center);
       this.model.scale.setScalar(5.8 / maxDimension);
-      this.model.position.set(0, -0.12, 0);
+      this.model.position.set(-0.08, -0.10, 0);
       this.pivot.add(this.model);
       this.pivot.updateMatrixWorld(true);
 
@@ -175,7 +177,7 @@ class TranscriptionJester {
       this.host.dataset.modelAnimations = String(gltf.animations?.length || 0);
       this.host.dataset.modelMeshes = String(meshCount);
       this.host.dataset.modelSize = `${size.x.toFixed(3)},${size.y.toFixed(3)},${size.z.toFixed(3)}`;
-      this.host.dataset.behavior = 'rigged-centered-jester-holding-selected-card-world-space-right';
+      this.host.dataset.behavior = 'rigged-jester-selected-card-visible-right-hand';
       this.resume();
     }, undefined, (error) => {
       this.host.dataset.transcriptionJester = 'failed';
@@ -195,17 +197,17 @@ class TranscriptionJester {
     if (!bounds) return;
     const size = bounds.getSize(new THREE.Vector3());
     const target = new THREE.Vector3(
-      (bounds.min.x + bounds.max.x) * 0.5,
-      bounds.min.y + size.y * 0.64,
+      (bounds.min.x + bounds.max.x) * 0.5 + size.x * 0.045,
+      bounds.min.y + size.y * 0.65,
       (bounds.min.z + bounds.max.z) * 0.5,
     );
-    const visibleHeight = Math.max(size.y * 0.56, 0.5);
-    const visibleWidth = Math.max(size.x * 0.88, 0.5);
+    const visibleHeight = Math.max(size.y * 0.58, 0.5);
+    const visibleWidth = Math.max(size.x * 0.98, 0.5);
     const verticalFov = THREE.MathUtils.degToRad(this.camera.fov);
     const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * Math.max(this.camera.aspect, 0.2));
     const verticalDistance = (visibleHeight * 0.5) / Math.tan(verticalFov * 0.5);
     const horizontalDistance = (visibleWidth * 0.5) / Math.tan(Math.max(horizontalFov, 0.2) * 0.5);
-    const distance = Math.max(verticalDistance, horizontalDistance, 3.6) * 1.12;
+    const distance = Math.max(verticalDistance, horizontalDistance, 3.8) * 1.16;
     this.camera.position.set(target.x, target.y, target.z + distance);
     this.camera.near = Math.max(0.01, distance / 100);
     this.camera.far = Math.max(100, distance * 20);
@@ -228,34 +230,34 @@ class TranscriptionJester {
 
     const anchor = new THREE.Group();
     const backing = new THREE.Mesh(
-      new THREE.BoxGeometry(0.74, 1.11, 0.05),
+      new THREE.BoxGeometry(0.66, 0.99, 0.05),
       new THREE.MeshStandardMaterial({ color: 0x211008, roughness: 0.72 }),
     );
     anchor.add(backing);
 
-    const faceMaterial = new THREE.MeshStandardMaterial({
-      color: 0x8b1f1f,
-      roughness: 0.55,
+    const faceMaterial = new THREE.MeshBasicMaterial({
+      color: 0x7b241d,
       side: THREE.DoubleSide,
+      toneMapped: false,
     });
-    const card = new THREE.Mesh(new THREE.PlaneGeometry(0.70, 1.05), faceMaterial);
+    const card = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.93), faceMaterial);
     card.position.z = 0.031;
     anchor.add(card);
 
     anchor.position.set(
-      center.x + size.x * 0.34,
-      bounds.min.y + size.y * 0.60,
-      bounds.max.z + Math.max(size.z * 0.10, 0.22),
+      center.x + size.x * 0.23,
+      bounds.min.y + size.y * 0.67,
+      bounds.max.z + Math.max(size.z * 0.08, 0.18),
     );
     anchor.lookAt(this.camera.position);
-    anchor.rotation.z = 0.14;
+    anchor.rotation.z = 0.08;
 
     this.cardAnchor = anchor;
     this.cardFace = card;
     this.scene.add(anchor);
     this.host.dataset.selectedCard = 'held-in-right-hand';
     this.host.dataset.selectedCardTexture = 'fallback';
-    this.host.dataset.selectedCardAnchor = 'scene-space-visible-right-hand';
+    this.host.dataset.selectedCardAnchor = 'scene-space-right-hand-inset';
   }
 
   attachSelectedCard() {
@@ -268,17 +270,19 @@ class TranscriptionJester {
       return;
     }
     this.host.dataset.selectedCardImage = imageUrl;
+    this.host.dataset.selectedCardResolvedUrl = imageUrl;
     this.host.dataset.selectedCardTexture = 'loading';
     new THREE.TextureLoader().load(imageUrl, (texture) => {
       if (this.disposed) return texture.dispose();
       texture.colorSpace = THREE.SRGBColorSpace;
-      texture.flipY = false;
+      texture.flipY = true;
+      texture.needsUpdate = true;
       if (!this.cardFace) return texture.dispose();
       const oldMaterial = this.cardFace.material;
-      this.cardFace.material = new THREE.MeshStandardMaterial({
+      this.cardFace.material = new THREE.MeshBasicMaterial({
         map: texture,
-        roughness: 0.48,
         side: THREE.DoubleSide,
+        toneMapped: false,
       });
       disposeMaterial(oldMaterial);
       this.host.dataset.selectedCard = 'held-in-right-hand';
@@ -304,7 +308,7 @@ class TranscriptionJester {
     });
     this.renderer.setSize(Math.max(rect.width, 1), Math.max(rect.height, 1), false);
     this.camera.aspect = rect.width / rect.height;
-    this.camera.fov = rect.width < 560 ? 32 : 28;
+    this.camera.fov = rect.width < 560 ? 33 : 29;
     this.camera.updateProjectionMatrix();
     this.fitCamera();
     if (this.cardAnchor) this.attachSelectedCard();
