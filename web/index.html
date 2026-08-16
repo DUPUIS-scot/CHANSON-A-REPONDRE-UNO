@@ -27,6 +27,11 @@
     }
     flutter-view, flt-glass-pane { position: relative; z-index: 1; background: transparent !important; }
     canvas[data-transcription-jester-canvas="true"] { z-index: 2 !important; }
+    canvas[data-renderer="three.js-gltf"] {
+      display: block !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+    }
   </style>
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
   <script>
@@ -43,7 +48,7 @@
   </script>
   <script type="importmap">{ "imports": { "three": "./vendor/three.module.js" } }</script>
   <script type="module" src="transcription_draco_bootstrap.js?v=jester-draco-20260816-play-1"></script>
-  <script type="module" src="puppet_dealer.js?v=play-jester-rigged-20260816g-torso-runtime"></script>
+  <script type="module" src="puppet_dealer.js?v=play-jester-rigged-20260816h-contained-torso"></script>
   <script type="module" src="transcription_jester.js?v=transcription-jester-runtime-layer-20260816b"></script>
 </head>
 <body>
