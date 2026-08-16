@@ -53,8 +53,21 @@ class CardTranscriptionScreen extends StatelessWidget {
       );
     }
 
-    final selectedCardImageUrl = ExternalAiHandoffService.publicImageUrlFor(
-      card: card,
+    // Flutter web packages declared assets beneath build/web/assets/ while
+    // preserving their original `assets/...` key. A selected card whose app
+    // key is `assets/decks/...` is therefore served at `assets/assets/decks/...`.
+    // Feed Three.js that packaged URL directly instead of the public-share URL,
+    // which intentionally uses the canonical `/assets/decks/...` form.
+    final selectedCardImagePath = card.imagePath.replaceFirst(
+      RegExp(r'^/+'),
+      '',
+    );
+    final selectedCardImageUrl = Uri.base.resolve(
+      selectedCardImagePath.startsWith('assets/assets/')
+          ? selectedCardImagePath
+          : selectedCardImagePath.startsWith('assets/')
+              ? 'assets/$selectedCardImagePath'
+              : 'assets/$selectedCardImagePath',
     ).toString();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
