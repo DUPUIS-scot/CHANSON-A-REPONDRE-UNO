@@ -76,10 +76,6 @@ class ExternalAiHandoffService {
       deckId: deck.id,
       applicationUri: applicationUri,
     );
-    final imageUrl = publicImageUrlFor(
-      card: card,
-      applicationUri: applicationUri,
-    );
     final existingTranscription = transcriptionFor(
       card,
       transcriptionOverride: transcriptionOverride,
@@ -91,12 +87,11 @@ class ExternalAiHandoffService {
       if (card.author.trim().isNotEmpty) 'Author: ${card.author.trim()}',
       if (card.theme.trim().isNotEmpty) 'Theme: ${card.theme.trim()}',
       '',
-      'REFERENCE LINK:',
+      'CARD LINK:',
       '$shareUrl',
-      'DIRECT PUBLIC CARD IMAGE:',
-      '$imageUrl',
       '',
-      'Important: the image URL points directly to the selected public card asset. It is still reference-only for AI providers that do not support fetching external images. Do not claim you viewed it unless your environment actually opened it.',
+      'If this prompt arrived with an actual image attachment, use the attachment as the primary visual source.',
+      'The card link includes the public card preview. Do not claim you viewed it unless your environment actually opened the link.',
       '',
     ];
 
@@ -110,15 +105,15 @@ class ExternalAiHandoffService {
           'Return a faithful transcription of the supplied card text.',
           'Preserve the original language, accents, spelling, punctuation, capitalization, headings, lists, and meaningful line breaks.',
           'Do not summarize, rewrite, translate, or invent missing text.',
-          'If the supplied text appears incomplete, say so instead of asking the user to upload the image merely because you cannot fetch the reference URL.',
+          'If the supplied text appears incomplete, say so instead of claiming to have opened the card link.',
         ].join('\n');
       }
 
       return <String>[
         ...metadata,
         'No extracted card text is available in the app for this card.',
-        'Do not say you inspected the direct card image URL if you cannot access external images.',
-        'Tell the user that an actual image attachment is required for visual transcription in this AI environment.',
+        'If an image attachment is present, transcribe that image directly.',
+        'If there is no attachment and you cannot open the card link, say that an actual image attachment is required for visual transcription.',
       ].join('\n');
     }
 
@@ -130,15 +125,15 @@ class ExternalAiHandoffService {
         '',
         'Discuss this card using the supplied card text as the primary source.',
         'You may interpret, translate, fact-check, research, critique, or brainstorm from this text.',
-        'Use the links only as optional references; do not require opening them before discussing the card.',
+        'Use the card link only as an optional reference; do not require opening it before discussing the card.',
       ].join('\n');
     }
 
     return <String>[
       ...metadata,
       'No extracted card text is available in the app for this card.',
-      'You may discuss the card metadata above, but do not pretend to have viewed the image from the URL.',
-      'If visual analysis is necessary, ask for the image to be attached directly in the AI conversation.',
+      'If an image attachment is present, analyze that image directly.',
+      'Otherwise, you may discuss the metadata above, but do not pretend to have viewed the card link unless you actually opened it.',
     ].join('\n');
   }
 
