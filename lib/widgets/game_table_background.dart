@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 const _playStageBackgroundAsset =
@@ -14,18 +13,16 @@ class GameTableBackground extends StatelessWidget {
   Widget build(BuildContext context) => Stack(
     fit: StackFit.expand,
     children: [
-      const ColoredBox(color: Color(0x00000000)),
-      if (!kIsWeb)
-        Positioned.fill(
-          child: Image.asset(
-            _playStageBackgroundAsset,
-            fit: BoxFit.cover,
-            alignment: Alignment.center,
-            filterQuality: FilterQuality.high,
-            errorBuilder: (context, error, stackTrace) =>
-                const ColoredBox(color: Color(0xFF050302)),
-          ),
+      Positioned.fill(
+        child: Image.asset(
+          _playStageBackgroundAsset,
+          fit: BoxFit.cover,
+          alignment: Alignment.center,
+          filterQuality: FilterQuality.high,
+          errorBuilder: (context, error, stackTrace) =>
+              const ColoredBox(color: Color(0xFF050302)),
         ),
+      ),
       if (stageLayer != null)
         LayoutBuilder(
           builder: (context, constraints) {
