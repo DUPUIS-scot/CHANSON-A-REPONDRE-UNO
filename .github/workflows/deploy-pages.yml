@@ -82,6 +82,7 @@ jobs:
         run: |
           flutter build web \
             --release \
+            --pwa-strategy=none \
             --base-href "/" \
             --dart-define=SKIP_AUTH_FOR_DEVELOPMENT=false \
             --dart-define=SUPABASE_URL="$SUPABASE_URL" \
@@ -109,7 +110,9 @@ jobs:
           test -f build/web/404.html
           test -f build/web/main.dart.js
           test -f build/web/card_share.js
+          test -f build/web/transcription_jester.js
           grep -q 'challenges.cloudflare.com/turnstile' build/web/index.html
+          grep -q 'jester_player_reupload.glb' build/web/transcription_jester.js
 
           test "$(find build/web/share -mindepth 1 -maxdepth 1 -type d -name 'UNO-*' | wc -l)" -eq 84
           test "$(find build/web/share -mindepth 1 -maxdepth 1 -type d -name 'BRIO-*' | wc -l)" -eq 16
@@ -142,7 +145,9 @@ jobs:
           grep -q '/share/UNO-084/' build/web/share/final-84-84/index.html
 
           test -f build/web/assets/assets/models/jester_player.glb
+          test -f build/web/assets/assets/models/jester_player_reupload.glb
           test -f build/web/assets/assets/models/search_castle.glb
+          test -f build/web/assets/assets/images/closed_curtains.png
           test -f build/web/card_castle/card_castle.html
           test "$(find build/web/assets/assets/cards/final_import -type f -name '*.png' | wc -l)" -eq 84
 
