@@ -71,13 +71,14 @@ jobs:
               exit 1
               ;;
           esac
-          echo "Supabase and HTTPS AI backend configuration are present."
+          echo "Supabase, Turnstile, and HTTPS AI backend configuration are present."
 
       - name: Build Flutter web release
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL || vars.SUPABASE_URL }}
           SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY || vars.SUPABASE_PUBLISHABLE_KEY || secrets.SUPABASE_ANON_KEY || vars.SUPABASE_ANON_KEY }}
           AI_BACKEND_URL: ${{ secrets.AI_BACKEND_URL || vars.AI_BACKEND_URL }}
+          TURNSTILE_SITE_KEY: 0x4AAAAAAERKLvJuMsQpWZhI
         run: |
           flutter build web \
             --release \
@@ -86,6 +87,7 @@ jobs:
             --dart-define=SUPABASE_URL="$SUPABASE_URL" \
             --dart-define=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY" \
             --dart-define=AI_BACKEND_URL="$AI_BACKEND_URL" \
+            --dart-define=TURNSTILE_SITE_KEY="$TURNSTILE_SITE_KEY" \
             --dart-define=APP_BUILD_SHA="${{ github.sha }}"
 
       - name: Add GitHub Pages fallback
@@ -107,6 +109,7 @@ jobs:
           test -f build/web/404.html
           test -f build/web/main.dart.js
           test -f build/web/card_share.js
+          grep -q 'challenges.cloudflare.com/turnstile' build/web/index.html
 
           test "$(find build/web/share -mindepth 1 -maxdepth 1 -type d -name 'UNO-*' | wc -l)" -eq 84
           test "$(find build/web/share -mindepth 1 -maxdepth 1 -type d -name 'BRIO-*' | wc -l)" -eq 16
