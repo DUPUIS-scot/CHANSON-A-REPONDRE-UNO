@@ -137,15 +137,15 @@ class TranscriptionJester {
     this.installReferenceBackground();
 
     this.scene = new THREE.Scene();
-    this.camera = new THREE.PerspectiveCamera(31, 1, 0.1, 100);
-    this.camera.position.set(0, 0.15, 10.5);
-    this.camera.lookAt(0, 0.1, 0);
+    this.camera = new THREE.PerspectiveCamera(31, 1, 0.01, 200);
+    this.camera.position.set(0, 0, 10);
+    this.camera.lookAt(0, 0, 0);
 
     this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'high-performance' });
     this.renderer.setClearColor(0x000000, 0);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.35;
+    this.renderer.toneMappingExposure = 1.6;
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.4));
     Object.assign(this.renderer.domElement.style, {
       display: 'block', position: 'fixed', pointerEvents: 'none', background: 'transparent',
@@ -159,11 +159,14 @@ class TranscriptionJester {
     this.pivot = new THREE.Group();
     this.pivot.rotation.y = MODEL_FACING_Y;
     this.scene.add(this.pivot);
-    this.scene.add(new THREE.HemisphereLight(0xffd9a6, 0x120305, 3.6));
-    const key = new THREE.DirectionalLight(0xff9d43, 7.2);
+    this.scene.add(new THREE.HemisphereLight(0xffe5bd, 0x160607, 4.2));
+    const key = new THREE.DirectionalLight(0xffb35b, 8.2);
     key.position.set(-3.2, 5.5, 6.2);
     this.scene.add(key);
-    const rim = new THREE.DirectionalLight(0xc51e16, 4.4);
+    const fill = new THREE.DirectionalLight(0xffffff, 3.0);
+    fill.position.set(3.5, 2.2, 5.5);
+    this.scene.add(fill);
+    const rim = new THREE.DirectionalLight(0xc51e16, 4.8);
     rim.position.set(4.5, 3.5, -2.5);
     this.scene.add(rim);
 
@@ -197,30 +200,42 @@ class TranscriptionJester {
     new GLTFLoader().load(JESTER_MODEL, (gltf) => {
       if (this.disposed) return disposeObject(gltf.scene);
       this.model = gltf.scene;
+      let meshCount = 0;
       this.model.traverse((object) => {
         if (/string|marionette|control[_ -]?line/i.test(object.name)) object.visible = false;
         if (object.isMesh) {
+          meshCount += 1;
           if (!object.geometry.getAttribute('normal')) object.geometry.computeVertexNormals();
           const materials = Array.isArray(object.material) ? object.material : [object.material];
           materials.filter(Boolean).forEach((material) => {
             material.side = THREE.DoubleSide;
+            material.transparent = false;
+            material.opacity = 1;
+            material.depthWrite = true;
             material.needsUpdate = true;
           });
         }
       });
+
+      this.model.updateMatrixWorld(true);
       const bounds = new THREE.Box3().setFromObject(this.model);
       const size = bounds.getSize(new THREE.Vector3());
       const center = bounds.getCenter(new THREE.Vector3());
+      const maxDimension = Math.max(size.x, size.y, size.z, 0.001);
       this.model.position.sub(center);
-      this.model.scale.setScalar(7.8 / Math.max(size.y, 0.001));
-      this.model.position.set(0.2, -0.05, 0);
+      this.model.scale.setScalar(6.6 / maxDimension);
+      this.model.position.set(0.15, -0.15, 0);
       this.pivot.add(this.model);
+      this.pivot.updateMatrixWorld(true);
+
       this.fitCamera();
       this.attachSelectedCard();
       this.host.dataset.transcriptionJester = 'ready';
       this.host.dataset.modelAsset = 'assets/models/transcription_jester.glb';
       this.host.dataset.modelFacingAngle = String(MODEL_FACING_Y);
       this.host.dataset.modelFallback = 'false';
+      this.host.dataset.modelMeshes = String(meshCount);
+      this.host.dataset.modelSize = `${size.x.toFixed(3)},${size.y.toFixed(3)},${size.z.toFixed(3)}`;
       this.host.dataset.behavior = 'laughing-at-viewer-with-selected-card';
       this.resume();
     }, (event) => {
@@ -234,16 +249,19 @@ class TranscriptionJester {
 
   fitCamera() {
     if (!this.model) return;
+    this.pivot.updateMatrixWorld(true);
     const bounds = new THREE.Box3().setFromObject(this.pivot);
     const size = bounds.getSize(new THREE.Vector3());
+    const center = bounds.getCenter(new THREE.Vector3());
+    const radius = Math.max(size.x, size.y, size.z, 0.001) * 0.5;
     const verticalFov = THREE.MathUtils.degToRad(this.camera.fov);
     const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * Math.max(this.camera.aspect, 0.2));
-    const distance = Math.max(
-      (size.y * 0.5) / Math.max(Math.tan(verticalFov / 2), 0.01),
-      (size.x * 0.5) / Math.max(Math.tan(horizontalFov / 2), 0.01),
-    ) * 0.98;
-    this.camera.position.set(0.1, 0.15, Math.max(7.8, distance));
-    this.camera.lookAt(0.1, 0.18, 0);
+    const limitingFov = Math.max(0.2, Math.min(verticalFov, horizontalFov));
+    const distance = radius / Math.tan(limitingFov / 2) * 1.18;
+    this.camera.position.set(center.x, center.y + size.y * 0.03, center.z + Math.max(distance, 3.5));
+    this.camera.near = Math.max(0.01, distance / 100);
+    this.camera.far = Math.max(100, distance * 20);
+    this.camera.lookAt(center.x, center.y + size.y * 0.03, center.z);
     this.camera.updateProjectionMatrix();
   }
 
@@ -281,7 +299,7 @@ class TranscriptionJester {
     });
     this.renderer.setSize(Math.max(rect.width, 1), Math.max(rect.height, 1), false);
     this.camera.aspect = rect.width / rect.height;
-    this.camera.fov = rect.width < 560 ? 34 : 31;
+    this.camera.fov = rect.width < 560 ? 36 : 31;
     this.camera.updateProjectionMatrix();
     this.fitCamera();
   }
