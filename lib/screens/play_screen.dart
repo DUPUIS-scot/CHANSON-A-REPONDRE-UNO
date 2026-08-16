@@ -180,6 +180,7 @@ class _PlayScreenState extends State<PlayScreen> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         toolbarHeight: 82,
         automaticallyImplyLeading: false,
@@ -231,51 +232,50 @@ class _PlayScreenState extends State<PlayScreen> {
         backgroundColor: Colors.transparent,
         flexibleSpace: const _TheatricalHeaderBackground(),
       ),
-      body: state == null
-          ? _GameLauncher(decks: decks, game: game)
-          : deckMismatch
-          ? const ColoredBox(
-              color: Color(0xFF050302),
-              child: Center(child: CircularProgressIndicator()),
-            )
-          : Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1120),
-                child: DecoratedBox(
-                  decoration: const BoxDecoration(
-                    border: Border.symmetric(
-                      vertical: BorderSide(color: Color(0xFF8D6124)),
+      body: GameTableBackground(
+        stageLayer: state == null || deckMismatch
+            ? null
+            : LayoutBuilder(
+                builder: (context, stageConstraints) {
+                  final narrow = stageConstraints.maxWidth < 600;
+                  final torsoHeight = (stageConstraints.maxHeight *
+                          (narrow ? 0.50 : 0.56))
+                      .clamp(300.0, narrow ? 440.0 : 600.0);
+                  final torsoWidth = (stageConstraints.maxWidth *
+                          (narrow ? 0.70 : 0.64))
+                      .clamp(280.0, narrow ? 500.0 : 720.0);
+                  return Align(
+                    alignment: const Alignment(0, -0.20),
+                    child: SizedBox(
+                      key: const Key('play-puppet-torso-viewport'),
+                      width: torsoWidth,
+                      height: torsoHeight,
+                      child: PuppetDealerScene(
+                        controller: puppetController,
+                        quality: puppetQuality,
+                      ),
                     ),
-                    boxShadow: [
-                      BoxShadow(color: Colors.black, blurRadius: 30),
-                    ],
-                  ),
-                  child: GameTableBackground(
-                    stageLayer: LayoutBuilder(
-                      builder: (context, stageConstraints) {
-                        final narrow = stageConstraints.maxWidth < 600;
-                        final torsoHeight = (stageConstraints.maxHeight *
-                                (narrow ? 0.50 : 0.56))
-                            .clamp(300.0, narrow ? 440.0 : 600.0);
-                        final torsoWidth = (stageConstraints.maxWidth *
-                                (narrow ? 0.70 : 0.64))
-                            .clamp(280.0, narrow ? 500.0 : 720.0);
-                        return Align(
-                          alignment: const Alignment(0, -0.20),
-                          child: SizedBox(
-                            key: const Key('play-puppet-torso-viewport'),
-                            width: torsoWidth,
-                            height: torsoHeight,
-                            child: PuppetDealerScene(
-                              controller: puppetController,
-                              quality: puppetQuality,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                    child: SafeArea(
-                      top: false,
+                  );
+                },
+              ),
+        child: state == null
+            ? _GameLauncher(decks: decks, game: game)
+            : deckMismatch
+            ? const Center(child: CircularProgressIndicator())
+            : SafeArea(
+                top: false,
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1120),
+                    child: DecoratedBox(
+                      decoration: const BoxDecoration(
+                        border: Border.symmetric(
+                          vertical: BorderSide(color: Color(0xFF8D6124)),
+                        ),
+                        boxShadow: [
+                          BoxShadow(color: Colors.black, blurRadius: 30),
+                        ],
+                      ),
                       child: LayoutBuilder(
                         builder: (context, constraints) {
                           final narrow = constraints.maxWidth < 600;
@@ -289,8 +289,8 @@ class _PlayScreenState extends State<PlayScreen> {
                           final pileTop = narrow
                               ? (shortViewport ? 112.0 : 122.0)
                               : 142.0;
-                          final state = game.state!;
-                          final player = state.players[state.currentPlayerIndex];
+                          final liveState = game.state!;
+                          final player = liveState.players[liveState.currentPlayerIndex];
                           final hand = hideHand ? <CardImageModel>[] : player.hand;
                           final selectedIndex = hand.indexWhere(
                             (card) => card.id == selectedCardId,
@@ -304,23 +304,23 @@ class _PlayScreenState extends State<PlayScreen> {
                                 left: narrow ? 12 : 28,
                                 top: pileTop,
                                 child: DrawPileWidget(
-                                  count: state.drawPile.length,
-                                  topCard: state.drawPile.isEmpty
+                                  count: liveState.drawPile.length,
+                                  topCard: liveState.drawPile.isEmpty
                                       ? null
-                                      : state.drawPile.last,
+                                      : liveState.drawPile.last,
                                   backImagePath: handBackImagePath,
                                   onDraw: dealerBusy ? null : drawWithDealer,
                                 ),
                               ),
-                              if (state.discardPile.isNotEmpty)
+                              if (liveState.discardPile.isNotEmpty)
                                 Positioned(
                                   right: narrow ? 12 : 28,
                                   top: pileTop,
                                   child: KeyedSubtree(
                                     key: const Key('discard-pile-right'),
                                     child: DiscardPileWidget(
-                                      count: state.discardPile.length,
-                                      topCard: state.discardPile.last,
+                                      count: liveState.discardPile.length,
+                                      topCard: liveState.discardPile.last,
                                     ),
                                   ),
                                 ),
@@ -391,7 +391,7 @@ class _PlayScreenState extends State<PlayScreen> {
                   ),
                 ),
               ),
-            ),
+      ),
     );
   }
 }
@@ -419,15 +419,12 @@ class _GameLauncher extends StatelessWidget {
   final GameProvider game;
 
   @override
-  Widget build(BuildContext context) => ColoredBox(
-        color: const Color(0xFF050302),
-        child: Center(
-          child: FilledButton(
-            onPressed: decks.activeDeck == null
-                ? null
-                : () => game.start(decks.activeDeck!),
-            child: const Text('START GAME'),
-          ),
+  Widget build(BuildContext context) => Center(
+        child: FilledButton(
+          onPressed: decks.activeDeck == null
+              ? null
+              : () => game.start(decks.activeDeck!),
+          child: const Text('START GAME'),
         ),
       );
 }
