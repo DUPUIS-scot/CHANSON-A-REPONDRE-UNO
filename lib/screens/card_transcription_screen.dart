@@ -11,7 +11,7 @@ const _gold = Color(0xFFE7A62C);
 const _brightGold = Color(0xFFFFD980);
 const _ink = Color(0xFF090604);
 const _transcriptionStageBackgroundAsset =
-    'assets/images/shared_stage_background_user.jpg';
+    'assets/images/play_stage_background_user.jpg';
 
 class CardTranscriptionScreen extends StatelessWidget {
   const CardTranscriptionScreen({required this.cardId, super.key});
