@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -100,17 +99,16 @@ class CardTranscriptionScreen extends StatelessWidget {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          if (!kIsWeb)
-            Positioned.fill(
-              child: Image.asset(
-                _transcriptionStageBackgroundAsset,
-                fit: BoxFit.cover,
-                alignment: Alignment.center,
-                filterQuality: FilterQuality.high,
-                errorBuilder: (context, error, stackTrace) =>
-                    const ColoredBox(color: Color(0xFF050302)),
-              ),
+          Positioned.fill(
+            child: Image.asset(
+              _transcriptionStageBackgroundAsset,
+              fit: BoxFit.cover,
+              alignment: Alignment.center,
+              filterQuality: FilterQuality.high,
+              errorBuilder: (context, error, stackTrace) =>
+                  const ColoredBox(color: Color(0xFF050302)),
             ),
+          ),
           const Positioned.fill(child: TranscriptionJesterScene()),
           const Positioned.fill(
             child: IgnorePointer(
