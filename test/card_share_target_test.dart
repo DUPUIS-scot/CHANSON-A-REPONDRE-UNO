@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uno_chanson_2/models/card_image_model.dart';
 import 'package:uno_chanson_2/providers/deck_provider.dart';
 import 'package:uno_chanson_2/screens/card_browser_screen.dart';
 import 'package:uno_chanson_2/screens/card_fullscreen_screen.dart';
+import 'package:uno_chanson_2/screens/card_transcription_screen.dart';
 import 'package:uno_chanson_2/services/deck_import_service.dart';
 import 'package:uno_chanson_2/services/local_storage_service.dart';
 import 'package:uno_chanson_2/services/public_card_share_service.dart';
@@ -59,10 +61,29 @@ void main() {
     final decks = (await tester.runAsync(_decks))!;
     addTearDown(decks.dispose);
 
+    final router = GoRouter(
+      initialLocation: '/cards',
+      routes: [
+        GoRoute(
+          path: '/cards',
+          builder: (_, _) => const CardBrowserScreen(),
+          routes: [
+            GoRoute(
+              path: ':cardId/transcription',
+              builder: (_, state) => CardTranscriptionScreen(
+                cardId: state.pathParameters['cardId']!,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
     await tester.pumpWidget(
       ChangeNotifierProvider.value(
         value: decks,
-        child: const MaterialApp(home: CardBrowserScreen()),
+        child: MaterialApp.router(routerConfig: router),
       ),
     );
     await tester.pump(const Duration(milliseconds: 250));
@@ -74,11 +95,12 @@ void main() {
 
     final cards = find.byType(BrowseHandCard);
     expect(cards, findsNWidgets(5));
+    final selected = tester.widget<BrowseHandCard>(cards.first).card;
     tester.widget<BrowseHandCard>(cards.first).onTap();
     await tester.pumpAndSettle();
 
-    // Browse keeps its compact DIY label. Entering either action opens the
-    // simplified jester screen, whose secondary action is DISCUSS WITH AI.
+    // Browse keeps its compact DIY label. TRANSCRIBE CARD now routes through
+    // the dedicated jester screen for the exact selected card.
     expect(find.text('TRANSCRIBE CARD'), findsOneWidget);
     expect(find.text('DIY WITH AI'), findsOneWidget);
     expect(find.text('DISCUSS WITH AI'), findsNothing);
@@ -86,6 +108,7 @@ void main() {
     await tester.tap(find.text('TRANSCRIBE CARD'));
     await tester.pumpAndSettle();
 
+    expect(router.state.uri.path, '/cards/${selected.id}/transcription');
     expect(find.text('TRANSCRIPTION'), findsNothing);
     expect(find.text('CARD IMAGE → EXTERNAL AI'), findsNothing);
     expect(find.text('TRANSCRIBE CARD'), findsOneWidget);
@@ -103,8 +126,6 @@ void main() {
     expect(find.text('COPY PROMPT'), findsOneWidget);
 
     Navigator.of(tester.element(find.text('COPY PROMPT'))).pop();
-    await tester.pumpAndSettle();
-    Navigator.of(tester.element(find.text('TRANSCRIBE CARD'))).pop();
     await tester.pumpAndSettle();
 
     final card = decks.cards.first;
