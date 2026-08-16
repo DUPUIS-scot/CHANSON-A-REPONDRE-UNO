@@ -251,9 +251,27 @@ class _PlayScreenState extends State<PlayScreen> {
                     ],
                   ),
                   child: GameTableBackground(
-                    stageLayer: PuppetDealerScene(
-                      controller: puppetController,
-                      quality: puppetQuality,
+                    stageLayer: LayoutBuilder(
+                      builder: (context, stageConstraints) {
+                        final narrow = stageConstraints.maxWidth < 600;
+                        final stageHeight = stageConstraints.maxHeight;
+                        final torsoHeight = (stageHeight * (narrow ? 0.52 : 0.58))
+                            .clamp(300.0, narrow ? 460.0 : 620.0);
+                        final torsoWidth = (stageConstraints.maxWidth * (narrow ? 0.72 : 0.58))
+                            .clamp(280.0, narrow ? 520.0 : 680.0);
+                        return Align(
+                          alignment: const Alignment(0, -0.12),
+                          child: SizedBox(
+                            key: const Key('play-puppet-torso-viewport'),
+                            width: torsoWidth,
+                            height: torsoHeight,
+                            child: PuppetDealerScene(
+                              controller: puppetController,
+                              quality: puppetQuality,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                     child: SafeArea(
                       top: false,
