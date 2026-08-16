@@ -73,11 +73,14 @@ void main() {
     expect(prompt, isNot(contains('old text')));
   });
 
-  test('legacy transcription navigation stays in focused Browse', () {
-    expect(AppRoutes.transcription('brio-013'), '/cards?focus=brio-013');
+  test('transcription navigation opens the dedicated transcription route', () {
+    expect(
+      AppRoutes.transcription('brio-013'),
+      '/cards/brio-013/transcription',
+    );
     expect(
       AppRoutes.transcription('final-84-01'),
-      '/cards?focus=final-84-01',
+      '/cards/final-84-01/transcription',
     );
   });
 
