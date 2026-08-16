@@ -86,8 +86,9 @@ void main() {
     await tester.tap(find.text('TRANSCRIBE CARD'));
     await tester.pumpAndSettle();
 
+    // The redesigned jester screen is intentionally visual-only above the two
+    // actions, so do not depend on the removed legacy heading text.
     expect(find.text('TRANSCRIPTION'), findsNothing);
-    expect(find.text('CARD IMAGE → EXTERNAL AI'), findsOneWidget);
     expect(find.text('TRANSCRIBE CARD'), findsOneWidget);
     expect(find.text('DIY WITH AI'), findsNothing);
     expect(find.text('DISCUSS WITH AI'), findsOneWidget);
