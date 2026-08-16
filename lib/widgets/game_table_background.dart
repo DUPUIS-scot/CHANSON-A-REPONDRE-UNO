@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-const _playStageBackgroundAsset = 'assets/images/play_stage_background.jpg';
+const _playStageBackgroundAsset = 'assets/images/play_stage_background.png';
 
 class GameTableBackground extends StatelessWidget {
   const GameTableBackground({required this.child, this.stageLayer, super.key});
@@ -27,14 +27,14 @@ class GameTableBackground extends StatelessWidget {
             final narrow = constraints.maxWidth < 600;
             final short = constraints.maxHeight < 650;
             final horizontalInset = narrow
-                ? 18.0
-                : (constraints.maxWidth * 0.10).clamp(56.0, 128.0);
+                ? 8.0
+                : (constraints.maxWidth * 0.055).clamp(24.0, 72.0);
             final bottomInset = short
-                ? 138.0
+                ? 112.0
                 : narrow
-                ? (constraints.maxHeight * 0.27).clamp(150.0, 220.0)
-                : (constraints.maxHeight * 0.24).clamp(168.0, 238.0);
-            final topInset = narrow ? 8.0 : 14.0;
+                ? (constraints.maxHeight * 0.20).clamp(118.0, 170.0)
+                : (constraints.maxHeight * 0.16).clamp(110.0, 160.0);
+            final topInset = narrow ? 2.0 : 4.0;
 
             return Padding(
               padding: EdgeInsets.fromLTRB(
@@ -43,7 +43,17 @@ class GameTableBackground extends StatelessWidget {
                 horizontalInset,
                 bottomInset,
               ),
-              child: stageLayer,
+              child: Center(
+                child: FittedBox(
+                  fit: BoxFit.contain,
+                  alignment: Alignment.center,
+                  child: SizedBox(
+                    width: constraints.maxWidth - (horizontalInset * 2),
+                    height: constraints.maxHeight - topInset - bottomInset,
+                    child: stageLayer,
+                  ),
+                ),
+              ),
             );
           },
         ),
