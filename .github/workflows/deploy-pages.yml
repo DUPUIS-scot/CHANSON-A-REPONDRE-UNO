@@ -69,7 +69,7 @@ jobs:
             --dart-define=TURNSTILE_SITE_KEY="$TURNSTILE_SITE_KEY" \
             --dart-define=APP_BUILD_SHA="${{ github.sha }}"
 
-      - name: Generate lightweight BRIO share previews
+      - name: Generate lightweight card previews
         shell: bash
         run: |
           set -euo pipefail
@@ -91,6 +91,7 @@ jobs:
             fi
             test "$size" -le 350000
           done
+          python3 scripts/generate_uno_texture_previews.py
 
       - name: Version Flutter entry bundle by commit SHA
         shell: bash
@@ -157,6 +158,10 @@ jobs:
           grep -q '/share/BRIO-008/' build/web/share/BRIO-008/index.html
           test -f build/web/assets/share-previews/BRIO-008.jpg
           test "$(stat -c%s build/web/assets/share-previews/BRIO-008.jpg)" -le 350000
+          test "$(find build/web/assets/share-previews -type f -name 'UNO-*.jpg' | wc -l)" -eq 84
+          test -f build/web/assets/share-previews/UNO-001.jpg
+          test -f build/web/assets/share-previews/UNO-084.jpg
+          test "$(stat -c%s build/web/assets/share-previews/UNO-001.jpg)" -le 350000
           if grep -Rqi 'http-equiv="refresh"' build/web/share; then
             echo "::error::Generated share pages must not use meta refresh."
             exit 1
