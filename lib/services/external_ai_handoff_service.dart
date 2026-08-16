@@ -64,30 +64,6 @@ class ExternalAiHandoffService {
     applicationUri: applicationUri,
   );
 
-  static Uri previewImageUrlFor({
-    required String cardId,
-    required String deckId,
-    Uri? applicationUri,
-  }) {
-    final shareUrl = PublicCardShareService.shareUrlFor(
-      cardId: cardId,
-      deckId: deckId,
-      applicationUri: applicationUri,
-    );
-    final segments = shareUrl.pathSegments
-        .where((segment) => segment.isNotEmpty)
-        .toList(growable: false);
-    final slug = segments.isEmpty ? cardId : segments.last;
-    final root = segments.length >= 2
-        ? segments.sublist(0, segments.length - 2)
-        : const <String>[];
-    return shareUrl.replace(
-      pathSegments: [...root, 'assets', 'share-previews', '$slug.jpg'],
-      query: null,
-      fragment: null,
-    );
-  }
-
   static String buildPrompt({
     required CardAiHandoffMode mode,
     required CardImageModel card,
@@ -98,15 +74,6 @@ class ExternalAiHandoffService {
     final shareUrl = PublicCardShareService.shareUrlFor(
       cardId: card.id,
       deckId: deck.id,
-      applicationUri: applicationUri,
-    );
-    final previewUrl = previewImageUrlFor(
-      cardId: card.id,
-      deckId: deck.id,
-      applicationUri: applicationUri,
-    );
-    final imageUrl = publicImageUrlFor(
-      card: card,
       applicationUri: applicationUri,
     );
     final existingTranscription = transcriptionFor(
@@ -120,15 +87,11 @@ class ExternalAiHandoffService {
       if (card.author.trim().isNotEmpty) 'Author: ${card.author.trim()}',
       if (card.theme.trim().isNotEmpty) 'Theme: ${card.theme.trim()}',
       '',
-      'REFERENCE LINK:',
+      'CARD LINK:',
       '$shareUrl',
-      'LIGHTWEIGHT CARD PREVIEW:',
-      '$previewUrl',
-      'ORIGINAL FULL-RESOLUTION CARD IMAGE:',
-      '$imageUrl',
       '',
       'If this prompt arrived with an actual image attachment, use the attachment as the primary visual source.',
-      'The preview and original image URLs are reference fallbacks for environments that can fetch external images. Do not claim you viewed either URL unless your environment actually opened it.',
+      'The card link includes the public card preview. Do not claim you viewed it unless your environment actually opened the link.',
       '',
     ];
 
@@ -142,7 +105,7 @@ class ExternalAiHandoffService {
           'Return a faithful transcription of the supplied card text.',
           'Preserve the original language, accents, spelling, punctuation, capitalization, headings, lists, and meaningful line breaks.',
           'Do not summarize, rewrite, translate, or invent missing text.',
-          'If the supplied text appears incomplete, say so instead of asking the user to upload the image merely because you cannot fetch the reference URLs.',
+          'If the supplied text appears incomplete, say so instead of claiming to have opened the card link.',
         ].join('\n');
       }
 
@@ -150,7 +113,7 @@ class ExternalAiHandoffService {
         ...metadata,
         'No extracted card text is available in the app for this card.',
         'If an image attachment is present, transcribe that image directly.',
-        'If there is no attachment and you cannot fetch the preview/original URLs, say that an actual image attachment is required for visual transcription.',
+        'If there is no attachment and you cannot open the card link, say that an actual image attachment is required for visual transcription.',
       ].join('\n');
     }
 
@@ -162,7 +125,7 @@ class ExternalAiHandoffService {
         '',
         'Discuss this card using the supplied card text as the primary source.',
         'You may interpret, translate, fact-check, research, critique, or brainstorm from this text.',
-        'Use the links only as optional references; do not require opening them before discussing the card.',
+        'Use the card link only as an optional reference; do not require opening it before discussing the card.',
       ].join('\n');
     }
 
@@ -170,7 +133,7 @@ class ExternalAiHandoffService {
       ...metadata,
       'No extracted card text is available in the app for this card.',
       'If an image attachment is present, analyze that image directly.',
-      'Otherwise, you may discuss the metadata above, but do not pretend to have viewed the preview or original image URL unless you actually fetched it.',
+      'Otherwise, you may discuss the metadata above, but do not pretend to have viewed the card link unless you actually opened it.',
     ].join('\n');
   }
 
