@@ -208,7 +208,7 @@ class _PlayScreenState extends State<PlayScreen> {
                       image: true,
                       label: 'Chanson à Répondre UNO',
                       child: SizedBox(
-                        key: const Key('play-launcher-logo'),
+                        key: const Key('play-header-logo'),
                         width: mobile ? 142 : 236,
                         height: mobile ? 54 : 68,
                         child: ExcludeSemantics(
@@ -292,6 +292,7 @@ class _PlayScreenState extends State<PlayScreen> {
                               ),
                               if (state.discardPile.isNotEmpty)
                                 Positioned(
+                                  key: const Key('discard-pile-right'),
                                   right: narrow ? 12 : 28,
                                   top: pileTop,
                                   child: DiscardPileWidget(
