@@ -62,6 +62,7 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
   }
 
   Future<bool> _guardHome(CardImageModel card) async {
+    final ai = context.read<CardAiProvider>();
     final saved = mode == TranscriptionMode.exact
         ? card.transcription ?? ''
         : card.cleanedTranscription ?? '';
@@ -74,7 +75,7 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
       saveLabel: 'Save and Return Home',
     );
     if (choice == GuardChoice.save) {
-      await context.read<CardAiProvider>().saveTranscription(
+      await ai.saveTranscription(
         widget.cardId,
         text: controller.text.trim(),
         mode: mode,
