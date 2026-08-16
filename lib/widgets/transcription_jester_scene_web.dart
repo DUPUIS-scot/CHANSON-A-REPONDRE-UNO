@@ -1,4 +1,7 @@
+// ignore_for_file: avoid_web_libraries_in_flutter, deprecated_member_use
+
 import 'dart:async';
+import 'dart:html' as html;
 import 'dart:js_interop';
 
 import 'package:flutter/material.dart';
@@ -25,6 +28,14 @@ class TranscriptionJesterScene extends StatefulWidget {
     _pendingCardId = cardId;
     _pendingImagePath = imagePath;
     _pushPendingCardToJs();
+  }
+
+  static void setOverlayVisible(bool visible) {
+    for (final element in html.document.querySelectorAll(
+      '[data-transcription-jester-canvas="true"]',
+    )) {
+      element.style.visibility = visible ? 'visible' : 'hidden';
+    }
   }
 
   static void _pushPendingCardToJs() {
