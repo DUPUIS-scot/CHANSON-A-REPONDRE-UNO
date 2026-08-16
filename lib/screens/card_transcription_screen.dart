@@ -77,6 +77,7 @@ class CardTranscriptionScreen extends StatelessWidget {
       backgroundColor: Colors.transparent,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         toolbarHeight: 82,
         elevation: 0,
         backgroundColor: Colors.transparent,
