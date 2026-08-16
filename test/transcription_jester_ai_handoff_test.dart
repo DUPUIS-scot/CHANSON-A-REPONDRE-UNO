@@ -10,6 +10,9 @@ void main() {
     final sheet = File(
       'lib/widgets/transcription_ai_provider_sheet.dart',
     ).readAsStringSync();
+    final service = File(
+      'lib/services/external_ai_handoff_service.dart',
+    ).readAsStringSync();
 
     expect(screen, contains('TranscriptionJesterScene'));
     expect(screen, contains('showTranscriptionAiProviderSheet'));
@@ -17,19 +20,21 @@ void main() {
     expect(screen, contains('CardAiHandoffMode.diy'));
     expect(screen, contains("title: 'TRANSCRIBE CARD'"));
     expect(screen, contains("title: 'DISCUSS WITH AI'"));
-    expect(screen, contains('publicImageUrlFor'));
-    expect(screen, contains('No app AI backend is used.'));
     expect(screen, isNot(contains('CardAiProvider')));
     expect(screen, isNot(contains('requireRealAuthentication')));
     expect(screen, isNot(contains('.transcribe(')));
 
     expect(sheet, contains('required CardAiHandoffMode mode'));
+    expect(sheet, contains('ExternalAiHandoffService.buildPrompt'));
     expect(sheet, contains('ExternalAiProvider.values'));
     expect(sheet, contains("Text('COPY PROMPT')"));
     expect(sheet, contains('direct public card-image URL'));
     expect(sheet, contains('No app AI backend is used.'));
     expect(sheet, isNot(contains('Transcribe the card before discussing it')));
     expect(sheet, isNot(contains('transcriptionOverride: transcription')));
+
+    expect(service, contains('publicImageUrlFor'));
+    expect(service, contains('canonical'));
   });
 
   test('Browse AI compatibility entry cannot trigger app transcription', () {
