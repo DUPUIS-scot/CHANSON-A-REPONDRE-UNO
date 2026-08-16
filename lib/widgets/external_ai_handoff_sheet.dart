@@ -30,20 +30,19 @@ Future<void> showExternalAiHandoffSheet({
       opaque: true,
       transitionDuration: const Duration(milliseconds: 260),
       reverseTransitionDuration: const Duration(milliseconds: 220),
-      pageBuilder: (_, animation, secondaryAnimation) =>
-          _ExternalAiJesterScreen(
-            card: card,
-            deck: deck,
-            initialMode: mode,
-            service: service,
-          ),
-      transitionsBuilder: (_, animation, secondaryAnimation, child) =>
+      pageBuilder: (_, _, _) => _ExternalAiJesterScreen(
+        card: card,
+        deck: deck,
+        initialMode: mode,
+        service: service,
+      ),
+      transitionsBuilder: (_, animation, _, child) =>
           FadeTransition(opacity: animation, child: child),
     ),
   );
 }
 
-Future<void> _prepareAndShowProviderSheet({
+Future<void> _showProviderChooser({
   required BuildContext context,
   required CardImageModel card,
   required Deck deck,
@@ -88,7 +87,7 @@ Future<void> _prepareAndShowProviderSheet({
     isScrollControlled: true,
     showDragHandle: true,
     backgroundColor: const Color(0xF20A0806),
-    builder: (sheetContext) => _ExternalAiProviderSheet(
+    builder: (_) => _ProviderSheet(
       card: handoffCard,
       mode: mode,
       prompt: prompt,
@@ -114,14 +113,13 @@ class _ExternalAiJesterScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final refreshed = context.watch<DeckProvider>().cardById(card.id) ?? card;
     final transcription = ExternalAiHandoffService.transcriptionFor(refreshed);
-    final compact = MediaQuery.sizeOf(context).width < 760;
-    final screen = MediaQuery.sizeOf(context);
+    final size = MediaQuery.sizeOf(context);
+    final compact = size.width < 760;
     final cardWidth = compact
-        ? math.min(168.0, screen.width * .36)
-        : math.min(230.0, screen.width * .22);
+        ? math.min(168.0, size.width * .36)
+        : math.min(230.0, size.width * .22);
 
-    Future<void> handoff(CardAiHandoffMode mode) =>
-        _prepareAndShowProviderSheet(
+    Future<void> handoff(CardAiHandoffMode mode) => _showProviderChooser(
           context: context,
           card: refreshed,
           deck: deck,
@@ -130,17 +128,14 @@ class _ExternalAiJesterScreen extends StatelessWidget {
         );
 
     return Scaffold(
-      backgroundColor: _ink,
+      backgroundColor: Colors.transparent,
       body: Stack(
         fit: StackFit.expand,
         children: [
-          Positioned.fill(
-            child: Image.asset(
-              'assets/images/transcription_ai_jester_background.jpg',
-              fit: BoxFit.cover,
-              alignment: Alignment.topCenter,
-            ),
-          ),
+          // On web TranscriptionJesterScene installs the supplied theatrical
+          // reference image on the document body and mounts the uploaded 3D
+          // jester over it. Keeping this route transparent exposes that exact
+          // background instead of duplicating it as a Flutter bitmap.
           const Positioned.fill(child: TranscriptionJesterScene()),
           const Positioned.fill(
             child: IgnorePointer(
@@ -150,10 +145,10 @@ class _ExternalAiJesterScreen extends StatelessWidget {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Color(0x05000000),
+                      Color(0x06000000),
                       Color(0x12000000),
-                      Color(0x5A050201),
-                      Color(0xEE050201),
+                      Color(0x52050201),
+                      Color(0xE8050201),
                     ],
                     stops: [0, .46, .72, 1],
                   ),
@@ -162,7 +157,7 @@ class _ExternalAiJesterScreen extends StatelessWidget {
             ),
           ),
           Positioned(
-            left: compact ? 22 : math.max(64, screen.width * .075),
+            left: compact ? 22 : math.max(64, size.width * .075),
             top: compact ? 155 : 150,
             width: cardWidth,
             child: IgnorePointer(
@@ -200,10 +195,17 @@ class _ExternalAiJesterScreen extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
                   child: Row(
                     children: [
-                      _RoundActionButton(
-                        tooltip: 'Back',
-                        icon: Icons.arrow_back_rounded,
-                        onPressed: () => Navigator.of(context).pop(),
+                      Material(
+                        color: const Color(0xB0090604),
+                        shape: const CircleBorder(
+                          side: BorderSide(color: _gold, width: 1.4),
+                        ),
+                        child: IconButton(
+                          tooltip: 'Back',
+                          onPressed: () => Navigator.of(context).pop(),
+                          color: _brightGold,
+                          icon: const Icon(Icons.arrow_back_rounded),
+                        ),
                       ),
                       const Spacer(),
                       const HomeNavigationButton(),
@@ -335,10 +337,7 @@ class _TranscriptionPanel extends StatelessWidget {
 }
 
 class _TranscribeButton extends StatelessWidget {
-  const _TranscribeButton({
-    required this.emphasized,
-    required this.onPressed,
-  });
+  const _TranscribeButton({required this.emphasized, required this.onPressed});
 
   final bool emphasized;
   final VoidCallback onPressed;
@@ -446,34 +445,8 @@ class _ActionLabel extends StatelessWidget {
       );
 }
 
-class _RoundActionButton extends StatelessWidget {
-  const _RoundActionButton({
-    required this.tooltip,
-    required this.icon,
-    required this.onPressed,
-  });
-
-  final String tooltip;
-  final IconData icon;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) => Material(
-        color: const Color(0xB0090604),
-        shape: const CircleBorder(
-          side: BorderSide(color: _gold, width: 1.4),
-        ),
-        child: IconButton(
-          tooltip: tooltip,
-          onPressed: onPressed,
-          color: _brightGold,
-          icon: Icon(icon),
-        ),
-      );
-}
-
-class _ExternalAiProviderSheet extends StatelessWidget {
-  const _ExternalAiProviderSheet({
+class _ProviderSheet extends StatelessWidget {
+  const _ProviderSheet({
     required this.card,
     required this.mode,
     required this.prompt,
@@ -496,10 +469,7 @@ class _ExternalAiProviderSheet extends StatelessWidget {
         ExternalAiProvider.copilot => Icons.assistant_outlined,
       };
 
-  Future<void> _open(
-    BuildContext context,
-    ExternalAiProvider provider,
-  ) async {
+  Future<void> _open(BuildContext context, ExternalAiProvider provider) async {
     try {
       await service.openProvider(provider: provider, prompt: prompt);
       if (!context.mounted) return;
