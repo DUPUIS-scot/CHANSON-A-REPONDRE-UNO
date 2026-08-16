@@ -75,7 +75,7 @@ void main() {
     expect(receivedImage, 'assets/cards/final_import/example.png');
   });
 
-  test('BRIO shares canonical uppercase link without image attachment', () async {
+  test('BRIO shares canonical uppercase link with image attachment', () async {
     final card = _card(
       id: 'brio-001',
       deckId: AppConstants.brioDeckId,
@@ -106,7 +106,10 @@ void main() {
     expect(result, CardShareResult.shared);
     expect(receivedTitle, 'Chanson à répondre BRIO — Carte 001');
     expect(receivedUrl, endsWith('/share/BRIO-001/'));
-    expect(receivedImage, isNull);
+    expect(
+      receivedImage,
+      'assets/decks/chanson_a_repondre_brio/cards/001.jpeg',
+    );
   });
 }
 
