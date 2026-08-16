@@ -95,7 +95,10 @@ void main() {
     expect(find.text('Claude'), findsOneWidget);
     expect(find.text('Copilot'), findsOneWidget);
     expect(find.text('COPY PROMPT'), findsOneWidget);
+
     Navigator.of(tester.element(find.text('COPY PROMPT'))).pop();
+    await tester.pumpAndSettle();
+    Navigator.of(tester.element(find.text('TRANSCRIBE CARD'))).pop();
     await tester.pumpAndSettle();
 
     final card = decks.cards.first;
