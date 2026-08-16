@@ -114,13 +114,9 @@ class _PuppetDealerSceneState extends State<PuppetDealerScene> {
     child: SizedBox.expand(
       key: const Key('puppet-stage-slot'),
       child: ClipRect(
-        child: Transform.scale(
-          scale: 1.55,
-          alignment: Alignment.topCenter,
-          child: HtmlElementView(
-            viewType: _viewType,
-            onPlatformViewCreated: _mountDealer,
-          ),
+        child: HtmlElementView(
+          viewType: _viewType,
+          onPlatformViewCreated: _mountDealer,
         ),
       ),
     ),

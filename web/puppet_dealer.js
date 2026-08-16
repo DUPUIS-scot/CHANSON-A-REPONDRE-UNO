@@ -5,11 +5,10 @@ import { GLTFLoader } from './vendor/GLTFLoader.js';
 // only mirrors each real draw/play action with a synchronized 3D performance.
 const dealers = new Map();
 const pendingMounts = new Map();
-const MODEL_REVISION = 'play-jester-rigged-20260816';
+const MODEL_REVISION = 'play-jester-rigged-20260816b';
 const MODEL_URLS = [
   new URL('assets/assets/models/play_jester_rigged.glb', document.baseURI).href,
 ];
-// Rigged Play jester. Use embedded animation clips when available.
 const MODEL_FACING_Y = 0;
 const DEAL_DURATION = 2350;
 const RECEIVE_DURATION = 1650;
@@ -57,15 +56,8 @@ function disposeObject(root) {
 }
 
 function makeCard() {
-  const edge = new THREE.MeshStandardMaterial({
-    color: 0xe8d9b8,
-    roughness: 0.54,
-    metalness: 0.02,
-  });
-  const back = new THREE.MeshStandardMaterial({
-    color: 0x77151d,
-    roughness: 0.68,
-  });
+  const edge = new THREE.MeshStandardMaterial({ color: 0xe8d9b8, roughness: 0.54, metalness: 0.02 });
+  const back = new THREE.MeshStandardMaterial({ color: 0x77151d, roughness: 0.68 });
   const card = new THREE.Mesh(
     new THREE.BoxGeometry(0.68, 1.02, 0.035),
     [edge, edge, edge, edge, back, back],
@@ -90,7 +82,6 @@ class JesterDealer {
     this.frame = 0;
     this.animation = null;
     this.clock = new THREE.Clock();
-    this.tmp = new THREE.Vector3();
 
     this.modelRoot = new THREE.Group();
     this.gestureRoot = new THREE.Group();
@@ -102,7 +93,7 @@ class JesterDealer {
     this.scene = new THREE.Scene();
     this.scene.add(this.modelRoot);
 
-    this.camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
+    this.camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100);
     this.camera.position.set(0, 0.15, 9.4);
     this.camera.lookAt(0, 0.65, 0);
 
@@ -117,8 +108,7 @@ class JesterDealer {
     this.renderer.toneMappingExposure = 1.08;
     this.renderer.domElement.id = `${host.id}-canvas`;
     this.renderer.domElement.dataset.renderer = 'three.js-gltf';
-    this.renderer.domElement.style.cssText =
-      'display:block;width:100%;height:100%;pointer-events:none';
+    this.renderer.domElement.style.cssText = 'display:block;width:100%;height:100%;pointer-events:none';
     host.appendChild(this.renderer.domElement);
 
     this.card = makeCard();
@@ -145,11 +135,9 @@ class JesterDealer {
     key.position.set(-4, 6, 7);
     this.scene.add(key);
     this.keyLight = key;
-
     const fill = new THREE.DirectionalLight(0xb9d7ff, 2.0);
     fill.position.set(5, 2, 6);
     this.scene.add(fill);
-
     const rim = new THREE.DirectionalLight(0xff4058, 2.6);
     rim.position.set(3, 5, -4);
     this.scene.add(rim);
@@ -162,7 +150,6 @@ class JesterDealer {
       this.host.dataset.modelError = 'No rigged Play jester asset could be loaded.';
       return;
     }
-
     this.host.dataset.modelAsset = modelUrl;
     new GLTFLoader().load(
       modelUrl,
@@ -173,9 +160,7 @@ class JesterDealer {
         }
         this.model = gltf.scene;
         this.model.traverse((object) => {
-          if (/string|marionette|control[_ -]?line/i.test(object.name)) {
-            object.visible = false;
-          }
+          if (/string|marionette|control[_ -]?line/i.test(object.name)) object.visible = false;
           if (object.isMesh) {
             object.castShadow = this.quality !== 'low';
             object.receiveShadow = this.quality !== 'low';
@@ -210,11 +195,7 @@ class JesterDealer {
         this.resume();
       },
       (event) => {
-        if (event.total) {
-          this.host.dataset.modelProgress = String(
-            Math.round((event.loaded / event.total) * 100),
-          );
-        }
+        if (event.total) this.host.dataset.modelProgress = String(Math.round((event.loaded / event.total) * 100));
       },
       (error) => {
         console.warn('Unable to load rigged Play jester.', { url: modelUrl, error });
@@ -228,9 +209,7 @@ class JesterDealer {
   setQuality(value) {
     this.quality = ['low', 'medium', 'high'].includes(value) ? value : 'medium';
     const ratios = { low: 0.8, medium: 1.25, high: 1.8 };
-    this.renderer.setPixelRatio(
-      Math.min(window.devicePixelRatio || 1, ratios[this.quality]),
-    );
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, ratios[this.quality]));
     this.renderer.shadowMap.enabled = this.quality !== 'low';
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.keyLight.castShadow = this.quality !== 'low';
@@ -251,33 +230,31 @@ class JesterDealer {
     this.renderer.setSize(width, height, false);
     this.camera.aspect = width / height;
     const narrow = width < 720;
-    this.camera.fov = narrow ? 36 : 30;
+    this.camera.fov = narrow ? 39 : 32;
     this.modelRoot.scale.setScalar(1);
     this.modelRoot.position.set(0, 0, 0);
 
     if (this.puppetBounds && !this.puppetBounds.isEmpty()) {
       const center = this.puppetBounds.getCenter(new THREE.Vector3());
-      const min = this.puppetBounds.min;
-      const max = this.puppetBounds.max;
-      const upperCenterY = lerp(min.y, max.y, 0.70);
-      const upperHeight = Math.max(0.001, max.y - upperCenterY);
-      const targetCenter = new THREE.Vector3(center.x, upperCenterY, center.z);
-      const halfWidth = Math.max(Math.abs(max.x - center.x), Math.abs(min.x - center.x));
-      const halfHeight = Math.max(upperHeight, (max.y - min.y) * 0.24);
+      const size = this.puppetBounds.getSize(new THREE.Vector3());
+      const halfWidth = Math.max(size.x * 0.5, 0.001);
+      const halfHeight = Math.max(size.y * 0.5, 0.001);
       const verticalFov = THREE.MathUtils.degToRad(this.camera.fov);
       const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * this.camera.aspect);
-      const distanceForHeight = halfHeight / Math.tan(verticalFov / 2);
+      const distanceForHeight = halfHeight / Math.max(Math.tan(verticalFov / 2), 0.001);
       const distanceForWidth = halfWidth / Math.max(Math.tan(horizontalFov / 2), 0.001);
-      const distance = Math.max(distanceForHeight, distanceForWidth) * (narrow ? 1.08 : 1.02);
-      this.camera.position.set(targetCenter.x, targetCenter.y, targetCenter.z + distance + 0.35);
+      const margin = narrow ? 1.18 : 1.12;
+      const distance = Math.max(distanceForHeight, distanceForWidth) * margin;
+      const targetCenter = new THREE.Vector3(center.x, center.y + size.y * 0.04, center.z);
+      this.camera.position.set(targetCenter.x, targetCenter.y, targetCenter.z + distance + 0.45);
       this.camera.lookAt(targetCenter);
       this.camera.updateProjectionMatrix();
       this.camera.updateMatrixWorld(true);
-      this.host.dataset.puppetFit = 'upper-torso';
+      this.host.dataset.puppetFit = 'full-body';
       this.host.dataset.puppetCameraDistance = distance.toFixed(3);
     } else {
-      this.camera.position.set(0, 1.25, narrow ? 7.4 : 8.6);
-      this.camera.lookAt(0, 1.2, 0);
+      this.camera.position.set(0, 0.6, narrow ? 10.2 : 9.2);
+      this.camera.lookAt(0, 0.6, 0);
       this.camera.updateProjectionMatrix();
     }
   }
@@ -295,10 +272,7 @@ class JesterDealer {
         texture.anisotropy = this.quality === 'high' ? 8 : 4;
         this.card.userData.texture?.dispose();
         this.card.userData.faceMaterial?.dispose();
-        const face = new THREE.MeshStandardMaterial({
-          map: texture,
-          roughness: 0.54,
-        });
+        const face = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.54 });
         const edge = this.card.userData.edgeMaterial;
         this.card.material = [edge, edge, edge, edge, face, face];
         this.card.userData.texture = texture;
@@ -336,9 +310,9 @@ class JesterDealer {
     };
     this.card.visible = true;
     this.card.scale.setScalar(1);
-    this.card.position.set(receive ? 0 : -2.35, receive ? -4.25 : -2.15, 3.0);
+    this.card.position.set(receive ? 0 : -2.2, receive ? -3.2 : -1.8, 2.8);
     this.card.rotation.set(-0.3, receive ? 0 : Math.PI, receive ? 0 : -0.1);
-    this.playEmbeddedAction(receive ? /receive|take|collect|catch/i : /deal|reach|pick|give/i);
+    this.playEmbeddedAction(receive ? /receive|take|collect|catch|discard/i : /draw|deal|reach|pick|give/i);
     this.setPhase(receive ? 'catchPlayerCard' : 'noticeDeck');
     this.host.dataset.lastCardAction = receive ? 'discard' : 'draw';
     this.resume();
@@ -346,9 +320,7 @@ class JesterDealer {
   }
 
   setPhase(phase) {
-    if (this.host.dataset.dealerAnimation !== phase) {
-      this.host.dataset.dealerAnimation = phase;
-    }
+    if (this.host.dataset.dealerAnimation !== phase) this.host.dataset.dealerAnimation = phase;
   }
 
   resetGesture() {
@@ -375,10 +347,10 @@ class JesterDealer {
     else if (t < 0.72) this.setPhase('presentCard');
     else this.setPhase('releaseCard');
 
-    const a = new THREE.Vector3(-2.35, -2.15, 3.0);
-    const b = new THREE.Vector3(-1.25, -0.65, 2.2);
-    const c = new THREE.Vector3(-0.4, 0.15, 1.5);
-    const d = new THREE.Vector3(0.0, -2.9, 3.4);
+    const a = new THREE.Vector3(-2.2, -1.8, 2.8);
+    const b = new THREE.Vector3(-1.25, -0.35, 2.1);
+    const c = new THREE.Vector3(-0.45, 0.3, 1.55);
+    const d = new THREE.Vector3(0.0, -2.7, 3.2);
     cubicBezier(this.card.position, a, b, c, d, present);
     this.card.position.y += lift * 0.8;
     this.card.rotation.x = lerp(-0.35, -0.08, present);
@@ -416,10 +388,10 @@ class JesterDealer {
     else if (t < 0.72) this.setPhase('carryToDiscard');
     else this.setPhase('discardCard');
 
-    const a = new THREE.Vector3(0.0, -4.25, 3.0);
-    const b = new THREE.Vector3(0.0, -1.0, 2.0);
-    const c = new THREE.Vector3(1.3, -0.35, 1.6);
-    const d = new THREE.Vector3(2.45, -2.15, 3.0);
+    const a = new THREE.Vector3(0.0, -3.2, 2.8);
+    const b = new THREE.Vector3(0.0, -0.65, 2.0);
+    const c = new THREE.Vector3(1.25, -0.15, 1.6);
+    const d = new THREE.Vector3(2.25, -1.8, 2.8);
     cubicBezier(this.card.position, a, b, c, d, carry);
     this.card.position.y += catchCard * 0.5;
     this.card.rotation.x = lerp(-0.30, -0.08, carry);
@@ -513,7 +485,6 @@ window.puppetDealerCreate = (id, quality) => {
   if (document.getElementById(id)) createDealer(id, quality);
   else pendingMounts.set(id, quality);
 };
-
 window.puppetDealerDeal = (id, imageUrl) => dealers.get(id)?.deal(imageUrl, 'deal');
 window.puppetDealerReceive = (id, imageUrl) => dealers.get(id)?.deal(imageUrl, 'receive');
 window.puppetDealerSetQuality = (id, quality) => dealers.get(id)?.setQuality(quality);
