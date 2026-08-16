@@ -16,6 +16,7 @@ class DjWhoVideosScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) => AppPageShell(
     title: 'DJ WHO Videos',
+    showBackButton: false,
     child: Stack(
       fit: StackFit.expand,
       children: [
