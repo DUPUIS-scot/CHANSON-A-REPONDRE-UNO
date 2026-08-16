@@ -248,31 +248,34 @@ class JesterDealer {
     this.renderer.setSize(width, height, false);
     this.camera.aspect = width / height;
     const narrow = width < 720;
-    this.camera.fov = narrow ? 39 : 32;
+    this.camera.fov = narrow ? 36 : 30;
     this.modelRoot.scale.setScalar(1);
     this.modelRoot.position.set(0, 0, 0);
 
     if (this.puppetBounds && !this.puppetBounds.isEmpty()) {
       const center = this.puppetBounds.getCenter(new THREE.Vector3());
       const size = this.puppetBounds.getSize(new THREE.Vector3());
-      const halfWidth = Math.max(size.x * 0.5, 0.001);
-      const halfHeight = Math.max(size.y * 0.5, 0.001);
+      const visibleHeight = Math.max(size.y * (narrow ? 0.48 : 0.54), 0.5);
+      const visibleWidth = Math.max(size.x * (narrow ? 0.88 : 0.82), 0.5);
       const verticalFov = THREE.MathUtils.degToRad(this.camera.fov);
-      const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * this.camera.aspect);
-      const distanceForHeight = halfHeight / Math.max(Math.tan(verticalFov / 2), 0.001);
-      const distanceForWidth = halfWidth / Math.max(Math.tan(horizontalFov / 2), 0.001);
-      const margin = narrow ? 1.18 : 1.12;
-      const distance = Math.max(distanceForHeight, distanceForWidth) * margin;
-      const targetCenter = new THREE.Vector3(center.x, center.y + size.y * 0.04, center.z);
-      this.camera.position.set(targetCenter.x, targetCenter.y, targetCenter.z + distance + 0.45);
+      const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * Math.max(this.camera.aspect, 0.2));
+      const distanceForHeight = (visibleHeight * 0.5) / Math.max(Math.tan(verticalFov / 2), 0.001);
+      const distanceForWidth = (visibleWidth * 0.5) / Math.max(Math.tan(horizontalFov / 2), 0.001);
+      const distance = Math.max(distanceForHeight, distanceForWidth) * (narrow ? 1.06 : 1.04);
+      const targetCenter = new THREE.Vector3(
+        center.x,
+        this.puppetBounds.min.y + size.y * 0.72,
+        center.z,
+      );
+      this.camera.position.set(targetCenter.x, targetCenter.y, targetCenter.z + distance + 0.18);
       this.camera.lookAt(targetCenter);
       this.camera.updateProjectionMatrix();
       this.camera.updateMatrixWorld(true);
-      this.host.dataset.puppetFit = 'full-body';
+      this.host.dataset.puppetFit = 'upper-torso';
       this.host.dataset.puppetCameraDistance = distance.toFixed(3);
     } else {
-      this.camera.position.set(0, 0.6, narrow ? 10.2 : 9.2);
-      this.camera.lookAt(0, 0.6, 0);
+      this.camera.position.set(0, 1.65, narrow ? 6.2 : 5.8);
+      this.camera.lookAt(0, 1.65, 0);
       this.camera.updateProjectionMatrix();
     }
   }
