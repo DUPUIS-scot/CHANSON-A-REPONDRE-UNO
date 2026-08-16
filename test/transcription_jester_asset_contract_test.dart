@@ -40,7 +40,7 @@ void main() {
     );
     expect(bootstrap, contains("'transcription_jester.glb'"));
     expect(bootstrap, contains("'transcription_jester_rigged.glb'"));
-    expect(bootstrap, contains('TRANSCRIPTION_MODELS.some'));
+    expect(bootstrap, contains('DRACO_MODELS.some'));
 
     final bootstrapIndex = html.indexOf('transcription_draco_bootstrap.js');
     final rendererIndex = html.indexOf('transcription_jester.js');
