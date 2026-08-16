@@ -208,43 +208,64 @@ class TranscriptionJester {
     this.camera.updateProjectionMatrix();
   }
 
-  attachSelectedCard() {
-    const imageUrl = flutterAssetUrl(this.selectedCardImage);
-    if (this.disposed || !imageUrl) return;
+  createFallbackCard() {
     if (this.cardAnchor) {
       this.pivot.remove(this.cardAnchor);
       disposeObject(this.cardAnchor);
       this.cardAnchor = null;
     }
+    const anchor = new THREE.Group();
+    const backing = new THREE.Mesh(
+      new THREE.BoxGeometry(1.0, 1.5, 0.05),
+      new THREE.MeshStandardMaterial({ color: 0x211008, roughness: 0.72 }),
+    );
+    anchor.add(backing);
+    const faceMaterial = new THREE.MeshStandardMaterial({
+      color: 0x8b1f1f,
+      roughness: 0.55,
+      side: THREE.DoubleSide,
+    });
+    const card = new THREE.Mesh(new THREE.PlaneGeometry(0.96, 1.44), faceMaterial);
+    card.position.z = 0.031;
+    anchor.add(card);
+    anchor.position.set(-0.82, 0.10, 1.45);
+    anchor.rotation.set(0.04, 0.06, -0.18);
+    this.cardAnchor = anchor;
+    this.cardFace = card;
+    this.pivot.add(anchor);
+    this.pivot.updateMatrixWorld(true);
+    this.fitCamera();
+    this.host.dataset.selectedCard = 'held-in-left-hand';
+    this.host.dataset.selectedCardTexture = 'fallback';
+  }
+
+  attachSelectedCard() {
+    const imageUrl = flutterAssetUrl(this.selectedCardImage);
+    if (this.disposed) return;
+    this.createFallbackCard();
+    if (!imageUrl) {
+      this.host.dataset.selectedCardImage = '';
+      this.host.dataset.selectedCardTexture = 'fallback-no-image';
+      return;
+    }
+    this.host.dataset.selectedCardImage = imageUrl;
     this.host.dataset.selectedCardTexture = 'loading';
     new THREE.TextureLoader().load(imageUrl, (texture) => {
       if (this.disposed) return texture.dispose();
       texture.colorSpace = THREE.SRGBColorSpace;
-      const anchor = new THREE.Group();
-      const backing = new THREE.Mesh(
-        new THREE.BoxGeometry(1.0, 1.5, 0.05),
-        new THREE.MeshStandardMaterial({ color: 0x211008, roughness: 0.72 }),
-      );
-      anchor.add(backing);
-      const card = new THREE.Mesh(
-        new THREE.PlaneGeometry(0.96, 1.44),
-        new THREE.MeshStandardMaterial({ map: texture, roughness: 0.48, side: THREE.DoubleSide }),
-      );
-      card.position.z = 0.031;
-      anchor.add(card);
-      anchor.position.set(-0.82, 0.10, 1.45);
-      anchor.rotation.set(0.04, 0.06, -0.18);
-      this.cardAnchor = anchor;
-      this.pivot.add(anchor);
-      this.pivot.updateMatrixWorld(true);
-      this.fitCamera();
+      if (!this.cardFace) return texture.dispose();
+      const oldMaterial = this.cardFace.material;
+      this.cardFace.material = new THREE.MeshStandardMaterial({
+        map: texture,
+        roughness: 0.48,
+        side: THREE.DoubleSide,
+      });
+      disposeMaterial(oldMaterial);
       this.host.dataset.selectedCard = 'held-in-left-hand';
-      this.host.dataset.selectedCardImage = imageUrl;
       this.host.dataset.selectedCardTexture = 'ready';
     }, undefined, (error) => {
-      this.host.dataset.selectedCard = 'failed';
-      this.host.dataset.selectedCardImage = imageUrl;
-      this.host.dataset.selectedCardTexture = 'failed';
+      this.host.dataset.selectedCard = 'held-in-left-hand-fallback';
+      this.host.dataset.selectedCardTexture = 'failed-fallback-visible';
       console.warn('Unable to load selected card texture.', { imageUrl, error });
     });
   }
