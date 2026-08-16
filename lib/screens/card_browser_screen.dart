@@ -66,6 +66,9 @@ class _CardBrowserScreenState extends State<CardBrowserScreen> {
 
   void open(CardImageModel card) => context.go(AppRoutes.cardAlias(card.id));
 
+  void openTranscription(CardImageModel card) =>
+      context.go(AppRoutes.transcription(card.id));
+
   Future<void> openExternalAi(
     CardImageModel card,
     CardAiHandoffMode mode,
@@ -370,10 +373,8 @@ class _CardBrowserScreenState extends State<CardBrowserScreen> {
                                   runSpacing: 8,
                                   children: [
                                     FilledButton.tonalIcon(
-                                      onPressed: () => openExternalAi(
-                                        selected,
-                                        CardAiHandoffMode.transcribe,
-                                      ),
+                                      onPressed: () =>
+                                          openTranscription(selected),
                                       icon: const Icon(Icons.document_scanner),
                                       label: const Text('TRANSCRIBE CARD'),
                                     ),
