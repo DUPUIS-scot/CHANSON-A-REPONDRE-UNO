@@ -28,7 +28,9 @@ void main() {
     expect(sheet, contains('ExternalAiHandoffService.buildPrompt'));
     expect(sheet, contains('ExternalAiProvider.values'));
     expect(sheet, contains("Text('COPY PROMPT')"));
-    expect(sheet, contains('reference-only'));
+    expect(sheet, contains('sharePublicCard'));
+    expect(sheet, contains('imagePath: card.imagePath'));
+    expect(sheet, contains('browser share sheet'));
     expect(sheet, contains('No app AI backend is used.'));
     expect(sheet, isNot(contains('receives the direct public card-image URL')));
 
