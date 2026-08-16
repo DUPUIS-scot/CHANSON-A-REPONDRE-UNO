@@ -41,6 +41,24 @@ void main() {
     expect(service, isNot(contains('Open and analyze the CARD IMAGE directly')));
   });
 
+  test('transcription AI provider flow is deck agnostic for UNO and BRIO', () {
+    final sheet = File(
+      'lib/widgets/transcription_ai_provider_sheet.dart',
+    ).readAsStringSync();
+    final screen = File(
+      'lib/screens/card_transcription_screen.dart',
+    ).readAsStringSync();
+
+    expect(screen, contains('deckForCard(cardId)'));
+    expect(sheet, contains('card: card'));
+    expect(sheet, contains('deck: deck'));
+    expect(sheet, contains('imagePath: card.imagePath'));
+    expect(sheet, contains('PublicCardShareService.shareUrlFor'));
+    expect(sheet, isNot(contains('AppConstants.productionDeckId')));
+    expect(sheet, isNot(contains('AppConstants.brioDeckId')));
+    expect(sheet, isNot(contains("deck.id == '")));
+  });
+
   test('Browse AI compatibility entry cannot trigger app transcription', () {
     final adapter = File(
       'lib/widgets/external_ai_handoff_sheet.dart',
