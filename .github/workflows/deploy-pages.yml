@@ -143,9 +143,9 @@ jobs:
           grep -Fq "${FLUTTER_BUNDLE}" build/web/404.html
           test -f build/web/card_share.js
           test -f build/web/transcription_jester.js
-          test -f build/web/assets/assets/models/transcription_jester.glb
-          test "$(stat -c%s build/web/assets/assets/models/transcription_jester.glb)" -gt 1000000
-          grep -Fq 'assets/assets/models/transcription_jester.glb' build/web/transcription_jester.js
+          test -f build/web/assets/assets/models/transcription_jester_rigged.glb
+          test "$(stat -c%s build/web/assets/assets/models/transcription_jester_rigged.glb)" -gt 1000000
+          grep -Fq 'assets/assets/models/transcription_jester_rigged.glb' build/web/transcription_jester.js
           grep -q 'challenges.cloudflare.com/turnstile' build/web/index.html
           test "$(find build/web/share -mindepth 1 -maxdepth 1 -type d -name 'UNO-*' | wc -l)" -eq 84
           test "$(find build/web/share -mindepth 1 -maxdepth 1 -type d -name 'BRIO-*' | wc -l)" -eq 16
