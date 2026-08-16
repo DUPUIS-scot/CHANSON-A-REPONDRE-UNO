@@ -275,25 +275,45 @@ class TranscriptionJester {
     new THREE.TextureLoader().load(imageUrl, (texture) => {
       if (this.disposed) return texture.dispose();
       texture.colorSpace = THREE.SRGBColorSpace;
+
       const anchor = new THREE.Group();
+      const cardWidth = 1.12;
+      const cardHeight = cardWidth * 1.5;
+
       const backing = new THREE.Mesh(
-        new THREE.PlaneGeometry(1.46, 2.18),
-        new THREE.MeshStandardMaterial({ color: 0x211008, roughness: 0.72, side: THREE.DoubleSide }),
+        new THREE.BoxGeometry(cardWidth + 0.06, cardHeight + 0.06, 0.045),
+        new THREE.MeshStandardMaterial({
+          color: 0x211008,
+          roughness: 0.72,
+          side: THREE.DoubleSide,
+        }),
       );
       backing.position.z = -0.018;
       anchor.add(backing);
+
       const card = new THREE.Mesh(
-        new THREE.PlaneGeometry(1.38, 2.07),
-        new THREE.MeshStandardMaterial({ map: texture, roughness: 0.48, side: THREE.DoubleSide }),
+        new THREE.PlaneGeometry(cardWidth, cardHeight),
+        new THREE.MeshStandardMaterial({
+          map: texture,
+          roughness: 0.44,
+          side: THREE.DoubleSide,
+        }),
       );
-      card.position.z = 0.008;
+      card.position.z = 0.011;
       anchor.add(card);
-      anchor.position.set(-0.62, 0.18, 1.62);
-      anchor.rotation.set(0.08, -0.04, -0.03);
+
+      // Empty-hand model: place the Browse-selected card directly into the
+      // open grip, slightly tilted toward the viewer. The anchor remains a
+      // child of the jester pivot so it follows the existing body motion.
+      anchor.position.set(-0.34, 0.34, 1.34);
+      anchor.rotation.set(0.10, 0.02, -0.18);
+      anchor.scale.setScalar(0.92);
+
       this.cardAnchor = anchor;
       this.pivot.add(anchor);
-      this.host.dataset.selectedCard = 'held-in-3d-hand';
+      this.host.dataset.selectedCard = 'held-in-empty-hand';
       this.host.dataset.selectedCardImage = imageUrl;
+      this.host.dataset.selectedCardAnchor = '-0.34,0.34,1.34';
     }, undefined, (error) => {
       this.host.dataset.selectedCard = 'failed';
       console.warn('Unable to load selected card texture.', error);
@@ -358,28 +378,28 @@ class TranscriptionJester {
     this.renderer.dispose();
     this.renderer.domElement.remove();
     if (this.backgroundObjectUrl) URL.revokeObjectURL(this.backgroundObjectUrl);
+    Object.assign(document.body.style, this.previousBody);
   }
 }
 
-function ensureScene(ownerId) {
+function createScene(ownerId) {
+  const host = document.getElementById(ownerId) || ensureHost();
   sceneOwners.add(ownerId);
-  if (!sharedScene) sharedScene = new TranscriptionJester(ensureHost());
+  if (!sharedScene) sharedScene = new TranscriptionJester(host);
   return sharedScene;
 }
 
-window.transcriptionJesterCreate = function transcriptionJesterCreate(ownerId) {
-  ensureScene(ownerId || 'flutter');
-};
-
-window.transcriptionJesterDestroy = function transcriptionJesterDestroy(ownerId) {
-  sceneOwners.delete(ownerId || 'flutter');
+function destroyScene(ownerId) {
+  sceneOwners.delete(ownerId);
   if (sceneOwners.size === 0 && sharedScene) {
     sharedScene.dispose();
     sharedScene = null;
   }
-};
+}
 
-window.transcriptionJesterSetSelectedCard = function transcriptionJesterSetSelectedCard(cardId, imagePath) {
-  pendingSelectedCard = { cardId: String(cardId || ''), imagePath: String(imagePath || '') };
-  if (sharedScene) sharedScene.setSelectedCard(pendingSelectedCard.cardId, pendingSelectedCard.imagePath);
+window.transcriptionJesterCreate = createScene;
+window.transcriptionJesterDestroy = destroyScene;
+window.transcriptionJesterSetSelectedCard = (cardId, imagePath) => {
+  pendingSelectedCard = { cardId, imagePath };
+  sharedScene?.setSelectedCard(cardId, imagePath);
 };
