@@ -51,7 +51,7 @@ void main() {
     expect(shared?.imagePath, selected.imagePath);
   });
 
-  testWidgets('Browse exposes transcription and AI actions only in Browse', (
+  testWidgets('Browse exposes external AI handoff actions only in Browse', (
     tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(1440, 1000));
@@ -68,16 +68,27 @@ void main() {
     await tester.pump(const Duration(milliseconds: 250));
     await tester.pumpAndSettle();
 
-    expect(find.text('Transcribe'), findsNothing);
-    expect(find.text('Transcribe → Ask AI'), findsNothing);
+    expect(find.text('TRANSCRIBE CARD'), findsNothing);
+    expect(find.text('DIY WITH AI'), findsNothing);
 
     final cards = find.byType(BrowseHandCard);
     expect(cards, findsNWidgets(5));
     tester.widget<BrowseHandCard>(cards.first).onTap();
     await tester.pumpAndSettle();
 
-    expect(find.text('Transcribe'), findsOneWidget);
-    expect(find.text('Transcribe → Ask AI'), findsOneWidget);
+    expect(find.text('TRANSCRIBE CARD'), findsOneWidget);
+    expect(find.text('DIY WITH AI'), findsOneWidget);
+
+    await tester.tap(find.text('TRANSCRIBE CARD'));
+    await tester.pumpAndSettle();
+    expect(find.text('Transcribe this card with your AI'), findsOneWidget);
+    expect(find.text('ChatGPT'), findsOneWidget);
+    expect(find.text('Gemini'), findsOneWidget);
+    expect(find.text('Claude'), findsOneWidget);
+    expect(find.text('Copilot'), findsOneWidget);
+    expect(find.text('COPY PROMPT'), findsOneWidget);
+    Navigator.of(tester.element(find.text('COPY PROMPT'))).pop();
+    await tester.pumpAndSettle();
 
     final card = decks.cards.first;
     await tester.pumpWidget(
@@ -88,8 +99,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Transcribe'), findsNothing);
-    expect(find.text('Transcribe → Ask AI'), findsNothing);
+    expect(find.text('TRANSCRIBE CARD'), findsNothing);
+    expect(find.text('DIY WITH AI'), findsNothing);
     expect(find.text('Ask AI a question'), findsNothing);
   });
 
