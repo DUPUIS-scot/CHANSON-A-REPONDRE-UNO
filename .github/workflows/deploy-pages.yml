@@ -91,6 +91,45 @@ jobs:
             --dart-define=TURNSTILE_SITE_KEY="$TURNSTILE_SITE_KEY" \
             --dart-define=APP_BUILD_SHA="${{ github.sha }}"
 
+      - name: Version Flutter entry bundle by commit SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          bundle_sha="${GITHUB_SHA::12}"
+          bundle_name="main.${bundle_sha}.dart.js"
+
+          test -f build/web/main.dart.js
+          mv build/web/main.dart.js "build/web/${bundle_name}"
+
+          python3 - "${bundle_name}" <<'PY'
+          from pathlib import Path
+          import sys
+
+          bundle_name = sys.argv[1]
+          targets = [
+              Path('build/web/index.html'),
+              Path('build/web/flutter_bootstrap.js'),
+          ]
+          replacements = 0
+          for target in targets:
+              if not target.exists():
+                  continue
+              text = target.read_text(encoding='utf-8')
+              count = text.count('main.dart.js')
+              if count:
+                  target.write_text(
+                      text.replace('main.dart.js', bundle_name),
+                      encoding='utf-8',
+                  )
+                  replacements += count
+
+          if replacements == 0:
+              raise SystemExit('No Flutter main.dart.js reference found to version.')
+          PY
+
+          echo "FLUTTER_BUNDLE=${bundle_name}" >> "$GITHUB_ENV"
+          echo "Flutter entry bundle: ${bundle_name}"
+
       - name: Add GitHub Pages fallback
         run: cp build/web/index.html build/web/404.html
 
@@ -108,7 +147,18 @@ jobs:
           set -euo pipefail
           test -f build/web/index.html
           test -f build/web/404.html
-          test -f build/web/main.dart.js
+          test -n "${FLUTTER_BUNDLE:-}"
+          test -f "build/web/${FLUTTER_BUNDLE}"
+          test ! -f build/web/main.dart.js
+          grep -Fq "${FLUTTER_BUNDLE}" build/web/index.html
+          grep -Fq "${FLUTTER_BUNDLE}" build/web/404.html
+          if [ -f build/web/flutter_bootstrap.js ]; then
+            grep -Fq "${FLUTTER_BUNDLE}" build/web/flutter_bootstrap.js
+          fi
+          if grep -Fq 'main.dart.js' build/web/index.html build/web/404.html; then
+            echo "::error::Unversioned Flutter main.dart.js reference remains in the deployed app shell."
+            exit 1
+          fi
           test -f build/web/card_share.js
           test -f build/web/transcription_jester.js
           grep -q 'challenges.cloudflare.com/turnstile' build/web/index.html
