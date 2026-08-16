@@ -5,7 +5,7 @@ import 'package:uno_chanson_2/models/deck_model.dart';
 import 'package:uno_chanson_2/services/external_ai_handoff_service.dart';
 
 void main() {
-  const applicationUri = Uri(
+  final applicationUri = Uri(
     scheme: 'https',
     host: 'www.chanson-a-repondre-uno.scot',
     path: '/',
