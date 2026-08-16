@@ -7,9 +7,6 @@ const JESTER_MODEL = new URL(
   'assets/assets/models/transcription_jester_rigged.glb',
   document.baseURI,
 ).href;
-const BACKGROUND_CHUNKS = Array.from({ length: 6 }, (_, i) =>
-  new URL(`transcription_assets/bg_${String(i).padStart(2, '0')}.txt`, document.baseURI).href,
-);
 
 let sharedScene = null;
 const sceneOwners = new Set();
@@ -21,18 +18,6 @@ function routeText() {
 
 function currentCardId() {
   return routeText().match(/\/cards\/([^/?#]+)\/transcription(?:[/?#]|$)/i)?.[1] || null;
-}
-
-async function blobUrlFromChunks(urls, mime) {
-  const parts = await Promise.all(urls.map(async (url) => {
-    const response = await fetch(url, { cache: 'no-store' });
-    if (!response.ok) throw new Error(`Unable to load transcription asset chunk: ${url}`);
-    return (await response.text()).trim();
-  }));
-  const binary = atob(parts.join(''));
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
-  return URL.createObjectURL(new Blob([bytes], { type: mime }));
 }
 
 function disposeMaterial(material) {
@@ -75,14 +60,14 @@ function stageRect() {
   const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
   const stageWidth = mobile
-    ? Math.min(viewportWidth * 1.12, 760)
-    : Math.min(viewportWidth * 0.78, 980);
+    ? Math.min(viewportWidth * 0.96, 720)
+    : Math.min(viewportWidth * 0.74, 960);
   const stageHeight = mobile
-    ? Math.min(700, viewportHeight * 0.76)
-    : Math.min(820, viewportHeight * 0.82);
+    ? Math.min(viewportHeight * 0.67, 720)
+    : Math.min(viewportHeight * 0.78, 820);
   return {
     left: (viewportWidth - stageWidth) * 0.5,
-    top: mobile ? 10 : 6,
+    top: mobile ? Math.max(10, viewportHeight * 0.035) : Math.max(8, viewportHeight * 0.02),
     width: stageWidth,
     height: stageHeight,
   };
@@ -98,18 +83,8 @@ class TranscriptionJester {
     this.selectedCardImage = pendingSelectedCard?.imagePath || null;
     this.host.dataset.transcriptionJester = 'loading';
     this.host.dataset.sourceModel = 'assets/models/transcription_jester_rigged.glb';
-    this.host.dataset.framing = 'upper-torso';
+    this.host.dataset.framing = 'centered-card-presentation';
     if (this.selectedCardId) this.host.dataset.selectedCardId = this.selectedCardId;
-
-    this.previousBody = {
-      backgroundImage: document.body.style.backgroundImage,
-      backgroundSize: document.body.style.backgroundSize,
-      backgroundPosition: document.body.style.backgroundPosition,
-      backgroundRepeat: document.body.style.backgroundRepeat,
-      backgroundAttachment: document.body.style.backgroundAttachment,
-      backgroundColor: document.body.style.backgroundColor,
-    };
-    this.installReferenceBackground();
 
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(30, 1, 0.01, 200);
@@ -120,11 +95,11 @@ class TranscriptionJester {
     this.renderer.setClearColor(0x000000, 0);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.55;
+    this.renderer.toneMappingExposure = 1.45;
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.4));
     Object.assign(this.renderer.domElement.style, {
       display: 'block', position: 'fixed', pointerEvents: 'none', background: 'transparent',
-      zIndex: '2147483000', opacity: '1',
+      zIndex: '0', opacity: '1',
       filter: 'drop-shadow(0 18px 24px rgba(0,0,0,.78))', transform: 'translateZ(0)',
     });
     this.renderer.domElement.setAttribute('aria-hidden', 'true');
@@ -134,14 +109,14 @@ class TranscriptionJester {
     this.pivot = new THREE.Group();
     this.pivot.rotation.y = MODEL_FACING_Y;
     this.scene.add(this.pivot);
-    this.scene.add(new THREE.HemisphereLight(0xffe5bd, 0x160607, 4.1));
-    const key = new THREE.DirectionalLight(0xffb35b, 7.5);
+    this.scene.add(new THREE.HemisphereLight(0xffe5bd, 0x160607, 3.8));
+    const key = new THREE.DirectionalLight(0xffb35b, 6.8);
     key.position.set(-3.2, 5.5, 6.2);
     this.scene.add(key);
-    const fill = new THREE.DirectionalLight(0xffffff, 2.8);
+    const fill = new THREE.DirectionalLight(0xffffff, 2.4);
     fill.position.set(3.5, 2.2, 5.5);
     this.scene.add(fill);
-    const rim = new THREE.DirectionalLight(0xc51e16, 4.2);
+    const rim = new THREE.DirectionalLight(0xc51e16, 3.6);
     rim.position.set(4.5, 3.5, -2.5);
     this.scene.add(rim);
 
@@ -150,24 +125,6 @@ class TranscriptionJester {
     window.addEventListener('orientationchange', this.onWindowResize);
     this.resize();
     this.loadModel();
-  }
-
-  async installReferenceBackground() {
-    try {
-      this.backgroundObjectUrl = await blobUrlFromChunks(BACKGROUND_CHUNKS, 'image/jpeg');
-      if (this.disposed) return URL.revokeObjectURL(this.backgroundObjectUrl);
-      Object.assign(document.body.style, {
-        backgroundImage: `url("${this.backgroundObjectUrl}")`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center top',
-        backgroundRepeat: 'no-repeat',
-        backgroundAttachment: 'fixed',
-        backgroundColor: '#050201',
-      });
-      this.host.dataset.referenceBackground = 'user-provided-theatrical-image';
-    } catch (error) {
-      console.error('Unable to install transcription reference background.', error);
-    }
   }
 
   loadModel() {
@@ -198,8 +155,8 @@ class TranscriptionJester {
       const center = bounds.getCenter(new THREE.Vector3());
       const maxDimension = Math.max(size.x, size.y, size.z, 0.001);
       this.model.position.sub(center);
-      this.model.scale.setScalar(6.8 / maxDimension);
-      this.model.position.set(0.15, -0.12, 0);
+      this.model.scale.setScalar(6.6 / maxDimension);
+      this.model.position.set(0, -0.08, 0);
       this.pivot.add(this.model);
       this.pivot.updateMatrixWorld(true);
 
@@ -210,15 +167,15 @@ class TranscriptionJester {
         this.idleAction.play();
       }
 
-      this.fitCamera();
       this.attachSelectedCard();
+      this.fitCamera();
       this.host.dataset.transcriptionJester = 'ready';
       this.host.dataset.modelAsset = 'assets/models/transcription_jester_rigged.glb';
       this.host.dataset.modelFacingAngle = String(MODEL_FACING_Y);
       this.host.dataset.modelAnimations = String(gltf.animations?.length || 0);
       this.host.dataset.modelMeshes = String(meshCount);
       this.host.dataset.modelSize = `${size.x.toFixed(3)},${size.y.toFixed(3)},${size.z.toFixed(3)}`;
-      this.host.dataset.behavior = 'rigged-upper-torso-facing-viewer';
+      this.host.dataset.behavior = 'rigged-centered-jester-holding-selected-card';
       this.resume();
     }, (event) => {
       if (event.total) this.host.dataset.modelProgress = String(Math.round((event.loaded / event.total) * 100));
@@ -236,27 +193,27 @@ class TranscriptionJester {
     const size = bounds.getSize(new THREE.Vector3());
     const target = new THREE.Vector3(
       (bounds.min.x + bounds.max.x) * 0.5,
-      bounds.min.y + size.y * 0.72,
+      bounds.min.y + size.y * 0.64,
       (bounds.min.z + bounds.max.z) * 0.5,
     );
 
-    const visibleHeight = Math.max(size.y * 0.55, 0.5);
-    const visibleWidth = Math.max(size.x * 0.86, 0.5);
+    const visibleHeight = Math.max(size.y * 0.62, 0.5);
+    const visibleWidth = Math.max(size.x * 0.92, 0.5);
     const verticalFov = THREE.MathUtils.degToRad(this.camera.fov);
     const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * Math.max(this.camera.aspect, 0.2));
     const verticalDistance = (visibleHeight * 0.5) / Math.tan(verticalFov * 0.5);
     const horizontalDistance = (visibleWidth * 0.5) / Math.tan(Math.max(horizontalFov, 0.2) * 0.5);
-    const distance = Math.max(verticalDistance, horizontalDistance, 2.8) * 1.06;
+    const distance = Math.max(verticalDistance, horizontalDistance, 2.9) * 1.08;
 
     this.camera.position.set(target.x, target.y, target.z + distance);
     this.camera.near = Math.max(0.01, distance / 100);
     this.camera.far = Math.max(100, distance * 20);
     this.camera.lookAt(target);
     this.camera.updateProjectionMatrix();
-    this.host.dataset.cameraFraming = 'head-shoulders-chest-centered';
+    this.host.dataset.cameraFraming = 'centered-jester-card-visible';
   }
 
-  async attachSelectedCard() {
+  attachSelectedCard() {
     const imageUrl = flutterAssetUrl(this.selectedCardImage);
     if (this.disposed || !imageUrl) return;
     if (this.cardAnchor) {
@@ -269,21 +226,24 @@ class TranscriptionJester {
       texture.colorSpace = THREE.SRGBColorSpace;
       const anchor = new THREE.Group();
       const backing = new THREE.Mesh(
-        new THREE.BoxGeometry(1.12, 1.68, 0.055),
+        new THREE.BoxGeometry(1.0, 1.5, 0.05),
         new THREE.MeshStandardMaterial({ color: 0x211008, roughness: 0.72 }),
       );
       anchor.add(backing);
       const card = new THREE.Mesh(
-        new THREE.PlaneGeometry(1.08, 1.62),
+        new THREE.PlaneGeometry(0.96, 1.44),
         new THREE.MeshStandardMaterial({ map: texture, roughness: 0.48, side: THREE.DoubleSide }),
       );
       card.position.z = 0.031;
       anchor.add(card);
-      anchor.position.set(-0.54, 0.34, 1.48);
-      anchor.rotation.set(0.05, -0.03, -0.04);
+      anchor.position.set(-0.82, 0.10, 1.45);
+      anchor.rotation.set(0.04, 0.06, -0.18);
       this.cardAnchor = anchor;
       this.pivot.add(anchor);
-      this.host.dataset.selectedCard = 'held-in-3d-hand';
+      this.pivot.updateMatrixWorld(true);
+      this.fitCamera();
+      this.host.dataset.selectedCard = 'held-in-left-hand';
+      this.host.dataset.selectedCardImage = imageUrl;
     }, undefined, (error) => {
       this.host.dataset.selectedCard = 'failed';
       console.warn('Unable to load selected card texture.', error);
@@ -304,7 +264,7 @@ class TranscriptionJester {
     });
     this.renderer.setSize(Math.max(rect.width, 1), Math.max(rect.height, 1), false);
     this.camera.aspect = rect.width / rect.height;
-    this.camera.fov = rect.width < 560 ? 34 : 29;
+    this.camera.fov = rect.width < 560 ? 32 : 28;
     this.camera.updateProjectionMatrix();
     this.fitCamera();
   }
@@ -315,9 +275,9 @@ class TranscriptionJester {
     this.mixer?.update(delta);
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const amount = reduced ? 0.12 : 1;
-    this.pivot.rotation.y = MODEL_FACING_Y + Math.sin(time * 0.55) * 0.018 * amount;
-    this.pivot.rotation.z = Math.sin(time * 0.8) * 0.008 * amount;
-    this.pivot.position.y = Math.sin(time * 0.7) * 0.018 * amount;
+    this.pivot.rotation.y = MODEL_FACING_Y + Math.sin(time * 0.55) * 0.014 * amount;
+    this.pivot.rotation.z = Math.sin(time * 0.8) * 0.006 * amount;
+    this.pivot.position.y = Math.sin(time * 0.7) * 0.012 * amount;
   }
 
   tick = () => {
@@ -343,7 +303,6 @@ class TranscriptionJester {
     disposeObject(this.model);
     this.renderer.dispose();
     this.renderer.domElement.remove();
-    if (this.backgroundObjectUrl) URL.revokeObjectURL(this.backgroundObjectUrl);
   }
 }
 
