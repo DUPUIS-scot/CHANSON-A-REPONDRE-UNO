@@ -26,6 +26,7 @@ export function parseEnvironment(source, { allowTestValues = false } = {}) {
   const supabaseServiceRoleKey = (source.SUPABASE_SERVICE_ROLE_KEY || '').trim();
   const credentialEncryptionKey = (source.CREDENTIAL_ENCRYPTION_KEY || '').trim();
   const openAiApiKey = (source.OPENAI_API_KEY || '').trim();
+  const geminiApiKey = (source.GEMINI_API_KEY || '').trim();
 
   let parsedSupabaseUrl;
   try {
@@ -76,8 +77,11 @@ export function parseEnvironment(source, { allowTestValues = false } = {}) {
   ) {
     problems.push('OPENAI_API_KEY is invalid');
   }
-  if (nodeEnvironment === 'production' && !openAiApiKey) {
-    problems.push('OPENAI_API_KEY is required for anonymous AI in production');
+  if (geminiApiKey && placeholderPattern.test(geminiApiKey)) {
+    problems.push('GEMINI_API_KEY is invalid');
+  }
+  if (nodeEnvironment === 'production' && !geminiApiKey) {
+    problems.push('GEMINI_API_KEY is required for anonymous AI in production');
   }
 
   const allowedOrigins = (source.ALLOWED_ORIGINS || '')
@@ -127,6 +131,8 @@ export function parseEnvironment(source, { allowTestValues = false } = {}) {
     nodeEnvironment,
     openaiModel: (source.OPENAI_MODEL || 'gpt-4o-mini').trim(),
     openAiApiKey,
+    geminiModel: (source.GEMINI_MODEL || 'gemini-2.5-flash').trim(),
+    geminiApiKey,
     supabaseUrl,
     supabasePublishableKey,
     supabaseServiceRoleKey,
