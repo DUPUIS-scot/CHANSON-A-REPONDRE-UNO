@@ -208,7 +208,7 @@ class _PlayScreenState extends State<PlayScreen> {
                       image: true,
                       label: 'Chanson à Répondre UNO',
                       child: SizedBox(
-                        key: const Key('play-header-logo'),
+                        key: const Key('play-launcher-logo'),
                         width: mobile ? 142 : 236,
                         height: mobile ? 54 : 68,
                         child: ExcludeSemantics(
@@ -278,6 +278,7 @@ class _PlayScreenState extends State<PlayScreen> {
                             fit: StackFit.expand,
                             children: [
                               Positioned(
+                                key: const Key('draw-pile-left'),
                                 left: narrow ? 12 : 28,
                                 top: pileTop,
                                 child: DrawPileWidget(
