@@ -3,7 +3,7 @@ import { GLTFLoader } from './vendor/GLTFLoader.js';
 
 const dealers = new Map();
 const pendingMounts = new Map();
-const MODEL_REVISION = 'play-jester-rigged-20260816f-contained-torso';
+const MODEL_REVISION = 'play-jester-rigged-20260816g-contained-torso';
 const MODEL_URLS = [
   new URL('assets/assets/models/play_jester_rigged.glb', document.baseURI).href,
 ];
@@ -93,8 +93,8 @@ class JesterDealer {
     this.scene.add(this.modelRoot);
 
     this.camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
-    this.camera.position.set(0, 2.2, 11.5);
-    this.camera.lookAt(0, 2.1, 0);
+    this.camera.position.set(0, 2.2, 12.2);
+    this.camera.lookAt(0, 2.2, 0);
 
     this.renderer = new THREE.WebGLRenderer({
       alpha: true,
@@ -171,7 +171,7 @@ class JesterDealer {
       const size = bounds.getSize(new THREE.Vector3());
       const center = bounds.getCenter(new THREE.Vector3());
       this.model.position.sub(center);
-      const scale = 4.4 / Math.max(size.y, 0.001);
+      const scale = 4.1 / Math.max(size.y, 0.001);
       this.model.scale.setScalar(scale);
       this.puppetRoot.add(this.model);
       this.puppetRoot.updateMatrixWorld(true);
@@ -222,25 +222,25 @@ class JesterDealer {
       const size = this.puppetBounds.getSize(new THREE.Vector3());
       const targetCenter = new THREE.Vector3(
         center.x,
-        this.puppetBounds.min.y + size.y * (narrow ? 0.64 : 0.63),
+        this.puppetBounds.min.y + size.y * (narrow ? 0.76 : 0.74),
         center.z,
       );
-      const visibleHeight = Math.max(size.y * (narrow ? 0.88 : 0.82), 0.5);
-      const visibleWidth = Math.max(size.x * (narrow ? 1.18 : 1.08), 0.5);
+      const visibleHeight = Math.max(size.y * (narrow ? 0.54 : 0.50), 0.5);
+      const visibleWidth = Math.max(size.x * (narrow ? 0.90 : 0.86), 0.5);
       const verticalFov = THREE.MathUtils.degToRad(this.camera.fov);
       const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * this.camera.aspect);
       const distanceForHeight = (visibleHeight * 0.5) / Math.max(Math.tan(verticalFov / 2), 0.001);
       const distanceForWidth = (visibleWidth * 0.5) / Math.max(Math.tan(horizontalFov / 2), 0.001);
-      const distance = Math.max(distanceForHeight, distanceForWidth, 4.8) * (narrow ? 1.30 : 1.22);
+      const distance = Math.max(distanceForHeight, distanceForWidth, 4.6) * (narrow ? 1.22 : 1.16);
       this.camera.position.set(targetCenter.x, targetCenter.y, targetCenter.z + distance);
       this.camera.lookAt(targetCenter);
       this.camera.updateProjectionMatrix();
       this.camera.updateMatrixWorld(true);
-      this.host.dataset.puppetFit = 'torso-up-contained-safe';
+      this.host.dataset.puppetFit = 'torso-up-contained-final';
       this.host.dataset.puppetCameraDistance = distance.toFixed(3);
     } else {
-      this.camera.position.set(0, 2.1, narrow ? 11.2 : 11.8);
-      this.camera.lookAt(0, 2.1, 0);
+      this.camera.position.set(0, 2.2, narrow ? 11.8 : 12.2);
+      this.camera.lookAt(0, 2.2, 0);
       this.camera.updateProjectionMatrix();
     }
   }
