@@ -26,10 +26,20 @@ for index, card in enumerate(cards, start=1):
     if not image_path:
         raise SystemExit(f'Missing image path for UNO-{index:03d}')
 
-    source = BUILD / 'assets' / image_path
+    # Generate previews from the checked-out source asset first. Flutter's web
+    # asset output layout is an implementation detail and can vary between
+    # toolchain versions. Keep the packaged locations as fallbacks so this
+    # script remains compatible with existing build layouts.
+    source_candidates = [
+        Path(image_path),
+        BUILD / 'assets' / image_path,
+        BUILD / image_path,
+    ]
+    source = next((candidate for candidate in source_candidates if candidate.is_file()), None)
     target = TARGET_DIR / f'UNO-{index:03d}.jpg'
-    if not source.is_file():
-        raise SystemExit(f'Missing built UNO source: {source}')
+    if source is None:
+        checked = ', '.join(str(candidate) for candidate in source_candidates)
+        raise SystemExit(f'Missing UNO source for {target.name}; checked: {checked}')
 
     def convert(quality: int) -> None:
         subprocess.run([
