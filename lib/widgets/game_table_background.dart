@@ -23,11 +23,11 @@ class GameTableBackground extends StatelessWidget {
               const ColoredBox(color: Color(0xFF050302)),
         ),
       ),
-      child,
       if (stageLayer != null)
         Positioned.fill(
           child: IgnorePointer(child: stageLayer!),
         ),
+      child,
     ],
   );
 }
