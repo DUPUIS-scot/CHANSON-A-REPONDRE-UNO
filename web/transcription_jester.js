@@ -175,7 +175,7 @@ class TranscriptionJester {
       this.host.dataset.modelAnimations = String(gltf.animations?.length || 0);
       this.host.dataset.modelMeshes = String(meshCount);
       this.host.dataset.modelSize = `${size.x.toFixed(3)},${size.y.toFixed(3)},${size.z.toFixed(3)}`;
-      this.host.dataset.behavior = 'rigged-centered-jester-holding-selected-card-world-space';
+      this.host.dataset.behavior = 'rigged-centered-jester-holding-selected-card-world-space-right';
       this.resume();
     }, undefined, (error) => {
       this.host.dataset.transcriptionJester = 'failed';
@@ -228,7 +228,7 @@ class TranscriptionJester {
 
     const anchor = new THREE.Group();
     const backing = new THREE.Mesh(
-      new THREE.BoxGeometry(0.82, 1.24, 0.055),
+      new THREE.BoxGeometry(0.74, 1.11, 0.05),
       new THREE.MeshStandardMaterial({ color: 0x211008, roughness: 0.72 }),
     );
     anchor.add(backing);
@@ -238,25 +238,24 @@ class TranscriptionJester {
       roughness: 0.55,
       side: THREE.DoubleSide,
     });
-    const card = new THREE.Mesh(new THREE.PlaneGeometry(0.78, 1.18), faceMaterial);
+    const card = new THREE.Mesh(new THREE.PlaneGeometry(0.70, 1.05), faceMaterial);
     card.position.z = 0.031;
     anchor.add(card);
 
     anchor.position.set(
-      center.x - size.x * 0.31,
-      bounds.min.y + size.y * 0.56,
-      bounds.max.z + Math.max(size.z * 0.08, 0.18),
+      center.x + size.x * 0.34,
+      bounds.min.y + size.y * 0.60,
+      bounds.max.z + Math.max(size.z * 0.10, 0.22),
     );
-    anchor.rotation.set(-0.02, 0.02, -0.16);
     anchor.lookAt(this.camera.position);
-    anchor.rotation.z = -0.16;
+    anchor.rotation.z = 0.14;
 
     this.cardAnchor = anchor;
     this.cardFace = card;
     this.scene.add(anchor);
-    this.host.dataset.selectedCard = 'held-in-left-hand';
+    this.host.dataset.selectedCard = 'held-in-right-hand';
     this.host.dataset.selectedCardTexture = 'fallback';
-    this.host.dataset.selectedCardAnchor = 'scene-space-visible-left-hand';
+    this.host.dataset.selectedCardAnchor = 'scene-space-visible-right-hand';
   }
 
   attachSelectedCard() {
@@ -273,6 +272,7 @@ class TranscriptionJester {
     new THREE.TextureLoader().load(imageUrl, (texture) => {
       if (this.disposed) return texture.dispose();
       texture.colorSpace = THREE.SRGBColorSpace;
+      texture.flipY = false;
       if (!this.cardFace) return texture.dispose();
       const oldMaterial = this.cardFace.material;
       this.cardFace.material = new THREE.MeshStandardMaterial({
@@ -281,10 +281,10 @@ class TranscriptionJester {
         side: THREE.DoubleSide,
       });
       disposeMaterial(oldMaterial);
-      this.host.dataset.selectedCard = 'held-in-left-hand';
+      this.host.dataset.selectedCard = 'held-in-right-hand';
       this.host.dataset.selectedCardTexture = 'ready';
     }, undefined, (error) => {
-      this.host.dataset.selectedCard = 'held-in-left-hand-fallback';
+      this.host.dataset.selectedCard = 'held-in-right-hand-fallback';
       this.host.dataset.selectedCardTexture = 'failed-fallback-visible';
       console.warn('Unable to load selected card texture.', { imageUrl, error });
     });
@@ -307,11 +307,7 @@ class TranscriptionJester {
     this.camera.fov = rect.width < 560 ? 32 : 28;
     this.camera.updateProjectionMatrix();
     this.fitCamera();
-    if (this.cardAnchor) {
-      const oldImage = this.selectedCardImage;
-      this.createFallbackCard();
-      this.selectedCardImage = oldImage;
-    }
+    if (this.cardAnchor) this.attachSelectedCard();
   }
 
   update(time) {
