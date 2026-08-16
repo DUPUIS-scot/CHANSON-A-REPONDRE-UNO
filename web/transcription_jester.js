@@ -4,7 +4,7 @@ import { GLTFLoader } from './vendor/GLTFLoader.js';
 const AUTO_SCENE_ID = 'transcription-jester-route-auto';
 const MODEL_FACING_Y = -Math.PI / 2;
 const JESTER_MODEL = new URL(
-  'assets/assets/models/transcription_jester.glb',
+  'assets/assets/models/transcription_jester_rigged.glb',
   document.baseURI,
 ).href;
 const BACKGROUND_CHUNKS = Array.from({ length: 6 }, (_, i) =>
@@ -70,46 +70,13 @@ function flutterAssetUrl(path) {
   return new URL(normalized.startsWith('assets/') ? `assets/${normalized}` : normalized, document.baseURI).href;
 }
 
-function findCardInCatalog(catalog, wanted) {
-  if (!catalog) return null;
-  const cards = Array.isArray(catalog) ? catalog : catalog.cards;
-  if (Array.isArray(cards)) {
-    const found = cards.find((entry) => String(entry?.id || '').toLowerCase() === wanted);
-    if (found) return found;
-  }
-  for (const deck of catalog.decks || []) {
-    const found = (deck.cards || []).find((entry) => String(entry?.id || '').toLowerCase() === wanted);
-    if (found) return found;
-  }
-  return null;
-}
-
-async function resolveSelectedCardImage(cardId) {
-  if (!cardId) return null;
-  const wanted = cardId.toLowerCase();
-  for (const source of [
-    'assets/assets/json/cards.json',
-    'assets/assets/decks/chanson_a_repondre_brio/deck.json',
-  ]) {
-    try {
-      const response = await fetch(new URL(source, document.baseURI).href, { cache: 'no-store' });
-      if (!response.ok) continue;
-      const card = findCardInCatalog(await response.json(), wanted);
-      if (card) return flutterAssetUrl(card.path || card.image);
-    } catch (error) {
-      console.warn('Unable to resolve selected card artwork.', error);
-    }
-  }
-  return null;
-}
-
 function stageRect() {
   const mobile = window.matchMedia('(max-width: 759px)').matches;
   const width = window.innerWidth;
   const height = window.innerHeight;
   return mobile
-    ? { left: -width * 0.08, top: 26, width: width * 1.16, height: Math.min(610, height * 0.60) }
-    : { left: Math.max(0, width * 0.04), top: 16, width: Math.min(800, width * 0.64), height: Math.min(720, height * 0.68) };
+    ? { left: -width * 0.08, top: 18, width: width * 1.16, height: Math.min(640, height * 0.64) }
+    : { left: Math.max(0, width * 0.04), top: 12, width: Math.min(860, width * 0.68), height: Math.min(760, height * 0.72) };
 }
 
 class TranscriptionJester {
@@ -121,7 +88,8 @@ class TranscriptionJester {
     this.selectedCardId = pendingSelectedCard?.cardId || currentCardId();
     this.selectedCardImage = pendingSelectedCard?.imagePath || null;
     this.host.dataset.transcriptionJester = 'loading';
-    this.host.dataset.sourceModel = 'assets/models/transcription_jester.glb';
+    this.host.dataset.sourceModel = 'assets/models/transcription_jester_rigged.glb';
+    this.host.dataset.framing = 'upper-torso';
     if (this.selectedCardId) this.host.dataset.selectedCardId = this.selectedCardId;
 
     this.previousBody = {
@@ -135,15 +103,15 @@ class TranscriptionJester {
     this.installReferenceBackground();
 
     this.scene = new THREE.Scene();
-    this.camera = new THREE.PerspectiveCamera(31, 1, 0.01, 200);
-    this.camera.position.set(0, 0, 10);
-    this.camera.lookAt(0, 0, 0);
+    this.camera = new THREE.PerspectiveCamera(30, 1, 0.01, 200);
+    this.camera.position.set(0, 1, 8);
+    this.camera.lookAt(0, 1, 0);
 
     this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'high-performance' });
     this.renderer.setClearColor(0x000000, 0);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.6;
+    this.renderer.toneMappingExposure = 1.55;
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.4));
     Object.assign(this.renderer.domElement.style, {
       display: 'block', position: 'fixed', pointerEvents: 'none', background: 'transparent',
@@ -157,14 +125,14 @@ class TranscriptionJester {
     this.pivot = new THREE.Group();
     this.pivot.rotation.y = MODEL_FACING_Y;
     this.scene.add(this.pivot);
-    this.scene.add(new THREE.HemisphereLight(0xffe5bd, 0x160607, 4.2));
-    const key = new THREE.DirectionalLight(0xffb35b, 8.2);
+    this.scene.add(new THREE.HemisphereLight(0xffe5bd, 0x160607, 4.1));
+    const key = new THREE.DirectionalLight(0xffb35b, 7.5);
     key.position.set(-3.2, 5.5, 6.2);
     this.scene.add(key);
-    const fill = new THREE.DirectionalLight(0xffffff, 3.0);
+    const fill = new THREE.DirectionalLight(0xffffff, 2.8);
     fill.position.set(3.5, 2.2, 5.5);
     this.scene.add(fill);
-    const rim = new THREE.DirectionalLight(0xc51e16, 4.8);
+    const rim = new THREE.DirectionalLight(0xc51e16, 4.2);
     rim.position.set(4.5, 3.5, -2.5);
     this.scene.add(rim);
 
@@ -221,27 +189,34 @@ class TranscriptionJester {
       const center = bounds.getCenter(new THREE.Vector3());
       const maxDimension = Math.max(size.x, size.y, size.z, 0.001);
       this.model.position.sub(center);
-      this.model.scale.setScalar(6.6 / maxDimension);
-      this.model.position.set(0.15, -0.15, 0);
+      this.model.scale.setScalar(6.8 / maxDimension);
+      this.model.position.set(0.15, -0.12, 0);
       this.pivot.add(this.model);
       this.pivot.updateMatrixWorld(true);
+
+      if (gltf.animations?.length) {
+        this.mixer = new THREE.AnimationMixer(this.model);
+        const idle = gltf.animations.find((clip) => /idle|breath|stand/i.test(clip.name)) || gltf.animations[0];
+        this.idleAction = this.mixer.clipAction(idle);
+        this.idleAction.play();
+      }
 
       this.fitCamera();
       this.attachSelectedCard();
       this.host.dataset.transcriptionJester = 'ready';
-      this.host.dataset.modelAsset = 'assets/models/transcription_jester.glb';
+      this.host.dataset.modelAsset = 'assets/models/transcription_jester_rigged.glb';
       this.host.dataset.modelFacingAngle = String(MODEL_FACING_Y);
-      this.host.dataset.modelFallback = 'false';
+      this.host.dataset.modelAnimations = String(gltf.animations?.length || 0);
       this.host.dataset.modelMeshes = String(meshCount);
       this.host.dataset.modelSize = `${size.x.toFixed(3)},${size.y.toFixed(3)},${size.z.toFixed(3)}`;
-      this.host.dataset.behavior = 'facing-viewer-holding-selected-browse-card';
+      this.host.dataset.behavior = 'rigged-upper-torso-facing-viewer';
       this.resume();
     }, (event) => {
       if (event.total) this.host.dataset.modelProgress = String(Math.round((event.loaded / event.total) * 100));
     }, (error) => {
       this.host.dataset.transcriptionJester = 'failed';
       this.host.dataset.modelError = String(error?.message || error);
-      console.error('Unable to load transcription_jester.glb.', error);
+      console.error('Unable to load transcription_jester_rigged.glb.', error);
     });
   }
 
@@ -250,22 +225,32 @@ class TranscriptionJester {
     this.pivot.updateMatrixWorld(true);
     const bounds = new THREE.Box3().setFromObject(this.pivot);
     const size = bounds.getSize(new THREE.Vector3());
-    const center = bounds.getCenter(new THREE.Vector3());
-    const radius = Math.max(size.x, size.y, size.z, 0.001) * 0.5;
+    const target = new THREE.Vector3(
+      (bounds.min.x + bounds.max.x) * 0.5,
+      bounds.min.y + size.y * 0.72,
+      (bounds.min.z + bounds.max.z) * 0.5,
+    );
+
+    // Frame only the upper torso/head while keeping the entire rig loaded.
+    // The lower body remains available to the skeleton but sits below viewport.
+    const visibleHeight = Math.max(size.y * 0.55, 0.5);
+    const visibleWidth = Math.max(size.x * 0.86, 0.5);
     const verticalFov = THREE.MathUtils.degToRad(this.camera.fov);
     const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * Math.max(this.camera.aspect, 0.2));
-    const limitingFov = Math.max(0.2, Math.min(verticalFov, horizontalFov));
-    const distance = radius / Math.tan(limitingFov / 2) * 1.18;
-    this.camera.position.set(center.x, center.y + size.y * 0.03, center.z + Math.max(distance, 3.5));
+    const verticalDistance = (visibleHeight * 0.5) / Math.tan(verticalFov * 0.5);
+    const horizontalDistance = (visibleWidth * 0.5) / Math.tan(Math.max(horizontalFov, 0.2) * 0.5);
+    const distance = Math.max(verticalDistance, horizontalDistance, 2.8) * 1.06;
+
+    this.camera.position.set(target.x, target.y, target.z + distance);
     this.camera.near = Math.max(0.01, distance / 100);
     this.camera.far = Math.max(100, distance * 20);
-    this.camera.lookAt(center.x, center.y + size.y * 0.03, center.z);
+    this.camera.lookAt(target);
     this.camera.updateProjectionMatrix();
+    this.host.dataset.cameraFraming = 'head-shoulders-chest';
   }
 
   async attachSelectedCard() {
-    const explicit = flutterAssetUrl(this.selectedCardImage);
-    const imageUrl = explicit || await resolveSelectedCardImage(this.selectedCardId);
+    const imageUrl = flutterAssetUrl(this.selectedCardImage);
     if (this.disposed || !imageUrl) return;
     if (this.cardAnchor) {
       this.pivot.remove(this.cardAnchor);
@@ -277,23 +262,21 @@ class TranscriptionJester {
       texture.colorSpace = THREE.SRGBColorSpace;
       const anchor = new THREE.Group();
       const backing = new THREE.Mesh(
-        new THREE.PlaneGeometry(1.46, 2.18),
-        new THREE.MeshStandardMaterial({ color: 0x211008, roughness: 0.72, side: THREE.DoubleSide }),
+        new THREE.BoxGeometry(1.12, 1.68, 0.055),
+        new THREE.MeshStandardMaterial({ color: 0x211008, roughness: 0.72 }),
       );
-      backing.position.z = -0.018;
       anchor.add(backing);
       const card = new THREE.Mesh(
-        new THREE.PlaneGeometry(1.38, 2.07),
+        new THREE.PlaneGeometry(1.08, 1.62),
         new THREE.MeshStandardMaterial({ map: texture, roughness: 0.48, side: THREE.DoubleSide }),
       );
-      card.position.z = 0.008;
+      card.position.z = 0.031;
       anchor.add(card);
-      anchor.position.set(-0.62, 0.18, 1.62);
-      anchor.rotation.set(0.08, -0.04, -0.03);
+      anchor.position.set(-0.54, 0.34, 1.48);
+      anchor.rotation.set(0.05, -0.03, -0.04);
       this.cardAnchor = anchor;
       this.pivot.add(anchor);
       this.host.dataset.selectedCard = 'held-in-3d-hand';
-      this.host.dataset.selectedCardImage = imageUrl;
     }, undefined, (error) => {
       this.host.dataset.selectedCard = 'failed';
       console.warn('Unable to load selected card texture.', error);
@@ -314,29 +297,24 @@ class TranscriptionJester {
     });
     this.renderer.setSize(Math.max(rect.width, 1), Math.max(rect.height, 1), false);
     this.camera.aspect = rect.width / rect.height;
-    this.camera.fov = rect.width < 560 ? 36 : 31;
+    this.camera.fov = rect.width < 560 ? 34 : 29;
     this.camera.updateProjectionMatrix();
     this.fitCamera();
   }
 
   update(time) {
     if (!this.model) return;
+    const delta = this.clock.getDelta();
+    this.mixer?.update(delta);
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const amount = reduced ? 0.16 : 1;
-    const cycle = (time % 4.4) / 4.4;
-    const envelope = Math.sin(Math.PI * cycle);
-    const pulses = Math.pow(Math.max(0, Math.sin(cycle * Math.PI * 8)), 1.3);
-    this.pivot.rotation.x = -envelope * 0.08 * amount - pulses * 0.045 * amount;
-    this.pivot.rotation.y = MODEL_FACING_Y + Math.sin(time * 0.7) * 0.032 * amount;
-    this.pivot.rotation.z = Math.sin(time * 1.45) * 0.016 * amount + pulses * 0.02 * amount;
-    this.pivot.position.y = Math.sin(time) * 0.04 * amount + pulses * 0.05 * amount;
-    this.pivot.position.z = envelope * 0.18 * amount + pulses * 0.07 * amount;
-    this.host.dataset.laughPhase = pulses > 0.32 ? 'laughing-at-viewer' : 'smirking';
+    const amount = reduced ? 0.12 : 1;
+    this.pivot.rotation.y = MODEL_FACING_Y + Math.sin(time * 0.55) * 0.018 * amount;
+    this.pivot.rotation.z = Math.sin(time * 0.8) * 0.008 * amount;
+    this.pivot.position.y = Math.sin(time * 0.7) * 0.018 * amount;
   }
 
   tick = () => {
     if (this.disposed || document.hidden) return;
-    this.clock.getDelta();
     this.update(this.clock.elapsedTime);
     this.renderer.render(this.scene, this.camera);
     this.frame = requestAnimationFrame(this.tick);
@@ -353,6 +331,7 @@ class TranscriptionJester {
     if (this.frame) cancelAnimationFrame(this.frame);
     window.removeEventListener('resize', this.onWindowResize);
     window.removeEventListener('orientationchange', this.onWindowResize);
+    this.mixer?.stopAllAction();
     disposeObject(this.cardAnchor);
     disposeObject(this.model);
     this.renderer.dispose();
