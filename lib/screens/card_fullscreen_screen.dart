@@ -83,75 +83,105 @@ class _CardFullscreenScreenState extends State<CardFullscreenScreen> {
     }
     if (currentIndex >= cards.length) currentIndex = cards.length - 1;
     final card = cards[currentIndex];
+
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(
-        title: Text(card.category.toUpperCase()),
-        backgroundColor: Colors.black,
-        leading: IconButton(
-          tooltip: 'Close fullscreen card',
-          onPressed: _close,
-          icon: const Icon(Icons.close_rounded),
-        ),
-        actions: const [
-          Padding(
-            padding: EdgeInsets.only(right: 8),
-            child: HomeNavigationButton(),
-          ),
-        ],
-      ),
       body: CallbackShortcuts(
         bindings: {const SingleActivator(LogicalKeyboardKey.escape): _close},
         child: Focus(
           autofocus: true,
-          child: PageView.builder(
-            controller: controller,
-            itemCount: cards.length,
-            onPageChanged: (index) => setState(() => currentIndex = index),
-            itemBuilder: (_, index) => Stack(
-              fit: StackFit.expand,
-              children: [
-                GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: _close,
-                ),
-                GestureDetector(
-                  onTap: () {},
-                  child: InteractiveViewer(
-                    minScale: .75,
-                    maxScale: 5,
-                    child: SizedBox.expand(
-                      child: StoredImage(
-                        source: cards[index].imagePath,
-                        fit: BoxFit.contain,
-                        errorBuilder: (_, _, _) =>
-                            const Icon(Icons.broken_image, size: 80),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              PageView.builder(
+                controller: controller,
+                itemCount: cards.length,
+                onPageChanged: (index) => setState(() => currentIndex = index),
+                itemBuilder: (_, index) => Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: _close,
+                    ),
+                    GestureDetector(
+                      onTap: () {},
+                      child: InteractiveViewer(
+                        minScale: .75,
+                        maxScale: 5,
+                        child: SizedBox.expand(
+                          child: StoredImage(
+                            source: cards[index].imagePath,
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, _, _) =>
+                                const Icon(Icons.broken_image, size: 80),
+                          ),
+                        ),
                       ),
+                    ),
+                  ],
+                ),
+              ),
+              SafeArea(
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    child: Row(
+                      children: [
+                        IconButton.filledTonal(
+                          tooltip: 'Close fullscreen card',
+                          onPressed: _close,
+                          icon: const Icon(Icons.close_rounded),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: .62),
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 8,
+                                ),
+                                child: Text(
+                                  card.category.toUpperCase(),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const HomeNavigationButton(),
+                      ],
                     ),
                   ),
                 ),
-              ],
-            ),
-          ),
-        ),
-      ),
-      bottomNavigationBar: SafeArea(
-        child: ColoredBox(
-          color: Colors.black,
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Wrap(
-              alignment: WrapAlignment.center,
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                FilledButton.icon(
-                  onPressed: () => _share(card),
-                  icon: const Icon(Icons.share_outlined),
-                  label: const Text('Share'),
+              ),
+              SafeArea(
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: FilledButton.icon(
+                      onPressed: () => _share(card),
+                      icon: const Icon(Icons.share_outlined),
+                      label: const Text('Share'),
+                    ),
+                  ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
