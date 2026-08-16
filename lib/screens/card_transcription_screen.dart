@@ -153,12 +153,31 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
         children: [
           const Positioned.fill(
             child: IgnorePointer(
-              child: ColorFiltered(
-                colorFilter: ColorFilter.mode(Color(0x99160704), BlendMode.multiply),
-                child: Image(
-                  image: AssetImage('assets/images/closed_curtains.png'),
-                  fit: BoxFit.cover,
-                  alignment: Alignment.center,
+              child: Image(
+                image: AssetImage(
+                  'assets/images/transcription_gothic_background.jpg',
+                ),
+                fit: BoxFit.cover,
+                alignment: Alignment.topCenter,
+                filterQuality: FilterQuality.medium,
+              ),
+            ),
+          ),
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0x24000000),
+                      Color(0x4D080302),
+                      Color(0xA8050201),
+                      Color(0xE6050201),
+                    ],
+                    stops: [0, .34, .73, 1],
+                  ),
                 ),
               ),
             ),
@@ -168,9 +187,13 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: RadialGradient(
-                    center: Alignment(-0.35, -0.15),
-                    radius: 1.15,
-                    colors: [Color(0x224C1600), Color(0x990B0402), Color(0xF2050201)],
+                    center: Alignment(-0.48, -0.18),
+                    radius: 1.02,
+                    colors: [
+                      Color(0x104F1D05),
+                      Color(0x12000000),
+                      Color(0x7D000000),
+                    ],
                     stops: [0, .55, 1],
                   ),
                 ),
@@ -276,7 +299,10 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
                           const _Panel(
                             child: Text(
                               'Sorry, not available for the moment. Cheers !',
-                              style: TextStyle(color: Color(0xFFFFB7A8), fontWeight: FontWeight.w600),
+                              style: TextStyle(
+                                color: Color(0xFFFFB7A8),
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ],
