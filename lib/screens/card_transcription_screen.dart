@@ -53,11 +53,15 @@ class CardTranscriptionScreen extends StatelessWidget {
       );
     }
 
+    final selectedCardImageUrl = ExternalAiHandoffService.publicImageUrlFor(
+      card: card,
+    ).toString();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!context.mounted) return;
       TranscriptionJesterScene.setSelectedCard(
         cardId: card.id,
-        imagePath: card.imagePath,
+        imagePath: selectedCardImageUrl,
       );
     });
 
@@ -203,18 +207,34 @@ class _TranscribeButton extends StatelessWidget {
     required this.enabled,
     required this.onPressed,
   });
+
   final ButtonStyle style;
   final bool enabled;
   final VoidCallback onPressed;
 
   @override
-  Widget build(BuildContext context) => FilledButton(
+  Widget build(BuildContext context) => FilledButton.icon(
         style: style,
         onPressed: enabled ? onPressed : null,
-        child: const _ActionLabel(
-          icon: Icons.document_scanner_rounded,
-          title: 'TRANSCRIBE CARD',
-          subtitle: 'Choose an external AI to read the card image',
+        icon: const Icon(Icons.document_scanner_outlined, size: 30),
+        label: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'TRANSCRIBE CARD',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
+                letterSpacing: .7,
+              ),
+            ),
+            SizedBox(height: 4),
+            Text(
+              'Choose an external AI to read the card image',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+            ),
+          ],
         ),
       );
 }
@@ -225,66 +245,34 @@ class _DiscussButton extends StatelessWidget {
     required this.enabled,
     required this.onPressed,
   });
+
   final ButtonStyle style;
   final bool enabled;
   final VoidCallback onPressed;
 
   @override
-  Widget build(BuildContext context) => OutlinedButton(
+  Widget build(BuildContext context) => OutlinedButton.icon(
         style: style,
         onPressed: enabled ? onPressed : null,
-        child: const _ActionLabel(
-          icon: Icons.forum_rounded,
-          title: 'DISCUSS WITH AI',
-          subtitle: 'ChatGPT · Gemini · Claude · Copilot · Copy Prompt',
-        ),
-      );
-}
-
-class _ActionLabel extends StatelessWidget {
-  const _ActionLabel({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-  });
-  final IconData icon;
-  final String title;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) => Row(
-        children: [
-          Icon(icon, size: 34),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: .3,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    height: 1.2,
-                  ),
-                ),
-              ],
+        icon: const Icon(Icons.forum_outlined, size: 30),
+        label: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'DISCUSS WITH AI',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
+                letterSpacing: .7,
+              ),
             ),
-          ),
-        ],
+            SizedBox(height: 4),
+            Text(
+              'ChatGPT · Gemini · Claude · Copilot · Copy Prompt',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+            ),
+          ],
+        ),
       );
 }
