@@ -27,9 +27,6 @@ String buildCanonicalShareHtml({
   final imageUrl = publicBase.replace(
     pathSegments: [...root, 'assets', ...socialImagePath.split('/')],
   );
-  final cardImageUrl = publicBase.replace(
-    pathSegments: [...root, 'assets', ...imagePath.split('/')],
-  );
   final imageMimeType = _imageMimeType(socialImagePath);
   final dimensions = StringBuffer();
   if (imageWidth != null && imageWidth > 0) {
@@ -48,7 +45,6 @@ String buildCanonicalShareHtml({
   final escapedShareUrl = _html(shareUrl.toString());
   final escapedDeepLink = _html(deepLink.toString());
   final escapedImageUrl = _html(imageUrl.toString());
-  final escapedCardImageUrl = _html(cardImageUrl.toString());
   final escapedImageMimeType = _html(imageMimeType);
   final escapedTranscription = _html(normalizedTranscription);
   final description = normalizedTranscription.isEmpty
@@ -87,7 +83,7 @@ ${dimensions.toString()}  <meta property="og:url" content="$escapedShareUrl">
     <h1>$escapedTitle</h1>
     <p>Card ID: <span id="card-id">$escapedCardId</span></p>
     <figure>
-      <img id="card-image" src="$escapedCardImageUrl" alt="$escapedTitle" style="max-width: min(100%, 600px); height: auto;">
+      <img id="card-image" src="$escapedImageUrl" alt="$escapedTitle" style="max-width: min(100%, 600px); height: auto;">
     </figure>
     <section aria-labelledby="transcription-heading">
       <h2 id="transcription-heading">Card transcription</h2>
