@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 const _playStageBackgroundAsset =
-    'assets/images/play_stage_background_user.jpg';
+    'assets/images/shared_stage_background_user.jpg';
 
 class GameTableBackground extends StatelessWidget {
   const GameTableBackground({required this.child, this.stageLayer, super.key});
