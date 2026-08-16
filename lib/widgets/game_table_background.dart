@@ -21,7 +21,32 @@ class GameTableBackground extends StatelessWidget {
           filterQuality: FilterQuality.high,
         ),
       ),
-      ?stageLayer,
+      if (stageLayer != null)
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final narrow = constraints.maxWidth < 600;
+            final short = constraints.maxHeight < 650;
+            final horizontalInset = narrow
+                ? 18.0
+                : (constraints.maxWidth * 0.10).clamp(56.0, 128.0);
+            final bottomInset = short
+                ? 138.0
+                : narrow
+                ? (constraints.maxHeight * 0.27).clamp(150.0, 220.0)
+                : (constraints.maxHeight * 0.24).clamp(168.0, 238.0);
+            final topInset = narrow ? 8.0 : 14.0;
+
+            return Padding(
+              padding: EdgeInsets.fromLTRB(
+                horizontalInset,
+                topInset,
+                horizontalInset,
+                bottomInset,
+              ),
+              child: stageLayer,
+            );
+          },
+        ),
       child,
     ],
   );
