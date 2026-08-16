@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from './vendor/GLTFLoader.js';
 
 const AUTO_SCENE_ID = 'transcription-jester-route-auto';
-const MODEL_FACING_Y = 0;
+const MODEL_FACING_Y = -Math.PI / 2;
 const JESTER_MODEL = new URL(
   'assets/assets/models/transcription_jester.glb',
   document.baseURI,
@@ -202,9 +202,6 @@ class TranscriptionJester {
       this.model = gltf.scene;
       let meshCount = 0;
       this.model.traverse((object) => {
-        // This dedicated transcription model may itself be named "marionette".
-        // Keep the entire imported hierarchy visible; hiding by node name can
-        // suppress the root and make the successfully loaded jester disappear.
         object.visible = true;
         if (object.isMesh) {
           meshCount += 1;
@@ -239,7 +236,7 @@ class TranscriptionJester {
       this.host.dataset.modelFallback = 'false';
       this.host.dataset.modelMeshes = String(meshCount);
       this.host.dataset.modelSize = `${size.x.toFixed(3)},${size.y.toFixed(3)},${size.z.toFixed(3)}`;
-      this.host.dataset.behavior = 'laughing-at-viewer-with-selected-card';
+      this.host.dataset.behavior = 'facing-viewer-with-selected-card';
       this.resume();
     }, (event) => {
       if (event.total) this.host.dataset.modelProgress = String(Math.round((event.loaded / event.total) * 100));
