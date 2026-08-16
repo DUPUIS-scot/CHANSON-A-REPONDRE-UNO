@@ -1,14 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../core/app_router.dart';
-import '../providers/auth_controller.dart';
-import '../providers/card_ai_provider.dart';
 import '../providers/deck_provider.dart';
-import '../services/card_ai_service.dart';
-import '../services/protected_ai_guard.dart';
-import '../widgets/ai_consent_dialog.dart';
+import '../services/external_ai_handoff_service.dart';
 import '../widgets/home_navigation_button.dart';
 import '../widgets/transcription_ai_provider_sheet.dart';
 import '../widgets/transcription_jester_scene.dart';
@@ -18,38 +12,9 @@ const _brightGold = Color(0xFFFFD980);
 const _cream = Color(0xFFFFE8B4);
 const _ink = Color(0xFF090604);
 
-class CardTranscriptionScreen extends StatefulWidget {
+class CardTranscriptionScreen extends StatelessWidget {
   const CardTranscriptionScreen({required this.cardId, super.key});
   final String cardId;
-
-  @override
-  State<CardTranscriptionScreen> createState() =>
-      _CardTranscriptionScreenState();
-}
-
-class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
-  Future<bool> _consent() async {
-    final provider = context.read<CardAiProvider>();
-    if (await provider.hasConsent()) return true;
-    if (!mounted) return false;
-    final choice = await showAiConsentDialog(context);
-    if (choice == AiConsentChoice.remember) await provider.rememberConsent();
-    return choice != AiConsentChoice.cancel;
-  }
-
-  Future<void> _transcribe() async {
-    if (!await requireRealAuthentication(
-          context,
-          featureName: 'Card Transcription',
-        ) ||
-        !mounted) {
-      return;
-    }
-    if (!await _consent() || !mounted) return;
-    await context
-        .read<CardAiProvider>()
-        .transcribe(widget.cardId, TranscriptionMode.exact);
-  }
 
   ButtonStyle _primaryStyle() => FilledButton.styleFrom(
         backgroundColor: _gold,
@@ -79,28 +44,24 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
   @override
   Widget build(BuildContext context) {
     final decks = context.watch<DeckProvider>();
-    final card = decks.cardById(widget.cardId);
-    final deck = decks.deckForCard(widget.cardId);
-    final ai = context.watch<CardAiProvider>();
-    final auth = context.watch<AuthController>();
+    final card = decks.cardById(cardId);
+    final deck = decks.deckForCard(cardId);
     if (card == null) {
       return const Scaffold(
         body: Center(child: Text('This card no longer exists.')),
       );
     }
 
-    final transcription =
-        (card.transcription ?? card.cleanedTranscription ?? '').trim();
-    final hasText = transcription.isNotEmpty;
-    final canUseAi = auth.canUseProtectedAi;
-    final canDiscuss = hasText && deck != null;
+    final imageUrl = ExternalAiHandoffService.publicImageUrlFor(card: card);
+    final canHandoff = deck != null;
 
-    void discussWithAi() {
+    void openAi(CardAiHandoffMode mode) {
       if (deck == null) return;
       showTranscriptionAiProviderSheet(
         context: context,
         card: card,
         deck: deck,
+        mode: mode,
       );
     }
 
@@ -161,67 +122,20 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          _TranscriptionPanel(
-                            text: hasText
-                                ? transcription
-                                : 'Select a card and transcribe it to reveal its text here.',
-                            hasText: hasText,
-                          ),
-                          if (!canUseAi ||
-                              !ai.isConfigured ||
-                              ai.error != null) ...[
-                            const SizedBox(height: 14),
-                            _StatusBar(
-                              message: ai.error != null
-                                  ? 'Sorry, not available for the moment. Cheers !'
-                                  : !ai.isConfigured
-                                      ? 'AI is not configured for this build.'
-                                      : 'Guest AI session unavailable. Retry the anonymous session or reload the app.',
-                              action: !ai.isConfigured
-                                  ? TextButton.icon(
-                                      onPressed: () =>
-                                          context.go(AppRoutes.settings),
-                                      icon: const Icon(
-                                        Icons.settings_outlined,
-                                      ),
-                                      label: const Text('Settings'),
-                                    )
-                                  : !canUseAi
-                                      ? TextButton.icon(
-                                          onPressed: () =>
-                                              requireRealAuthentication(
-                                            context,
-                                            featureName: 'Card Transcription',
-                                          ),
-                                          icon: const Icon(
-                                            Icons.refresh_rounded,
-                                          ),
-                                          label: const Text('Retry'),
-                                        )
-                                      : null,
-                            ),
-                          ],
-                          if (ai.isLoading) ...[
-                            const SizedBox(height: 14),
-                            const LinearProgressIndicator(
-                              color: _brightGold,
-                              backgroundColor: Color(0x552F2418),
-                            ),
-                          ],
+                          _ImageHandoffPanel(imageUrl: imageUrl.toString()),
                           const SizedBox(height: 18),
                           if (compact) ...[
                             _TranscribeButton(
                               style: _primaryStyle(),
-                              enabled: ai.isConfigured &&
-                                  !ai.isLoading &&
-                                  canUseAi,
-                              onPressed: _transcribe,
+                              enabled: canHandoff,
+                              onPressed: () =>
+                                  openAi(CardAiHandoffMode.transcribe),
                             ),
                             const SizedBox(height: 14),
                             _DiscussButton(
                               style: _secondaryStyle(),
-                              enabled: canDiscuss,
-                              onPressed: discussWithAi,
+                              enabled: canHandoff,
+                              onPressed: () => openAi(CardAiHandoffMode.diy),
                             ),
                           ] else
                             Row(
@@ -229,18 +143,18 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
                                 Expanded(
                                   child: _TranscribeButton(
                                     style: _primaryStyle(),
-                                    enabled: ai.isConfigured &&
-                                        !ai.isLoading &&
-                                        canUseAi,
-                                    onPressed: _transcribe,
+                                    enabled: canHandoff,
+                                    onPressed: () =>
+                                        openAi(CardAiHandoffMode.transcribe),
                                   ),
                                 ),
                                 const SizedBox(width: 18),
                                 Expanded(
                                   child: _DiscussButton(
                                     style: _secondaryStyle(),
-                                    enabled: canDiscuss,
-                                    onPressed: discussWithAi,
+                                    enabled: canHandoff,
+                                    onPressed: () =>
+                                        openAi(CardAiHandoffMode.diy),
                                   ),
                                 ),
                               ],
@@ -259,14 +173,13 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
   }
 }
 
-class _TranscriptionPanel extends StatelessWidget {
-  const _TranscriptionPanel({required this.text, required this.hasText});
-  final String text;
-  final bool hasText;
+class _ImageHandoffPanel extends StatelessWidget {
+  const _ImageHandoffPanel({required this.imageUrl});
+  final String imageUrl;
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.fromLTRB(28, 24, 28, 28),
+        padding: const EdgeInsets.fromLTRB(28, 22, 28, 24),
         decoration: BoxDecoration(
           color: const Color(0xE30A0806),
           borderRadius: BorderRadius.circular(24),
@@ -282,30 +195,38 @@ class _TranscriptionPanel extends StatelessWidget {
         child: Column(
           children: [
             const Text(
-              'TRANSCRIPTION',
+              'CARD IMAGE → EXTERNAL AI',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: _cream,
                 fontFamily: 'serif',
-                fontSize: 24,
+                fontSize: 22,
                 fontWeight: FontWeight.w800,
-                letterSpacing: 1.2,
+                letterSpacing: 1.1,
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
             Container(height: 1, color: const Color(0x77E7A62C)),
-            const SizedBox(height: 18),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                text,
-                style: TextStyle(
-                  color: hasText ? _cream : const Color(0xAAFFE8B4),
-                  fontSize: 21,
-                  height: 1.42,
-                  fontStyle:
-                      hasText ? FontStyle.normal : FontStyle.italic,
-                ),
+            const SizedBox(height: 14),
+            const Text(
+              'No app AI backend is used. Choose an external AI and it will receive the direct public card-image URL so it can read and analyze the image itself.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: _cream,
+                fontSize: 16,
+                height: 1.35,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              imageUrl,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Color(0xCCFFE8B4),
+                fontSize: 12,
+                height: 1.25,
               ),
             ),
           ],
@@ -330,7 +251,7 @@ class _TranscribeButton extends StatelessWidget {
         child: const _ActionLabel(
           icon: Icons.document_scanner_rounded,
           title: 'TRANSCRIBE CARD',
-          subtitle: 'Select a card and extract the text',
+          subtitle: 'Choose an external AI to read the card image',
         ),
       );
 }
@@ -402,44 +323,5 @@ class _ActionLabel extends StatelessWidget {
             ),
           ),
         ],
-      );
-}
-
-class _StatusBar extends StatelessWidget {
-  const _StatusBar({required this.message, this.action});
-  final String message;
-  final Widget? action;
-
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: const Color(0xD90A0705),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0x88E7A62C)),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                message,
-                style: const TextStyle(color: _cream, height: 1.3),
-              ),
-            ),
-            if (action != null) ...[
-              const SizedBox(width: 8),
-              Theme(
-                data: Theme.of(context).copyWith(
-                  textButtonTheme: TextButtonThemeData(
-                    style: TextButton.styleFrom(
-                      foregroundColor: _brightGold,
-                    ),
-                  ),
-                ),
-                child: action!,
-              ),
-            ],
-          ],
-        ),
       );
 }
