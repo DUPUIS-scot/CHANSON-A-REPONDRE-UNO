@@ -52,6 +52,9 @@ function flutterAssetUrl(path) {
   if (!path) return null;
   const normalized = String(path).replace(/^\/+/, '');
   if (/^https?:\/\//i.test(normalized)) return normalized;
+  if (normalized.startsWith('assets/')) {
+    return new URL(`assets/${normalized}`, document.baseURI).href;
+  }
   return new URL(normalized, document.baseURI).href;
 }
 
@@ -59,12 +62,8 @@ function stageRect() {
   const mobile = window.matchMedia('(max-width: 759px)').matches;
   const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
-  const stageWidth = mobile
-    ? Math.min(viewportWidth * 0.94, 700)
-    : Math.min(viewportWidth * 0.70, 920);
-  const stageHeight = mobile
-    ? Math.min(viewportHeight * 0.60, 650)
-    : Math.min(viewportHeight * 0.74, 780);
+  const stageWidth = mobile ? Math.min(viewportWidth * 0.94, 700) : Math.min(viewportWidth * 0.70, 920);
+  const stageHeight = mobile ? Math.min(viewportHeight * 0.60, 650) : Math.min(viewportHeight * 0.74, 780);
   return {
     left: (viewportWidth - stageWidth) * 0.5,
     top: mobile ? Math.max(26, viewportHeight * 0.055) : Math.max(16, viewportHeight * 0.03),
@@ -177,9 +176,7 @@ class TranscriptionJester {
       this.host.dataset.modelSize = `${size.x.toFixed(3)},${size.y.toFixed(3)},${size.z.toFixed(3)}`;
       this.host.dataset.behavior = 'rigged-centered-jester-holding-selected-card';
       this.resume();
-    }, (event) => {
-      if (event.total) this.host.dataset.modelProgress = String(Math.round((event.loaded / event.total) * 100));
-    }, (error) => {
+    }, undefined, (error) => {
       this.host.dataset.transcriptionJester = 'failed';
       this.host.dataset.modelError = String(error?.message || error);
       console.error('Unable to load transcription_jester_rigged.glb.', error);
@@ -196,7 +193,6 @@ class TranscriptionJester {
       bounds.min.y + size.y * 0.64,
       (bounds.min.z + bounds.max.z) * 0.5,
     );
-
     const visibleHeight = Math.max(size.y * 0.62, 0.5);
     const visibleWidth = Math.max(size.x * 0.92, 0.5);
     const verticalFov = THREE.MathUtils.degToRad(this.camera.fov);
@@ -204,13 +200,11 @@ class TranscriptionJester {
     const verticalDistance = (visibleHeight * 0.5) / Math.tan(verticalFov * 0.5);
     const horizontalDistance = (visibleWidth * 0.5) / Math.tan(Math.max(horizontalFov, 0.2) * 0.5);
     const distance = Math.max(verticalDistance, horizontalDistance, 2.9) * 1.08;
-
     this.camera.position.set(target.x, target.y, target.z + distance);
     this.camera.near = Math.max(0.01, distance / 100);
     this.camera.far = Math.max(100, distance * 20);
     this.camera.lookAt(target);
     this.camera.updateProjectionMatrix();
-    this.host.dataset.cameraFraming = 'centered-jester-card-visible';
   }
 
   attachSelectedCard() {
@@ -246,7 +240,8 @@ class TranscriptionJester {
       this.host.dataset.selectedCardImage = imageUrl;
     }, undefined, (error) => {
       this.host.dataset.selectedCard = 'failed';
-      console.warn('Unable to load selected card texture.', error);
+      this.host.dataset.selectedCardImage = imageUrl;
+      console.warn('Unable to load selected card texture.', { imageUrl, error });
     });
   }
 
