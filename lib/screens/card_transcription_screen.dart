@@ -10,6 +10,7 @@ import '../services/card_ai_service.dart';
 import '../services/protected_ai_guard.dart';
 import '../widgets/ai_consent_dialog.dart';
 import '../widgets/home_navigation_button.dart';
+import '../widgets/transcription_ai_provider_sheet.dart';
 import '../widgets/transcription_jester_scene.dart';
 
 const _gold = Color(0xFFE7A62C);
@@ -22,7 +23,8 @@ class CardTranscriptionScreen extends StatefulWidget {
   final String cardId;
 
   @override
-  State<CardTranscriptionScreen> createState() => _CardTranscriptionScreenState();
+  State<CardTranscriptionScreen> createState() =>
+      _CardTranscriptionScreenState();
 }
 
 class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
@@ -36,9 +38,17 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
   }
 
   Future<void> _transcribe() async {
-    if (!await requireRealAuthentication(context, featureName: 'Card Transcription') || !mounted) return;
+    if (!await requireRealAuthentication(
+          context,
+          featureName: 'Card Transcription',
+        ) ||
+        !mounted) {
+      return;
+    }
     if (!await _consent() || !mounted) return;
-    await context.read<CardAiProvider>().transcribe(widget.cardId, TranscriptionMode.exact);
+    await context
+        .read<CardAiProvider>()
+        .transcribe(widget.cardId, TranscriptionMode.exact);
   }
 
   ButtonStyle _primaryStyle() => FilledButton.styleFrom(
@@ -49,7 +59,9 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
         minimumSize: const Size.fromHeight(88),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
         side: const BorderSide(color: _brightGold, width: 1.4),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
       );
 
   ButtonStyle _secondaryStyle() => OutlinedButton.styleFrom(
@@ -59,21 +71,38 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
         minimumSize: const Size.fromHeight(88),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
         side: const BorderSide(color: _gold, width: 1.4),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
       );
 
   @override
   Widget build(BuildContext context) {
-    final card = context.watch<DeckProvider>().cardById(widget.cardId);
+    final decks = context.watch<DeckProvider>();
+    final card = decks.cardById(widget.cardId);
+    final deck = decks.deckForCard(widget.cardId);
     final ai = context.watch<CardAiProvider>();
     final auth = context.watch<AuthController>();
     if (card == null) {
-      return const Scaffold(body: Center(child: Text('This card no longer exists.')));
+      return const Scaffold(
+        body: Center(child: Text('This card no longer exists.')),
+      );
     }
 
-    final transcription = (card.transcription ?? card.cleanedTranscription ?? '').trim();
+    final transcription =
+        (card.transcription ?? card.cleanedTranscription ?? '').trim();
     final hasText = transcription.isNotEmpty;
     final canUseAi = auth.canUseProtectedAi;
+    final canDiscuss = hasText && deck != null;
+
+    void discussWithAi() {
+      if (deck == null) return;
+      showTranscriptionAiProviderSheet(
+        context: context,
+        card: card,
+        deck: deck,
+      );
+    }
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -138,7 +167,9 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
                                 : 'Select a card and transcribe it to reveal its text here.',
                             hasText: hasText,
                           ),
-                          if (!canUseAi || !ai.isConfigured || ai.error != null) ...[
+                          if (!canUseAi ||
+                              !ai.isConfigured ||
+                              ai.error != null) ...[
                             const SizedBox(height: 14),
                             _StatusBar(
                               message: ai.error != null
@@ -148,17 +179,23 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
                                       : 'Guest AI session unavailable. Retry the anonymous session or reload the app.',
                               action: !ai.isConfigured
                                   ? TextButton.icon(
-                                      onPressed: () => context.go(AppRoutes.settings),
-                                      icon: const Icon(Icons.settings_outlined),
+                                      onPressed: () =>
+                                          context.go(AppRoutes.settings),
+                                      icon: const Icon(
+                                        Icons.settings_outlined,
+                                      ),
                                       label: const Text('Settings'),
                                     )
                                   : !canUseAi
                                       ? TextButton.icon(
-                                          onPressed: () => requireRealAuthentication(
+                                          onPressed: () =>
+                                              requireRealAuthentication(
                                             context,
                                             featureName: 'Card Transcription',
                                           ),
-                                          icon: const Icon(Icons.refresh_rounded),
+                                          icon: const Icon(
+                                            Icons.refresh_rounded,
+                                          ),
                                           label: const Text('Retry'),
                                         )
                                       : null,
@@ -175,14 +212,16 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
                           if (compact) ...[
                             _TranscribeButton(
                               style: _primaryStyle(),
-                              enabled: ai.isConfigured && !ai.isLoading && canUseAi,
+                              enabled: ai.isConfigured &&
+                                  !ai.isLoading &&
+                                  canUseAi,
                               onPressed: _transcribe,
                             ),
                             const SizedBox(height: 14),
                             _DiscussButton(
                               style: _secondaryStyle(),
-                              enabled: hasText,
-                              onPressed: () => context.go(AppRoutes.cardChat(card.id)),
+                              enabled: canDiscuss,
+                              onPressed: discussWithAi,
                             ),
                           ] else
                             Row(
@@ -190,7 +229,9 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
                                 Expanded(
                                   child: _TranscribeButton(
                                     style: _primaryStyle(),
-                                    enabled: ai.isConfigured && !ai.isLoading && canUseAi,
+                                    enabled: ai.isConfigured &&
+                                        !ai.isLoading &&
+                                        canUseAi,
                                     onPressed: _transcribe,
                                   ),
                                 ),
@@ -198,8 +239,8 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
                                 Expanded(
                                   child: _DiscussButton(
                                     style: _secondaryStyle(),
-                                    enabled: hasText,
-                                    onPressed: () => context.go(AppRoutes.cardChat(card.id)),
+                                    enabled: canDiscuss,
+                                    onPressed: discussWithAi,
                                   ),
                                 ),
                               ],
@@ -231,7 +272,11 @@ class _TranscriptionPanel extends StatelessWidget {
           borderRadius: BorderRadius.circular(24),
           border: Border.all(color: _gold, width: 1.25),
           boxShadow: const [
-            BoxShadow(color: Color(0xB0000000), blurRadius: 28, offset: Offset(0, 14)),
+            BoxShadow(
+              color: Color(0xB0000000),
+              blurRadius: 28,
+              offset: Offset(0, 14),
+            ),
           ],
         ),
         child: Column(
@@ -258,7 +303,8 @@ class _TranscriptionPanel extends StatelessWidget {
                   color: hasText ? _cream : const Color(0xAAFFE8B4),
                   fontSize: 21,
                   height: 1.42,
-                  fontStyle: hasText ? FontStyle.normal : FontStyle.italic,
+                  fontStyle:
+                      hasText ? FontStyle.normal : FontStyle.italic,
                 ),
               ),
             ),
@@ -268,7 +314,11 @@ class _TranscriptionPanel extends StatelessWidget {
 }
 
 class _TranscribeButton extends StatelessWidget {
-  const _TranscribeButton({required this.style, required this.enabled, required this.onPressed});
+  const _TranscribeButton({
+    required this.style,
+    required this.enabled,
+    required this.onPressed,
+  });
   final ButtonStyle style;
   final bool enabled;
   final VoidCallback onPressed;
@@ -286,7 +336,11 @@ class _TranscribeButton extends StatelessWidget {
 }
 
 class _DiscussButton extends StatelessWidget {
-  const _DiscussButton({required this.style, required this.enabled, required this.onPressed});
+  const _DiscussButton({
+    required this.style,
+    required this.enabled,
+    required this.onPressed,
+  });
   final ButtonStyle style;
   final bool enabled;
   final VoidCallback onPressed;
@@ -298,13 +352,17 @@ class _DiscussButton extends StatelessWidget {
         child: const _ActionLabel(
           icon: Icons.forum_rounded,
           title: 'DISCUSS WITH AI',
-          subtitle: 'Chat about this transcription',
+          subtitle: 'ChatGPT · Gemini · Claude · Copilot · Copy Prompt',
         ),
       );
 }
 
 class _ActionLabel extends StatelessWidget {
-  const _ActionLabel({required this.icon, required this.title, required this.subtitle});
+  const _ActionLabel({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
   final IconData icon;
   final String title;
   final String subtitle;
@@ -323,14 +381,22 @@ class _ActionLabel extends StatelessWidget {
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, letterSpacing: .3),
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: .3,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, height: 1.2),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    height: 1.2,
+                  ),
                 ),
               ],
             ),
@@ -354,13 +420,20 @@ class _StatusBar extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Expanded(child: Text(message, style: const TextStyle(color: _cream, height: 1.3))),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(color: _cream, height: 1.3),
+              ),
+            ),
             if (action != null) ...[
               const SizedBox(width: 8),
               Theme(
                 data: Theme.of(context).copyWith(
                   textButtonTheme: TextButtonThemeData(
-                    style: TextButton.styleFrom(foregroundColor: _brightGold),
+                    style: TextButton.styleFrom(
+                      foregroundColor: _brightGold,
+                    ),
                   ),
                 ),
                 child: action!,

@@ -1,0 +1,199 @@
+import 'package:flutter/material.dart';
+
+import '../models/card_image_model.dart';
+import '../models/deck_model.dart';
+import '../services/external_ai_handoff_service.dart';
+
+const _gold = Color(0xFFE7A62C);
+const _brightGold = Color(0xFFFFD980);
+const _cream = Color(0xFFFFE8B4);
+
+Future<void> showTranscriptionAiProviderSheet({
+  required BuildContext context,
+  required CardImageModel card,
+  required Deck deck,
+  ExternalAiHandoffService service = const ExternalAiHandoffService(),
+}) async {
+  final transcription = ExternalAiHandoffService.transcriptionFor(card);
+  if (transcription.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Transcribe the card before discussing it with AI.'),
+      ),
+    );
+    return;
+  }
+
+  final prompt = ExternalAiHandoffService.buildPrompt(
+    mode: CardAiHandoffMode.diy,
+    card: card,
+    deck: deck,
+    transcriptionOverride: transcription,
+  );
+
+  await showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    backgroundColor: const Color(0xF20A0806),
+    builder: (_) => _TranscriptionAiProviderSheet(
+      card: card,
+      prompt: prompt,
+      service: service,
+    ),
+  );
+}
+
+class _TranscriptionAiProviderSheet extends StatelessWidget {
+  const _TranscriptionAiProviderSheet({
+    required this.card,
+    required this.prompt,
+    required this.service,
+  });
+
+  final CardImageModel card;
+  final String prompt;
+  final ExternalAiHandoffService service;
+
+  IconData _iconFor(ExternalAiProvider provider) => switch (provider) {
+        ExternalAiProvider.chatgpt => Icons.auto_awesome_rounded,
+        ExternalAiProvider.gemini => Icons.diamond_outlined,
+        ExternalAiProvider.claude => Icons.psychology_alt_outlined,
+        ExternalAiProvider.copilot => Icons.assistant_outlined,
+      };
+
+  Future<void> _open(BuildContext context, ExternalAiProvider provider) async {
+    try {
+      await service.openProvider(provider: provider, prompt: prompt);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Full transcription prompt copied. Paste it in ${provider.label} if it is not inserted automatically.',
+          ),
+        ),
+      );
+    } on Object {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Full transcription prompt copied, but ${provider.label} could not be opened automatically.',
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _copy(BuildContext context) async {
+    await service.copyPrompt(prompt);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('AI prompt with full transcription copied'),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          20,
+          8,
+          20,
+          20 + MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'DISCUSS WITH AI',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    color: _cream,
+                    letterSpacing: .4,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '${card.displayTitle} · The full saved transcription, card metadata, and canonical source link are prepared for the AI you choose.',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: _cream,
+                    height: 1.35,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final itemWidth = constraints.maxWidth < 520
+                        ? constraints.maxWidth
+                        : (constraints.maxWidth - 12) / 2;
+                    return Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: ExternalAiProvider.values
+                          .map(
+                            (provider) => SizedBox(
+                              width: itemWidth,
+                              child: FilledButton.tonalIcon(
+                                style: FilledButton.styleFrom(
+                                  foregroundColor: _brightGold,
+                                  backgroundColor: const Color(0xFF21170D),
+                                  side: const BorderSide(
+                                    color: Color(0x88E7A62C),
+                                  ),
+                                ),
+                                onPressed: () => _open(context, provider),
+                                icon: Icon(_iconFor(provider)),
+                                label: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
+                                  child: Text(provider.label),
+                                ),
+                              ),
+                            ),
+                          )
+                          .toList(growable: false),
+                    );
+                  },
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: _gold,
+                    side: const BorderSide(color: _gold),
+                  ),
+                  onPressed: () => _copy(context),
+                  icon: const Icon(Icons.content_copy_rounded),
+                  label: const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 14),
+                    child: Text('COPY PROMPT'),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'The source webpage is reference context only. The external AI receives the transcription directly and never needs to scrape the card page.',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: const Color(0xCCFFE8B4),
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
