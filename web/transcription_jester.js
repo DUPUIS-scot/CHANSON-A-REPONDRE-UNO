@@ -285,7 +285,7 @@ class TranscriptionJester {
   applyCardTexture(texture, imageUrl, serial) {
     if (this.disposed || serial !== this.cardLoadSerial) return texture.dispose();
     texture.colorSpace = THREE.SRGBColorSpace;
-    texture.flipY = false;
+    texture.flipY = true;
     texture.needsUpdate = true;
     if (!this.cardFace) return texture.dispose();
     const oldMaterial = this.cardFace.material;
@@ -311,25 +311,41 @@ class TranscriptionJester {
     });
   }
 
+  drawSourceToTexture(source, width, height, imageUrl, serial, decodeMode) {
+    if (this.disposed || serial !== this.cardLoadSerial) {
+      source.close?.();
+      return;
+    }
+    const maxSide = 1024;
+    const scale = Math.min(1, maxSide / Math.max(width || 1, height || 1));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round((width || 1) * scale));
+    canvas.height = Math.max(1, Math.round((height || 1) * scale));
+    const context = canvas.getContext('2d', { alpha: false });
+    if (!context) {
+      source.close?.();
+      this.loadTextureDirect(imageUrl, serial);
+      return;
+    }
+    context.drawImage(source, 0, 0, canvas.width, canvas.height);
+    source.close?.();
+    const texture = new THREE.CanvasTexture(canvas);
+    this.applyCardTexture(texture, imageUrl, serial);
+    this.host.dataset.selectedCardDecode = decodeMode;
+  }
+
   loadTextureViaImageElement(imageUrl, serial) {
     const image = new Image();
     image.decoding = 'async';
     image.onload = () => {
-      if (this.disposed || serial !== this.cardLoadSerial) return;
-      const maxSide = 2048;
-      const scale = Math.min(1, maxSide / Math.max(image.naturalWidth || 1, image.naturalHeight || 1));
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.max(1, Math.round((image.naturalWidth || 1) * scale));
-      canvas.height = Math.max(1, Math.round((image.naturalHeight || 1) * scale));
-      const context = canvas.getContext('2d', { alpha: false });
-      if (!context) {
-        this.loadTextureDirect(imageUrl, serial);
-        return;
-      }
-      context.drawImage(image, 0, 0, canvas.width, canvas.height);
-      const texture = new THREE.CanvasTexture(canvas);
-      this.applyCardTexture(texture, imageUrl, serial);
-      this.host.dataset.selectedCardDecode = 'html-image-canvas';
+      this.drawSourceToTexture(
+        image,
+        image.naturalWidth || 1,
+        image.naturalHeight || 1,
+        imageUrl,
+        serial,
+        'html-image-canvas',
+      );
     };
     image.onerror = (error) => {
       if (serial !== this.cardLoadSerial) return;
@@ -340,9 +356,34 @@ class TranscriptionJester {
     image.src = imageUrl;
   }
 
+  async loadTextureViaImageBitmap(imageUrl, serial) {
+    if (typeof createImageBitmap !== 'function') {
+      this.loadTextureViaImageElement(imageUrl, serial);
+      return;
+    }
+    try {
+      const response = await fetch(imageUrl, { credentials: 'same-origin', cache: 'no-store' });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const blob = await response.blob();
+      if (this.disposed || serial !== this.cardLoadSerial) return;
+      const bitmap = await createImageBitmap(blob, {
+        imageOrientation: 'from-image',
+        resizeWidth: 600,
+        resizeHeight: 900,
+        resizeQuality: 'high',
+      });
+      this.drawSourceToTexture(bitmap, bitmap.width, bitmap.height, imageUrl, serial, 'image-bitmap-canvas');
+    } catch (error) {
+      if (serial !== this.cardLoadSerial) return;
+      this.host.dataset.selectedCardDecode = 'image-bitmap-failed';
+      console.warn('createImageBitmap decode failed; retrying HTML image.', { imageUrl, error });
+      this.loadTextureViaImageElement(imageUrl, serial);
+    }
+  }
+
   loadSelectedCardTexture(imageUrl, serial) {
-    this.host.dataset.selectedCardDecode = 'html-image-loading';
-    this.loadTextureViaImageElement(imageUrl, serial);
+    this.host.dataset.selectedCardDecode = 'image-bitmap-loading';
+    this.loadTextureViaImageBitmap(imageUrl, serial);
   }
 
   attachSelectedCard() {
