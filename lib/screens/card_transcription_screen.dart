@@ -1,20 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../core/app_router.dart';
-import '../models/card_image_model.dart';
 import '../providers/auth_controller.dart';
 import '../providers/card_ai_provider.dart';
 import '../providers/deck_provider.dart';
 import '../services/card_ai_service.dart';
-import '../services/navigation_guard_service.dart';
 import '../services/protected_ai_guard.dart';
 import '../widgets/ai_consent_dialog.dart';
 import '../widgets/home_navigation_button.dart';
-import '../widgets/stored_image.dart';
-import '../widgets/transcription_editor.dart';
 import '../widgets/transcription_jester_scene.dart';
 
 const _gold = Color(0xFFE7A62C);
@@ -27,84 +22,60 @@ class CardTranscriptionScreen extends StatefulWidget {
   final String cardId;
 
   @override
-  State<CardTranscriptionScreen> createState() => _CardTranscriptionScreenState();
+  State<CardTranscriptionScreen> createState() =>
+      _CardTranscriptionScreenState();
 }
 
 class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
-  final controller = TextEditingController();
-  TranscriptionMode mode = TranscriptionMode.exact;
-  bool initialized = false;
-
-  @override
-  void dispose() {
-    controller.dispose();
-    super.dispose();
-  }
-
   Future<bool> _consent() async {
     final provider = context.read<CardAiProvider>();
     if (await provider.hasConsent()) return true;
     if (!mounted) return false;
     final choice = await showAiConsentDialog(context);
-    if (choice == AiConsentChoice.remember) await provider.rememberConsent();
+    if (choice == AiConsentChoice.remember) {
+      await provider.rememberConsent();
+    }
     return choice != AiConsentChoice.cancel;
   }
 
   Future<void> _transcribe() async {
-    if (!await requireRealAuthentication(context, featureName: 'Card Transcription') || !mounted) return;
+    if (!await requireRealAuthentication(
+          context,
+          featureName: 'Card Transcription',
+        ) ||
+        !mounted) {
+      return;
+    }
     if (!await _consent() || !mounted) return;
-    final result = await context.read<CardAiProvider>().transcribe(widget.cardId, mode);
-    if (result != null && mounted) {
-      setState(() => controller.text = mode == TranscriptionMode.exact
-          ? result.transcription ?? ''
-          : result.cleanedTranscription ?? '');
-    }
+    await context
+        .read<CardAiProvider>()
+        .transcribe(widget.cardId, TranscriptionMode.exact);
   }
 
-  Future<bool> _guardHome(CardImageModel card) async {
-    final ai = context.read<CardAiProvider>();
-    final saved = mode == TranscriptionMode.exact
-        ? card.transcription ?? ''
-        : card.cleanedTranscription ?? '';
-    if (controller.text == saved) return true;
-    final choice = await NavigationGuardService.confirm(
-      context,
-      title: 'Unsaved transcription',
-      message: 'Your transcription contains unsaved edits.',
-      discardLabel: 'Discard Changes',
-      saveLabel: 'Save and Return Home',
-    );
-    if (choice == GuardChoice.save) {
-      await ai.saveTranscription(
-        widget.cardId,
-        text: controller.text.trim(),
-        mode: mode,
+  ButtonStyle _primaryButtonStyle() => FilledButton.styleFrom(
+        backgroundColor: _gold,
+        foregroundColor: _ink,
+        disabledBackgroundColor: const Color(0x66352A1B),
+        disabledForegroundColor: const Color(0x888F816A),
+        minimumSize: const Size.fromHeight(88),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+        side: const BorderSide(color: _brightGold, width: 1.4),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
       );
-      return true;
-    }
-    return choice == GuardChoice.discard;
-  }
 
-  ButtonStyle _filled() => FilledButton.styleFrom(
-    backgroundColor: _gold,
-    foregroundColor: _ink,
-    disabledBackgroundColor: const Color(0x66352A1B),
-    disabledForegroundColor: const Color(0x888F816A),
-    padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
-    side: const BorderSide(color: _brightGold, width: 1.2),
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-    textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-  );
-
-  ButtonStyle _outlined() => OutlinedButton.styleFrom(
-    foregroundColor: _cream,
-    disabledForegroundColor: const Color(0x887F735F),
-    backgroundColor: const Color(0xD9090705),
-    padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
-    side: const BorderSide(color: _gold, width: 1.2),
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-    textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-  );
+  ButtonStyle _secondaryButtonStyle() => OutlinedButton.styleFrom(
+        foregroundColor: _gold,
+        disabledForegroundColor: const Color(0x887F735F),
+        backgroundColor: const Color(0xE20A0806),
+        minimumSize: const Size.fromHeight(88),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+        side: const BorderSide(color: _gold, width: 1.4),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -112,39 +83,31 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
     final ai = context.watch<CardAiProvider>();
     final auth = context.watch<AuthController>();
     final canUseAi = auth.canUseProtectedAi;
-    if (card == null) return const Scaffold(body: Center(child: Text('This card no longer exists.')));
 
-    if (!initialized) {
-      initialized = true;
-      controller.text = card.transcription ?? card.cleanedTranscription ?? '';
+    if (card == null) {
+      return const Scaffold(
+        body: Center(child: Text('This card no longer exists.')),
+      );
     }
-    final hasText = controller.text.trim().isNotEmpty;
+
+    final transcription = (card.transcription ?? card.cleanedTranscription ?? '')
+        .trim();
+    final hasText = transcription.isNotEmpty;
 
     return Scaffold(
       backgroundColor: _ink,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        toolbarHeight: 84,
+        toolbarHeight: 82,
         elevation: 0,
-        backgroundColor: const Color(0xB2050302),
+        backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
         foregroundColor: _brightGold,
-        title: const Text(
-          'Card Transcription',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: _cream,
-            fontFamily: 'serif',
-            fontSize: 27,
-            fontWeight: FontWeight.w700,
-            shadows: [Shadow(color: Colors.black, blurRadius: 10)],
-          ),
-        ),
-        actions: [
+        title: const SizedBox.shrink(),
+        actions: const [
           Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: HomeNavigationButton(navigationGuard: () => _guardHome(card)),
+            padding: EdgeInsets.only(right: 12),
+            child: HomeNavigationButton(),
           ),
         ],
       ),
@@ -171,30 +134,12 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Color(0x24000000),
-                      Color(0x4D080302),
-                      Color(0xA8050201),
-                      Color(0xE6050201),
-                    ],
-                    stops: [0, .34, .73, 1],
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const Positioned.fill(
-            child: IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: RadialGradient(
-                    center: Alignment(-0.48, -0.18),
-                    radius: 1.02,
-                    colors: [
-                      Color(0x104F1D05),
                       Color(0x12000000),
-                      Color(0x7D000000),
+                      Color(0x26000000),
+                      Color(0xA4080302),
+                      Color(0xF2060302),
                     ],
-                    stops: [0, .55, 1],
+                    stops: [0, .44, .72, 1],
                   ),
                 ),
               ),
@@ -204,246 +149,318 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
             builder: (context, box) {
               final mobile = box.maxWidth < 760;
               return Positioned(
-                left: mobile ? -85 : -25,
-                top: mobile ? 92 : 70,
-                width: mobile ? 430 : 470,
-                height: mobile ? 650 : box.maxHeight - 90,
-                child: const Opacity(opacity: .97, child: TranscriptionJesterScene()),
+                left: mobile ? -140 : -55,
+                top: mobile ? 34 : 20,
+                width: mobile ? 620 : 760,
+                height: mobile ? 760 : box.maxHeight * .82,
+                child: const Opacity(
+                  opacity: .98,
+                  child: TranscriptionJesterScene(),
+                ),
               );
             },
           ),
           SafeArea(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 22, 16, 44),
-              children: [
-                Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 820),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Center(
-                          child: Container(
-                            padding: const EdgeInsets.all(13),
-                            decoration: BoxDecoration(
-                              color: const Color(0xD10A0705),
-                              borderRadius: BorderRadius.circular(24),
-                              border: Border.all(color: _gold, width: 1.3),
-                              boxShadow: const [
-                                BoxShadow(color: Color(0x88FF9A1F), blurRadius: 26, spreadRadius: -10),
-                                BoxShadow(color: Colors.black, blurRadius: 28, offset: Offset(0, 12)),
-                              ],
-                            ),
-                            child: SizedBox(
-                              height: 300,
-                              child: StoredImage(source: card.path, fit: BoxFit.contain),
-                            ),
+            child: LayoutBuilder(
+              builder: (context, box) {
+                final compact = box.maxWidth < 760;
+                return SingleChildScrollView(
+                  padding: EdgeInsets.fromLTRB(
+                    compact ? 18 : 36,
+                    compact ? 450 : 470,
+                    compact ? 18 : 36,
+                    36,
+                  ),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 920),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _TranscriptionPanel(
+                            text: hasText
+                                ? transcription
+                                : 'Select a card and transcribe it to reveal its text here.',
+                            hasText: hasText,
                           ),
-                        ),
-                        const SizedBox(height: 22),
-                        _Panel(
-                          padding: const EdgeInsets.all(8),
-                          child: Theme(
-                            data: Theme.of(context).copyWith(
-                              colorScheme: Theme.of(context).colorScheme.copyWith(
-                                primary: _gold,
-                                onPrimary: _ink,
-                                surface: const Color(0xFF120B07),
-                                onSurface: _cream,
-                                outline: _gold,
-                              ),
-                            ),
-                            child: SegmentedButton<TranscriptionMode>(
-                              segments: const [
-                                ButtonSegment(value: TranscriptionMode.exact, label: Text('Exact transcription'), icon: Icon(Icons.check_rounded)),
-                                ButtonSegment(value: TranscriptionMode.clean, label: Text('Clean transcription'), icon: Icon(Icons.auto_fix_high_rounded)),
-                              ],
-                              selected: {mode},
-                              onSelectionChanged: (value) => setState(() {
-                                mode = value.first;
-                                controller.text = mode == TranscriptionMode.exact
-                                    ? card.transcription ?? ''
-                                    : card.cleanedTranscription ?? '';
-                              }),
-                            ),
-                          ),
-                        ),
-                        if (!canUseAi) ...[
-                          const SizedBox(height: 16),
-                          _Status(
-                            message: 'Guest AI session unavailable. No sign-in is required. Retry the anonymous session or reload the app.',
-                            child: TextButton.icon(
-                              onPressed: () => requireRealAuthentication(context, featureName: 'Card Transcription'),
-                              icon: const Icon(Icons.refresh_rounded),
-                              label: const Text('Retry guest session'),
-                            ),
-                          ),
-                        ],
-                        if (!ai.isConfigured) ...[
-                          const SizedBox(height: 16),
-                          _Status(
-                            message: 'No AI backend configured.',
-                            child: TextButton.icon(
-                              onPressed: () => context.go(AppRoutes.settings),
-                              icon: const Icon(Icons.settings_outlined),
-                              label: const Text('Open Settings'),
-                            ),
-                          ),
-                        ],
-                        if (ai.isLoading) ...[
-                          const SizedBox(height: 16),
-                          const LinearProgressIndicator(color: _brightGold, backgroundColor: Color(0x552F2418)),
-                        ],
-                        if (ai.error != null) ...[
-                          const SizedBox(height: 12),
-                          const _Panel(
-                            child: Text(
-                              'Sorry, not available for the moment. Cheers !',
-                              style: TextStyle(
-                                color: Color(0xFFFFB7A8),
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
-                        const SizedBox(height: 18),
-                        _Panel(
-                          padding: const EdgeInsets.all(10),
-                          child: TranscriptionEditor(controller: controller, onChanged: (_) => setState(() {})),
-                        ),
-                        const SizedBox(height: 18),
-                        Wrap(
-                          spacing: 12,
-                          runSpacing: 12,
-                          alignment: WrapAlignment.center,
-                          children: [
-                            FilledButton.icon(
-                              style: _filled(),
-                              onPressed: !ai.isConfigured || ai.isLoading
-                                  ? null
-                                  : canUseAi
-                                      ? _transcribe
-                                      : () => requireRealAuthentication(context, featureName: 'Card Transcription'),
-                              icon: const Icon(Icons.document_scanner_rounded),
-                              label: Text(hasText ? 'Retry' : 'Transcribe card'),
-                            ),
-                            OutlinedButton.icon(
-                              style: _outlined(),
-                              onPressed: !hasText
-                                  ? null
-                                  : () => context.read<CardAiProvider>().saveTranscription(
-                                        widget.cardId,
-                                        text: controller.text.trim(),
-                                        mode: mode,
-                                      ),
-                              icon: const Icon(Icons.save_rounded),
-                              label: const Text('Save'),
-                            ),
-                            OutlinedButton.icon(
-                              style: _outlined(),
-                              onPressed: !hasText
-                                  ? null
-                                  : () {
-                                      Clipboard.setData(ClipboardData(text: controller.text));
-                                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Transcription copied.')));
-                                    },
-                              icon: const Icon(Icons.copy_rounded),
-                              label: const Text('Copy'),
-                            ),
-                            OutlinedButton.icon(
-                              style: _outlined(),
-                              onPressed: !hasText ? null : () => _clear(card),
-                              icon: const Icon(Icons.delete_outline_rounded),
-                              label: const Text('Clear'),
+                          if (!canUseAi || !ai.isConfigured || ai.error != null) ...[
+                            const SizedBox(height: 14),
+                            _StatusBar(
+                              message: ai.error != null
+                                  ? 'Sorry, not available for the moment. Cheers !'
+                                  : !ai.isConfigured
+                                      ? 'AI is not configured for this build.'
+                                      : 'Guest AI session unavailable. Retry the anonymous session or reload the app.',
+                              action: !ai.isConfigured
+                                  ? TextButton.icon(
+                                      onPressed: () =>
+                                          context.go(AppRoutes.settings),
+                                      icon: const Icon(Icons.settings_outlined),
+                                      label: const Text('Settings'),
+                                    )
+                                  : !canUseAi
+                                      ? TextButton.icon(
+                                          onPressed: () =>
+                                              requireRealAuthentication(
+                                            context,
+                                            featureName:
+                                                'Card Transcription',
+                                          ),
+                                          icon: const Icon(Icons.refresh_rounded),
+                                          label: const Text('Retry'),
+                                        )
+                                      : null,
                             ),
                           ],
-                        ),
-                        const SizedBox(height: 12),
-                        FilledButton.tonalIcon(
-                          style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xD9292118),
-                            foregroundColor: _cream,
-                            disabledBackgroundColor: const Color(0xAA211C15),
-                            disabledForegroundColor: const Color(0x887F735F),
-                            minimumSize: const Size.fromHeight(60),
-                            side: const BorderSide(color: _gold, width: 1.15),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-                          ),
-                          onPressed: !card.transcriptionReviewed ? null : () => context.go(AppRoutes.cardChat(card.id)),
-                          icon: const Icon(Icons.forum_rounded),
-                          label: const Text('Discuss this card'),
-                        ),
-                      ],
+                          if (ai.isLoading) ...[
+                            const SizedBox(height: 14),
+                            const LinearProgressIndicator(
+                              color: _brightGold,
+                              backgroundColor: Color(0x552F2418),
+                            ),
+                          ],
+                          const SizedBox(height: 18),
+                          if (compact)
+                            Column(
+                              children: [
+                                _TranscribeButton(
+                                  style: _primaryButtonStyle(),
+                                  enabled: ai.isConfigured &&
+                                      !ai.isLoading &&
+                                      canUseAi,
+                                  onPressed: _transcribe,
+                                ),
+                                const SizedBox(height: 14),
+                                _DiscussButton(
+                                  style: _secondaryButtonStyle(),
+                                  enabled: hasText,
+                                  onPressed: () => context.go(
+                                    AppRoutes.cardChat(card.id),
+                                  ),
+                                ),
+                              ],
+                            )
+                          else
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _TranscribeButton(
+                                    style: _primaryButtonStyle(),
+                                    enabled: ai.isConfigured &&
+                                        !ai.isLoading &&
+                                        canUseAi,
+                                    onPressed: _transcribe,
+                                  ),
+                                ),
+                                const SizedBox(width: 18),
+                                Expanded(
+                                  child: _DiscussButton(
+                                    style: _secondaryButtonStyle(),
+                                    enabled: hasText,
+                                    onPressed: () => context.go(
+                                      AppRoutes.cardChat(card.id),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
+                );
+              },
             ),
           ),
         ],
       ),
     );
   }
-
-  Future<void> _clear(CardImageModel card) async {
-    final yes = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Clear transcription?'),
-            content: const Text('This removes transcription and card chat history, but keeps the original PNG.'),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-              FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Clear')),
-            ],
-          ),
-        ) ??
-        false;
-    if (yes && mounted) {
-      await context.read<CardAiProvider>().deleteAiData(widget.cardId);
-      controller.clear();
-      setState(() {});
-    }
-  }
 }
 
-class _Panel extends StatelessWidget {
-  const _Panel({required this.child, this.padding = const EdgeInsets.all(16)});
-  final Widget child;
-  final EdgeInsetsGeometry padding;
+class _TranscriptionPanel extends StatelessWidget {
+  const _TranscriptionPanel({required this.text, required this.hasText});
+
+  final String text;
+  final bool hasText;
 
   @override
   Widget build(BuildContext context) => Container(
-    padding: padding,
-    decoration: BoxDecoration(
-      color: const Color(0xD10A0705),
-      borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: const Color(0xBFE7A62C), width: 1.15),
-      boxShadow: const [BoxShadow(color: Color(0x99000000), blurRadius: 24, offset: Offset(0, 10))],
-    ),
-    child: child,
-  );
+        padding: const EdgeInsets.fromLTRB(28, 24, 28, 28),
+        decoration: BoxDecoration(
+          color: const Color(0xE50A0806),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: _gold, width: 1.25),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0xA0000000),
+              blurRadius: 28,
+              offset: Offset(0, 14),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            const Text(
+              'TRANSCRIPTION',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: _cream,
+                fontFamily: 'serif',
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.2,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Container(height: 1, color: const Color(0x77E7A62C)),
+            const SizedBox(height: 18),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                text,
+                style: TextStyle(
+                  color: hasText ? _cream : const Color(0xAAFFE8B4),
+                  fontSize: 21,
+                  height: 1.42,
+                  fontStyle: hasText ? FontStyle.normal : FontStyle.italic,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
 }
 
-class _Status extends StatelessWidget {
-  const _Status({required this.message, required this.child});
-  final String message;
-  final Widget child;
+class _TranscribeButton extends StatelessWidget {
+  const _TranscribeButton({
+    required this.style,
+    required this.enabled,
+    required this.onPressed,
+  });
+
+  final ButtonStyle style;
+  final bool enabled;
+  final VoidCallback onPressed;
 
   @override
-  Widget build(BuildContext context) => _Panel(
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(message, style: const TextStyle(color: _cream, height: 1.35)),
-        const SizedBox(height: 6),
-        Theme(
-          data: Theme.of(context).copyWith(
-            textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(foregroundColor: _brightGold)),
-          ),
-          child: child,
+  Widget build(BuildContext context) => FilledButton(
+        style: style,
+        onPressed: enabled ? onPressed : null,
+        child: const _ActionButtonLabel(
+          icon: Icons.document_scanner_rounded,
+          title: 'TRANSCRIBE CARD',
+          subtitle: 'Select a card and extract the text',
         ),
-      ],
-    ),
-  );
+      );
+}
+
+class _DiscussButton extends StatelessWidget {
+  const _DiscussButton({
+    required this.style,
+    required this.enabled,
+    required this.onPressed,
+  });
+
+  final ButtonStyle style;
+  final bool enabled;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) => OutlinedButton(
+        style: style,
+        onPressed: enabled ? onPressed : null,
+        child: const _ActionButtonLabel(
+          icon: Icons.forum_rounded,
+          title: 'DISCUSS WITH AI',
+          subtitle: 'Chat about this transcription',
+        ),
+      );
+}
+
+class _ActionButtonLabel extends StatelessWidget {
+  const _ActionButtonLabel({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) => Row(
+        children: [
+          Icon(icon, size: 34),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: .3,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    height: 1.2,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+}
+
+class _StatusBar extends StatelessWidget {
+  const _StatusBar({required this.message, this.action});
+
+  final String message;
+  final Widget? action;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: const Color(0xD90A0705),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0x88E7A62C)),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(color: _cream, height: 1.3),
+              ),
+            ),
+            if (action != null) ...[
+              const SizedBox(width: 8),
+              Theme(
+                data: Theme.of(context).copyWith(
+                  textButtonTheme: TextButtonThemeData(
+                    style: TextButton.styleFrom(foregroundColor: _brightGold),
+                  ),
+                ),
+                child: action!,
+              ),
+            ],
+          ],
+        ),
+      );
 }

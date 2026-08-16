@@ -60,6 +60,65 @@ function ensureHost(id) {
   return host;
 }
 
+function currentCardId() {
+  const hash = decodeURIComponent(window.location.hash || '');
+  const match = hash.match(/\/cards\/([^/?#]+)\/transcription(?:[/?#]|$)/i);
+  return match?.[1] || null;
+}
+
+function flutterAssetUrl(path) {
+  if (!path) return null;
+  const normalized = String(path).replace(/^\/+/, '');
+  if (/^https?:\/\//i.test(normalized)) return normalized;
+  return new URL(
+    normalized.startsWith('assets/') ? `assets/${normalized}` : normalized,
+    document.baseURI,
+  ).href;
+}
+
+async function resolveSelectedCardImage(cardId) {
+  if (!cardId) return null;
+  const wanted = cardId.toLowerCase();
+
+  try {
+    const catalogUrl = new URL(
+      'assets/assets/json/cards.json',
+      document.baseURI,
+    ).href;
+    const response = await fetch(catalogUrl);
+    if (response.ok) {
+      const catalog = await response.json();
+      for (const deck of catalog.decks || []) {
+        const card = (deck.cards || []).find(
+          (entry) => String(entry.id || '').toLowerCase() === wanted,
+        );
+        if (card) return flutterAssetUrl(card.path || card.image);
+      }
+    }
+  } catch (error) {
+    console.warn('Unable to resolve selected UNO card artwork.', error);
+  }
+
+  try {
+    const brioUrl = new URL(
+      'assets/assets/decks/chanson_a_repondre_brio/deck.json',
+      document.baseURI,
+    ).href;
+    const response = await fetch(brioUrl);
+    if (response.ok) {
+      const deck = await response.json();
+      const card = (deck.cards || []).find(
+        (entry) => String(entry.id || '').toLowerCase() === wanted,
+      );
+      if (card) return flutterAssetUrl(card.path || card.image);
+    }
+  } catch (error) {
+    console.warn('Unable to resolve selected BRIO card artwork.', error);
+  }
+
+  return null;
+}
+
 class TranscriptionJester {
   constructor(host) {
     this.host = host;
@@ -67,6 +126,10 @@ class TranscriptionJester {
     this.disposed = false;
     this.frame = 0;
     this.clock = new THREE.Clock();
+    this.selectedCardId = currentCardId();
+    if (this.selectedCardId) {
+      this.host.dataset.selectedCardId = this.selectedCardId;
+    }
 
     // Render directly on document.body so the puppet remains visible on Flutter
     // web/Safari even though the Dart widget itself is only a logical mount.
@@ -166,11 +229,13 @@ class TranscriptionJester {
           if (laugh) this.laughAction = this.mixer.clipAction(laugh);
         }
 
+        this.attachSelectedCard();
         this.host.dataset.transcriptionJester = 'ready';
         this.host.dataset.modelAsset = MODEL_URL;
         this.host.dataset.modelAnimations = String(gltf.animations.length);
         this.host.dataset.sourceModel = 'user-uploaded-glb-web-optimized';
-        this.host.dataset.behavior = 'laughing-arrogantly-at-viewer';
+        this.host.dataset.behavior =
+          'laughing-arrogantly-at-viewer-holding-selected-card';
         this.resume();
       },
       undefined,
@@ -178,6 +243,73 @@ class TranscriptionJester {
         this.host.dataset.transcriptionJester = 'failed';
         this.host.dataset.modelError = String(error?.message || error);
         console.error('Unable to load transcription jester.', error);
+      },
+    );
+  }
+
+  async attachSelectedCard() {
+    const imageUrl = await resolveSelectedCardImage(this.selectedCardId);
+    if (this.disposed || !imageUrl) {
+      this.host.dataset.selectedCard = 'unresolved';
+      return;
+    }
+
+    new THREE.TextureLoader().load(
+      imageUrl,
+      (texture) => {
+        if (this.disposed) {
+          texture.dispose();
+          return;
+        }
+        texture.colorSpace = THREE.SRGBColorSpace;
+        texture.anisotropy = Math.min(
+          8,
+          this.renderer.capabilities.getMaxAnisotropy(),
+        );
+
+        const anchor = new THREE.Group();
+        anchor.name = 'SelectedTranscriptionCard';
+
+        const backing = new THREE.Mesh(
+          new THREE.PlaneGeometry(1.86, 2.78),
+          new THREE.MeshStandardMaterial({
+            color: 0x1a0d06,
+            roughness: 0.7,
+            metalness: 0.05,
+            side: THREE.DoubleSide,
+          }),
+        );
+        backing.position.z = -0.018;
+        anchor.add(backing);
+
+        const card = new THREE.Mesh(
+          new THREE.PlaneGeometry(1.76, 2.64),
+          new THREE.MeshStandardMaterial({
+            map: texture,
+            roughness: 0.56,
+            metalness: 0.02,
+            side: THREE.DoubleSide,
+          }),
+        );
+        card.position.z = 0.004;
+        anchor.add(card);
+
+        // The model is rotated 90 degrees inside the pivot. Counter-rotate the
+        // card so its recto faces the viewer, then place it where the raised
+        // left hand visually grips its lower edge.
+        anchor.rotation.y = Math.PI / 2;
+        anchor.rotation.z = -0.08;
+        anchor.position.set(0.14, 0.62, 2.08);
+
+        this.cardAnchor = anchor;
+        this.pivot.add(anchor);
+        this.host.dataset.selectedCard = 'ready';
+        this.host.dataset.selectedCardAsset = imageUrl;
+      },
+      undefined,
+      (error) => {
+        this.host.dataset.selectedCard = 'failed';
+        console.warn('Unable to load selected card into jester hand.', error);
       },
     );
   }
@@ -226,6 +358,13 @@ class TranscriptionJester {
     const squash = 1 + pulses * 0.03 * amount;
     this.pivot.scale.set(1 - pulses * 0.016 * amount, squash, 1);
 
+    if (this.cardAnchor) {
+      this.cardAnchor.rotation.z =
+        -0.08 + Math.sin(time * 0.9) * 0.018 * amount;
+      this.cardAnchor.position.y =
+        0.62 + Math.sin(time * 1.05) * 0.018 * amount;
+    }
+
     if (active && this.laughAction && !this.laughing) {
       this.laughing = true;
       this.idleAction?.fadeOut(0.1);
@@ -270,6 +409,7 @@ class TranscriptionJester {
     window.removeEventListener('orientationchange', this.onWindowResize);
     document.removeEventListener('visibilitychange', this.onVisibility);
     this.mixer?.stopAllAction();
+    disposeObject(this.cardAnchor);
     disposeObject(this.model);
     this.renderer.dispose();
     this.renderer.domElement.remove();
