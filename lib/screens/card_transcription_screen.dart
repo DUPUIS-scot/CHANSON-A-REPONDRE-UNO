@@ -53,16 +53,21 @@ class CardTranscriptionScreen extends StatelessWidget {
       );
     }
 
-    // Keep the Flutter -> JavaScript bridge payload small on mobile Safari.
-    // Three.js receives the selected card's real Flutter asset key and resolves
-    // it to the packaged web URL (assets/assets/...) itself. Passing the whole
-    // 2-4 MB JPEG as a base64 data URL made this bridge exceed 4 MB per card
-    // and was unreliable on iOS even though Browse could render the same asset.
+    // BRIO originals are multi-megabyte JPEGs. The Pages workflow already
+    // creates <=350 KB previews specifically for reliable web/social rendering.
+    // Send that lightweight preview to Three.js on the Transcription stage so
+    // iOS Safari does not need to decode/upload the 2-4 MB original as WebGL
+    // texture. Other decks keep using their normal selected-card asset path.
+    final normalizedCardId = card.id.toUpperCase();
+    final jesterTexturePath = normalizedCardId.startsWith('BRIO-')
+        ? 'share-previews/$normalizedCardId.jpg'
+        : card.imagePath;
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!context.mounted) return;
       TranscriptionJesterScene.setSelectedCard(
         cardId: card.id,
-        imagePath: card.imagePath,
+        imagePath: jesterTexturePath,
       );
     });
 
