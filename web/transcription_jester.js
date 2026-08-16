@@ -50,12 +50,13 @@ function ensureHost() {
 
 function flutterAssetUrl(path) {
   if (!path) return null;
-  const normalized = String(path).replace(/^\/+/, '');
-  if (/^https?:\/\//i.test(normalized)) return normalized;
-  if (normalized.startsWith('assets/')) {
-    return new URL(`assets/${normalized}`, document.baseURI).href;
-  }
-  return new URL(normalized, document.baseURI).href;
+  const normalized = String(path).trim().replace(/^\/+/, '');
+  if (/^https?:\/\//i.test(normalized) || normalized.startsWith('data:')) return normalized;
+  const deDuplicated = normalized.replace(/^assets\/assets\//, 'assets/');
+  const webPath = deDuplicated.startsWith('assets/')
+    ? `assets/${deDuplicated}`
+    : `assets/${deDuplicated}`;
+  return new URL(webPath, document.baseURI).href;
 }
 
 function stageRect() {
