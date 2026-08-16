@@ -212,9 +212,12 @@ class _PlayScreenState extends State<PlayScreen> {
                         width: mobile ? 142 : 236,
                         height: mobile ? 54 : 68,
                         child: ExcludeSemantics(
-                          child: Image.asset(
-                            _playLogoAsset,
-                            fit: BoxFit.contain,
+                          child: KeyedSubtree(
+                            key: const Key('play-launcher-logo'),
+                            child: Image.asset(
+                              _playLogoAsset,
+                              fit: BoxFit.contain,
+                            ),
                           ),
                         ),
                       ),
@@ -292,12 +295,14 @@ class _PlayScreenState extends State<PlayScreen> {
                               ),
                               if (state.discardPile.isNotEmpty)
                                 Positioned(
-                                  key: const Key('discard-pile-right'),
                                   right: narrow ? 12 : 28,
                                   top: pileTop,
-                                  child: DiscardPileWidget(
-                                    count: state.discardPile.length,
-                                    topCard: state.discardPile.last,
+                                  child: KeyedSubtree(
+                                    key: const Key('discard-pile-right'),
+                                    child: DiscardPileWidget(
+                                      count: state.discardPile.length,
+                                      topCard: state.discardPile.last,
+                                    ),
                                   ),
                                 ),
                               Positioned(
