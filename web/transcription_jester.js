@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from './vendor/GLTFLoader.js';
 
 const scenes = new Map();
+const AUTO_SCENE_ID = 'transcription-jester-route-auto';
 const MODEL_URL = new URL(
   'assets/assets/models/transcription_jester.glb',
   document.baseURI,
@@ -24,20 +25,25 @@ function disposeObject(root) {
   });
 }
 
+function isTranscriptionRoute() {
+  const hash = decodeURIComponent(window.location.hash || '');
+  return /\/cards\/[^/?#]+\/transcription(?:[/?#]|$)/i.test(hash);
+}
+
 function stageRect() {
   const mobile = window.matchMedia('(max-width: 759px)').matches;
   return mobile
     ? {
-        left: 0,
-        top: 150,
-        width: Math.min(310, window.innerWidth * 0.48),
-        height: Math.min(620, window.innerHeight * 0.72),
+        left: -18,
+        top: 58,
+        width: Math.min(360, window.innerWidth * 0.82),
+        height: Math.min(690, window.innerHeight * 0.78),
       }
     : {
-        left: 10,
-        top: 104,
-        width: Math.min(445, window.innerWidth * 0.34),
-        height: Math.max(540, window.innerHeight - 130),
+        left: 4,
+        top: 76,
+        width: Math.min(560, window.innerWidth * 0.44),
+        height: Math.max(600, window.innerHeight - 98),
       };
 }
 
@@ -85,7 +91,7 @@ async function resolveSelectedCardImage(cardId) {
       'assets/assets/json/cards.json',
       document.baseURI,
     ).href;
-    const response = await fetch(catalogUrl);
+    const response = await fetch(catalogUrl, { cache: 'no-store' });
     if (response.ok) {
       const catalog = await response.json();
       for (const deck of catalog.decks || []) {
@@ -104,7 +110,7 @@ async function resolveSelectedCardImage(cardId) {
       'assets/assets/decks/chanson_a_repondre_brio/deck.json',
       document.baseURI,
     ).href;
-    const response = await fetch(brioUrl);
+    const response = await fetch(brioUrl, { cache: 'no-store' });
     if (response.ok) {
       const deck = await response.json();
       const card = (deck.cards || []).find(
@@ -127,15 +133,11 @@ class TranscriptionJester {
     this.frame = 0;
     this.clock = new THREE.Clock();
     this.selectedCardId = currentCardId();
-    if (this.selectedCardId) {
-      this.host.dataset.selectedCardId = this.selectedCardId;
-    }
+    if (this.selectedCardId) this.host.dataset.selectedCardId = this.selectedCardId;
 
-    // Render directly on document.body so the puppet remains visible on Flutter
-    // web/Safari even though the Dart widget itself is only a logical mount.
     this.scene = new THREE.Scene();
-    this.camera = new THREE.PerspectiveCamera(29, 1, 0.1, 100);
-    this.camera.position.set(0, 0.08, 7.9);
+    this.camera = new THREE.PerspectiveCamera(28, 1, 0.1, 100);
+    this.camera.position.set(0, 0.08, 7.55);
     this.camera.lookAt(0, 0.5, 0);
 
     this.renderer = new THREE.WebGLRenderer({
@@ -146,7 +148,7 @@ class TranscriptionJester {
     this.renderer.setClearColor(0x000000, 0);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.22;
+    this.renderer.toneMappingExposure = 1.38;
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     Object.assign(this.renderer.domElement.style, {
       display: 'block',
@@ -154,8 +156,8 @@ class TranscriptionJester {
       pointerEvents: 'none',
       background: 'transparent',
       zIndex: '2147482500',
-      opacity: '0.94',
-      filter: 'drop-shadow(0 18px 20px rgba(0,0,0,.72))',
+      opacity: '1',
+      filter: 'drop-shadow(0 18px 22px rgba(0,0,0,.78))',
       transform: 'translateZ(0)',
     });
     this.renderer.domElement.setAttribute('aria-hidden', 'true');
@@ -165,14 +167,14 @@ class TranscriptionJester {
     this.pivot.rotation.y = MODEL_FACING_Y;
     this.scene.add(this.pivot);
 
-    this.scene.add(new THREE.HemisphereLight(0xffd6a1, 0x12070a, 2.55));
-    const key = new THREE.DirectionalLight(0xff9a3b, 5.4);
+    this.scene.add(new THREE.HemisphereLight(0xffdeb0, 0x16070a, 3.15));
+    const key = new THREE.DirectionalLight(0xffa64e, 6.2);
     key.position.set(-3.6, 5.2, 5.8);
     this.scene.add(key);
-    const rim = new THREE.DirectionalLight(0xff3115, 3.5);
+    const rim = new THREE.DirectionalLight(0xff3f1d, 4.1);
     rim.position.set(4, 4, -3);
     this.scene.add(rim);
-    const face = new THREE.PointLight(0xffc05f, 2.5, 9);
+    const face = new THREE.PointLight(0xffca78, 3.0, 9);
     face.position.set(0.2, 1.7, 4);
     this.scene.add(face);
 
@@ -199,13 +201,9 @@ class TranscriptionJester {
         }
         this.model = gltf.scene;
         this.model.traverse((object) => {
-          if (/string|marionette|control[_ -]?line/i.test(object.name)) {
-            object.visible = false;
-          }
+          if (/string|marionette|control[_ -]?line/i.test(object.name)) object.visible = false;
           if (object.isMesh) {
-            if (!object.geometry.getAttribute('normal')) {
-              object.geometry.computeVertexNormals();
-            }
+            if (!object.geometry.getAttribute('normal')) object.geometry.computeVertexNormals();
             object.castShadow = true;
             object.receiveShadow = true;
           }
@@ -215,7 +213,7 @@ class TranscriptionJester {
         const size = bounds.getSize(new THREE.Vector3());
         const center = bounds.getCenter(new THREE.Vector3());
         this.model.position.sub(center);
-        this.model.scale.setScalar(7.0 / Math.max(size.y, 0.001));
+        this.model.scale.setScalar(7.15 / Math.max(size.y, 0.001));
         this.pivot.add(this.model);
 
         if (gltf.animations.length) {
@@ -234,8 +232,7 @@ class TranscriptionJester {
         this.host.dataset.modelAsset = MODEL_URL;
         this.host.dataset.modelAnimations = String(gltf.animations.length);
         this.host.dataset.sourceModel = 'user-uploaded-glb-web-optimized';
-        this.host.dataset.behavior =
-          'laughing-arrogantly-at-viewer-holding-selected-card';
+        this.host.dataset.behavior = 'laughing-arrogantly-at-viewer-holding-selected-card';
         this.resume();
       },
       undefined,
@@ -262,10 +259,7 @@ class TranscriptionJester {
           return;
         }
         texture.colorSpace = THREE.SRGBColorSpace;
-        texture.anisotropy = Math.min(
-          8,
-          this.renderer.capabilities.getMaxAnisotropy(),
-        );
+        texture.anisotropy = Math.min(8, this.renderer.capabilities.getMaxAnisotropy());
 
         const anchor = new THREE.Group();
         anchor.name = 'SelectedTranscriptionCard';
@@ -294,9 +288,6 @@ class TranscriptionJester {
         card.position.z = 0.004;
         anchor.add(card);
 
-        // The model is rotated 90 degrees inside the pivot. Counter-rotate the
-        // card so its recto faces the viewer, then place it where the raised
-        // left hand visually grips its lower edge.
         anchor.rotation.y = Math.PI / 2;
         anchor.rotation.z = -0.08;
         anchor.position.set(0.14, 0.62, 2.08);
@@ -324,8 +315,8 @@ class TranscriptionJester {
     });
     this.renderer.setSize(Math.max(rect.width, 1), Math.max(rect.height, 1), false);
     this.camera.aspect = rect.width / rect.height;
-    this.camera.fov = rect.width < 330 ? 31 : 29;
-    this.camera.position.z = rect.width < 330 ? 7.35 : 7.9;
+    this.camera.fov = rect.width < 350 ? 30 : 28;
+    this.camera.position.z = rect.width < 350 ? 7.15 : 7.55;
     this.camera.updateProjectionMatrix();
   }
 
@@ -343,26 +334,17 @@ class TranscriptionJester {
       ? Math.pow(Math.max(0, Math.sin(local * Math.PI * 9.0)), 1.25)
       : 0;
 
-    // A smug, viewer-directed laugh: the puppet leans toward the camera,
-    // rocks its shoulders/body and bounces through repeated laugh pulses.
-    this.pivot.rotation.x =
-      -envelope * 0.13 * amount - pulses * 0.075 * amount;
-    this.pivot.rotation.y =
-      MODEL_FACING_Y + Math.sin(time * 0.62) * 0.05 * amount;
-    this.pivot.rotation.z =
-      Math.sin(time * 1.4) * 0.02 * amount + pulses * 0.032 * amount;
-    this.pivot.position.y =
-      Math.sin(time * 1.05) * 0.06 * amount + pulses * 0.095 * amount;
-    this.pivot.position.z =
-      envelope * 0.46 * amount + pulses * 0.14 * amount;
+    this.pivot.rotation.x = -envelope * 0.13 * amount - pulses * 0.075 * amount;
+    this.pivot.rotation.y = MODEL_FACING_Y + Math.sin(time * 0.62) * 0.05 * amount;
+    this.pivot.rotation.z = Math.sin(time * 1.4) * 0.02 * amount + pulses * 0.032 * amount;
+    this.pivot.position.y = Math.sin(time * 1.05) * 0.06 * amount + pulses * 0.095 * amount;
+    this.pivot.position.z = envelope * 0.46 * amount + pulses * 0.14 * amount;
     const squash = 1 + pulses * 0.03 * amount;
     this.pivot.scale.set(1 - pulses * 0.016 * amount, squash, 1);
 
     if (this.cardAnchor) {
-      this.cardAnchor.rotation.z =
-        -0.08 + Math.sin(time * 0.9) * 0.018 * amount;
-      this.cardAnchor.position.y =
-        0.62 + Math.sin(time * 1.05) * 0.018 * amount;
+      this.cardAnchor.rotation.z = -0.08 + Math.sin(time * 0.9) * 0.018 * amount;
+      this.cardAnchor.position.y = 0.62 + Math.sin(time * 1.05) * 0.018 * amount;
     }
 
     if (active && this.laughAction && !this.laughing) {
@@ -413,9 +395,7 @@ class TranscriptionJester {
     disposeObject(this.model);
     this.renderer.dispose();
     this.renderer.domElement.remove();
-    if (this.host.dataset.generatedBy === 'transcription-jester') {
-      this.host.remove();
-    }
+    if (this.host.dataset.generatedBy === 'transcription-jester') this.host.remove();
   }
 }
 
@@ -429,3 +409,18 @@ window.transcriptionJesterDestroy = (id) => {
   scenes.get(id)?.dispose();
   scenes.delete(id);
 };
+
+function syncAutonomousRouteScene() {
+  const onRoute = isTranscriptionRoute();
+  if (onRoute && !scenes.has(AUTO_SCENE_ID)) {
+    window.transcriptionJesterCreate(AUTO_SCENE_ID);
+  } else if (!onRoute && scenes.has(AUTO_SCENE_ID)) {
+    window.transcriptionJesterDestroy(AUTO_SCENE_ID);
+  }
+}
+
+window.addEventListener('hashchange', syncAutonomousRouteScene);
+window.addEventListener('popstate', syncAutonomousRouteScene);
+queueMicrotask(syncAutonomousRouteScene);
+setTimeout(syncAutonomousRouteScene, 250);
+setTimeout(syncAutonomousRouteScene, 1200);
