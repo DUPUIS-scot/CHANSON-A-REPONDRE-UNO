@@ -20,6 +20,7 @@ class GameTableBackground extends StatelessWidget {
           fit: BoxFit.cover,
           alignment: Alignment.center,
           filterQuality: FilterQuality.high,
+          errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
         ),
       ),
       if (stageLayer != null)
