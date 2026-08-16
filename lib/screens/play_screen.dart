@@ -180,10 +180,15 @@ class _PlayScreenState extends State<PlayScreen> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         toolbarHeight: 82,
         automaticallyImplyLeading: false,
         titleSpacing: 0,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        shadowColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
         title: SizedBox(
           width: double.infinity,
           height: 82,
@@ -255,13 +260,13 @@ class _PlayScreenState extends State<PlayScreen> {
                       builder: (context, stageConstraints) {
                         final narrow = stageConstraints.maxWidth < 600;
                         final torsoHeight = (stageConstraints.maxHeight *
-                                (narrow ? 0.50 : 0.56))
-                            .clamp(300.0, narrow ? 440.0 : 600.0);
+                                (narrow ? 0.48 : 0.52))
+                            .clamp(300.0, narrow ? 420.0 : 560.0);
                         final torsoWidth = (stageConstraints.maxWidth *
-                                (narrow ? 0.70 : 0.64))
-                            .clamp(280.0, narrow ? 500.0 : 720.0);
+                                (narrow ? 0.68 : 0.62))
+                            .clamp(280.0, narrow ? 480.0 : 700.0);
                         return Align(
-                          alignment: const Alignment(0, -0.20),
+                          alignment: const Alignment(0, -0.04),
                           child: SizedBox(
                             key: const Key('play-puppet-torso-viewport'),
                             width: torsoWidth,
@@ -400,16 +405,7 @@ class _TheatricalHeaderBackground extends StatelessWidget {
   const _TheatricalHeaderBackground();
 
   @override
-  Widget build(BuildContext context) => const DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xD9060302), Color(0xC9120804)],
-          ),
-          border: Border(
-            bottom: BorderSide(color: Color(0xFF5A2F13), width: .7),
-          ),
-        ),
-      );
+  Widget build(BuildContext context) => const SizedBox.expand();
 }
 
 class _GameLauncher extends StatelessWidget {
