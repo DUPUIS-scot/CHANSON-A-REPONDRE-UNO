@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:uno_chanson_2/core/app_router.dart';
 import 'package:uno_chanson_2/models/card_image_model.dart';
 import 'package:uno_chanson_2/models/deck_model.dart';
 import 'package:uno_chanson_2/services/external_ai_handoff_service.dart';
@@ -38,6 +39,14 @@ void main() {
     expect(prompt, contains('Existing transcription:'));
     expect(prompt, contains('LE KRAKEN\nLe Kraken rêve.'));
     expect(prompt, contains('Help me explore this card DIY'));
+  });
+
+  test('legacy transcription navigation stays in focused Browse', () {
+    expect(AppRoutes.transcription('brio-013'), '/cards?focus=brio-013');
+    expect(
+      AppRoutes.transcription('final-84-01'),
+      '/cards?focus=final-84-01',
+    );
   });
 
   test('provider handoff copies the prompt and opens the provider', () async {
