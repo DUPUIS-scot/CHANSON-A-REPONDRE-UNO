@@ -24,43 +24,30 @@ function disposeObject(root) {
   });
 }
 
-function styleFixedHost(host) {
+function stageRect() {
   const mobile = window.matchMedia('(max-width: 759px)').matches;
-  Object.assign(host.style, {
-    position: 'fixed',
-    left: mobile ? '-155px' : '-42px',
-    top: mobile ? '86px' : '70px',
-    width: mobile ? '390px' : '470px',
-    height: mobile ? '620px' : 'calc(100vh - 95px)',
-    zIndex: '2147482000',
-    pointerEvents: 'none',
-    overflow: 'hidden',
-    opacity: mobile ? '0.88' : '0.96',
-    background: 'transparent',
-    transform: 'translateZ(0)',
-  });
+  return mobile
+    ? { left: 8, top: 170, width: Math.min(300, window.innerWidth * 0.42), height: Math.min(610, window.innerHeight * 0.72) }
+    : { left: 18, top: 118, width: Math.min(430, window.innerWidth * 0.34), height: Math.max(520, window.innerHeight - 150) };
 }
 
 class TranscriptionJester {
   constructor(host) {
     this.host = host;
     this.host.dataset.transcriptionJester = 'loading';
-    this.visible = true;
     this.disposed = false;
     this.frame = 0;
     this.clock = new THREE.Clock();
 
-    styleFixedHost(host);
-    this.onWindowResize = () => {
-      styleFixedHost(this.host);
-      this.resize();
-    };
-    window.addEventListener('resize', this.onWindowResize);
-
+    // The Flutter HtmlElementView lives inside a platform-view stacking context.
+    // On iOS Safari that context can stay underneath the Flutter canvas even
+    // with a huge z-index. Render the WebGL canvas directly on document.body
+    // instead so the puppet is guaranteed to remain visible while still being
+    // completely non-interactive.
     this.scene = new THREE.Scene();
-    this.camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
-    this.camera.position.set(0, 0.05, 8.7);
-    this.camera.lookAt(0, 0.45, 0);
+    this.camera = new THREE.PerspectiveCamera(29, 1, 0.1, 100);
+    this.camera.position.set(0, 0.08, 7.9);
+    this.camera.lookAt(0, 0.5, 0);
 
     this.renderer = new THREE.WebGLRenderer({
       alpha: true,
@@ -70,29 +57,39 @@ class TranscriptionJester {
     this.renderer.setClearColor(0x000000, 0);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.18;
+    this.renderer.toneMappingExposure = 1.26;
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
-    this.renderer.domElement.style.cssText =
-      'display:block;width:100%;height:100%;pointer-events:none;background:transparent';
-    host.appendChild(this.renderer.domElement);
+    Object.assign(this.renderer.domElement.style, {
+      display: 'block',
+      position: 'fixed',
+      pointerEvents: 'none',
+      background: 'transparent',
+      zIndex: '2147482500',
+      opacity: '0.96',
+      filter: 'drop-shadow(0 18px 18px rgba(0,0,0,.65))',
+      transform: 'translateZ(0)',
+    });
+    this.renderer.domElement.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(this.renderer.domElement);
 
     this.pivot = new THREE.Group();
     this.pivot.rotation.y = MODEL_FACING_Y;
     this.scene.add(this.pivot);
 
-    this.scene.add(new THREE.HemisphereLight(0xffd6a1, 0x12070a, 2.45));
-    const key = new THREE.DirectionalLight(0xffa03e, 5.2);
+    this.scene.add(new THREE.HemisphereLight(0xffd6a1, 0x12070a, 2.7));
+    const key = new THREE.DirectionalLight(0xffa03e, 5.8);
     key.position.set(-3.6, 5.2, 5.8);
     this.scene.add(key);
-    const rim = new THREE.DirectionalLight(0xff3214, 3.3);
+    const rim = new THREE.DirectionalLight(0xff3214, 3.8);
     rim.position.set(4, 4, -3);
     this.scene.add(rim);
-    const face = new THREE.PointLight(0xffc262, 2.25, 9);
+    const face = new THREE.PointLight(0xffc262, 2.8, 9);
     face.position.set(0.2, 1.7, 4);
     this.scene.add(face);
 
-    this.resizeObserver = new ResizeObserver(() => this.resize());
-    this.resizeObserver.observe(host);
+    this.onWindowResize = () => this.resize();
+    window.addEventListener('resize', this.onWindowResize);
+    window.addEventListener('orientationchange', this.onWindowResize);
     this.onVisibility = () => {
       if (document.hidden) this.pause();
       else this.resume();
@@ -126,7 +123,7 @@ class TranscriptionJester {
         const size = bounds.getSize(new THREE.Vector3());
         const center = bounds.getCenter(new THREE.Vector3());
         this.model.position.sub(center);
-        this.model.scale.setScalar(6.55 / Math.max(size.y, 0.001));
+        this.model.scale.setScalar(7.05 / Math.max(size.y, 0.001));
         this.pivot.add(this.model);
 
         if (gltf.animations.length) {
@@ -155,12 +152,17 @@ class TranscriptionJester {
   }
 
   resize() {
-    const width = Math.max(this.host.clientWidth, 1);
-    const height = Math.max(this.host.clientHeight, 1);
-    this.renderer.setSize(width, height, false);
-    this.camera.aspect = width / height;
-    this.camera.fov = width < 430 ? 34 : 30;
-    this.camera.position.z = width < 430 ? 8.05 : 8.7;
+    const rect = stageRect();
+    Object.assign(this.renderer.domElement.style, {
+      left: `${rect.left}px`,
+      top: `${rect.top}px`,
+      width: `${rect.width}px`,
+      height: `${rect.height}px`,
+    });
+    this.renderer.setSize(Math.max(rect.width, 1), Math.max(rect.height, 1), false);
+    this.camera.aspect = rect.width / rect.height;
+    this.camera.fov = rect.width < 330 ? 31 : 29;
+    this.camera.position.z = rect.width < 330 ? 7.35 : 7.9;
     this.camera.updateProjectionMatrix();
   }
 
@@ -170,39 +172,39 @@ class TranscriptionJester {
 
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const amount = reduced ? 0.22 : 1;
-    const cycle = (time % 5.1) / 5.1;
-    const active = cycle > 0.06 && cycle < 0.84;
-    const local = active ? (cycle - 0.06) / 0.78 : 0;
+    const cycle = (time % 4.8) / 4.8;
+    const active = cycle > 0.04 && cycle < 0.88;
+    const local = active ? (cycle - 0.04) / 0.84 : 0;
     const envelope = active ? Math.sin(Math.PI * local) : 0;
     const pulses = active
-      ? Math.pow(Math.max(0, Math.sin(local * Math.PI * 8.5)), 1.35)
+      ? Math.pow(Math.max(0, Math.sin(local * Math.PI * 9.0)), 1.25)
       : 0;
 
     this.pivot.rotation.x =
-      -envelope * 0.11 * amount - pulses * 0.06 * amount;
+      -envelope * 0.13 * amount - pulses * 0.075 * amount;
     this.pivot.rotation.y =
-      MODEL_FACING_Y + Math.sin(time * 0.62) * 0.04 * amount;
+      MODEL_FACING_Y + Math.sin(time * 0.62) * 0.05 * amount;
     this.pivot.rotation.z =
-      Math.sin(time * 1.4) * 0.018 * amount + pulses * 0.028 * amount;
+      Math.sin(time * 1.4) * 0.02 * amount + pulses * 0.032 * amount;
     this.pivot.position.y =
-      Math.sin(time * 1.05) * 0.055 * amount + pulses * 0.085 * amount;
+      Math.sin(time * 1.05) * 0.06 * amount + pulses * 0.095 * amount;
     this.pivot.position.z =
-      envelope * 0.38 * amount + pulses * 0.11 * amount;
-    const squash = 1 + pulses * 0.024 * amount;
-    this.pivot.scale.set(1 - pulses * 0.013 * amount, squash, 1);
+      envelope * 0.46 * amount + pulses * 0.14 * amount;
+    const squash = 1 + pulses * 0.03 * amount;
+    this.pivot.scale.set(1 - pulses * 0.016 * amount, squash, 1);
 
     if (active && this.laughAction && !this.laughing) {
       this.laughing = true;
-      this.idleAction?.fadeOut(0.12);
-      this.laughAction.reset().setLoop(THREE.LoopRepeat, 3).fadeIn(0.12).play();
+      this.idleAction?.fadeOut(0.1);
+      this.laughAction.reset().setLoop(THREE.LoopRepeat, 3).fadeIn(0.1).play();
     } else if (!active && this.laughing) {
       this.laughing = false;
-      this.laughAction?.fadeOut(0.18);
-      this.idleAction?.reset().fadeIn(0.18).play();
+      this.laughAction?.fadeOut(0.16);
+      this.idleAction?.reset().fadeIn(0.16).play();
     }
 
     this.host.dataset.laughPhase = active
-      ? pulses > 0.32
+      ? pulses > 0.3
         ? 'laughing-at-viewer'
         : 'smirking'
       : 'idle';
@@ -231,27 +233,21 @@ class TranscriptionJester {
   dispose() {
     this.disposed = true;
     this.pause();
-    this.resizeObserver?.disconnect();
     window.removeEventListener('resize', this.onWindowResize);
+    window.removeEventListener('orientationchange', this.onWindowResize);
     document.removeEventListener('visibilitychange', this.onVisibility);
     this.mixer?.stopAllAction();
     disposeObject(this.model);
     this.renderer.dispose();
     this.renderer.domElement.remove();
-    this.host.remove();
+    this.host.dataset.transcriptionJester = 'disposed';
   }
 }
 
 window.transcriptionJesterCreate = (id) => {
   if (scenes.has(id)) return;
-  let host = document.getElementById(id);
-  if (!host) {
-    host = document.createElement('div');
-    host.id = id;
-    host.className = 'transcription-jester-fixed-stage';
-    host.setAttribute('aria-label', 'Animated 3D jester laughing toward the viewer');
-    document.body.appendChild(host);
-  }
+  const host = document.getElementById(id);
+  if (!host) return;
   scenes.set(id, new TranscriptionJester(host));
 };
 
