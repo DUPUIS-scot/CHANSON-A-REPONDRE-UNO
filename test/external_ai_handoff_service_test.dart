@@ -41,6 +41,22 @@ void main() {
     );
   });
 
+  test('direct public BRIO image URL uses the real JPEG asset without duplicate assets segment', () {
+    final card = _card(
+      id: 'brio-005',
+      deckId: AppConstants.brioDeckId,
+      title: 'BRIO 005',
+      path: 'assets/decks/chanson_a_repondre_brio/cards/005.jpeg',
+    );
+    expect(
+      PublicCardShareService.publicImageUrlFor(
+        card: card,
+        applicationUri: deployed,
+      ).toString(),
+      'https://dupuis-scot.github.io/CHANSON-A-REPONDRE-UNO/assets/decks/chanson_a_repondre_brio/cards/005.jpeg',
+    );
+  });
+
   test('UNO share title is normalized and filename metadata is ignored', () async {
     final card = _card(
       id: 'final-84-01',
@@ -54,6 +70,7 @@ void main() {
       cards: [card],
     );
     String? receivedTitle;
+    String? receivedText;
     String? receivedUrl;
     String? receivedImage;
     final result = await MultiDeckCardShareService.share(
@@ -63,6 +80,7 @@ void main() {
       nativeShare:
           ({required title, required text, required url, imagePath}) async {
             receivedTitle = title;
+            receivedText = text;
             receivedUrl = url;
             receivedImage = imagePath;
             return NativeShareResult.shared;
@@ -73,9 +91,11 @@ void main() {
     expect(receivedTitle, 'Chanson à répondre UNO — Carte 001');
     expect(receivedUrl, endsWith('/share/UNO-001/'));
     expect(receivedImage, 'assets/cards/final_import/example.png');
+    expect(receivedText, contains('/share/UNO-001/'));
+    expect(receivedText, contains('/assets/cards/final_import/example.png'));
   });
 
-  test('BRIO shares canonical uppercase link with image attachment', () async {
+  test('BRIO shares canonical uppercase link and direct JPEG URL with image attachment', () async {
     final card = _card(
       id: 'brio-001',
       deckId: AppConstants.brioDeckId,
@@ -88,6 +108,7 @@ void main() {
       cards: [card],
     );
     String? receivedTitle;
+    String? receivedText;
     String? receivedUrl;
     String? receivedImage;
     final result = await MultiDeckCardShareService.share(
@@ -97,6 +118,7 @@ void main() {
       nativeShare:
           ({required title, required text, required url, imagePath}) async {
             receivedTitle = title;
+            receivedText = text;
             receivedUrl = url;
             receivedImage = imagePath;
             return NativeShareResult.shared;
@@ -106,9 +128,45 @@ void main() {
     expect(result, CardShareResult.shared);
     expect(receivedTitle, 'Chanson à répondre BRIO — Carte 001');
     expect(receivedUrl, endsWith('/share/BRIO-001/'));
+    expect(receivedText, contains('/share/BRIO-001/'));
+    expect(
+      receivedText,
+      contains('/assets/decks/chanson_a_repondre_brio/cards/001.jpeg'),
+    );
     expect(
       receivedImage,
       'assets/decks/chanson_a_repondre_brio/cards/001.jpeg',
+    );
+  });
+
+  test('share fallback copies title, canonical link, and direct image URL', () async {
+    final card = _card(
+      id: 'brio-011',
+      deckId: AppConstants.brioDeckId,
+      title: 'BRIO 011',
+      path: 'assets/decks/chanson_a_repondre_brio/cards/011.jpeg',
+    );
+    final deck = Deck(
+      id: AppConstants.brioDeckId,
+      name: 'Chanson à répondre BRIO',
+      cards: [card],
+    );
+    String? copied;
+    final result = await MultiDeckCardShareService.share(
+      card: card,
+      deck: deck,
+      applicationUri: deployed,
+      nativeShare:
+          ({required title, required text, required url, imagePath}) async =>
+              NativeShareResult.unavailable,
+      copyLink: (value) async => copied = value,
+    );
+    expect(result, CardShareResult.copied);
+    expect(copied, contains('Chanson à répondre BRIO — Carte 011'));
+    expect(copied, contains('/share/BRIO-011/'));
+    expect(
+      copied,
+      contains('/assets/decks/chanson_a_repondre_brio/cards/011.jpeg'),
     );
   });
 }
