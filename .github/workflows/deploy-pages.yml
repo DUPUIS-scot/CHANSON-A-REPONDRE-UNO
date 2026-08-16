@@ -274,10 +274,12 @@ jobs:
           from pathlib import Path
 
           catalog = json.loads(Path('assets/json/cards.json').read_text(encoding='utf-8'))
-          deck = next(
-              item for item in catalog['decks']
-              if item.get('id') == 'chanson-a-repondre-uno'
-          )
+          deck = next((
+              item for item in catalog.get('decks', [])
+              if item.get('id') == 'sale-poete-final-84'
+          ), None)
+          if deck is None:
+              raise SystemExit('Production UNO deck sale-poete-final-84 was not found in the card catalog.')
           cards = deck.get('cards', [])
           if len(cards) != 84:
               raise SystemExit(f'Expected 84 UNO catalog cards, found {len(cards)}.')
