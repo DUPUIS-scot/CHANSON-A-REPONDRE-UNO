@@ -3,7 +3,7 @@ import { GLTFLoader } from './vendor/GLTFLoader.js';
 
 const dealers = new Map();
 const pendingMounts = new Map();
-const MODEL_REVISION = 'play-jester-rigged-20260816g-contained-torso';
+const MODEL_REVISION = 'play-jester-rigged-20260816g-contained-torso-tight';
 const MODEL_URLS = [
   new URL('assets/assets/models/play_jester_rigged.glb', document.baseURI).href,
 ];
@@ -213,7 +213,7 @@ class JesterDealer {
     this.renderer.setSize(width, height, false);
     this.camera.aspect = width / height;
     const narrow = width < 720;
-    this.camera.fov = narrow ? 44 : 38;
+    this.camera.fov = narrow ? 46 : 40;
     this.modelRoot.scale.setScalar(1);
     this.modelRoot.position.set(0, 0, 0);
 
@@ -222,16 +222,16 @@ class JesterDealer {
       const size = this.puppetBounds.getSize(new THREE.Vector3());
       const targetCenter = new THREE.Vector3(
         center.x,
-        this.puppetBounds.min.y + size.y * (narrow ? 0.76 : 0.74),
+        this.puppetBounds.min.y + size.y * (narrow ? 0.70 : 0.68),
         center.z,
       );
-      const visibleHeight = Math.max(size.y * (narrow ? 0.54 : 0.50), 0.5);
-      const visibleWidth = Math.max(size.x * (narrow ? 0.90 : 0.86), 0.5);
+      const visibleHeight = Math.max(size.y * (narrow ? 0.70 : 0.66), 0.5);
+      const visibleWidth = Math.max(size.x * (narrow ? 1.05 : 0.98), 0.5);
       const verticalFov = THREE.MathUtils.degToRad(this.camera.fov);
       const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * this.camera.aspect);
       const distanceForHeight = (visibleHeight * 0.5) / Math.max(Math.tan(verticalFov / 2), 0.001);
       const distanceForWidth = (visibleWidth * 0.5) / Math.max(Math.tan(horizontalFov / 2), 0.001);
-      const distance = Math.max(distanceForHeight, distanceForWidth, 4.6) * (narrow ? 1.22 : 1.16);
+      const distance = Math.max(distanceForHeight, distanceForWidth, 5.2) * (narrow ? 1.26 : 1.20);
       this.camera.position.set(targetCenter.x, targetCenter.y, targetCenter.z + distance);
       this.camera.lookAt(targetCenter);
       this.camera.updateProjectionMatrix();
