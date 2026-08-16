@@ -3,11 +3,13 @@ import { GLTFLoader } from './vendor/GLTFLoader.js';
 
 const dealers = new Map();
 const pendingMounts = new Map();
-const MODEL_REVISION = 'play-jester-rigged-20260817-face-user-large-animated';
+const MODEL_REVISION = 'play-jester-rigged-20260817-face-user-front-animated';
 const MODEL_URLS = [
   new URL('assets/assets/models/play_jester_rigged.glb', document.baseURI).href,
 ];
-const MODEL_FACING_Y = Math.PI;
+// The uploaded GLB presents its face toward -X at the previous PI rotation.
+// PI/2 turns that forward vector toward the camera (+Z), keeping the jester front-facing.
+const MODEL_FACING_Y = Math.PI / 2;
 const DEAL_DURATION = 2350;
 const RECEIVE_DURATION = 1650;
 
