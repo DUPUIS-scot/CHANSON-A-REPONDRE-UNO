@@ -57,24 +57,32 @@ class _PlayerHandState extends State<PlayerHand> {
     }
     return LayoutBuilder(
       builder: (context, constraints) {
+        // Defensive guard for transient unbounded/invalid constraints during relayout.
+        final maxWidth = constraints.maxWidth.isFinite ? constraints.maxWidth : 0.0;
+        final maxHeight = constraints.maxHeight.isFinite ? constraints.maxHeight : 0.0;
+
+        if (maxWidth <= 0 || maxHeight <= 0) {
+          return const SizedBox.shrink();
+        }
+
         final count = widget.cards.length;
-        final roomy = constraints.maxWidth >= 720;
+        final roomy = maxWidth >= 720;
         final overlapStep = roomy ? .78 : .70;
         const rotationReserve = 16.0;
-        final horizontalReserve = constraints.maxWidth < 560 ? 28.0 : 12.0;
+        final horizontalReserve = maxWidth < 560 ? 28.0 : 12.0;
         final usableWidth = math.max(
           0.0,
-          constraints.maxWidth - horizontalReserve - rotationReserve,
+          maxWidth - horizontalReserve - rotationReserve,
         );
         final widthLimited = usableWidth /
             (1 + math.max(0, count - 1) * overlapStep);
         final heightLimited = math.max(
           60.0,
-          (constraints.maxHeight - 34) / 1.5,
+          (maxHeight - 34) / 1.5,
         );
-        final desiredWidth = constraints.maxWidth >= 850
+        final desiredWidth = maxWidth >= 850
             ? 190.0
-            : constraints.maxWidth >= 560
+            : maxWidth >= 560
             ? 152.0
             : 110.0;
         final cardWidth = math.max(
@@ -89,9 +97,9 @@ class _PlayerHandState extends State<PlayerHand> {
         final contentWidth = cardWidth + step * (count - 1);
         final centeredOffset = math.max(
           horizontalReserve / 2,
-          (constraints.maxWidth - contentWidth) / 2,
+          (maxWidth - contentWidth) / 2,
         );
-        final maxBottom = math.max(0.0, constraints.maxHeight - cardHeight - 4);
+        final maxBottom = math.max(0.0, maxHeight - cardHeight - 4);
         final paintOrder = List<int>.generate(count, (index) => index);
         final selectedIndex = paintOrder.indexWhere(
           (index) => widget.cards[index].id == widget.selectedCardId,
@@ -100,7 +108,9 @@ class _PlayerHandState extends State<PlayerHand> {
           paintOrder.add(paintOrder.removeAt(selectedIndex));
         }
         return ClipRect(
-          child: SizedBox.expand(
+          child: SizedBox(
+            width: maxWidth,
+            height: maxHeight,
             child: Stack(
               clipBehavior: Clip.hardEdge,
               children: [
