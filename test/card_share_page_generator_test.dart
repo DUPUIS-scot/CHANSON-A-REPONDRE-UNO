@@ -52,6 +52,7 @@ void main() {
       expect(html, contains('<meta property="og:title"'));
       expect(html, contains('<meta property="og:url"'));
       expect(html, contains('<meta property="og:image"'));
+      expect(html, contains('<meta property="og:image:url"'));
       expect(html, contains('<meta property="og:image:secure_url"'));
       expect(html, contains('<meta property="og:image:type"'));
       expect(html, contains('<meta property="og:image:alt"'));
@@ -65,7 +66,7 @@ void main() {
     }
   });
 
-  test('BRIO card produces BRIO title, canonical URL, and exact image', () {
+  test('BRIO card uses compact crawler preview metadata', () {
     final deck =
         jsonDecode(File(AppConstants.brioDeckAsset).readAsStringSync())
             as Map<String, dynamic>;
@@ -81,20 +82,31 @@ void main() {
       deckId: AppConstants.brioDeckId,
       deckName: deck['name'] as String,
     );
+    final previewPath = 'share-previews/$slug.jpg';
     final html = buildCanonicalShareHtml(
       publicBase: base,
       cardId: id,
       shareSlug: slug,
       title: title,
       imagePath: path,
+      previewImagePath: previewPath,
+      imageWidth: 600,
+      imageHeight: 900,
+    );
+    final previewUrl = base.replace(
+      pathSegments: ['CHANSON-A-REPONDRE-UNO', 'assets', ...previewPath.split('/')],
     );
 
     expect(slug, 'BRIO-001');
     expect(title, 'Chanson à répondre BRIO — Carte 001');
     expect(html, contains('/share/BRIO-001/'));
-    expect(html, contains('/assets/$path'));
+    expect(html, contains(previewUrl.toString()));
+    expect(html, isNot(contains('/assets/$path')));
+    expect(html, contains('property="og:image:url"'));
     expect(html, contains('property="og:image:secure_url"'));
     expect(html, contains('property="og:image:type" content="image/jpeg"'));
+    expect(html, contains('property="og:image:width" content="600"'));
+    expect(html, contains('property="og:image:height" content="900"'));
     expect(html, contains('property="og:image:alt"'));
     expect(html, contains('name="twitter:image:alt"'));
     expect(html, contains('#/cards/brio-001'));
@@ -131,20 +143,34 @@ void main() {
         deckId: deckId,
         deckName: deckName,
       );
+      final previewPath = deckId == AppConstants.brioDeckId
+          ? 'share-previews/$slug.jpg'
+          : null;
       final html = buildCanonicalShareHtml(
         publicBase: base,
         cardId: id,
         shareSlug: slug,
         title: title,
         imagePath: path,
-        imageWidth: (card['imageWidth'] as num?)?.toInt(),
-        imageHeight: (card['imageHeight'] as num?)?.toInt(),
+        previewImagePath: previewPath,
+        imageWidth: deckId == AppConstants.brioDeckId
+            ? 600
+            : (card['imageWidth'] as num?)?.toInt(),
+        imageHeight: deckId == AppConstants.brioDeckId
+            ? 900
+            : (card['imageHeight'] as num?)?.toInt(),
       );
+      final socialPath = previewPath ?? path;
       final imageUrl = base.replace(
-        pathSegments: ['CHANSON-A-REPONDRE-UNO', 'assets', ...path.split('/')],
+        pathSegments: [
+          'CHANSON-A-REPONDRE-UNO',
+          'assets',
+          ...socialPath.split('/'),
+        ],
       );
 
       expect(html, contains('property="og:image" content="$imageUrl"'));
+      expect(html, contains('property="og:image:url" content="$imageUrl"'));
       expect(
         html,
         contains('property="og:image:secure_url" content="$imageUrl"'),
