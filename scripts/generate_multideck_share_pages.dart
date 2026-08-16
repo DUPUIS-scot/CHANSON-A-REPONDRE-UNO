@@ -13,6 +13,7 @@ String buildCanonicalShareHtml({
   required String shareSlug,
   required String title,
   required String imagePath,
+  String? previewImagePath,
   int? imageWidth,
   int? imageHeight,
 }) {
@@ -21,10 +22,11 @@ String buildCanonicalShareHtml({
     pathSegments: [...root, 'share', shareSlug, ''],
   );
   final deepLink = publicBase.replace(fragment: '/cards/$cardId');
+  final socialImagePath = previewImagePath ?? imagePath;
   final imageUrl = publicBase.replace(
-    pathSegments: [...root, 'assets', ...imagePath.split('/')],
+    pathSegments: [...root, 'assets', ...socialImagePath.split('/')],
   );
-  final imageMimeType = _imageMimeType(imagePath);
+  final imageMimeType = _imageMimeType(socialImagePath);
   final dimensions = StringBuffer();
   if (imageWidth != null && imageWidth > 0) {
     dimensions.writeln(
@@ -55,6 +57,7 @@ String buildCanonicalShareHtml({
   <meta property="og:title" content="$escapedTitle">
   <meta property="og:description" content="Open $escapedTitle.">
   <meta property="og:image" content="$escapedImageUrl">
+  <meta property="og:image:url" content="$escapedImageUrl">
   <meta property="og:image:secure_url" content="$escapedImageUrl">
   <meta property="og:image:type" content="$escapedImageMimeType">
   <meta property="og:image:alt" content="$escapedTitle">
@@ -107,6 +110,7 @@ String buildLegacyRedirectHtml({
   <meta property="og:site_name" content="Chanson à Répondre">
   <meta property="og:title" content="$escapedTitle">
   <meta property="og:image" content="$escapedImage">
+  <meta property="og:image:url" content="$escapedImage">
   <meta property="og:image:secure_url" content="$escapedImage">
   <meta property="og:image:type" content="$escapedImageMimeType">
   <meta property="og:image:alt" content="$escapedTitle">
@@ -178,6 +182,7 @@ Future<void> main(List<String> arguments) async {
         shareSlug: slug,
         title: title,
         imagePath: card.imagePath,
+        previewImagePath: card.previewImagePath,
         imageWidth: card.imageWidth,
         imageHeight: card.imageHeight,
       ),
@@ -252,13 +257,19 @@ Future<List<_ShareCard>> _loadBrio(String path) async {
     throw const FormatException('The BRIO deck has no cards list.');
   }
   final cards = rawCards.whereType<Map<String, dynamic>>().map((card) {
+    final id = card['id'] as String? ?? '';
+    final slug = CardShareIdentity.canonicalSlugFor(
+      cardId: id,
+      deckId: AppConstants.brioDeckId,
+    );
     return _ShareCard(
-      id: card['id'] as String? ?? '',
+      id: id,
       deckId: AppConstants.brioDeckId,
       deckName: decoded['name'] as String? ?? 'Chanson à répondre BRIO',
       imagePath: (card['path'] ?? card['image']) as String? ?? '',
-      imageWidth: (card['imageWidth'] as num?)?.toInt(),
-      imageHeight: (card['imageHeight'] as num?)?.toInt(),
+      previewImagePath: 'share-previews/$slug.jpg',
+      imageWidth: 600,
+      imageHeight: 900,
     );
   }).toList(growable: false);
   if (cards.length != 16 || cards.map((card) => card.id).toSet().length != 16) {
@@ -301,6 +312,7 @@ class _ShareCard {
     required this.deckId,
     required this.deckName,
     required this.imagePath,
+    this.previewImagePath,
     this.imageWidth,
     this.imageHeight,
   });
@@ -309,6 +321,7 @@ class _ShareCard {
   final String deckId;
   final String deckName;
   final String imagePath;
+  final String? previewImagePath;
   final int? imageWidth;
   final int? imageHeight;
 }
