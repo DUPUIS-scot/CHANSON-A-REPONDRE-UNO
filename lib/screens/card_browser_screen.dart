@@ -8,12 +8,10 @@ import '../models/card_image_model.dart';
 import '../models/browse_hand_preview_args.dart';
 import '../providers/card_browser_provider.dart';
 import '../providers/deck_provider.dart';
-import '../services/external_ai_handoff_service.dart';
 import '../services/public_card_share_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/card_hand_toolbar.dart';
 import '../widgets/empty_deck_state.dart';
-import '../widgets/external_ai_handoff_sheet.dart';
 import '../widgets/five_card_hand.dart';
 import '../widgets/home_navigation_button.dart';
 import '../widgets/selected_card_actions.dart';
@@ -66,29 +64,8 @@ class _CardBrowserScreenState extends State<CardBrowserScreen> {
 
   void open(CardImageModel card) => context.go(AppRoutes.cardAlias(card.id));
 
-  void openTranscription(CardImageModel card) =>
+  void openJester(CardImageModel card) =>
       context.go(AppRoutes.transcription(card.id));
-
-  Future<void> openExternalAi(
-    CardImageModel card,
-    CardAiHandoffMode mode,
-  ) async {
-    final deck = context.read<DeckProvider>().deckForCard(card.id);
-    if (deck == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Unable to prepare this card for AI')),
-        );
-      }
-      return;
-    }
-    await showExternalAiHandoffSheet(
-      context: context,
-      card: card,
-      deck: deck,
-      mode: mode,
-    );
-  }
 
   Future<void> share(CardImageModel card) async {
     final customShare = widget.shareCard;
@@ -373,18 +350,14 @@ class _CardBrowserScreenState extends State<CardBrowserScreen> {
                                   runSpacing: 8,
                                   children: [
                                     FilledButton.tonalIcon(
-                                      onPressed: () =>
-                                          openTranscription(selected),
+                                      onPressed: () => openJester(selected),
                                       icon: const Icon(Icons.document_scanner),
                                       label: const Text('TRANSCRIBE CARD'),
                                     ),
                                     FilledButton.tonalIcon(
-                                      onPressed: () => openExternalAi(
-                                        selected,
-                                        CardAiHandoffMode.diy,
-                                      ),
+                                      onPressed: () => openJester(selected),
                                       icon: const Icon(Icons.auto_awesome),
-                                      label: const Text('DIY WITH AI'),
+                                      label: const Text('DISCUSS WITH AI'),
                                     ),
                                   ],
                                 ),
