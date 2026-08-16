@@ -6,9 +6,10 @@ const MODEL_FACING_Y = 0;
 const MODEL_CHUNKS = Array.from({ length: 8 }, (_, i) =>
   new URL(`transcription_assets/jester_${String(i).padStart(2, '0')}.txt`, document.baseURI).href,
 );
-const BACKGROUND_CHUNKS = Array.from({ length: 6 }, (_, i) =>
-  new URL(`transcription_assets/bg_${String(i).padStart(2, '0')}.txt`, document.baseURI).href,
-);
+const TRANSCRIPTION_BACKGROUND = new URL(
+  'assets/assets/images/transcription_stage_background.png',
+  document.baseURI,
+).href;
 
 let sharedScene = null;
 const sceneOwners = new Set();
@@ -173,22 +174,16 @@ class TranscriptionJester {
     this.loadModel();
   }
 
-  async installReferenceBackground() {
-    try {
-      this.backgroundObjectUrl = await blobUrlFromChunks(BACKGROUND_CHUNKS, 'image/jpeg');
-      if (this.disposed) return URL.revokeObjectURL(this.backgroundObjectUrl);
-      Object.assign(document.body.style, {
-        backgroundImage: `url("${this.backgroundObjectUrl}")`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center top',
-        backgroundRepeat: 'no-repeat',
-        backgroundAttachment: 'fixed',
-        backgroundColor: '#050201',
-      });
-      this.host.dataset.referenceBackground = 'user-provided-image';
-    } catch (error) {
-      console.error('Unable to install transcription reference background.', error);
-    }
+  installReferenceBackground() {
+    Object.assign(document.body.style, {
+      backgroundImage: `url("${TRANSCRIPTION_BACKGROUND}")`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center top',
+      backgroundRepeat: 'no-repeat',
+      backgroundAttachment: 'fixed',
+      backgroundColor: '#050201',
+    });
+    this.host.dataset.referenceBackground = 'transcription-stage-background';
   }
 
   async loadModel() {
@@ -313,7 +308,6 @@ class TranscriptionJester {
     this.renderer.dispose();
     this.renderer.domElement.remove();
     if (this.modelObjectUrl) URL.revokeObjectURL(this.modelObjectUrl);
-    if (this.backgroundObjectUrl) URL.revokeObjectURL(this.backgroundObjectUrl);
     Object.assign(document.body.style, this.previousBody);
     if (this.host.dataset.generatedBy === 'transcription-jester') this.host.remove();
   }
