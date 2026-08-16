@@ -16,7 +16,7 @@ class CardTranscriptionScreen extends StatelessWidget {
   final String cardId;
 
   ButtonStyle _primaryStyle() => FilledButton.styleFrom(
-        backgroundColor: _gold,
+        backgroundColor: const Color(0xA6E7A62C),
         foregroundColor: _ink,
         disabledBackgroundColor: const Color(0x66352A1B),
         disabledForegroundColor: const Color(0x888F816A),
@@ -31,7 +31,7 @@ class CardTranscriptionScreen extends StatelessWidget {
   ButtonStyle _secondaryStyle() => OutlinedButton.styleFrom(
         foregroundColor: _gold,
         disabledForegroundColor: const Color(0x887F735F),
-        backgroundColor: const Color(0xE20A0806),
+        backgroundColor: const Color(0x990A0806),
         minimumSize: const Size.fromHeight(78),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         side: const BorderSide(color: _gold, width: 1.4),
@@ -103,8 +103,8 @@ class CardTranscriptionScreen extends StatelessWidget {
                     colors: [
                       Color(0x00000000),
                       Color(0x00000000),
-                      Color(0x16000000),
-                      Color(0x82000000),
+                      Color(0x12000000),
+                      Color(0x5A000000),
                     ],
                     stops: [0, .68, .86, 1],
                   ),
