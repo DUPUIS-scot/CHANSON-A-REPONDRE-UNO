@@ -107,17 +107,16 @@ void main() {
 
     router.go('/cards');
     await tester.pumpAndSettle();
-    final cardsAgain = find.byType(BrowseHandCard);
-    expect(cardsAgain, findsNWidgets(5));
-    final selectedAgain = tester.widget<BrowseHandCard>(cardsAgain.first).card;
-    tester.widget<BrowseHandCard>(cardsAgain.first).onTap();
-    await tester.pumpAndSettle();
 
+    // Returning to Browse preserves the existing CardBrowserScreen state and
+    // therefore the selected card. Tapping that same card again would toggle
+    // the selection off and hide both AI actions, which is not the behavior
+    // this test is intended to exercise.
     expect(find.text('TRANSCRIBE CARD'), findsOneWidget);
     expect(find.text('DISCUSS WITH AI'), findsOneWidget);
     await tester.tap(find.text('DISCUSS WITH AI'));
     await tester.pumpAndSettle();
-    expect(router.state.uri.path, '/cards/${selectedAgain.id}/transcription');
+    expect(router.state.uri.path, '/cards/${selected.id}/transcription');
     expect(find.text('TRANSCRIBE CARD'), findsOneWidget);
     expect(find.text('DISCUSS WITH AI'), findsOneWidget);
     expect(find.text('ChatGPT'), findsNothing);
