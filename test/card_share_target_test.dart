@@ -78,7 +78,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Browse keeps its compact DIY label. Entering either action opens the
-    // backend-free jester screen, whose secondary action is DISCUSS WITH AI.
+    // simplified jester screen, whose secondary action is DISCUSS WITH AI.
     expect(find.text('TRANSCRIBE CARD'), findsOneWidget);
     expect(find.text('DIY WITH AI'), findsOneWidget);
     expect(find.text('DISCUSS WITH AI'), findsNothing);
@@ -87,7 +87,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('TRANSCRIPTION'), findsNothing);
-    expect(find.text('CARD IMAGE → EXTERNAL AI'), findsOneWidget);
+    expect(find.text('CARD IMAGE → EXTERNAL AI'), findsNothing);
     expect(find.text('TRANSCRIBE CARD'), findsOneWidget);
     expect(find.text('DIY WITH AI'), findsNothing);
     expect(find.text('DISCUSS WITH AI'), findsOneWidget);
