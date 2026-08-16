@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../models/card_image_model.dart';
 import '../models/deck_model.dart';
+import '../providers/card_ai_provider.dart';
+import '../services/card_ai_service.dart';
 import '../services/external_ai_handoff_service.dart';
 
 Future<void> showExternalAiHandoffSheet({
@@ -10,18 +13,46 @@ Future<void> showExternalAiHandoffSheet({
   required Deck deck,
   required CardAiHandoffMode mode,
   ExternalAiHandoffService service = const ExternalAiHandoffService(),
-}) {
+}) async {
+  var handoffCard = card;
+  final existing = ExternalAiHandoffService.transcriptionFor(card);
+  final shouldTranscribe =
+      mode == CardAiHandoffMode.transcribe || existing.isEmpty;
+
+  if (shouldTranscribe) {
+    final cardAi = context.read<CardAiProvider>();
+    final updated = await cardAi.transcribe(card.id, TranscriptionMode.exact);
+    if (!context.mounted) return;
+    final transcription = updated == null
+        ? ''
+        : ExternalAiHandoffService.transcriptionFor(updated);
+    if (updated == null || transcription.isEmpty) {
+      final detail = cardAi.error?.trim();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            detail == null || detail.isEmpty
+                ? 'Sorry, transcription is not available for the moment. Cheers!'
+                : detail,
+          ),
+        ),
+      );
+      return;
+    }
+    handoffCard = updated;
+  }
+
   final prompt = ExternalAiHandoffService.buildPrompt(
     mode: mode,
-    card: card,
+    card: handoffCard,
     deck: deck,
   );
-  return showModalBottomSheet<void>(
+  await showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
     builder: (sheetContext) => _ExternalAiHandoffSheet(
-      card: card,
+      card: handoffCard,
       mode: mode,
       prompt: prompt,
       service: service,
@@ -43,7 +74,7 @@ class _ExternalAiHandoffSheet extends StatelessWidget {
   final ExternalAiHandoffService service;
 
   String get _purpose => mode == CardAiHandoffMode.transcribe
-      ? 'Transcribe this card with your AI'
+      ? 'Transcription ready — continue with your AI'
       : 'DIY with your AI';
 
   IconData _iconFor(ExternalAiProvider provider) => switch (provider) {
@@ -63,7 +94,7 @@ class _ExternalAiHandoffSheet extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Prompt copied. Paste it in ${provider.label} if it is not inserted automatically.',
+            'Transcription prompt copied. Paste it in ${provider.label} if it is not inserted automatically.',
           ),
         ),
       );
@@ -72,7 +103,7 @@ class _ExternalAiHandoffSheet extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Prompt copied, but ${provider.label} could not be opened automatically.',
+            'Transcription prompt copied, but ${provider.label} could not be opened automatically.',
           ),
         ),
       );
@@ -83,7 +114,7 @@ class _ExternalAiHandoffSheet extends StatelessWidget {
     await service.copyPrompt(prompt);
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('AI prompt copied')),
+      const SnackBar(content: Text('AI prompt with transcription copied')),
     );
   }
 
@@ -113,7 +144,7 @@ class _ExternalAiHandoffSheet extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                '${card.displayTitle} · The card link and a prepared prompt will be handed to the AI you choose.',
+                '${card.displayTitle} · The saved transcription, card metadata, and source link will be handed to the AI you choose.',
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyMedium,
               ),
@@ -155,7 +186,7 @@ class _ExternalAiHandoffSheet extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Nothing is sent to an external AI until you choose a provider. The prompt is copied locally so you stay in control of the handoff.',
+                'The app transcribes and stores the card first. Nothing is sent to an external AI until you choose a provider; the prepared prompt is copied locally.',
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodySmall,
               ),
