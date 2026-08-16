@@ -53,9 +53,17 @@ class _TranscriptionAiProviderSheet extends StatelessWidget {
       ? 'TRANSCRIBE WITH AI'
       : 'DISCUSS WITH AI';
 
-  String get _description => mode == CardAiHandoffMode.transcribe
-      ? '${card.displayTitle} · The chosen AI receives the direct public card-image URL and is asked to transcribe the image itself.'
-      : '${card.displayTitle} · The chosen AI receives the direct public card-image URL and is asked to analyze the image itself.';
+  String get _description {
+    final hasText = ExternalAiHandoffService.transcriptionFor(card).isNotEmpty;
+    if (mode == CardAiHandoffMode.transcribe) {
+      return hasText
+          ? '${card.displayTitle} · The chosen AI receives the card text already available in the app. Image and share URLs are reference-only.'
+          : '${card.displayTitle} · No extracted card text is currently available. The chosen AI will be told not to pretend it can read the image URL.';
+    }
+    return hasText
+        ? '${card.displayTitle} · The chosen AI discusses the card from the text already available in the app. URLs are optional references.'
+        : '${card.displayTitle} · The chosen AI receives card metadata and reference links without being told it has viewed the image.';
+  }
 
   IconData _iconFor(ExternalAiProvider provider) => switch (provider) {
         ExternalAiProvider.chatgpt => Icons.auto_awesome_rounded,
@@ -71,7 +79,7 @@ class _TranscriptionAiProviderSheet extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Card-image prompt copied. Paste it in ${provider.label} if it is not inserted automatically.',
+            'Card context copied. Paste it in ${provider.label} if it is not inserted automatically.',
           ),
         ),
       );
@@ -80,7 +88,7 @@ class _TranscriptionAiProviderSheet extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Card-image prompt copied, but ${provider.label} could not be opened automatically.',
+            'Card context copied, but ${provider.label} could not be opened automatically.',
           ),
         ),
       );
@@ -91,9 +99,7 @@ class _TranscriptionAiProviderSheet extends StatelessWidget {
     await service.copyPrompt(prompt);
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('AI prompt with direct card-image URL copied'),
-      ),
+      const SnackBar(content: Text('AI card context copied')),
     );
   }
 
@@ -184,7 +190,7 @@ class _TranscriptionAiProviderSheet extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'No app AI backend is used. The external AI is given the direct public image URL, plus the canonical card link for reference.',
+                  'No app AI backend is used. Available card text is handed off directly; image and share URLs are reference-only.',
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: const Color(0xCCFFE8B4),

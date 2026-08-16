@@ -41,6 +41,29 @@ abstract final class MultiDeckCardShareService {
     );
   }
 
+  static Uri publicImageUrlFor({
+    required CardImageModel card,
+    Uri? applicationUri,
+  }) {
+    final source = applicationUri ?? Uri.base;
+    final base = Uri(
+      scheme: source.scheme,
+      userInfo: source.userInfo,
+      host: source.host,
+      port: source.hasPort ? source.port : null,
+      path: source.path,
+    );
+    final root = base.pathSegments.where((segment) => segment.isNotEmpty);
+    final imageSegments = card.imagePath
+        .split('/')
+        .where((segment) => segment.isNotEmpty);
+    return base.replace(
+      pathSegments: [...root, ...imageSegments],
+      query: null,
+      fragment: null,
+    );
+  }
+
   static Future<CardShareResult> share({
     required CardImageModel card,
     required Deck deck,
@@ -59,16 +82,21 @@ abstract final class MultiDeckCardShareService {
       deckId: deck.id,
       applicationUri: applicationUri,
     ).toString();
+    final imageUrl = publicImageUrlFor(
+      card: card,
+      applicationUri: applicationUri,
+    ).toString();
+    final shareText = '$title\n$url\n$imageUrl';
     final result = await nativeShare(
       title: title,
-      text: title,
+      text: shareText,
       url: url,
       imagePath: card.imagePath,
     );
     if (result == NativeShareResult.shared) return CardShareResult.shared;
     if (result == NativeShareResult.cancelled) return CardShareResult.cancelled;
     try {
-      await copyLink(url);
+      await copyLink(shareText);
       return CardShareResult.copied;
     } on Object {
       return CardShareResult.failed;
