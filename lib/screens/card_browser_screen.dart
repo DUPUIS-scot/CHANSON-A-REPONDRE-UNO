@@ -248,12 +248,6 @@ class _CardBrowserScreenState extends State<CardBrowserScreen> {
     final deck = decks.activeDeck;
     return UtilityPageScaffold(
       appBar: AppBar(
-        leading: IconButton(
-          tooltip: 'Back',
-          onPressed: () =>
-              context.canPop() ? context.pop() : context.go(AppRoutes.home),
-          icon: const Icon(Icons.arrow_back),
-        ),
         title: const Text('Browse Cards'),
         actions: const [
           Padding(
