@@ -10,6 +10,7 @@ import '../services/card_ai_service.dart';
 import '../services/protected_ai_guard.dart';
 import '../widgets/ai_consent_dialog.dart';
 import '../widgets/home_navigation_button.dart';
+import '../widgets/transcription_jester_scene.dart';
 
 const _gold = Color(0xFFE7A62C);
 const _brightGold = Color(0xFFFFD980);
@@ -78,22 +79,15 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Color(0xFF4A130C),
-                  Color(0xFF1B0806),
-                  Color(0xFF070302),
+                  Color(0xFF451108),
+                  Color(0xFF160705),
+                  Color(0xFF050201),
                 ],
               ),
             ),
           ),
-          Image.asset(
-            'assets/images/search_castle_background.png',
-            fit: BoxFit.cover,
-            alignment: Alignment.topCenter,
-            filterQuality: FilterQuality.high,
-            errorBuilder: (_, _, _) => const SizedBox.shrink(),
-          ),
           Opacity(
-            opacity: .46,
+            opacity: .82,
             child: Image.asset(
               'assets/images/closed_curtains.png',
               fit: BoxFit.cover,
@@ -105,12 +99,12 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
           const DecoratedBox(
             decoration: BoxDecoration(
               gradient: RadialGradient(
-                center: Alignment(0, -0.38),
-                radius: 1.12,
+                center: Alignment(0, -0.32),
+                radius: 1.05,
                 colors: [
-                  Color(0x007B210D),
-                  Color(0x22330A08),
-                  Color(0xAA090604),
+                  Color(0x003A0A05),
+                  Color(0x33300906),
+                  Color(0xC4080302),
                 ],
               ),
             ),
@@ -156,6 +150,9 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
         fit: StackFit.expand,
         children: [
           Positioned.fill(child: IgnorePointer(child: _background())),
+          const Positioned.fill(
+            child: TranscriptionJesterScene(),
+          ),
           const Positioned.fill(
             child: IgnorePointer(
               child: DecoratedBox(
