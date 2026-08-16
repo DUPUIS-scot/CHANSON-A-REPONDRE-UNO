@@ -10,6 +10,8 @@ import '../widgets/transcription_jester_scene.dart';
 const _gold = Color(0xFFE7A62C);
 const _brightGold = Color(0xFFFFD980);
 const _ink = Color(0xFF090604);
+const _transcriptionStageBackgroundAsset =
+    'assets/images/shared_stage_background_user.jpg';
 
 class CardTranscriptionScreen extends StatelessWidget {
   const CardTranscriptionScreen({required this.cardId, super.key});
@@ -92,6 +94,14 @@ class CardTranscriptionScreen extends StatelessWidget {
       body: Stack(
         fit: StackFit.expand,
         children: [
+          Positioned.fill(
+            child: Image.asset(
+              _transcriptionStageBackgroundAsset,
+              fit: BoxFit.cover,
+              alignment: Alignment.center,
+              filterQuality: FilterQuality.high,
+            ),
+          ),
           const Positioned.fill(child: TranscriptionJesterScene()),
           const Positioned.fill(
             child: IgnorePointer(
