@@ -69,7 +69,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('TRANSCRIBE CARD'), findsNothing);
-    expect(find.text('DIY WITH AI'), findsNothing);
+    expect(find.text('DISCUSS WITH AI'), findsNothing);
 
     final cards = find.byType(BrowseHandCard);
     expect(cards, findsNWidgets(5));
@@ -77,19 +77,20 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('TRANSCRIBE CARD'), findsOneWidget);
-    expect(find.text('DIY WITH AI'), findsOneWidget);
+    expect(find.text('DISCUSS WITH AI'), findsOneWidget);
 
     await tester.tap(find.text('TRANSCRIBE CARD'));
     await tester.pumpAndSettle();
 
     expect(find.text('TRANSCRIPTION'), findsNothing);
+    expect(find.text('CARD IMAGE → EXTERNAL AI'), findsOneWidget);
     expect(find.text('TRANSCRIBE CARD'), findsOneWidget);
-    expect(find.text('DIY WITH AI'), findsOneWidget);
+    expect(find.text('DISCUSS WITH AI'), findsOneWidget);
     expect(find.text('ChatGPT'), findsNothing);
 
     await tester.tap(find.text('TRANSCRIBE CARD'));
     await tester.pumpAndSettle();
-    expect(find.text('Transcribe this card with your AI'), findsOneWidget);
+    expect(find.text('TRANSCRIBE WITH AI'), findsOneWidget);
     expect(find.text('ChatGPT'), findsOneWidget);
     expect(find.text('Gemini'), findsOneWidget);
     expect(find.text('Claude'), findsOneWidget);
@@ -111,7 +112,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('TRANSCRIBE CARD'), findsNothing);
-    expect(find.text('DIY WITH AI'), findsNothing);
+    expect(find.text('DISCUSS WITH AI'), findsNothing);
     expect(find.text('Ask AI a question'), findsNothing);
   });
 
