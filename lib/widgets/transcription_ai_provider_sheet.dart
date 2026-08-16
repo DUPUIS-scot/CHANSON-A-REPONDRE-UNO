@@ -60,8 +60,8 @@ class _TranscriptionAiProviderSheet extends StatelessWidget {
       : 'DISCUSS WITH AI';
 
   String get _description => mode == CardAiHandoffMode.transcribe
-      ? '${card.displayTitle} · The selected card image can be shared as an actual attachment, with the card context copied for the AI.'
-      : '${card.displayTitle} · Share the selected card image itself, then paste the copied context into the AI conversation.';
+      ? '${card.displayTitle} · Share the selected card image to an AI app, or open a provider and paste the copied card context.'
+      : '${card.displayTitle} · Share the selected card image to an AI app for visual discussion, or open a provider and paste the copied card context.';
 
   IconData _iconFor(ExternalAiProvider provider) => switch (provider) {
         ExternalAiProvider.chatgpt => Icons.auto_awesome_rounded,
@@ -70,31 +70,17 @@ class _TranscriptionAiProviderSheet extends StatelessWidget {
         ExternalAiProvider.copilot => Icons.assistant_outlined,
       };
 
-  Future<void> _open(BuildContext context, ExternalAiProvider provider) async {
-    await service.copyPrompt(prompt);
-    final shareUrl = PublicCardShareService.shareUrlFor(
-      cardId: card.id,
-      deckId: deck.id,
-    ).toString();
-    final shareResult = await sharePublicCard(
-      title: '${deck.name} — ${card.displayTitle}',
-      text: prompt,
-      url: shareUrl,
-      imagePath: card.imagePath,
-    );
-
-    if (shareResult == NativeShareResult.cancelled) return;
-
+  Future<void> _openProvider(
+    BuildContext context,
+    ExternalAiProvider provider,
+  ) async {
     try {
       await service.openProvider(provider: provider, prompt: prompt);
       if (!context.mounted) return;
-      final attachmentNote = shareResult == NativeShareResult.shared
-          ? ' The selected card image was also sent through the system share sheet; choose ${provider.label} there when available.'
-          : ' Image attachment is not supported by this browser/provider handoff, so attach the selected card image manually if visual analysis is needed.';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Card context copied and ${provider.label} opened.$attachmentNote',
+            'Card context copied. Paste it in ${provider.label}. Use SHARE CARD IMAGE if the AI needs to see the card.',
           ),
         ),
       );
@@ -103,9 +89,41 @@ class _TranscriptionAiProviderSheet extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Card context copied. Use the system share sheet for the image, but ${provider.label} could not be opened automatically.',
+            'Card context copied, but ${provider.label} could not be opened automatically.',
           ),
         ),
+      );
+    }
+  }
+
+  Future<void> _shareCardImage(BuildContext context) async {
+    await service.copyPrompt(prompt);
+    final shareUrl = PublicCardShareService.shareUrlFor(
+      cardId: card.id,
+      deckId: deck.id,
+    ).toString();
+    final result = await sharePublicCard(
+      title: '${deck.name} — ${card.displayTitle}',
+      text: prompt,
+      url: shareUrl,
+      imagePath: card.imagePath,
+    );
+
+    if (!context.mounted || result == NativeShareResult.cancelled) return;
+
+    final message = switch (result) {
+      NativeShareResult.shared =>
+        'Card image shared. Choose your AI app in the system share sheet; the card context is also copied.',
+      NativeShareResult.unavailable =>
+        'Image sharing is unavailable in this browser. Card context was copied; open an AI provider and attach the card image manually.',
+      NativeShareResult.failed =>
+        'The card image could not be shared. Card context was copied; attach the card image manually in the AI provider.',
+      NativeShareResult.cancelled => '',
+    };
+
+    if (message.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
       );
     }
   }
@@ -155,6 +173,20 @@ class _TranscriptionAiProviderSheet extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 18),
+                FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    foregroundColor: const Color(0xFF090604),
+                    backgroundColor: _gold,
+                    side: const BorderSide(color: _brightGold),
+                  ),
+                  onPressed: () => _shareCardImage(context),
+                  icon: const Icon(Icons.ios_share_rounded),
+                  label: const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 14),
+                    child: Text('SHARE CARD IMAGE TO AI'),
+                  ),
+                ),
+                const SizedBox(height: 12),
                 LayoutBuilder(
                   builder: (context, constraints) {
                     final itemWidth = constraints.maxWidth < 520
@@ -175,7 +207,8 @@ class _TranscriptionAiProviderSheet extends StatelessWidget {
                                     color: Color(0x88E7A62C),
                                   ),
                                 ),
-                                onPressed: () => _open(context, provider),
+                                onPressed: () =>
+                                    _openProvider(context, provider),
                                 icon: Icon(_iconFor(provider)),
                                 label: Padding(
                                   padding: const EdgeInsets.symmetric(
@@ -205,7 +238,7 @@ class _TranscriptionAiProviderSheet extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'No app AI backend is used. The selected card image is handed to the browser share sheet when supported, while the AI context remains copied for pasting.',
+                  'No app AI backend is used. Provider buttons open the selected AI with card context copied. SHARE CARD IMAGE TO AI uses the browser/system share sheet so supported AI apps can receive the actual selected card image.',
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: const Color(0xCCFFE8B4),
