@@ -18,6 +18,7 @@ import '../widgets/puppet_dealer_scene.dart';
 import 'play_hand_fullscreen_screen.dart';
 
 const _playLogoAsset = 'assets/images/app_logo.png';
+const _playStageBackgroundAsset = 'assets/images/play_stage_background_user.jpg';
 
 class PlayScreen extends StatefulWidget {
   const PlayScreen({super.key});
@@ -236,167 +237,168 @@ class _PlayScreenState extends State<PlayScreen> {
         backgroundColor: Colors.transparent,
         flexibleSpace: const _TheatricalHeaderBackground(),
       ),
-      body: state == null
-          ? _GameLauncher(decks: decks, game: game)
-          : deckMismatch
-          ? const ColoredBox(
-              color: Color(0xFF050302),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Positioned.fill(
+            child: Image.asset(
+              _playStageBackgroundAsset,
+              fit: BoxFit.cover,
+              alignment: Alignment.center,
+              filterQuality: FilterQuality.high,
+              errorBuilder: (context, error, stackTrace) =>
+                  const ColoredBox(color: Color(0xFF050302)),
+            ),
+          ),
+          if (state == null)
+            _GameLauncher(decks: decks, game: game)
+          else if (deckMismatch)
+            const ColoredBox(
+              color: Color(0xAA050302),
               child: Center(child: CircularProgressIndicator()),
             )
-          : Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1120),
-                child: DecoratedBox(
-                  decoration: const BoxDecoration(
-                    border: Border.symmetric(
-                      vertical: BorderSide(color: Color(0xFF8D6124)),
-                    ),
-                    boxShadow: [
-                      BoxShadow(color: Colors.black, blurRadius: 30),
-                    ],
-                  ),
-                  child: GameTableBackground(
-                    stageLayer: LayoutBuilder(
-                      builder: (context, stageConstraints) {
-                        final narrow = stageConstraints.maxWidth < 600;
-                        final torsoHeight = (stageConstraints.maxHeight *
-                                (narrow ? 0.48 : 0.52))
-                            .clamp(300.0, narrow ? 420.0 : 560.0);
-                        final torsoWidth = (stageConstraints.maxWidth *
-                                (narrow ? 0.68 : 0.62))
-                            .clamp(280.0, narrow ? 480.0 : 700.0);
-                        return Align(
-                          alignment: const Alignment(0, -0.04),
-                          child: SizedBox(
-                            key: const Key('play-puppet-torso-viewport'),
-                            width: torsoWidth,
-                            height: torsoHeight,
-                            child: PuppetDealerScene(
-                              controller: puppetController,
-                              quality: puppetQuality,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                    child: SafeArea(
-                      top: false,
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          final narrow = constraints.maxWidth < 600;
-                          final shortViewport = constraints.maxHeight < 700;
-                          final handHeight = narrow
-                              ? (shortViewport ? 196.0 : 220.0)
-                              : 280.0;
-                          final handBottom = narrow
-                              ? (shortViewport ? 104.0 : 114.0)
-                              : 128.0;
-                          final pileTop = narrow
-                              ? (shortViewport ? 112.0 : 122.0)
-                              : 142.0;
-                          final state = game.state!;
-                          final player = state.players[state.currentPlayerIndex];
-                          final hand = hideHand ? <CardImageModel>[] : player.hand;
-                          final selectedIndex = hand.indexWhere(
-                            (card) => card.id == selectedCardId,
-                          );
-
-                          return Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              Positioned(
-                                key: const Key('draw-pile-left'),
-                                left: narrow ? 12 : 28,
-                                top: pileTop,
-                                child: DrawPileWidget(
-                                  count: state.drawPile.length,
-                                  topCard: state.drawPile.isEmpty
-                                      ? null
-                                      : state.drawPile.last,
-                                  backImagePath: handBackImagePath,
-                                  onDraw: dealerBusy ? null : drawWithDealer,
-                                ),
-                              ),
-                              if (state.discardPile.isNotEmpty)
-                                Positioned(
-                                  right: narrow ? 12 : 28,
-                                  top: pileTop,
-                                  child: KeyedSubtree(
-                                    key: const Key('discard-pile-right'),
-                                    child: DiscardPileWidget(
-                                      count: state.discardPile.length,
-                                      topCard: state.discardPile.last,
-                                    ),
-                                  ),
-                                ),
-                              Positioned(
-                                left: narrow ? 12 : 24,
-                                right: narrow ? 12 : 24,
-                                bottom: handBottom,
-                                child: SizedBox(
-                                  height: handHeight,
-                                  child: PlayerHand(
-                                    cards: hand,
-                                    selectedCardId: selectedCardId,
-                                    backImagePath: handBackImagePath,
-                                    isPlayable: game.canPlay,
-                                    onSelectionChanged: dealerBusy
-                                        ? (_) {}
-                                        : (card) {
-                                            setState(() {
-                                              selectedCardId = card?.id;
-                                            });
-                                          },
-                                    onLongPressCard: (cards, faceUp, index) =>
-                                        openHandPreview(
-                                      cards,
-                                      faceUp,
-                                      index,
-                                      handBackImagePath,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              Positioned(
-                                left: narrow ? 16 : 32,
-                                right: narrow ? 16 : 32,
-                                bottom: narrow ? 18 : 28,
-                                child: FilledButton.icon(
-                                  onPressed: dealerBusy || selectedIndex < 0
-                                      ? null
-                                      : playSelected,
-                                  icon: const Icon(Icons.play_arrow_rounded),
-                                  label: const Text('PLAY CARD'),
-                                  style: FilledButton.styleFrom(
-                                    minimumSize: const Size.fromHeight(72),
-                                    backgroundColor: const Color(0xB8471515),
-                                    foregroundColor: const Color(0xFFE6B04A),
-                                    disabledBackgroundColor: const Color(0x773A1717),
-                                    disabledForegroundColor: const Color(0x778F7141),
-                                    side: const BorderSide(
-                                      color: Color(0xFFE0A735),
-                                      width: 2,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(24),
-                                    ),
-                                    textStyle: TextStyle(
-                                      fontSize: narrow ? 25 : 30,
-                                      fontWeight: FontWeight.w800,
-                                      letterSpacing: 1.2,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          );
-                        },
+          else
+            GameTableBackground(
+              stageLayer: LayoutBuilder(
+                builder: (context, stageConstraints) {
+                  final narrow = stageConstraints.maxWidth < 600;
+                  final torsoHeight = (stageConstraints.maxHeight *
+                          (narrow ? 0.48 : 0.52))
+                      .clamp(300.0, narrow ? 420.0 : 560.0);
+                  final torsoWidth = (stageConstraints.maxWidth *
+                          (narrow ? 0.68 : 0.62))
+                      .clamp(280.0, narrow ? 480.0 : 700.0);
+                  return Align(
+                    alignment: const Alignment(0, -0.04),
+                    child: SizedBox(
+                      key: const Key('play-puppet-torso-viewport'),
+                      width: torsoWidth,
+                      height: torsoHeight,
+                      child: PuppetDealerScene(
+                        controller: puppetController,
+                        quality: puppetQuality,
                       ),
                     ),
-                  ),
+                  );
+                },
+              ),
+              child: SafeArea(
+                top: false,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final narrow = constraints.maxWidth < 600;
+                    final shortViewport = constraints.maxHeight < 700;
+                    final handHeight = narrow
+                        ? (shortViewport ? 196.0 : 220.0)
+                        : 280.0;
+                    final handBottom = narrow
+                        ? (shortViewport ? 104.0 : 114.0)
+                        : 128.0;
+                    final pileTop = narrow
+                        ? (shortViewport ? 112.0 : 122.0)
+                        : 142.0;
+                    final state = game.state!;
+                    final player = state.players[state.currentPlayerIndex];
+                    final hand = hideHand ? <CardImageModel>[] : player.hand;
+                    final selectedIndex = hand.indexWhere(
+                      (card) => card.id == selectedCardId,
+                    );
+
+                    return Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Positioned(
+                          key: const Key('draw-pile-left'),
+                          left: narrow ? 12 : 28,
+                          top: pileTop,
+                          child: DrawPileWidget(
+                            count: state.drawPile.length,
+                            topCard: state.drawPile.isEmpty
+                                ? null
+                                : state.drawPile.last,
+                            backImagePath: handBackImagePath,
+                            onDraw: dealerBusy ? null : drawWithDealer,
+                          ),
+                        ),
+                        if (state.discardPile.isNotEmpty)
+                          Positioned(
+                            right: narrow ? 12 : 28,
+                            top: pileTop,
+                            child: KeyedSubtree(
+                              key: const Key('discard-pile-right'),
+                              child: DiscardPileWidget(
+                                count: state.discardPile.length,
+                                topCard: state.discardPile.last,
+                              ),
+                            ),
+                          ),
+                        Positioned(
+                          left: narrow ? 12 : 24,
+                          right: narrow ? 12 : 24,
+                          bottom: handBottom,
+                          child: SizedBox(
+                            height: handHeight,
+                            child: PlayerHand(
+                              cards: hand,
+                              selectedCardId: selectedCardId,
+                              backImagePath: handBackImagePath,
+                              isPlayable: game.canPlay,
+                              onSelectionChanged: dealerBusy
+                                  ? (_) {}
+                                  : (card) {
+                                      setState(() {
+                                        selectedCardId = card?.id;
+                                      });
+                                    },
+                              onLongPressCard: (cards, faceUp, index) =>
+                                  openHandPreview(
+                                cards,
+                                faceUp,
+                                index,
+                                handBackImagePath,
+                              ),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          left: narrow ? 16 : 32,
+                          right: narrow ? 16 : 32,
+                          bottom: narrow ? 18 : 28,
+                          child: FilledButton.icon(
+                            onPressed: dealerBusy || selectedIndex < 0
+                                ? null
+                                : playSelected,
+                            icon: const Icon(Icons.play_arrow_rounded),
+                            label: const Text('PLAY CARD'),
+                            style: FilledButton.styleFrom(
+                              minimumSize: const Size.fromHeight(72),
+                              backgroundColor: const Color(0xB8471515),
+                              foregroundColor: const Color(0xFFE6B04A),
+                              disabledBackgroundColor: const Color(0x773A1717),
+                              disabledForegroundColor: const Color(0x778F7141),
+                              side: const BorderSide(
+                                color: Color(0xFFE0A735),
+                                width: 2,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(24),
+                              ),
+                              textStyle: TextStyle(
+                                fontSize: narrow ? 25 : 30,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
             ),
+        ],
+      ),
     );
   }
 }
@@ -415,15 +417,12 @@ class _GameLauncher extends StatelessWidget {
   final GameProvider game;
 
   @override
-  Widget build(BuildContext context) => ColoredBox(
-        color: const Color(0xFF050302),
-        child: Center(
-          child: FilledButton(
-            onPressed: decks.activeDeck == null
-                ? null
-                : () => game.start(decks.activeDeck!),
-            child: const Text('START GAME'),
-          ),
+  Widget build(BuildContext context) => Center(
+        child: FilledButton(
+          onPressed: decks.activeDeck == null
+              ? null
+              : () => game.start(decks.activeDeck!),
+          child: const Text('START GAME'),
         ),
       );
 }
