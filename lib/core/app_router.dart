@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../providers/deck_provider.dart';
 import '../screens/ai_chat_screen.dart';
+import '../screens/browse_selected_card_screen.dart';
 import '../screens/card_browser_screen.dart';
 import '../screens/card_fullscreen_screen.dart';
 import '../screens/card_transcription_screen.dart';
@@ -41,6 +42,7 @@ abstract final class AppRoutes {
   static String transcription(String id) => '$cards/$id/transcription';
   static String cardChat(String id) => '$aiChat/$id';
   static String cardAlias(String id) => '/card/$id';
+  static String browseSelectedCard(String id) => '/browse-card/$id';
   static String deck(String id) => '/deck/$id';
   static String browseCard(String id, {String? category}) {
     final parameters = <String, String>{'focus': id};
@@ -125,6 +127,16 @@ abstract final class AppRouter {
         path: '/deck/:deckId',
         builder: (_, state) =>
             _DeckRouteScreen(deckId: state.pathParameters['deckId']!),
+      ),
+      GoRoute(
+        path: '/browse-card/:cardId',
+        builder: (_, state) {
+          final id = state.pathParameters['cardId']!;
+          final decks = state.extra is DeckProvider ? state.extra! as DeckProvider : null;
+          final card = decks?.deckForCard(id)?.cards.where((item) => item.id == id).firstOrNull;
+          if (card == null) return CardFullscreenScreen(cardId: id);
+          return BrowseSelectedCardScreen(card: card);
+        },
       ),
       GoRoute(
         path: '/card/:cardId',
