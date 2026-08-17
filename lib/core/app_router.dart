@@ -46,9 +46,7 @@ abstract final class AppRoutes {
   static String deck(String id) => '/deck/$id';
   static String browseCard(String id, {String? category}) {
     final parameters = <String, String>{'focus': id};
-    if (category != null && category.isNotEmpty) {
-      parameters['category'] = category;
-    }
+    if (category != null && category.isNotEmpty) parameters['category'] = category;
     return Uri(path: cards, queryParameters: parameters).toString();
   }
 }
@@ -56,109 +54,55 @@ abstract final class AppRoutes {
 abstract final class AppRouter {
   static final router = GoRouter(
     initialLocation: AppRoutes.home,
-    errorBuilder: (_, state) => NotFoundScreen(
-      message: state.error?.message ?? 'The requested route does not exist.',
-    ),
+    errorBuilder: (_, state) => NotFoundScreen(message: state.error?.message ?? 'The requested route does not exist.'),
     routes: [
       GoRoute(path: '/', redirect: (_, _) => AppRoutes.home),
       GoRoute(path: AppRoutes.login, builder: (_, _) => const LoginScreen()),
-      GoRoute(
-        path: AppRoutes.register,
-        builder: (_, _) => const RegisterScreen(),
-      ),
-      GoRoute(
-        path: AppRoutes.forgotPassword,
-        builder: (_, _) => const ForgotPasswordScreen(),
-      ),
+      GoRoute(path: AppRoutes.register, builder: (_, _) => const RegisterScreen()),
+      GoRoute(path: AppRoutes.forgotPassword, builder: (_, _) => const ForgotPasswordScreen()),
       GoRoute(path: AppRoutes.home, builder: (_, _) => const HomeScreen()),
       GoRoute(path: AppRoutes.play, builder: (_, _) => const PlayScreen()),
-      GoRoute(
-        path: AppRoutes.decks,
-        builder: (_, _) => const DeckSelectionScreen(),
-      ),
+      GoRoute(path: AppRoutes.decks, builder: (_, _) => const DeckSelectionScreen()),
       GoRoute(
         path: AppRoutes.cards,
-        builder: (_, state) => CardBrowserScreen(
-          focusCardId: state.uri.queryParameters['focus'],
-          initialCategory: state.uri.queryParameters['category'],
-        ),
+        builder: (_, state) => CardBrowserScreen(focusCardId: state.uri.queryParameters['focus'], initialCategory: state.uri.queryParameters['category']),
         routes: [
-          GoRoute(
-            path: ':cardId/transcription',
-            builder: (_, state) => CardTranscriptionScreen(
-              cardId: state.pathParameters['cardId']!,
-            ),
-          ),
-          GoRoute(
-            path: ':cardId',
-            builder: (_, state) =>
-                CardFullscreenScreen(cardId: state.pathParameters['cardId']!),
-          ),
+          GoRoute(path: ':cardId/transcription', builder: (_, state) => CardTranscriptionScreen(cardId: state.pathParameters['cardId']!)),
+          GoRoute(path: ':cardId', builder: (_, state) => CardFullscreenScreen(cardId: state.pathParameters['cardId']!)),
         ],
       ),
-      GoRoute(
-        path: '${AppRoutes.aiChat}/:cardId',
-        builder: (_, state) =>
-            AiChatScreen(cardId: state.pathParameters['cardId']!),
-      ),
+      GoRoute(path: '${AppRoutes.aiChat}/:cardId', builder: (_, state) => AiChatScreen(cardId: state.pathParameters['cardId']!)),
       GoRoute(path: AppRoutes.search, builder: (_, _) => const SearchScreen()),
-      GoRoute(
-        path: AppRoutes.journal,
-        builder: (_, _) => const JournalScreen(),
-      ),
+      GoRoute(path: AppRoutes.journal, builder: (_, _) => const JournalScreen()),
       GoRoute(path: AppRoutes.rules, builder: (_, _) => const RulesScreen()),
-      GoRoute(
-        path: AppRoutes.settings,
-        builder: (_, _) => const SettingsScreen(),
-      ),
-      GoRoute(
-        path: AppRoutes.djWhoVideos,
-        builder: (_, _) => const DjWhoVideosScreen(),
-      ),
-      GoRoute(
-        path: AppRoutes.profile,
-        builder: (_, state) => AccountScreen(
-          arguments: state.extra is ProfileRouteArguments
-              ? state.extra! as ProfileRouteArguments
-              : null,
-        ),
-      ),
-      GoRoute(
-        path: '/deck/:deckId',
-        builder: (_, state) =>
-            _DeckRouteScreen(deckId: state.pathParameters['deckId']!),
-      ),
+      GoRoute(path: AppRoutes.settings, builder: (_, _) => const SettingsScreen()),
+      GoRoute(path: AppRoutes.djWhoVideos, builder: (_, _) => const DjWhoVideosScreen()),
+      GoRoute(path: AppRoutes.profile, builder: (_, state) => AccountScreen(arguments: state.extra is ProfileRouteArguments ? state.extra! as ProfileRouteArguments : null)),
+      GoRoute(path: '/deck/:deckId', builder: (_, state) => _DeckRouteScreen(deckId: state.pathParameters['deckId']!)),
       GoRoute(
         path: '/browse-card/:cardId',
-        builder: (_, state) {
+        builder: (context, state) {
           final id = state.pathParameters['cardId']!;
-          final decks = state.extra is DeckProvider ? state.extra! as DeckProvider : null;
-          final card = decks?.deckForCard(id)?.cards.where((item) => item.id == id).firstOrNull;
-          if (card == null) return CardFullscreenScreen(cardId: id);
-          return BrowseSelectedCardScreen(card: card);
+          final decks = context.watch<DeckProvider>();
+          final matches = decks.cards.where((item) => item.id == id);
+          if (matches.isEmpty) return CardFullscreenScreen(cardId: id);
+          return BrowseSelectedCardScreen(card: matches.first);
         },
       ),
-      GoRoute(
-        path: '/card/:cardId',
-        builder: (_, state) =>
-            CardFullscreenScreen(cardId: state.pathParameters['cardId']!),
-      ),
+      GoRoute(path: '/card/:cardId', builder: (_, state) => CardFullscreenScreen(cardId: state.pathParameters['cardId']!)),
     ],
   );
 }
 
 class _DeckRouteScreen extends StatefulWidget {
   const _DeckRouteScreen({required this.deckId});
-
   final String deckId;
-
   @override
   State<_DeckRouteScreen> createState() => _DeckRouteScreenState();
 }
 
 class _DeckRouteScreenState extends State<_DeckRouteScreen> {
   bool routed = false;
-
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -172,7 +116,6 @@ class _DeckRouteScreenState extends State<_DeckRouteScreen> {
       if (mounted) context.go(AppRoutes.cards);
     });
   }
-
   @override
   Widget build(BuildContext context) {
     final decks = context.watch<DeckProvider>();
