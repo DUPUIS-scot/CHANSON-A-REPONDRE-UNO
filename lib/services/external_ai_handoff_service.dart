@@ -56,14 +56,6 @@ class ExternalAiHandoffService {
     return '';
   }
 
-  static Uri publicImageUrlFor({
-    required CardImageModel card,
-    Uri? applicationUri,
-  }) => PublicCardShareService.publicImageUrlFor(
-    card: card,
-    applicationUri: applicationUri,
-  );
-
   static String buildPrompt({
     required CardAiHandoffMode mode,
     required CardImageModel card,
@@ -74,10 +66,6 @@ class ExternalAiHandoffService {
     final shareUrl = PublicCardShareService.shareUrlFor(
       cardId: card.id,
       deckId: deck.id,
-      applicationUri: applicationUri,
-    );
-    final publicImageUrl = publicImageUrlFor(
-      card: card,
       applicationUri: applicationUri,
     );
     final existingTranscription = transcriptionFor(
@@ -94,11 +82,9 @@ class ExternalAiHandoffService {
       'CARD LINK:',
       '$shareUrl',
       '',
-      'DIRECT PUBLIC CARD IMAGE:',
-      '$publicImageUrl',
-      '',
+      'This canonical card link carries the social preview metadata for the selected card.',
       'If this prompt arrived with an actual image attachment, use the attachment as the primary visual source.',
-      'The links are optional references. Do not claim you viewed either link unless your environment actually opened it.',
+      'Do not claim you viewed the card link unless your environment actually opened it.',
       '',
     ];
 
@@ -112,7 +98,7 @@ class ExternalAiHandoffService {
           'Return a faithful transcription of the supplied card text.',
           'Preserve the original language, accents, spelling, punctuation, capitalization, headings, lists, and meaningful line breaks.',
           'Do not summarize, rewrite, translate, or invent missing text.',
-          'If the supplied text appears incomplete, say so instead of claiming to have opened the links.',
+          'If the supplied text appears incomplete, say so instead of claiming to have opened the card link.',
         ].join('\n');
       }
 
@@ -120,8 +106,8 @@ class ExternalAiHandoffService {
         ...metadata,
         'No extracted card text is available in the app for this card.',
         'If an image attachment is present, transcribe that image directly.',
-        'Otherwise, use the direct public card image only if your environment can actually access external images.',
-        'Do not say you inspected the direct card image URL if you cannot access external images.',
+        'Otherwise, use the canonical card link only if your environment can actually open it and access its preview/content.',
+        'Do not claim you inspected the card if you cannot access the link.',
       ].join('\n');
     }
 
@@ -133,7 +119,7 @@ class ExternalAiHandoffService {
         '',
         'Discuss this card using the supplied card text as the primary source.',
         'You may interpret, translate, fact-check, research, critique, or brainstorm from this text.',
-        'Use the links only as optional references; do not require opening them before discussing the card.',
+        'Use the card link only as an optional reference; do not require opening it before discussing the card.',
       ].join('\n');
     }
 
@@ -141,8 +127,8 @@ class ExternalAiHandoffService {
       ...metadata,
       'No extracted card text is available in the app for this card.',
       'If an image attachment is present, analyze that image directly.',
-      'You may discuss the card metadata above, but do not pretend to have viewed the image from the URL.',
-      'If visual analysis is necessary, ask for the image to be attached directly in the AI conversation.',
+      'Otherwise, you may discuss the card metadata above, but do not pretend to have viewed the card from the link unless you actually opened it.',
+      'If visual analysis is necessary and the link cannot be opened, ask for the image to be attached directly in the AI conversation.',
     ].join('\n');
   }
 
