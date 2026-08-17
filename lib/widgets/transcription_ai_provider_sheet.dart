@@ -40,7 +40,7 @@ Future<void> showTranscriptionAiProviderSheet({
   );
 }
 
-class _TranscriptionAiProviderSheet extends StatelessWidget {
+class _TranscriptionAiProviderSheet extends StatefulWidget {
   const _TranscriptionAiProviderSheet({
     required this.card,
     required this.deck,
@@ -54,6 +54,22 @@ class _TranscriptionAiProviderSheet extends StatelessWidget {
   final CardAiHandoffMode mode;
   final String prompt;
   final ExternalAiHandoffService service;
+
+  @override
+  State<_TranscriptionAiProviderSheet> createState() =>
+      _TranscriptionAiProviderSheetState();
+}
+
+class _TranscriptionAiProviderSheetState
+    extends State<_TranscriptionAiProviderSheet> {
+  bool _promptCopied = false;
+  bool _copyInProgress = false;
+
+  CardImageModel get card => widget.card;
+  Deck get deck => widget.deck;
+  CardAiHandoffMode get mode => widget.mode;
+  String get prompt => widget.prompt;
+  ExternalAiHandoffService get service => widget.service;
 
   String get _title => mode == CardAiHandoffMode.transcribe
       ? 'TRANSCRIBE WITH AI'
@@ -86,25 +102,34 @@ class _TranscriptionAiProviderSheet extends StatelessWidget {
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: const Color(0xFF120D08),
-        title: const Text(
-          'PROMPT + CARD LINKS COPIED',
-          style: TextStyle(
-            color: _brightGold,
-            fontWeight: FontWeight.w900,
-          ),
+        title: const Row(
+          children: [
+            Icon(Icons.check_circle_rounded, color: _brightGold),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'PROMPT + CARD LINKS COPIED',
+                style: TextStyle(
+                  color: _brightGold,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ],
         ),
         content: const Text(
-          'The prompt, canonical card link and preview image link were copied successfully to your clipboard.\n\nPaste them into your AI conversation.',
+          'Copy completed successfully. The prompt, canonical card link and preview image link are now in your clipboard.\n\nPaste them into your AI conversation.',
           style: TextStyle(color: _cream, height: 1.35),
         ),
         actions: [
-          FilledButton(
+          FilledButton.icon(
             style: FilledButton.styleFrom(
               foregroundColor: const Color(0xFF090604),
               backgroundColor: _gold,
             ),
             onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('OK'),
+            icon: const Icon(Icons.check_rounded),
+            label: const Text('OK'),
           ),
         ],
       ),
@@ -148,6 +173,33 @@ class _TranscriptionAiProviderSheet extends StatelessWidget {
       ),
     );
     return result ?? false;
+  }
+
+  Future<void> _showCopyError(BuildContext context) async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF120D08),
+        title: const Text(
+          'COPY FAILED',
+          style: TextStyle(color: _brightGold, fontWeight: FontWeight.w900),
+        ),
+        content: const Text(
+          'The prompt could not be copied to the clipboard. Please try again.',
+          style: TextStyle(color: _cream),
+        ),
+        actions: [
+          FilledButton(
+            style: FilledButton.styleFrom(
+              foregroundColor: const Color(0xFF090604),
+              backgroundColor: _gold,
+            ),
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _openProvider(
@@ -207,9 +259,20 @@ class _TranscriptionAiProviderSheet extends StatelessWidget {
   }
 
   Future<void> _copy(BuildContext context) async {
-    await service.copyPrompt(prompt);
-    if (!context.mounted) return;
-    await _confirmCopyOnly(context);
+    if (_copyInProgress) return;
+    setState(() => _copyInProgress = true);
+    try {
+      await service.copyPrompt(prompt);
+      if (!mounted || !context.mounted) return;
+      setState(() => _promptCopied = true);
+      await _confirmCopyOnly(context);
+    } on Object {
+      if (!mounted || !context.mounted) return;
+      setState(() => _promptCopied = false);
+      await _showCopyError(context);
+    } finally {
+      if (mounted) setState(() => _copyInProgress = false);
+    }
   }
 
   @override
@@ -302,19 +365,37 @@ class _TranscriptionAiProviderSheet extends StatelessWidget {
                 const SizedBox(height: 12),
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: _gold,
-                    side: const BorderSide(color: _gold),
+                    foregroundColor: _promptCopied ? _brightGold : _gold,
+                    side: BorderSide(
+                      color: _promptCopied ? _brightGold : _gold,
+                    ),
                   ),
-                  onPressed: () => _copy(context),
-                  icon: const Icon(Icons.content_copy_rounded),
-                  label: const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 14),
-                    child: Text('COPY PROMPT'),
+                  onPressed: _copyInProgress ? null : () => _copy(context),
+                  icon: _copyInProgress
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Icon(
+                          _promptCopied
+                              ? Icons.check_circle_rounded
+                              : Icons.content_copy_rounded,
+                        ),
+                  label: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    child: Text(
+                      _copyInProgress
+                          ? 'COPYING…'
+                          : _promptCopied
+                              ? 'COPIED ✓'
+                              : 'COPY PROMPT',
+                    ),
                   ),
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'No app AI backend is used. Provider buttons copy the prompt + card links, require confirmation that the copy succeeded, then open the selected AI. COPY PROMPT also shows a persistent confirmation dialog after copying. SHARE CARD IMAGE TO AI uses the browser/system share sheet so supported AI apps can receive the actual selected card image.',
+                  'No app AI backend is used. Provider buttons copy the prompt + card links, require confirmation that the copy succeeded, then open the selected AI. COPY PROMPT changes to COPIED ✓ and shows a persistent confirmation dialog after a successful clipboard write. SHARE CARD IMAGE TO AI uses the browser/system share sheet so supported AI apps can receive the actual selected card image.',
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: const Color(0xCCFFE8B4),
