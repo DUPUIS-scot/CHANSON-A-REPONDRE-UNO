@@ -269,7 +269,9 @@ class _PlayScreenState extends State<PlayScreen> {
                           (narrow ? 0.68 : 0.62))
                       .clamp(280.0, narrow ? 480.0 : 700.0);
                   return Align(
-                    alignment: const Alignment(0, -0.28),
+                    // Lift the dealer viewport farther upward so the hand on
+                    // the screen-right side clears the top of the card fan.
+                    alignment: const Alignment(0, -0.48),
                     child: SizedBox(
                       key: const Key('play-puppet-torso-viewport'),
                       width: torsoWidth,
