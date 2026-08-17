@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 
-// Use the real high-resolution Play artwork. The previous
-// play_stage_background_user.jpg is only a tiny placeholder and rendered as
-// an effectively black stage on deployed web builds.
+// High-resolution Play artwork. Keep this as the bottom-most layer and make
+// it cover the complete viewport on every aspect ratio.
 const _playStageBackgroundAsset = 'assets/images/background.png';
 
 class GameTableBackground extends StatelessWidget {
@@ -12,31 +11,35 @@ class GameTableBackground extends StatelessWidget {
   final Widget? stageLayer;
 
   @override
-  Widget build(BuildContext context) => Stack(
-    fit: StackFit.expand,
-    children: [
-      Positioned.fill(
-        child: Image.asset(
-          _playStageBackgroundAsset,
-          fit: BoxFit.cover,
-          alignment: Alignment.center,
-          filterQuality: FilterQuality.high,
-          errorBuilder: (context, error, stackTrace) =>
-              const ColoredBox(color: Color(0xFF050302)),
-        ),
-      ),
-      if (stageLayer != null)
+  Widget build(BuildContext context) => SizedBox.expand(
+    child: Stack(
+      fit: StackFit.expand,
+      clipBehavior: Clip.hardEdge,
+      children: [
         Positioned.fill(
-          child: IgnorePointer(
-            child: FractionalTranslation(
-              translation: const Offset(0, -0.10),
-              child: stageLayer!,
-            ),
+          child: Image.asset(
+            _playStageBackgroundAsset,
+            width: double.infinity,
+            height: double.infinity,
+            fit: BoxFit.cover,
+            alignment: Alignment.center,
+            filterQuality: FilterQuality.high,
+            errorBuilder: (context, error, stackTrace) =>
+                const ColoredBox(color: Color(0xFF050302)),
           ),
         ),
-      // Gameplay UI is deliberately last: the 3D jester remains centred
-      // behind the player's cards instead of covering them.
-      child,
-    ],
+        if (stageLayer != null)
+          // Keep the 3D dealer centred and behind the playable hand. Do not
+          // translate the WebGL layer: its own camera/model transform controls
+          // framing and orientation, while this layer owns only z-order.
+          Positioned.fill(
+            child: IgnorePointer(
+              child: Center(child: stageLayer!),
+            ),
+          ),
+        // Gameplay UI is always last so cards remain in front of the jester.
+        Positioned.fill(child: child),
+      ],
+    ),
   );
 }
