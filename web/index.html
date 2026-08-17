@@ -20,7 +20,11 @@
     flt-platform-view, flt-platform-view-slot, .dealer-3d-container { visibility: visible !important; opacity: 1 !important; z-index: 20 !important; }
     .dealer-3d-container { position: relative !important; display: block !important; overflow: hidden !important; background: transparent !important; }
     canvas[data-transcription-jester-canvas="true"] { z-index: 21 !important; }
-    canvas[data-renderer="three.js-gltf"] { position: relative !important; z-index: 21 !important; display: block !important; visibility: visible !important; opacity: 1 !important; transform: translateY(-28%) !important; }
+    /* Web-only 3D debugging fix: do not globally reposition every Three.js GLTF canvas.
+       The play dealer and transcription jester already calculate their own framing in JS.
+       A global translateY was leaking play-specific positioning into transcription and any
+       future Three.js scene, producing clipped or missing models in Chromium/Google web. */
+    canvas[data-renderer="three.js-gltf"] { position: relative !important; z-index: 21 !important; display: block !important; visibility: visible !important; opacity: 1 !important; }
   </style>
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
   <script>
