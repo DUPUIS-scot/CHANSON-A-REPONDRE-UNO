@@ -171,8 +171,13 @@ jobs:
           grep -q 'id="card-image"' build/web/share/BRIO-008/index.html
           grep -q 'id="card-transcription"' build/web/share/BRIO-008/index.html
           grep -q '/share/BRIO-008/' build/web/share/BRIO-008/index.html
-          test -f build/web/assets/share-previews/BRIO-008.jpg
-          test "$(stat -c%s build/web/assets/share-previews/BRIO-008.jpg)" -le 350000
+          test "$(find build/web/assets/share-previews -type f -name 'BRIO-*.jpg' | wc -l)" -eq 16
+          for index in $(seq 1 16); do
+            card="$(printf '%03d' "$index")"
+            preview="build/web/assets/share-previews/BRIO-${card}.jpg"
+            test -f "$preview"
+            test "$(stat -c%s "$preview")" -le 350000
+          done
           test "$(find build/web/assets/share-previews -type f -name 'UNO-*.jpg' | wc -l)" -eq 84
           test -f build/web/assets/share-previews/UNO-001.jpg
           test -f build/web/assets/share-previews/UNO-084.jpg

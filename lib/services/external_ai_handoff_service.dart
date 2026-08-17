@@ -99,6 +99,10 @@ class ExternalAiHandoffService {
       deck: deck,
       applicationUri: applicationUri,
     );
+    final directImageUrl = PublicCardShareService.publicImageUrlFor(
+      card: card,
+      applicationUri: applicationUri,
+    );
     final canonicalTitle = CardShareIdentity.titleFor(
       cardId: card.id,
       deckId: deck.id,
@@ -118,8 +122,12 @@ class ExternalAiHandoffService {
       'CARD IMAGE:',
       '$previewImageUrl',
       '',
-      'Read the CARD IMAGE directly. Do not rely on Open Graph or Twitter metadata as the visual source.',
-      'If your environment cannot access the CARD IMAGE URL, say so instead of pretending to have viewed it.',
+      'CARD IMAGE FALLBACK:',
+      '$directImageUrl',
+      '',
+      'Read CARD IMAGE directly. If that URL is unavailable or returns 404, use CARD IMAGE FALLBACK instead.',
+      'Do not rely on Open Graph or Twitter metadata as the visual source.',
+      'Do not claim to have viewed either image unless your environment actually accessed it.',
       '',
     ];
 
@@ -130,7 +138,7 @@ class ExternalAiHandoffService {
           'CARD TEXT PROVIDED BY THE APP:',
           existingTranscription,
           '',
-          'Return a faithful transcription of the supplied card text and compare it with the CARD IMAGE when accessible.',
+          'Return a faithful transcription of the supplied card text and compare it with the accessible card image.',
           'Preserve the original language, accents, spelling, punctuation, capitalization, headings, lists, and meaningful line breaks.',
           'Do not summarize, rewrite, translate, or invent missing text.',
         ].join('\n');
@@ -139,7 +147,7 @@ class ExternalAiHandoffService {
       return <String>[
         ...metadata,
         'No extracted card text is available in the app for this card.',
-        'Transcribe the CARD IMAGE directly if your environment can access it.',
+        'Transcribe the first accessible image URL above directly.',
         'Do not infer the card text from the canonical page or its metadata.',
       ].join('\n');
     }
@@ -150,7 +158,7 @@ class ExternalAiHandoffService {
         'CARD TEXT PROVIDED BY THE APP:',
         existingTranscription,
         '',
-        'Discuss this card using the supplied card text as the primary textual source and the CARD IMAGE as the visual source when accessible.',
+        'Discuss this card using the supplied card text as the primary textual source and the first accessible card image above as the visual source.',
         'You may interpret, translate, fact-check, research, critique, or brainstorm from the supplied text and accessible card image.',
       ].join('\n');
     }
@@ -158,8 +166,8 @@ class ExternalAiHandoffService {
     return <String>[
       ...metadata,
       'No extracted card text is available in the app for this card.',
-      'Discuss the card from the CARD IMAGE if your environment can access it.',
-      'Do not infer visual details from the canonical page or its metadata when the CARD IMAGE itself is unavailable.',
+      'Discuss the card from the first accessible image URL above.',
+      'If neither image URL is accessible, say so instead of inventing visual details.',
     ].join('\n');
   }
 
