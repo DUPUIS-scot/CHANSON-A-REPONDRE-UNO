@@ -3,13 +3,13 @@ import { GLTFLoader } from './vendor/GLTFLoader.js';
 
 const dealers = new Map();
 const pendingMounts = new Map();
-const MODEL_REVISION = 'play-jester-rigged-20260817-face-user-front-animated';
+const MODEL_REVISION = 'play-jester-rigged-20260817-face-user-180deg-raised';
 const MODEL_URLS = [
   new URL('assets/assets/models/play_jester_rigged.glb', document.baseURI).href,
 ];
-// The uploaded GLB presents its face toward -X at the previous PI rotation.
-// PI/2 turns that forward vector toward the camera (+Z), keeping the jester front-facing.
-const MODEL_FACING_Y = Math.PI / 2;
+// The previous PI/2 orientation showed the wrong side in the deployed scene.
+// Turn the GLB another 180 degrees so the jester faces the camera.
+const MODEL_FACING_Y = Math.PI * 1.5;
 const DEAL_DURATION = 2350;
 const RECEIVE_DURATION = 1650;
 
@@ -217,7 +217,8 @@ class JesterDealer {
     const narrow = width < 720;
     this.camera.fov = narrow ? 44 : 38;
     this.modelRoot.scale.setScalar(narrow ? 0.90 : 0.98);
-    this.modelRoot.position.set(0, narrow ? -0.02 : -0.08, 0);
+    // Raise the jester within the stage while keeping him centered and behind the hand.
+    this.modelRoot.position.set(0, narrow ? 0.20 : 0.14, 0);
 
     if (this.puppetBounds && !this.puppetBounds.isEmpty()) {
       const center = this.puppetBounds.getCenter(new THREE.Vector3());
@@ -238,7 +239,7 @@ class JesterDealer {
       this.camera.lookAt(targetCenter);
       this.camera.updateProjectionMatrix();
       this.camera.updateMatrixWorld(true);
-      this.host.dataset.puppetFit = 'large-front-facing-center';
+      this.host.dataset.puppetFit = 'large-front-facing-center-raised';
       this.host.dataset.puppetCameraDistance = distance.toFixed(3);
     } else {
       this.camera.position.set(0, 2.7, narrow ? 10.8 : 10.2);
