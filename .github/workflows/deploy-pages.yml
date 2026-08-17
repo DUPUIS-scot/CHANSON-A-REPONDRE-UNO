@@ -22,11 +22,17 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v6
 
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: true
+      - name: Set up Flutter SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          FLUTTER_DIR="$HOME/flutter"
+          if [ ! -x "$FLUTTER_DIR/bin/flutter" ]; then
+            git clone --depth 1 --branch stable https://github.com/flutter/flutter.git "$FLUTTER_DIR"
+          fi
+          echo "$FLUTTER_DIR/bin" >> "$GITHUB_PATH"
+          "$FLUTTER_DIR/bin/flutter" --version
+          "$FLUTTER_DIR/bin/flutter" config --enable-web
 
       - name: Install dependencies
         run: flutter pub get
