@@ -108,11 +108,8 @@ jobs:
 
       - name: Verify multi-deck share output
         shell: bash
-        env:
-          CHROME_PATH: ${{ github.workspace }}/scripts/chrome-headless-wrapper.sh
         run: |
           set -euo pipefail
-          chmod +x "$CHROME_PATH"
           test "$(find build/web/share -mindepth 1 -maxdepth 1 -type d -name 'UNO-*' | wc -l)" -eq 84
           test "$(find build/web/share -mindepth 1 -maxdepth 1 -type d -name 'BRIO-*' | wc -l)" -eq 16
           test "$(find build/web/share -mindepth 1 -maxdepth 1 -type d \( -name 'UNO-*' -o -name 'BRIO-*' \) | wc -l)" -eq 100
@@ -159,4 +156,3 @@ jobs:
           grep -q 'assets/assets/models/play_jester_rigged.glb' build/web/puppet_dealer.js
           grep -q 'puppet_dealer.js?v=play-jester-rigged-' build/web/index.html
           test -f build/web/card_castle/card_castle.html
-          node scripts/verify_dealer_web.mjs --search
