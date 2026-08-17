@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../models/card_image_model.dart';
 import '../models/deck_model.dart';
+import 'card_share_identity.dart';
 import 'public_card_share_service.dart';
 
 typedef ExternalAiUrlLauncher =
@@ -56,6 +57,31 @@ class ExternalAiHandoffService {
     return '';
   }
 
+  static Uri previewImageUrlFor({
+    required CardImageModel card,
+    required Deck deck,
+    Uri? applicationUri,
+  }) {
+    final source = applicationUri ?? Uri.base;
+    final base = Uri(
+      scheme: source.scheme,
+      userInfo: source.userInfo,
+      host: source.host,
+      port: source.hasPort ? source.port : null,
+      path: source.path,
+    );
+    final root = base.pathSegments.where((segment) => segment.isNotEmpty);
+    final slug = CardShareIdentity.canonicalSlugFor(
+      cardId: card.id,
+      deckId: deck.id,
+    );
+    return base.replace(
+      pathSegments: [...root, 'assets', 'share-previews', '$slug.jpg'],
+      query: null,
+      fragment: null,
+    );
+  }
+
   static String buildPrompt({
     required CardAiHandoffMode mode,
     required CardImageModel card,
@@ -66,6 +92,11 @@ class ExternalAiHandoffService {
     final shareUrl = PublicCardShareService.shareUrlFor(
       cardId: card.id,
       deckId: deck.id,
+      applicationUri: applicationUri,
+    );
+    final previewImageUrl = previewImageUrlFor(
+      card: card,
+      deck: deck,
       applicationUri: applicationUri,
     );
     final existingTranscription = transcriptionFor(
@@ -79,12 +110,14 @@ class ExternalAiHandoffService {
       if (card.author.trim().isNotEmpty) 'Author: ${card.author.trim()}',
       if (card.theme.trim().isNotEmpty) 'Theme: ${card.theme.trim()}',
       '',
-      'CARD LINK:',
+      'CARD:',
       '$shareUrl',
       '',
-      'Open this canonical card link and read the social preview image metadata (Open Graph/Twitter image) for the selected card.',
-      'Use only that preview image metadata as the visual source unless an actual image attachment is also present.',
-      'Do not claim you viewed the preview image unless your environment actually accessed the link metadata/image.',
+      'CARD IMAGE:',
+      '$previewImageUrl',
+      '',
+      'Read the CARD IMAGE directly. Do not rely on Open Graph or Twitter metadata as the visual source.',
+      'If your environment cannot access the CARD IMAGE URL, say so instead of pretending to have viewed it.',
       '',
     ];
 
@@ -95,18 +128,17 @@ class ExternalAiHandoffService {
           'CARD TEXT PROVIDED BY THE APP:',
           existingTranscription,
           '',
-          'Return a faithful transcription of the supplied card text.',
+          'Return a faithful transcription of the supplied card text and compare it with the CARD IMAGE when accessible.',
           'Preserve the original language, accents, spelling, punctuation, capitalization, headings, lists, and meaningful line breaks.',
           'Do not summarize, rewrite, translate, or invent missing text.',
-          'If the supplied text appears incomplete, read the social preview image metadata from the card link and transcribe that preview image if your environment can access it.',
         ].join('\n');
       }
 
       return <String>[
         ...metadata,
         'No extracted card text is available in the app for this card.',
-        'Read the social preview image metadata from the canonical card link and transcribe the preview image if your environment can access it.',
-        'If you cannot access the social preview metadata/image, say so instead of pretending to have viewed it.',
+        'Transcribe the CARD IMAGE directly if your environment can access it.',
+        'Do not infer the card text from the canonical page or its metadata.',
       ].join('\n');
     }
 
@@ -116,17 +148,16 @@ class ExternalAiHandoffService {
         'CARD TEXT PROVIDED BY THE APP:',
         existingTranscription,
         '',
-        'Discuss this card using the supplied card text as the primary source.',
-        'Also read the social preview image metadata from the card link and use that preview image only if your environment can access it.',
-        'You may interpret, translate, fact-check, research, critique, or brainstorm from the supplied text and accessible preview image.',
+        'Discuss this card using the supplied card text as the primary textual source and the CARD IMAGE as the visual source when accessible.',
+        'You may interpret, translate, fact-check, research, critique, or brainstorm from the supplied text and accessible card image.',
       ].join('\n');
     }
 
     return <String>[
       ...metadata,
       'No extracted card text is available in the app for this card.',
-      'Read the social preview image metadata from the canonical card link and discuss the card from that preview image if your environment can access it.',
-      'If you cannot access the social preview metadata/image, say so instead of pretending to have viewed it.',
+      'Discuss the card from the CARD IMAGE if your environment can access it.',
+      'Do not infer visual details from the canonical page or its metadata when the CARD IMAGE itself is unavailable.',
     ].join('\n');
   }
 
