@@ -109,9 +109,10 @@ jobs:
       - name: Verify multi-deck share output
         shell: bash
         env:
-          CHROME_PATH: /usr/bin/google-chrome
+          CHROME_PATH: ${{ github.workspace }}/scripts/chrome-headless-wrapper.sh
         run: |
           set -euo pipefail
+          chmod +x "$CHROME_PATH"
           test "$(find build/web/share -mindepth 1 -maxdepth 1 -type d -name 'UNO-*' | wc -l)" -eq 84
           test "$(find build/web/share -mindepth 1 -maxdepth 1 -type d -name 'BRIO-*' | wc -l)" -eq 16
           test "$(find build/web/share -mindepth 1 -maxdepth 1 -type d \( -name 'UNO-*' -o -name 'BRIO-*' \) | wc -l)" -eq 100
