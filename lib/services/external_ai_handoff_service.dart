@@ -163,20 +163,24 @@ class ExternalAiHandoffService {
 
   Future<void> copyPrompt(String prompt) => _promptCopier(prompt);
 
+  Future<void> openProviderWithoutCopy({
+    required ExternalAiProvider provider,
+  }) async {
+    final launched = await _launcher(
+      provider.uri,
+      mode: LaunchMode.externalApplication,
+    );
+    if (!launched) {
+      throw StateError('Could not open ${provider.label}.');
+    }
+  }
+
   Future<void> openProvider({
     required ExternalAiProvider provider,
     required String prompt,
   }) async {
-    final copyFuture = _promptCopier(prompt);
-    final launchFuture = _launcher(
-      provider.uri,
-      mode: LaunchMode.externalApplication,
-    );
-    final launched = await launchFuture;
-    await copyFuture;
-    if (!launched) {
-      throw StateError('Could not open ${provider.label}.');
-    }
+    await _promptCopier(prompt);
+    await openProviderWithoutCopy(provider: provider);
   }
 
   static Future<void> _copyPrompt(String value) =>
