@@ -37,8 +37,20 @@ class ExternalAiHandoffService {
   }) : _launcher = launcher ?? launchUrl,
        _promptCopier = promptCopier ?? _copyPrompt;
 
+  static final Uri _canonicalPublicBase =
+      Uri.parse('https://www.chanson-a-repondre-uno.scot/');
+
   final ExternalAiUrlLauncher _launcher;
   final ExternalAiPromptCopier _promptCopier;
+
+  static Uri _publicApplicationUri(Uri? applicationUri) {
+    final source = applicationUri ?? Uri.base;
+    if ((source.scheme == 'https' || source.scheme == 'http') &&
+        source.host.isNotEmpty) {
+      return source;
+    }
+    return _canonicalPublicBase;
+  }
 
   static String transcriptionFor(
     CardImageModel card, {
@@ -62,7 +74,7 @@ class ExternalAiHandoffService {
     required Deck deck,
     Uri? applicationUri,
   }) {
-    final source = applicationUri ?? Uri.base;
+    final source = _publicApplicationUri(applicationUri);
     final base = Uri(
       scheme: source.scheme,
       userInfo: source.userInfo,
@@ -89,19 +101,20 @@ class ExternalAiHandoffService {
     String? transcriptionOverride,
     Uri? applicationUri,
   }) {
+    final publicApplicationUri = _publicApplicationUri(applicationUri);
     final shareUrl = PublicCardShareService.shareUrlFor(
       cardId: card.id,
       deckId: deck.id,
-      applicationUri: applicationUri,
+      applicationUri: publicApplicationUri,
     );
     final previewImageUrl = previewImageUrlFor(
       card: card,
       deck: deck,
-      applicationUri: applicationUri,
+      applicationUri: publicApplicationUri,
     );
     final directImageUrl = PublicCardShareService.publicImageUrlFor(
       card: card,
-      applicationUri: applicationUri,
+      applicationUri: publicApplicationUri,
     );
     final canonicalTitle = CardShareIdentity.titleFor(
       cardId: card.id,
