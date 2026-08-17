@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
-// High-resolution Play artwork. Keep this as the bottom-most layer and make
-// it cover the complete viewport on every aspect ratio.
-const _playStageBackgroundAsset = 'assets/images/background.png';
+// User-supplied high-resolution theatrical Play artwork. Keep this as the
+// bottom-most layer and make it cover the complete viewport on every aspect
+// ratio.
+const _playStageBackgroundAsset =
+    'assets/images/play_stage_background_user.jpg';
 
 class GameTableBackground extends StatelessWidget {
   const GameTableBackground({required this.child, this.stageLayer, super.key});
@@ -29,9 +31,6 @@ class GameTableBackground extends StatelessWidget {
           ),
         ),
         if (stageLayer != null)
-          // Keep the 3D dealer centred and behind the playable hand. Do not
-          // translate the WebGL layer: its own camera/model transform controls
-          // framing and orientation, while this layer owns only z-order.
           Positioned.fill(
             child: IgnorePointer(
               child: Center(child: stageLayer!),
