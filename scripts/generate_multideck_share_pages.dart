@@ -47,9 +47,7 @@ String buildCanonicalShareHtml({
   final escapedImageUrl = _html(imageUrl.toString());
   final escapedImageMimeType = _html(imageMimeType);
   final escapedTranscription = _html(normalizedTranscription);
-  final description = normalizedTranscription.isEmpty
-      ? 'Open $title.'
-      : _plainSummary(normalizedTranscription);
+  final description = 'Open $title.';
   final escapedDescription = _html(description);
   final deepLinkJson = jsonEncode(deepLink.toString());
 
@@ -129,6 +127,7 @@ String buildLegacyRedirectHtml({
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Chanson à Répondre">
   <meta property="og:title" content="$escapedTitle">
+  <meta property="og:description" content="${_html('Open $title.')}">
   <meta property="og:image" content="$escapedImage">
   <meta property="og:image:url" content="$escapedImage">
   <meta property="og:image:secure_url" content="$escapedImage">
@@ -137,6 +136,7 @@ String buildLegacyRedirectHtml({
   <meta property="og:url" content="$escapedCanonical">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="$escapedTitle">
+  <meta name="twitter:description" content="${_html('Open $title.')}">
   <meta name="twitter:image" content="$escapedImage">
   <meta name="twitter:image:alt" content="$escapedTitle">
   <link rel="canonical" href="$escapedCanonical">
@@ -257,7 +257,7 @@ Future<List<_ShareCard>> _loadUno(String path) async {
       deckId: AppConstants.productionDeckId,
       deckName: deck['name'] as String? ?? 'Chanson à répondre UNO',
       imagePath: (card['path'] ?? card['image']) as String? ?? '',
-      transcription: _transcriptionFromJson(card),
+      transcription: _shareTranscriptionFromJson(card),
       imageWidth: (card['imageWidth'] as num?)?.toInt(),
       imageHeight: (card['imageHeight'] as num?)?.toInt(),
     );
@@ -290,7 +290,7 @@ Future<List<_ShareCard>> _loadBrio(String path) async {
       deckName: decoded['name'] as String? ?? 'Chanson à répondre BRIO',
       imagePath: (card['path'] ?? card['image']) as String? ?? '',
       previewImagePath: 'share-previews/$slug.jpg',
-      transcription: _transcriptionFromJson(card),
+      transcription: _shareTranscriptionFromJson(card),
       imageWidth: 600,
       imageHeight: 900,
     );
@@ -301,23 +301,17 @@ Future<List<_ShareCard>> _loadBrio(String path) async {
   return cards;
 }
 
-String? _transcriptionFromJson(Map<String, dynamic> card) {
+String? _shareTranscriptionFromJson(Map<String, dynamic> card) {
   for (final key in const ['cleanedTranscription', 'transcription']) {
     final value = card[key];
     if (value is String && value.trim().isNotEmpty) return value.trim();
   }
   final parts = <String>[];
-  for (final key in const ['title', 'question', 'answer']) {
+  for (final key in const ['question', 'answer']) {
     final value = card[key];
     if (value is String && value.trim().isNotEmpty) parts.add(value.trim());
   }
   return parts.isEmpty ? null : parts.join('\n\n');
-}
-
-String _plainSummary(String value) {
-  final normalized = value.replaceAll(RegExp(r'\s+'), ' ').trim();
-  if (normalized.length <= 180) return normalized;
-  return '${normalized.substring(0, 177)}...';
 }
 
 Map<String, String> _parseOptions(List<String> arguments) {
