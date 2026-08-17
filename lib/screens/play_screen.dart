@@ -294,9 +294,11 @@ class _PlayScreenState extends State<PlayScreen> {
                     final handBottom = narrow
                         ? (shortViewport ? 104.0 : 114.0)
                         : 128.0;
+                    // Keep both top piles below the transparent header so the
+                    // complete card stacks and labels remain visible.
                     final pileTop = narrow
-                        ? (shortViewport ? 112.0 : 122.0)
-                        : 142.0;
+                        ? (shortViewport ? 158.0 : 168.0)
+                        : 166.0;
                     final state = game.state!;
                     final player = state.players[state.currentPlayerIndex];
                     final hand = hideHand ? <CardImageModel>[] : player.hand;
