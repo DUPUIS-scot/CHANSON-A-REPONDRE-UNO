@@ -105,10 +105,7 @@ class ExternalAiHandoffService {
     );
     final metadata = <String>[
       '${deck.name} — ${card.displayTitle}',
-      'Card ID: ${card.id}',
       if (card.category.trim().isNotEmpty) 'Category: ${card.category.trim()}',
-      if (card.author.trim().isNotEmpty) 'Author: ${card.author.trim()}',
-      if (card.theme.trim().isNotEmpty) 'Theme: ${card.theme.trim()}',
       '',
       'CARD:',
       '$shareUrl',
