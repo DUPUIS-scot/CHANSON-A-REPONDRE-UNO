@@ -3,7 +3,7 @@ import { GLTFLoader } from './vendor/GLTFLoader.js';
 
 const dealers = new Map();
 const pendingMounts = new Map();
-const MODEL_REVISION = 'play-jester-rigged-20260817-face-user-180deg-raised';
+const MODEL_REVISION = 'play-jester-rigged-20260817-face-user-180deg-central-high';
 const MODEL_URLS = [
   new URL('assets/assets/models/play_jester_rigged.glb', document.baseURI).href,
 ];
@@ -217,8 +217,9 @@ class JesterDealer {
     const narrow = width < 720;
     this.camera.fov = narrow ? 44 : 38;
     this.modelRoot.scale.setScalar(narrow ? 0.90 : 0.98);
-    // Raise the jester within the stage while keeping him centered and behind the hand.
-    this.modelRoot.position.set(0, narrow ? 0.20 : 0.14, 0);
+    // Raise the jester decisively into the central stage, while preserving
+    // front-facing rotation and keeping the hand/card UI layered above him.
+    this.modelRoot.position.set(0, narrow ? 1.25 : 0.85, 0);
 
     if (this.puppetBounds && !this.puppetBounds.isEmpty()) {
       const center = this.puppetBounds.getCenter(new THREE.Vector3());
@@ -239,7 +240,7 @@ class JesterDealer {
       this.camera.lookAt(targetCenter);
       this.camera.updateProjectionMatrix();
       this.camera.updateMatrixWorld(true);
-      this.host.dataset.puppetFit = 'large-front-facing-center-raised';
+      this.host.dataset.puppetFit = 'large-front-facing-center-high';
       this.host.dataset.puppetCameraDistance = distance.toFixed(3);
     } else {
       this.camera.position.set(0, 2.7, narrow ? 10.8 : 10.2);
