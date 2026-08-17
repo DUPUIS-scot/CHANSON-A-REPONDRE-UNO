@@ -45,7 +45,7 @@ class _BrowseHandCardState extends State<BrowseHandCard> {
         'Card ${widget.position} of ${widget.total}, ${widget.card.category}, '
         '${widget.selected ? 'selected' : 'not selected'}, '
         '${widget.card.isFavourite ? 'favourite' : 'not favourite'}. '
-        'Press and hold to open the five-card full-screen viewer.',
+        'Click to open the selected-card view. Press and hold to open the five-card full-screen viewer.',
     child: FocusableActionDetector(
       mouseCursor: SystemMouseCursors.click,
       onShowHoverHighlight: (value) => setState(() => hovered = value),
@@ -84,8 +84,10 @@ class _BrowseHandCardState extends State<BrowseHandCard> {
               ),
               clipBehavior: Clip.antiAlias,
               child: GestureDetector(
-                onTap: widget.onTap,
-                onDoubleTap: widget.onOpen,
+                onTap: () {
+                  widget.onTap();
+                  widget.onOpen();
+                },
                 onLongPress: widget.onLongPress,
                 child: AspectRatio(
                   aspectRatio: widget.card.aspectRatio,
