@@ -102,6 +102,9 @@ class TranscriptionJester {
     this.selectedCardId = pendingSelectedCard?.cardId || currentCardId();
     this.selectedCardImage = pendingSelectedCard?.imagePath || null;
     this.cardLoadSerial = 0;
+    this.presentationStartedAt = -1;
+    this.presentationDuration = 1.15;
+    this.baseCardPosition = null;
     this.host.dataset.transcriptionJester = 'loading';
     this.host.dataset.sourceModel = 'assets/models/transcription_jester_rigged.glb';
     this.host.dataset.framing = 'reference-card-presentation-cross-platform';
@@ -181,11 +184,15 @@ class TranscriptionJester {
       this.pivot.add(this.model);
       this.pivot.updateMatrixWorld(true);
 
+      this.animationActions = new Map();
       if (gltf.animations?.length) {
         this.mixer = new THREE.AnimationMixer(this.model);
+        for (const clip of gltf.animations) {
+          this.animationActions.set(clip.name.toLowerCase(), this.mixer.clipAction(clip));
+        }
         const idle = gltf.animations.find((clip) => /idle|breath|stand/i.test(clip.name)) || gltf.animations[0];
         this.idleAction = this.mixer.clipAction(idle);
-        this.idleAction.play();
+        this.idleAction.reset().fadeIn(0.2).play();
       }
 
       this.fitCamera();
@@ -194,9 +201,10 @@ class TranscriptionJester {
       this.host.dataset.modelAsset = 'assets/models/transcription_jester_rigged.glb';
       this.host.dataset.modelFacingAngle = String(MODEL_FACING_Y);
       this.host.dataset.modelAnimations = String(gltf.animations?.length || 0);
+      this.host.dataset.modelAnimationNames = (gltf.animations || []).map((clip) => clip.name).join('|');
       this.host.dataset.modelMeshes = String(meshCount);
       this.host.dataset.modelSize = `${size.x.toFixed(3)},${size.y.toFixed(3)},${size.z.toFixed(3)}`;
-      this.host.dataset.behavior = 'reference-framed-jester-selected-card-right-hand-cross-platform';
+      this.host.dataset.behavior = 'animated-jester-selected-card-presentation';
       this.resume();
     }, undefined, (error) => {
       this.host.dataset.transcriptionJester = 'failed';
@@ -247,6 +255,7 @@ class TranscriptionJester {
     );
     this.cardAnchor.lookAt(this.camera.position);
     this.cardAnchor.rotation.z = 0.035;
+    this.baseCardPosition = this.cardAnchor.position.clone();
   }
 
   createFallbackCard() {
@@ -282,6 +291,32 @@ class TranscriptionJester {
     this.host.dataset.selectedCardAnchor = 'scene-space-reference-right-hand';
   }
 
+  triggerPresentation() {
+    this.presentationStartedAt = this.clock.elapsedTime;
+    this.host.dataset.presentationAnimation = 'running';
+    const named = [...(this.animationActions?.entries() || [])].find(([name]) => /present|show|offer|gesture|wave|card/i.test(name));
+    if (named) {
+      const [, action] = named;
+      action.reset();
+      action.setLoop(THREE.LoopOnce, 1);
+      action.clampWhenFinished = true;
+      this.idleAction?.fadeOut(0.18);
+      action.fadeIn(0.18).play();
+      if (this.mixer) {
+        const onFinished = (event) => {
+          if (event.action !== action) return;
+          this.mixer.removeEventListener('finished', onFinished);
+          action.fadeOut(0.18);
+          this.idleAction?.reset().fadeIn(0.2).play();
+        };
+        this.mixer.addEventListener('finished', onFinished);
+      }
+      this.host.dataset.presentationClip = named[0];
+    } else {
+      this.host.dataset.presentationClip = 'procedural';
+    }
+  }
+
   applyCardTexture(texture, imageUrl, serial) {
     if (this.disposed || serial !== this.cardLoadSerial) return texture.dispose();
     texture.colorSpace = THREE.SRGBColorSpace;
@@ -298,6 +333,7 @@ class TranscriptionJester {
     this.host.dataset.selectedCard = 'held-in-right-hand';
     this.host.dataset.selectedCardImage = imageUrl;
     this.host.dataset.selectedCardTexture = 'ready';
+    this.triggerPresentation();
   }
 
   loadTextureDirect(imageUrl, serial) {
@@ -431,9 +467,24 @@ class TranscriptionJester {
     this.mixer?.update(delta);
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const amount = reduced ? 0.12 : 1;
-    this.pivot.rotation.y = MODEL_FACING_Y + Math.sin(time * 0.55) * 0.014 * amount;
-    this.pivot.rotation.z = Math.sin(time * 0.8) * 0.006 * amount;
-    this.pivot.position.y = Math.sin(time * 0.7) * 0.010 * amount;
+    const presentationAge = this.presentationStartedAt < 0 ? Infinity : time - this.presentationStartedAt;
+    const presenting = presentationAge >= 0 && presentationAge < this.presentationDuration;
+    const eased = presenting ? Math.sin(Math.min(1, presentationAge / this.presentationDuration) * Math.PI) : 0;
+
+    this.pivot.rotation.y = MODEL_FACING_Y + Math.sin(time * 0.55) * 0.014 * amount + eased * 0.022 * amount;
+    this.pivot.rotation.z = Math.sin(time * 0.8) * 0.006 * amount - eased * 0.010 * amount;
+    this.pivot.position.y = Math.sin(time * 0.7) * 0.010 * amount + eased * 0.016 * amount;
+
+    if (this.cardAnchor && this.baseCardPosition) {
+      this.cardAnchor.position.copy(this.baseCardPosition);
+      this.cardAnchor.position.y += Math.sin(time * 1.1) * 0.004 * amount + eased * 0.10 * amount;
+      this.cardAnchor.position.z += eased * 0.14 * amount;
+      this.cardAnchor.rotation.z = 0.035 - eased * 0.045 * amount;
+      const pulse = 1 + eased * 0.035 * amount;
+      this.cardAnchor.scale.setScalar(pulse);
+      if (presenting) this.host.dataset.presentationAnimation = 'running';
+      else if (this.presentationStartedAt >= 0) this.host.dataset.presentationAnimation = 'idle';
+    }
   }
 
   tick = () => {
