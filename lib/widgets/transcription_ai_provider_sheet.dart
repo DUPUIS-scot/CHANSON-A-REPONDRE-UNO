@@ -80,6 +80,37 @@ class _TranscriptionAiProviderSheet extends StatelessWidget {
       );
   }
 
+  Future<void> _confirmCopyOnly(BuildContext context) async {
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF120D08),
+        title: const Text(
+          'PROMPT + CARD LINKS COPIED',
+          style: TextStyle(
+            color: _brightGold,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        content: const Text(
+          'The prompt, canonical card link and preview image link were copied successfully to your clipboard.\n\nPaste them into your AI conversation.',
+          style: TextStyle(color: _cream, height: 1.35),
+        ),
+        actions: [
+          FilledButton(
+            style: FilledButton.styleFrom(
+              foregroundColor: const Color(0xFF090604),
+              backgroundColor: _gold,
+            ),
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<bool> _confirmCopiedBeforeProvider(
     BuildContext context,
     ExternalAiProvider provider,
@@ -178,7 +209,7 @@ class _TranscriptionAiProviderSheet extends StatelessWidget {
   Future<void> _copy(BuildContext context) async {
     await service.copyPrompt(prompt);
     if (!context.mounted) return;
-    _showCopiedConfirmation(context);
+    await _confirmCopyOnly(context);
   }
 
   @override
@@ -283,7 +314,7 @@ class _TranscriptionAiProviderSheet extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'No app AI backend is used. Provider buttons copy the prompt + card links, require confirmation that the copy succeeded, then open the selected AI. SHARE CARD IMAGE TO AI also uses the browser/system share sheet so supported AI apps can receive the actual selected card image.',
+                  'No app AI backend is used. Provider buttons copy the prompt + card links, require confirmation that the copy succeeded, then open the selected AI. COPY PROMPT also shows a persistent confirmation dialog after copying. SHARE CARD IMAGE TO AI uses the browser/system share sheet so supported AI apps can receive the actual selected card image.',
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: const Color(0xCCFFE8B4),
