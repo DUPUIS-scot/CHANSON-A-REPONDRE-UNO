@@ -66,8 +66,16 @@ jobs:
       - name: Verify Play background is bundled
         shell: pwsh
         run: |
-          $asset = 'build\windows\x64\runner\Release\data\flutter_assets\assets\images\play_stage_background.jpg'
-          if (-not (Test-Path $asset)) { throw "Play background asset missing from Windows build: $asset" }
+          $ErrorActionPreference = 'Stop'
+          $assetRoot = 'build\windows\x64\runner\Release\data\flutter_assets\assets\images'
+          $candidates = @(
+            (Join-Path $assetRoot 'play_stage_background_user.jpg'),
+            (Join-Path $assetRoot 'play_stage_background.png')
+          )
+          $asset = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $asset) {
+            throw "Play background asset missing from Windows build. Checked: $($candidates -join ', ')"
+          }
           Write-Host "Verified Windows Play background asset: $asset"
 
       - name: Package Windows app
