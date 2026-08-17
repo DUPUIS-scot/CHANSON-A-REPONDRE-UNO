@@ -99,12 +99,17 @@ class ExternalAiHandoffService {
       deck: deck,
       applicationUri: applicationUri,
     );
+    final canonicalTitle = CardShareIdentity.titleFor(
+      cardId: card.id,
+      deckId: deck.id,
+      deckName: deck.name,
+    );
     final existingTranscription = transcriptionFor(
       card,
       transcriptionOverride: transcriptionOverride,
     );
     final metadata = <String>[
-      '${deck.name} — ${card.displayTitle}',
+      canonicalTitle,
       if (card.category.trim().isNotEmpty) 'Category: ${card.category.trim()}',
       '',
       'CARD:',
