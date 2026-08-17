@@ -68,7 +68,6 @@ def replace_social_image(html: str, old_url: str, new_url: str) -> str:
     html = html.replace(f'<meta property="og:image:secure_url" content="{old_url}">', f'<meta property="og:image:secure_url" content="{new_url}">')
     html = re.sub(r'<meta property="og:image:type" content="[^"]+">', '<meta property="og:image:type" content="image/jpeg">', html)
     html = html.replace(f'<meta name="twitter:image" content="{old_url}">', f'<meta name="twitter:image" content="{new_url}">')
-    html = html.replace(f'<img id="card-image" src="{old_url}"', f'<img id="card-image" src="{new_url}"')
     return html
 
 
