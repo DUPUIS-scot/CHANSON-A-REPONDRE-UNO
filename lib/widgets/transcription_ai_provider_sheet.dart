@@ -70,26 +70,31 @@ class _TranscriptionAiProviderSheet extends StatelessWidget {
         ExternalAiProvider.copilot => Icons.assistant_outlined,
       };
 
+  void _showCopiedConfirmation(BuildContext context) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        const SnackBar(
+          content: Text('Prompt + card links copied. Paste them in the AI app.'),
+        ),
+      );
+  }
+
   Future<void> _openProvider(
     BuildContext context,
     ExternalAiProvider provider,
   ) async {
     try {
-      await service.openProvider(provider: provider, prompt: prompt);
+      await service.copyPrompt(prompt);
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Card context copied. Paste it in ${provider.label}. Use SHARE CARD IMAGE if the AI needs to see the card.',
-          ),
-        ),
-      );
+      _showCopiedConfirmation(context);
+      await service.openProviderWithoutCopy(provider: provider);
     } on Object {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Card context copied, but ${provider.label} could not be opened automatically.',
+            'Prompt + card links copied, but ${provider.label} could not be opened automatically.',
           ),
         ),
       );
@@ -98,6 +103,8 @@ class _TranscriptionAiProviderSheet extends StatelessWidget {
 
   Future<void> _shareCardImage(BuildContext context) async {
     await service.copyPrompt(prompt);
+    if (!context.mounted) return;
+    _showCopiedConfirmation(context);
     final shareUrl = PublicCardShareService.shareUrlFor(
       cardId: card.id,
       deckId: deck.id,
@@ -113,11 +120,11 @@ class _TranscriptionAiProviderSheet extends StatelessWidget {
 
     final message = switch (result) {
       NativeShareResult.shared =>
-        'Card image shared. Choose your AI app in the system share sheet; the card context is also copied.',
+        'Card image shared. Choose your AI app in the system share sheet.',
       NativeShareResult.unavailable =>
-        'Image sharing is unavailable in this browser. Card context was copied; open an AI provider and attach the card image manually.',
+        'Image sharing is unavailable in this browser. The prompt + card links are copied; attach the card image manually.',
       NativeShareResult.failed =>
-        'The card image could not be shared. Card context was copied; attach the card image manually in the AI provider.',
+        'The card image could not be shared. The prompt + card links are copied; attach the card image manually.',
       NativeShareResult.cancelled => '',
     };
 
@@ -131,9 +138,7 @@ class _TranscriptionAiProviderSheet extends StatelessWidget {
   Future<void> _copy(BuildContext context) async {
     await service.copyPrompt(prompt);
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('AI card context copied')),
-    );
+    _showCopiedConfirmation(context);
   }
 
   @override
@@ -238,7 +243,7 @@ class _TranscriptionAiProviderSheet extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'No app AI backend is used. Provider buttons open the selected AI with card context copied. SHARE CARD IMAGE TO AI uses the browser/system share sheet so supported AI apps can receive the actual selected card image.',
+                  'No app AI backend is used. Provider buttons copy the prompt + card links, confirm the copy, then open the selected AI. SHARE CARD IMAGE TO AI also uses the browser/system share sheet so supported AI apps can receive the actual selected card image.',
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: const Color(0xCCFFE8B4),
