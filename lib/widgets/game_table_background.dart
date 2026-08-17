@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
-const _playStageBackgroundAsset =
-    'assets/images/play_stage_background_user.jpg';
+// Use the real high-resolution Play artwork. The previous
+// play_stage_background_user.jpg is only a tiny placeholder and rendered as
+// an effectively black stage on deployed web builds.
+const _playStageBackgroundAsset = 'assets/images/background.png';
 
 class GameTableBackground extends StatelessWidget {
   const GameTableBackground({required this.child, this.stageLayer, super.key});
@@ -25,8 +27,15 @@ class GameTableBackground extends StatelessWidget {
       ),
       if (stageLayer != null)
         Positioned.fill(
-          child: IgnorePointer(child: stageLayer!),
+          child: IgnorePointer(
+            child: FractionalTranslation(
+              translation: const Offset(0, -0.10),
+              child: stageLayer!,
+            ),
+          ),
         ),
+      // Gameplay UI is deliberately last: the 3D jester remains centred
+      // behind the player's cards instead of covering them.
       child,
     ],
   );
