@@ -107,7 +107,7 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
   }
 
   void _installInteriorBridge() {
-    final document = iframe.contentWindow?.document;
+    final document = iframe.contentDocument;
     if (document == null || document.getElementById('castle-interior-bridge') != null) {
       return;
     }
