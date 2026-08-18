@@ -5,19 +5,26 @@ const modelUrl=new URL(
   '../assets/assets/models/castle_jester_rigged.glb',
   document.baseURI,
 ).href;
+const LONG_PRESS_MS=600;
+const MOVE_SLOP_PX=9;
 document.body.dataset.castleJesterAsset=modelUrl;
-document.body.dataset.castleEntranceTrigger='rigged-jester';
+document.body.dataset.castleEntranceTrigger='rigged-jester-long-press';
 document.body.dataset.castleJesterIntegration='waiting-for-runtime';
 
 let gatekeeper=null;
 let frame=0;
 let previousTime=performance.now();
 let pointerDown=null;
+let longPressTimer=0;
 
 function requestEntrance(){
   if(document.body.dataset.sceneMode==='interior')return;
   document.body.dataset.castleJesterState='opening-gate';
   window.dispatchEvent(new CustomEvent('castleJesterEnter'));
+}
+
+function clearLongPress(){
+  if(longPressTimer){clearTimeout(longPressTimer);longPressTimer=0}
 }
 
 function placeAtGate(castleRoot){
@@ -26,16 +33,13 @@ function placeAtGate(castleRoot){
   if(box.isEmpty())return;
   const size=box.getSize(new THREE.Vector3());
   const center=box.getCenter(new THREE.Vector3());
-  // The gate is on the front/visitor edge. Keep the character centred on that
-  // entrance and close to the bridge instead of floating far onto the plaza.
   gatekeeper.root.position.set(
     center.x,
     box.min.y+.04,
     box.max.z+Math.max(.72,size.z*.024),
   );
-  // User-facing correction: rotate the previous placement by 180 degrees.
   gatekeeper.root.rotation.y=0;
-  document.body.dataset.castleJesterPlacement='front-gate-centred-v11';
+  document.body.dataset.castleJesterPlacement='front-gate-centred-v12';
   document.body.dataset.castleJesterGatePosition=[
     gatekeeper.root.position.x.toFixed(2),
     gatekeeper.root.position.y.toFixed(2),
@@ -48,12 +52,28 @@ function stop(event){
   event.stopImmediatePropagation();
 }
 
+function activateLongPress(event,canvas){
+  if(!pointerDown||pointerDown.moved||pointerDown.activated||!pointerDown.jester)return;
+  if(!gatekeeper?.hitTest(event))return;
+  pointerDown.activated=true;
+  document.body.dataset.castleJesterGesture='long-press';
+  if(gatekeeper.click(event)){
+    // The long press is the entrance command. Start the cinematic immediately
+    // while the jester's step-aside animation continues underneath the overlay.
+    gatekeeper.enterDispatched=true;
+    gatekeeper.clearHover();
+    canvas.style.cursor='';
+    requestEntrance();
+  }
+}
+
 function installPointerHandlers(canvas){
   if(canvas.dataset.castleJesterPointerHandlers==='true')return;
   canvas.dataset.castleJesterPointerHandlers='true';
 
   canvas.addEventListener('pointerdown',event=>{
     if(document.body.dataset.sceneMode==='interior')return;
+    clearLongPress();
     const jester=gatekeeper?.hitTest(event)===true;
     pointerDown={
       pointerId:event.pointerId,
@@ -61,15 +81,24 @@ function installPointerHandlers(canvas){
       y:event.clientY,
       jester,
       moved:false,
+      activated:false,
     };
-    if(jester){stop(event);canvas.style.cursor='pointer'}
+    if(jester){
+      stop(event);
+      canvas.style.cursor='pointer';
+      longPressTimer=window.setTimeout(()=>{
+        longPressTimer=0;
+        activateLongPress(event,canvas);
+      },LONG_PRESS_MS);
+    }
   },true);
 
   canvas.addEventListener('pointermove',event=>{
     if(document.body.dataset.sceneMode==='interior')return;
     if(pointerDown&&pointerDown.pointerId===event.pointerId){
-      if(Math.hypot(event.clientX-pointerDown.x,event.clientY-pointerDown.y)>9){
+      if(Math.hypot(event.clientX-pointerDown.x,event.clientY-pointerDown.y)>MOVE_SLOP_PX){
         pointerDown.moved=true;
+        clearLongPress();
       }
       if(pointerDown.jester){stop(event);return}
     }
@@ -78,26 +107,36 @@ function installPointerHandlers(canvas){
   },true);
 
   canvas.addEventListener('pointerleave',()=>{
+    clearLongPress();
+    pointerDown=null;
     gatekeeper?.clearHover();
     canvas.style.cursor='';
   },true);
 
   canvas.addEventListener('pointercancel',event=>{
-    if(pointerDown?.pointerId===event.pointerId)pointerDown=null;
+    if(pointerDown?.pointerId===event.pointerId){
+      clearLongPress();
+      pointerDown=null;
+    }
   },true);
 
   canvas.addEventListener('pointerup',event=>{
     if(document.body.dataset.sceneMode==='interior')return;
     const down=pointerDown;
+    clearLongPress();
     pointerDown=null;
     if(!down||down.pointerId!==event.pointerId)return;
-    if(down.jester&&!down.moved){
+    if(down.jester){
       stop(event);
-      if(gatekeeper?.click(event)){
-        gatekeeper.clearHover();
-        canvas.style.cursor='';
-      }
+      // A short tap intentionally does nothing. Only the completed long press
+      // may activate the entrance sequence.
+      canvas.style.cursor='';
+      gatekeeper?.clearHover();
     }
+  },true);
+
+  canvas.addEventListener('contextmenu',event=>{
+    if(gatekeeper?.hitTest(event))stop(event);
   },true);
 }
 
@@ -109,8 +148,6 @@ function animate(runtime,now=performance.now()){
   if(exterior&&!gatekeeper.clicked)placeAtGate(runtime.castleRoot);
   gatekeeper.setVisible(exterior);
   gatekeeper.update(delta);
-  // The castle renderer already owns the render loop. Do not render a second
-  // full frame here; that doubled GPU work and was especially expensive on iOS.
   frame=requestAnimationFrame(t=>animate(runtime,t));
 }
 
@@ -126,7 +163,8 @@ function install(runtime){
   });
   placeAtGate(runtime.castleRoot);
   installPointerHandlers(canvas);
-  document.body.dataset.castleJesterIntegration='direct-runtime-v11';
+  document.body.dataset.castleJesterIntegration='direct-runtime-v12';
+  document.body.dataset.castleJesterLongPressMs=String(LONG_PRESS_MS);
   previousTime=performance.now();
   frame=requestAnimationFrame(t=>animate(runtime,t));
   return true;
@@ -144,6 +182,7 @@ function waitForRuntime(attempt=0){
 
 window.addEventListener('castleRuntimeReady',()=>install(window.__castleSearchRuntime));
 window.addEventListener('pagehide',()=>{
+  clearLongPress();
   if(frame)cancelAnimationFrame(frame);
   frame=0;
   gatekeeper?.dispose();
