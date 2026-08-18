@@ -20,6 +20,7 @@ class CardBrowserProvider extends ChangeNotifier {
   bool favouritesOnly = false;
   bool transcribedOnly = false;
   int _operationToken = 0;
+  bool _disposed = false;
 
   void initializeForDeck(String deckId, List<CardImageModel> cards) {
     final idsChanged = !listEquals(
@@ -35,19 +36,19 @@ class CardBrowserProvider extends ChangeNotifier {
   }
 
   Future<void> generateRandomHand({int count = 5}) async {
-    if (isShuffling) return;
+    if (_disposed || isShuffling) return;
     final token = ++_operationToken;
     isShuffling = true;
     selectedCardId = null;
     notifyListeners();
     await Future<void>.delayed(const Duration(milliseconds: 180));
-    if (token != _operationToken) return;
+    if (_disposed || token != _operationToken) return;
     final shuffled = List<CardImageModel>.from(availableCards)
       ..shuffle(_random);
     visibleHand = List.unmodifiable(shuffled.take(count));
     shuffleGeneration++;
     isShuffling = false;
-    notifyListeners();
+    if (!_disposed) notifyListeners();
   }
 
   void resetToFirstCards({int count = 5}) {
@@ -146,5 +147,12 @@ class CardBrowserProvider extends ChangeNotifier {
           .toList();
       notifyListeners();
     }
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _operationToken++;
+    super.dispose();
   }
 }
