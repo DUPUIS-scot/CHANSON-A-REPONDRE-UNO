@@ -48,12 +48,12 @@ if (!window.__castleInteriorDracoBridgeInstalled) {
     scene.fog = new THREE.FogExp2(0x0c0906, 0.009);
 
     const camera = new THREE.PerspectiveCamera(49, 1, 0.05, 220);
-    const target = new THREE.Vector3(0, 3.1, 0);
+    const target = new THREE.Vector3(0, 2.75, 0.9);
     const home = {
-      target: new THREE.Vector3(0, 3.1, 0),
+      target: new THREE.Vector3(0, 2.75, 0.9),
       yaw: 0,
-      pitch: 0.055,
-      distance: 16,
+      pitch: 0.028,
+      distance: 15.2,
     };
     let yaw = home.yaw;
     let pitch = home.pitch;
@@ -111,7 +111,8 @@ if (!window.__castleInteriorDracoBridgeInstalled) {
       const width = Math.max(1, root.clientWidth);
       const height = Math.max(1, root.clientHeight);
       camera.aspect = width / height;
-      camera.fov = width < 700 ? 54 : 47;
+      const portrait = height > width * 1.08;
+      camera.fov = portrait ? 62 : width < 700 ? 55 : 47;
       camera.updateProjectionMatrix();
       renderer.setSize(width, height, false);
       if (active) renderer.render(scene, camera);
@@ -222,13 +223,13 @@ if (!window.__castleInteriorDracoBridgeInstalled) {
           const fittedSize = fitted.getSize(new THREE.Vector3());
           home.target.set(
             0,
-            Math.max(2.15, Math.min(3.65, fittedSize.y * 0.18)),
-            Math.min(1.2, fittedSize.z * 0.035),
+            Math.max(2.05, Math.min(3.15, fittedSize.y * 0.155)),
+            Math.min(1.6, fittedSize.z * 0.05),
           );
-          home.pitch = 0.055;
+          home.pitch = 0.028;
           home.distance = Math.max(
-            13,
-            Math.min(20, Math.max(fittedSize.x, fittedSize.z) * 0.48),
+            13.8,
+            Math.min(18.2, Math.max(fittedSize.x, fittedSize.z) * 0.43),
           );
           target.copy(home.target);
           yaw = home.yaw;
@@ -240,7 +241,7 @@ if (!window.__castleInteriorDracoBridgeInstalled) {
           document.body.dataset.interiorReady = 'true';
           document.body.dataset.interiorDraco = 'ready';
           document.body.dataset.interiorNavigation = 'orbit-pan-zoom-wasd';
-          document.body.dataset.interiorHomeView = 'straight-throne-establishing';
+          document.body.dataset.interiorHomeView = 'portrait-reference-entrance-aisle';
           document.body.dataset.interiorBounds =
             `${fittedSize.x.toFixed(2)}x${fittedSize.y.toFixed(2)}x${fittedSize.z.toFixed(2)}`;
           resolve(interiorRoot);
