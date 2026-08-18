@@ -4,6 +4,7 @@ import { DRACOLoader } from 'https://unpkg.com/three@0.160.0/examples/jsm/loader
 
 const clamp01=value=>Math.max(0,Math.min(1,value));
 const smooth=value=>{const t=clamp01(value);return t*t*(3-2*t)};
+const BASE_ROTATION=Math.PI;
 
 export class CastleJesterGatekeeper {
   constructor({scene,camera,renderer,onEnterRequested,modelUrl}) {
@@ -15,12 +16,11 @@ export class CastleJesterGatekeeper {
     this.root=new THREE.Group();
     this.root.name='castle-jester-gatekeeper';
     this.root.position.set(0,0,18.2);
-    // Rotate the current gatekeeper orientation by 180 degrees.
-    this.root.rotation.y=0;
+    this.root.rotation.y=BASE_ROTATION;
     this.root.visible=false;
     this.scene.add(this.root);
-    this.keyLight=new THREE.PointLight(0xffb35f,12,11,2);
-    this.keyLight.position.set(0,4.0,2.0);
+    this.keyLight=new THREE.PointLight(0xffb35f,9,9,2);
+    this.keyLight.position.set(0,3.1,1.6);
     this.root.add(this.keyLight);
     this.elapsed=0;
     this.clicked=false;
@@ -59,31 +59,23 @@ export class CastleJesterGatekeeper {
         if(object.isBone){
           const key=(object.name||'').toLowerCase();
           this.bones[key]=object;
-          this.base[object.uuid]={
-            position:object.position.clone(),
-            quaternion:object.quaternion.clone(),
-          };
+          this.base[object.uuid]={position:object.position.clone(),quaternion:object.quaternion.clone()};
         }
       });
       const bounds=new THREE.Box3().setFromObject(this.model);
       const size=bounds.getSize(new THREE.Vector3());
       const center=bounds.getCenter(new THREE.Vector3());
-      // Human-scale relative to the gatehouse; the previous 8.4-unit fit was
-      // visually larger than the architecture.
-      const scale=4.9/Math.max(size.y,.001);
+      // True human scale relative to the gatehouse.
+      const scale=3.25/Math.max(size.y,.001);
       this.model.scale.setScalar(scale);
-      this.model.position.set(
-        -center.x*scale,
-        -bounds.min.y*scale,
-        -center.z*scale,
-      );
+      this.model.position.set(-center.x*scale,-bounds.min.y*scale,-center.z*scale);
       this.root.add(this.model);
       this.root.visible=true;
       this.ready=true;
       document.body.dataset.castleJester='ready';
       document.body.dataset.castleJesterAnimations=String(gltf.animations.length);
       document.body.dataset.castleJesterState='looping';
-      document.body.dataset.castleJesterScale='human-gate-v11';
+      document.body.dataset.castleJesterScale='human-gate-v13';
     },undefined,error=>{
       document.body.dataset.castleJester='failed';
       document.body.dataset.castleJesterError=String(error?.message||error);
@@ -91,22 +83,8 @@ export class CastleJesterGatekeeper {
     });
   }
 
-  bone(...names){
-    for(const name of names){
-      const exact=this.bones[name.toLowerCase()];
-      if(exact)return exact;
-    }
-    return null;
-  }
-
-  resetBones(){
-    for(const object of Object.values(this.bones)){
-      const base=this.base[object.uuid];
-      if(!base)continue;
-      object.position.copy(base.position);
-      object.quaternion.copy(base.quaternion);
-    }
-  }
+  bone(...names){for(const name of names){const exact=this.bones[name.toLowerCase()];if(exact)return exact}return null}
+  resetBones(){for(const object of Object.values(this.bones)){const base=this.base[object.uuid];if(!base)continue;object.position.copy(base.position);object.quaternion.copy(base.quaternion)}}
 
   setLoopPose(){
     if(!this.ready||!this.model)return;
@@ -114,7 +92,6 @@ export class CastleJesterGatekeeper {
     const t=this.elapsed%10;
     const segment=(start,end)=>smooth((t-start)/(end-start));
     const pulse=(start,peak,end)=>segment(start,peak)*(1-segment(peak,end));
-
     const head=this.bone('Head');
     const neck=this.bone('NeckTwist01','NeckTwist02');
     const spine=this.bone('Spine02','Spine01');
@@ -125,30 +102,24 @@ export class CastleJesterGatekeeper {
     const leftUpper=this.bone('L_Upperarm');
     const leftFore=this.bone('L_Forearm');
     const leftHand=this.bone('L_Hand');
-
     const follow=this.hover?0.24:0.08*Math.sin(this.elapsed*.9);
     if(head){head.rotation.y+=follow;head.rotation.x+=0.045*Math.sin(this.elapsed*1.25)}
     if(neck)neck.rotation.y+=follow*.35;
     if(spine)spine.rotation.z+=0.022*Math.sin(this.elapsed*1.7);
-
     const point=pulse(1.3,2.0,3.05);
     if(rightUpper){rightUpper.rotation.x-=1.08*point;rightUpper.rotation.z-=0.24*point}
     if(rightFore)rightFore.rotation.x-=0.38*point;
     if(rightHand)rightHand.rotation.x+=0.12*point;
-
     const beckon=pulse(2.95,3.55,4.65);
     if(rightUpper){rightUpper.rotation.x-=0.72*beckon;rightUpper.rotation.z-=0.48*beckon}
     if(rightFore)rightFore.rotation.x-=0.62*beckon*(.78+.22*Math.sin(this.elapsed*10));
     if(rightHand)rightHand.rotation.x-=0.28*beckon*Math.sin(this.elapsed*10);
-
     const bow=pulse(4.55,5.2,6.15);
     if(spine)spine.rotation.x+=0.62*bow;
     if(waist)waist.rotation.x+=0.20*bow;
-
-    // From the new 180-degree base orientation, turn slightly toward the gate
-    // while presenting the entrance.
     const present=segment(6.0,7.0)*(1-segment(8.25,9.45));
-    this.root.rotation.y=.72*present;
+    // Preserve the 180-degree base orientation throughout the loop.
+    this.root.rotation.y=BASE_ROTATION+.42*present;
     if(leftUpper){leftUpper.rotation.x-=.72*present;leftUpper.rotation.z+=.88*present}
     if(leftFore)leftFore.rotation.x-=.26*present;
     if(leftHand)leftHand.rotation.z+=.18*present;
@@ -160,14 +131,10 @@ export class CastleJesterGatekeeper {
     if(this.clicked){
       const progress=clamp01((this.elapsed-this.clickStarted)/1.45);
       const eased=smooth(progress);
-      this.root.position.x=THREE.MathUtils.lerp(this.clickOriginX,this.clickOriginX+5.0,eased);
-      this.root.position.z=THREE.MathUtils.lerp(this.clickOriginZ,this.clickOriginZ-.9,eased);
-      this.root.rotation.y=THREE.MathUtils.lerp(this.clickOriginRotation,Math.PI*.32,eased);
-      if(progress>=1&&!this.enterDispatched){
-        this.enterDispatched=true;
-        document.body.dataset.castleJesterState='aside';
-        this.onEnterRequested?.();
-      }
+      this.root.position.x=THREE.MathUtils.lerp(this.clickOriginX,this.clickOriginX+3.4,eased);
+      this.root.position.z=THREE.MathUtils.lerp(this.clickOriginZ,this.clickOriginZ-.7,eased);
+      this.root.rotation.y=THREE.MathUtils.lerp(this.clickOriginRotation,BASE_ROTATION+.7,eased);
+      if(progress>=1&&!this.enterDispatched){this.enterDispatched=true;document.body.dataset.castleJesterState='aside';this.onEnterRequested?.()}
       return;
     }
     this.setLoopPose();
@@ -179,22 +146,11 @@ export class CastleJesterGatekeeper {
     this.pointer.x=((event.clientX-rect.left)/Math.max(1,rect.width))*2-1;
     this.pointer.y=-((event.clientY-rect.top)/Math.max(1,rect.height))*2+1;
     this.raycaster.setFromCamera(this.pointer,this.camera);
-    return this.raycaster.intersectObject(this.root,true)
-      .some(hit=>hit.object.userData.castleGatekeeper===true);
+    return this.raycaster.intersectObject(this.root,true).some(hit=>hit.object.userData.castleGatekeeper===true);
   }
 
-  setHover(event){
-    const active=this.hitTest(event);
-    this.hover=active;
-    document.body.dataset.castleJesterHover=active?'true':'false';
-    return active;
-  }
-
-  clearHover(){
-    this.hover=false;
-    document.body.dataset.castleJesterHover='false';
-  }
-
+  setHover(event){const active=this.hitTest(event);this.hover=active;document.body.dataset.castleJesterHover=active?'true':'false';return active}
+  clearHover(){this.hover=false;document.body.dataset.castleJesterHover='false'}
   click(event){
     if(!this.hitTest(event))return false;
     this.clicked=true;
@@ -205,14 +161,6 @@ export class CastleJesterGatekeeper {
     document.body.dataset.castleJesterState='entering';
     return true;
   }
-
-  setVisible(active){
-    this.root.visible=Boolean(active&&this.ready);
-    if(!active)this.clearHover();
-  }
-
-  dispose(){
-    this.dracoLoader?.dispose();
-    this.scene?.remove(this.root);
-  }
+  setVisible(active){this.root.visible=Boolean(active&&this.ready);if(!active)this.clearHover()}
+  dispose(){this.dracoLoader?.dispose();this.scene?.remove(this.root)}
 }
