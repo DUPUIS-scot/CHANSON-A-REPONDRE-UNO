@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "exterior": {
+    "fallback": "../assets/assets/models/search_castle.glb",
+    "shell": "../assets/assets/models/search_castle_shell.glb",
+    "details": "../assets/assets/models/search_castle_details.glb",
+    "preferShellWhenAvailable": true
+  },
+  "interior": {
+    "model": "../assets/assets/models/castle_interior.glb",
+    "preload": "idle-or-entrance"
+  },
+  "textures": {
+    "preferred": "ktx2-basisu",
+    "fallback": "embedded-or-jpeg-png",
+    "maxInitialResolution": 2048
+  },
+  "geometry": {
+    "preferredCompression": "meshopt",
+    "dracoFallback": true,
+    "quantize": true
+  },
+  "loading": {
+    "initialCardTextureConcurrency": 3,
+    "steadyCardTextureConcurrency": 6,
+    "initialPriorityCards": 12,
+    "enhancedQualityIdleMs": 1400,
+    "interiorIdleMs": 2600
+  }
+}
