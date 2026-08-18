@@ -42,13 +42,15 @@
 
   source=source.replace(
     'queueTexture(mesh,card.imagePath,state.generation)',
-    'queueTexture(mesh,card.rectoUrl||card.imagePath,state.generation)',
+    'queueTexture(mesh,castleRectoUrl(card.rectoUrl||card.imagePath),state.generation)',
   );
   source=source.replace(
     "function assetUrl(path){const clean=String(path||'').replace(/^\\/+/,''),normalized=clean.startsWith('assets/')?clean:`assets/${clean}`;return new URL(`../${normalized}`,document.baseURI).href}",
-    "function assetUrl(path){const value=String(path||'');if(/^(https?:|blob:|data:)/i.test(value))return value;const clean=value.replace(/^\\/+/,''),normalized=clean.startsWith('assets/')?clean:`assets/${clean}`;return new URL(`../${normalized}`,document.baseURI).href}",
+    "function castleRectoUrl(path){const value=String(path||'');try{const url=new URL(value,document.baseURI);if(url.origin===location.origin&&url.pathname.includes('/assets/')&&!url.pathname.includes('/assets/assets/'))url.pathname=url.pathname.replace('/assets/','/assets/assets/');return url.href}catch(_){return value}}function assetUrl(path){const value=String(path||'');if(/^(https?:|blob:|data:)/i.test(value))return value;const clean=value.replace(/^\\/+/,''),normalized=clean.startsWith('assets/')?clean:`assets/${clean}`;return new URL(`../${normalized}`,document.baseURI).href}",
   );
 
+  // Mobile Safari can fail some simultaneous image decodes under WebGL memory
+  // pressure. Keep the queue small and retry transient failures twice.
   source=source.replace(
     'state.loadQueue.push({mesh,url,generation});pumpTextureQueue()',
     'state.loadQueue.push({mesh,url,generation,retries:0});pumpTextureQueue()',
@@ -59,7 +61,7 @@
   );
   source=source.replace(
     '},undefined,()=>{state.activeLoads--;pumpTextureQueue()})}}',
-    "},undefined,()=>{if(job.retries<3){job.retries++;setTimeout(()=>{if(job.generation===state.generation&&job.mesh.parent){state.loadQueue.push(job);pumpTextureQueue()}},250*job.retries)}state.activeLoads--;pumpTextureQueue()})}}",
+    "},undefined,()=>{if(job.retries<2){job.retries++;setTimeout(()=>{if(job.generation===state.generation&&job.mesh.parent){state.loadQueue.push(job);pumpTextureQueue()}},220*job.retries)}state.activeLoads--;pumpTextureQueue()})}}",
   );
 
   source=source.replace(
@@ -91,7 +93,7 @@
         const hits=ray.intersectObjects(meshes,false);
         for(const hit of hits){if(hit.point.y>=minY&&hit.point.y<=maxY){addHit(hit,outward);break}}
       };
-      const xSamples=22,ySamples=8,zSamples=16;
+      const xSamples=30,ySamples=10,zSamples=24;
       const frontZ=bounds.max.z+Math.max(8,size.z*.45);
       for(let yi=0;yi<ySamples&&out.length<limit;yi++){
         const y=THREE.MathUtils.lerp(minY,maxY,yi/(ySamples-1));
@@ -111,7 +113,7 @@
           }
         }
       }
-      document.body.dataset.surfaceAnchorMode='real-rampart-raycasts-v14';
+      document.body.dataset.surfaceAnchorMode='real-rampart-raycasts-v13';
       document.body.dataset.surfaceAnchorCount=String(out.length);
       return out.slice(0,limit);
     }`,
@@ -119,11 +121,11 @@
 
   source=source.replace(
     '    state.interiorLoadPromise=loadInterior()',
-    "    window.__castleSearchRuntime={scene,camera,renderer,get castleRoot(){return castleRoot}};window.dispatchEvent(new CustomEvent('castleRuntimeReady'));\n    state.interiorLoadPromise=null;setTimeout(()=>{if(!state.disposed&&!state.interiorLoadPromise)state.interiorLoadPromise=loadInterior().catch(error=>{document.body.dataset.interiorReady='false';document.body.dataset.interiorError=String(error?.message||error);return null})},900)",
+    "    window.__castleSearchRuntime={scene,camera,renderer,get castleRoot(){return castleRoot}};window.dispatchEvent(new CustomEvent('castleRuntimeReady'));\n    state.interiorLoadPromise=loadInterior()",
   );
   source=source.replace(
     '<body data-renderer-status="loading">',
-    `<body data-renderer-status="loading" data-performance-loader="${isIOS?'ios-legacy-exterior-v14':'draco-exterior-v14'}">`,
+    `<body data-renderer-status="loading" data-performance-loader="${isIOS?'ios-legacy-exterior-v13':'draco-exterior-v13'}">`,
   );
   document.open();
   document.write(source);
