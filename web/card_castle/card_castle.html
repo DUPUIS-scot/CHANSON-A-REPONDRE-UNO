@@ -215,6 +215,7 @@
     ground.position.y=-.12;
     ground.receiveShadow=atmosphere.highQuality;
     scene.add(ground);
+    buildLogoForecourt();
     const sky=new THREE.Mesh(
       new THREE.SphereGeometry(130,24,16),
       new THREE.ShaderMaterial({
@@ -260,6 +261,112 @@
       }));
       mist.position.set(x,y,z);mist.scale.set(w,h,1);scene.add(mist);atmosphere.mist.push(mist);
     });
+  }
+
+  function buildLogoForecourt() {
+    const group=new THREE.Group();
+    group.name='chanson-a-repondre-uno-forecourt';
+    group.position.set(0,-.055,15.5);
+
+    const base=new THREE.Mesh(
+      new THREE.CylinderGeometry(24.5,24.5,.16,96),
+      new THREE.MeshStandardMaterial({color:0x171515,roughness:.86,metalness:.025}),
+    );
+    base.scale.z=.62;
+    base.receiveShadow=atmosphere.highQuality;
+    group.add(base);
+
+    const rimMaterial=new THREE.MeshStandardMaterial({
+      color:0x8a632b,roughness:.52,metalness:.28,
+    });
+    [1,.91,.79].forEach((scale,index)=>{
+      const rim=new THREE.Mesh(new THREE.TorusGeometry(24.1-index*1.35,.16,10,96),rimMaterial);
+      rim.rotation.x=Math.PI/2;
+      rim.scale.y=.62;
+      rim.position.y=.12+index*.025;
+      rim.receiveShadow=atmosphere.highQuality;
+      group.add(rim);
+    });
+
+    const emblemCanvas=document.createElement('canvas');
+    emblemCanvas.width=2048;emblemCanvas.height=1280;
+    const context=emblemCanvas.getContext('2d');
+    context.clearRect(0,0,emblemCanvas.width,emblemCanvas.height);
+    context.save();
+    context.translate(emblemCanvas.width/2,emblemCanvas.height/2);
+    context.scale(1,.64);
+    const gradient=context.createRadialGradient(-220,-180,60,0,0,900);
+    gradient.addColorStop(0,'#7c281e');
+    gradient.addColorStop(.58,'#50170f');
+    gradient.addColorStop(1,'#24100c');
+    context.fillStyle=gradient;
+    context.beginPath();
+    context.arc(0,0,900,0,Math.PI*2);
+    context.fill();
+    context.lineWidth=48;
+    context.strokeStyle='#b18442';
+    context.stroke();
+    context.lineWidth=14;
+    context.strokeStyle='rgba(239,206,133,.72)';
+    context.beginPath();
+    context.arc(0,0,818,0,Math.PI*2);
+    context.stroke();
+    context.restore();
+
+    context.textAlign='center';
+    context.textBaseline='middle';
+    context.lineJoin='round';
+    context.shadowColor='rgba(0,0,0,.82)';
+    context.shadowBlur=22;
+    context.shadowOffsetY=18;
+    context.font='700 126px Georgia, Times New Roman, serif';
+    context.lineWidth=16;
+    context.strokeStyle='#21130b';
+    context.strokeText('CHANSON À RÉPONDRE',1024,335);
+    context.fillStyle='#d5ad64';
+    context.fillText('CHANSON À RÉPONDRE',1024,335);
+
+    context.font='900 510px Arial Black, Impact, sans-serif';
+    context.lineWidth=42;
+    context.strokeStyle='#24150c';
+    context.strokeText('UNO',1024,760);
+    context.lineWidth=14;
+    context.strokeStyle='#f0cf88';
+    context.strokeText('UNO',1024,760);
+    context.fillStyle='#b98a43';
+    context.fillText('UNO',1024,760);
+
+    context.globalAlpha=.18;
+    context.strokeStyle='#f0d49b';
+    context.lineWidth=3;
+    for(let x=90;x<1960;x+=58){
+      context.beginPath();context.moveTo(x,98);context.lineTo(x-240,1180);context.stroke();
+    }
+    context.globalAlpha=1;
+
+    const texture=new THREE.CanvasTexture(emblemCanvas);
+    texture.colorSpace=THREE.SRGBColorSpace;
+    texture.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),8);
+    const plaque=new THREE.Mesh(
+      new THREE.CircleGeometry(22.75,96),
+      new THREE.MeshStandardMaterial({map:texture,roughness:.68,metalness:.055}),
+    );
+    plaque.rotation.x=-Math.PI/2;
+    plaque.scale.y=.62;
+    plaque.position.y=.16;
+    plaque.receiveShadow=atmosphere.highQuality;
+    group.add(plaque);
+
+    const entranceStrip=new THREE.Mesh(
+      new THREE.BoxGeometry(9,.12,18),
+      new THREE.MeshStandardMaterial({color:0x29221b,roughness:.9,metalness:.015}),
+    );
+    entranceStrip.position.set(0,.04,-13.6);
+    entranceStrip.receiveShadow=atmosphere.highQuality;
+    group.add(entranceStrip);
+
+    scene.add(group);
+    document.body.dataset.logoForecourt='chanson-a-repondre-uno';
   }
 
   function radialTexture(colour,width=256,height=256) {
@@ -518,524 +625,319 @@
     clearCards();
     const points=state.surfaceAnchors;
     seeded(cards,shuffleSeed).slice(0,points.length)
-      .forEach((card,index)=>addCard(card,points[index]));
-    document.body.dataset.meshCount=String(state.meshes.length);
-    state.meshes.forEach(queueRecto);
-    if(focusedCardId)focusCard(focusedCardId,animateFocus);
-    pumpTextures();
+      .forEach((card,index)=>addCard(card,points[index],index));
     updateSceneCount();
-    resume();
+    if(animateFocus&&focusedCardId){
+      const mesh=state.meshes.find(candidate=>candidate.userData.card.id===focusedCardId);
+      if(mesh)focusMesh(mesh);
+    }
   }
 
-  function addCard(card,anchor) {
-    const subdued=card.isMatch===false;
-    const accent=categoryAccent(card.category);
-    const edge=new THREE.MeshStandardMaterial({
-      color:subdued?0x46515a:accent,roughness:.48,metalness:.24,
-      emissive:subdued?0x000000:accent,emissiveIntensity:subdued?0:.12,
-    });
-    const face=new THREE.MeshStandardMaterial({color:subdued?0x171516:0x2a1c18,roughness:.64,metalness:.02,transparent:subdued,opacity:subdued ? .38 : 1});
-    const back=new THREE.MeshStandardMaterial({color:subdued?0x151011:0x241712,roughness:.7,transparent:subdued,opacity:subdued ? .38 : 1});
-    const mesh=new THREE.Mesh(cardGeometry,[edge,edge,edge,edge,face,back]);
-    mesh.position.copy(anchor.position);
-    mesh.quaternion.setFromUnitVectors(cardForward,anchor.normal);
+  function addCard(card,anchor,index) {
+    const mats=[
+      new THREE.MeshStandardMaterial({color:0xb4a997,roughness:.68,metalness:.025}),
+      new THREE.MeshStandardMaterial({color:0x0c1115,roughness:.77}),
+      new THREE.MeshStandardMaterial({color:0x0c1115,roughness:.77}),
+      new THREE.MeshStandardMaterial({color:0x0c1115,roughness:.77}),
+      new THREE.MeshStandardMaterial({color:0x0c1115,roughness:.77}),
+      new THREE.MeshStandardMaterial({color:0xf0eadf,roughness:.69}),
+    ];
+    const mesh=new THREE.Mesh(cardGeometry,mats);
     mesh.userData.card=card;
-    mesh.userData.type='card';
-    mesh.userData.cardId=card.id;
-    mesh.userData.isMatch=!subdued;
-    mesh.userData.anchorPosition=anchor.position.clone();
-    mesh.userData.anchorNormal=anchor.normal.clone();
-    mesh.userData.textureUrl='';
-    mesh.castShadow=false;
+    const scale=1.5+(index%7)*.04;
+    mesh.scale.setScalar(scale);
+    mesh.position.copy(anchor.position);
+    orientOnSurface(mesh,anchor.normal);
+    mesh.renderOrder=2;
+    mesh.castShadow=atmosphere.highQuality;
+    mesh.receiveShadow=atmosphere.highQuality;
     cardGroup.add(mesh);state.meshes.push(mesh);
+    queueTexture(mesh,card.imagePath,state.generation);
   }
 
-  function categoryAccent(category='') {
-    const key=category.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
-    if(key.includes('CLASSIQUE')||key.includes('THEAT'))return 0xa46c48;
-    if(key.includes('ART'))return 0xb39a72;
-    if(key.includes('CYBER')||key.includes('TECH'))return 0x4e8ba5;
-    if(key.includes('POET'))return 0x76629c;
-    if(key.includes('NATURE')||key.includes('SAUVAGE'))return 0x64805e;
-    return 0x7d8c96;
+  function orientOnSurface(mesh,normal) {
+    const up=Math.abs(normal.y)>.9?new THREE.Vector3(0,0,1):new THREE.Vector3(0,1,0);
+    const right=new THREE.Vector3().crossVectors(up,normal).normalize();
+    const correctedUp=new THREE.Vector3().crossVectors(normal,right).normalize();
+    const matrix=new THREE.Matrix4().makeBasis(right,correctedUp,normal);
+    mesh.quaternion.setFromRotationMatrix(matrix);
+    if(cardForward.clone().applyQuaternion(mesh.quaternion).dot(normal)<.98){
+      mesh.rotateY(Math.PI);
+    }
   }
 
-  function queueRecto(mesh) {
-    const card=mesh.userData.card;
-    const url=card.rectoUrl||card.thumbnailUrl;
-    if(!document.body.dataset.firstTextureUrl)document.body.dataset.firstTextureUrl=url||'';
-    if(mesh.userData.textureUrl===url&&mesh.material[4].map)return;
-    mesh.userData.textureUrl=url;
-    state.loadQueue.push({mesh,url,generation:state.generation});
-    document.body.dataset.textureQueueCount=String(state.loadQueue.length);
+  function queueTexture(mesh,path,generation) {
+    const url=assetUrl(path);
+    document.body.dataset.textureRequestCount=String(
+      Number(document.body.dataset.textureRequestCount||0)+1,
+    );
+    if(!document.body.dataset.firstTextureUrl)document.body.dataset.firstTextureUrl=url;
+    state.loadQueue.push({mesh,url,generation});pumpTextureQueue();
   }
 
-  function pumpTextures() {
-    while(state.activeLoads<12&&state.loadQueue.length){
-      const item=state.loadQueue.shift();
-      if(item.generation!==state.generation||!state.meshes.includes(item.mesh)||item.mesh.userData.textureUrl!==item.url)continue;
-      const cached=state.textures.get(item.url);
-      if(cached){applyTexture(item.mesh,item.url,cached);continue}
+  function pumpTextureQueue() {
+    while(state.activeLoads<8&&state.loadQueue.length){
+      const job=state.loadQueue.shift();
+      if(job.generation!==state.generation||!job.mesh.parent)continue;
       state.activeLoads++;
-      document.body.dataset.textureRequestCount=String(
-        Number(document.body.dataset.textureRequestCount||0)+1,
-      );
-      document.body.dataset.textureQueueCount=String(state.loadQueue.length);
-      try {
-        new THREE.TextureLoader().load(item.url,texture=>{
-          texture.colorSpace=THREE.SRGBColorSpace;
-          texture.anisotropy=Math.min(6,renderer.capabilities.getMaxAnisotropy());
-          state.textures.set(item.url,texture);
-          if(item.generation===state.generation){
-            applyTexture(item.mesh,item.url,texture);state.activeLoads--;
-          }
-          pumpTextures();
-        },undefined,error=>{
-          console.warn(`Search card texture failed: ${item.url}`,error);
+      loadTexture(job.url)
+        .then(texture=>{
+          if(job.generation!==state.generation||!job.mesh.parent)return;
+          const current=job.mesh.material[4];
+          job.mesh.material[4]=new THREE.MeshStandardMaterial({map:texture,roughness:.68,metalness:.015});
+          current.dispose();
+        })
+        .catch(()=>{
           document.body.dataset.textureErrorCount=String(
             Number(document.body.dataset.textureErrorCount||0)+1,
           );
-          if(item.generation===state.generation)state.activeLoads--;
-          pumpTextures();
-        });
-      } catch(error) {
-        console.warn(`Search card texture rejected: ${item.url}`,error);
-        document.body.dataset.textureErrorCount=String(
-          Number(document.body.dataset.textureErrorCount||0)+1,
+        })
+        .finally(()=>{state.activeLoads--;pumpTextureQueue()});
+    }
+  }
+
+  function loadTexture(url) {
+    if(state.textures.has(url))return state.textures.get(url);
+    const promise=new Promise((resolve,reject)=>{
+      new THREE.TextureLoader().load(url,texture=>{
+        texture.colorSpace=THREE.SRGBColorSpace;
+        texture.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),8);
+        document.body.dataset.textureCount=String(
+          Number(document.body.dataset.textureCount||0)+1,
         );
-        if(item.generation===state.generation)state.activeLoads--;
-      }
-    }
-  }
-
-  function applyTexture(mesh,url,texture) {
-    if(!state.meshes.includes(mesh)||mesh.userData.textureUrl!==url)return;
-    mesh.material[4].map=texture;
-    mesh.material[4].color.set(0xffffff);
-    mesh.material[4].needsUpdate=true;
-    mesh.material[5].map=texture;
-    mesh.material[5].color.set(0xffffff);
-    mesh.material[5].needsUpdate=true;
-    const loaded=state.meshes.filter(item=>item.material[4].map).length;
-    document.body.dataset.textureCount=String(loaded);
-    resume();
-  }
-
-  function focusCard(cardId,animate=true) {
-    state.focusedCardId=cardId;
-    document.body.dataset.focusedCardId=cardId||'';
-    document.body.dataset.focusMode=animate?'animated':'immediate';
-    document.body.dataset.focusSettled=animate?'false':'true';
-    let selected=null;
-    state.meshes.forEach(mesh=>{
-      const active=mesh.userData.card.id===cardId;
-      mesh.scale.setScalar(active?1.06:1);
-      mesh.position.copy(mesh.userData.anchorPosition)
-        .addScaledVector(mesh.userData.anchorNormal,active ? .11 : 0);
-      mesh.material.slice(0,4).forEach(material=>{
-        const accent=categoryAccent(mesh.userData.card.category);
-        material.color.set(active?0xffc928:mesh.userData.isMatch?accent:0x46515a);
-        material.emissive.set(active?0x6b2f00:mesh.userData.isMatch?accent:0x000000);
-        material.emissiveIntensity=active?1.3:mesh.userData.isMatch ? .12 : 0;
-      });
-      if(active)selected=mesh;
+        resolve(texture);
+      },undefined,reject);
     });
-    pumpTextures();
-    if(!selected)return;
-    const look=selected.position.clone();
-    const cameraTarget=look.clone()
-      .addScaledVector(selected.userData.anchorNormal,10)
-      .add(new THREE.Vector3(0,2.2,0));
-    if(animate){state.targetLook=look;state.targetCamera=cameraTarget}
-    else{orbit.target.copy(look);camera.position.copy(cameraTarget);syncOrbitFromCamera()}
-    resume();
+    state.textures.set(url,promise);return promise;
   }
 
-  function pick(event) {
-    if(state.sceneMode==='interior')return null;
-    const rect=renderer.domElement.getBoundingClientRect();
-    pointer.x=((event.clientX-rect.left)/rect.width)*2-1;
-    pointer.y=-((event.clientY-rect.top)/rect.height)*2+1;
-    raycaster.setFromCamera(pointer,camera);
-    return raycaster.intersectObjects(state.meshes,false)[0]?.object;
+  function assetUrl(path) {
+    const clean=String(path||'').replace(/^\/+/, '');
+    const normalized=clean.startsWith('assets/')?clean:`assets/${clean}`;
+    return new URL(`../${normalized}`,document.baseURI).href;
   }
 
-  function moveCardFocus(delta) {
-    if(state.sceneMode==='interior')return;
-    const ids=state.meshes.map(mesh=>mesh.userData.card.id);if(!ids.length)return;
-    let index=Math.max(0,ids.indexOf(state.focusedCardId));
-    index=(index+delta+ids.length)%ids.length;
-    focusCard(ids[index],true);emit('cardSelected',{cardId:ids[index]});
+  function focusMesh(mesh) {
+    const direction=new THREE.Vector3(0,0,1).applyQuaternion(mesh.quaternion);
+    state.targetLook=mesh.position.clone();
+    state.targetCamera=mesh.position.clone().addScaledVector(direction,5.5).add(new THREE.Vector3(0,.3,0));
   }
 
-  function setFullscreenUi(active) {
-    state.fullscreenActive=active;
-    document.body.classList.toggle('fullscreen-castle',active);
-    emit('fullscreenChanged',{active});setTimeout(resize,0);
+  function updateSceneCount() {
+    const visible=state.meshes.filter(mesh=>mesh.visible).length;
+    document.body.dataset.visibleCardCount=String(visible);
   }
 
-  function setFrameFallback(active) {
-    if(active){
-      const frame=window.frameElement;
-      if(frame&&typeof frame.showPopover==='function'){
-        frame.setAttribute('popover','manual');try{frame.showPopover()}catch(_){}
-      }
-      const elements=[];let current=frame;
-      while(current&&elements.length<7){
-        elements.push(current);const tree=current.getRootNode?.();
-        const next=current.parentElement||(tree&&tree.host)||null;
-        if(!next||next===parent.document.body||next===parent.document.documentElement)break;
-        current=next;
-      }
-      state.fallbackElements=elements.map(element=>({element,cssText:element.style.cssText}));
-      elements.forEach((element,index)=>{
-        element.style.setProperty('z-index','2147483647','important');
-        element.style.setProperty('transform','none','important');
-        element.style.setProperty('overflow','visible','important');
-        element.style.setProperty('clip-path','none','important');
-        element.style.setProperty('contain','none','important');
-        element.style.setProperty('pointer-events','auto','important');
-        element.style.setProperty('background','#03070c','important');
-        if(index<3){
-          element.style.setProperty('position','fixed','important');
-          element.style.setProperty('inset','0','important');
-          element.style.setProperty('width','100vw','important');
-          element.style.setProperty('height','100vh','important');
-        }
-      });
-    }else if(state.fallbackElements){
-      const frame=window.frameElement;
-      if(frame&&typeof frame.hidePopover==='function')try{frame.hidePopover()}catch(_){}
-      state.fallbackElements.forEach(({element,cssText})=>element.style.cssText=cssText);
-      state.fallbackElements=null;
-    }
-  }
-
-  function activateFullscreenFallback(){setFrameFallback(true);setFullscreenUi(true);emit('fullscreenFallbackRequested')}
-  async function enterCastleFullscreen(){
-    if(state.fullscreenActive)return;
-    try{
-      if(!document.documentElement.requestFullscreen)throw new Error('unsupported');
-      await Promise.race([document.documentElement.requestFullscreen(),new Promise((_,reject)=>setTimeout(()=>reject(new Error('timeout')),650))]);
-      setTimeout(()=>{if(!document.fullscreenElement&&!state.fullscreenActive)activateFullscreenFallback()},120);
-    }catch(_){activateFullscreenFallback()}
-  }
-  async function exitCastleFullscreen(){
-    if(document.fullscreenElement)await document.exitFullscreen().catch(()=>{});
-    else if(state.fullscreenActive){setFrameFallback(false);emit('fullscreenFallbackExit');setFullscreenUi(false)}
-  }
-  async function requestCategories(){
-    await exitCastleFullscreen();
-    setFrameFallback(false);
-    setFullscreenUi(false);
-    emit('categoriesRequested');
-  }
-
-  function openCardById(cardId){
-    if(state.sceneMode==='interior')return;
-    if(!cardId||!state.meshes.some(mesh=>mesh.userData.cardId===cardId))return;
-    document.body.dataset.lastLongPressedCardId=cardId;
-    emit('cardLongPressed',{cardId});
-    void exitCastleFullscreen();
-  }
-  function openFocusedCard(){openCardById(state.focusedCardId)}
-
-  function cancelLongPress(){
-    if(state.longPressTimer)clearTimeout(state.longPressTimer);
-    state.longPressTimer=0;
-  }
-
-  function clampTarget() {
-    if(state.sceneMode==='interior'){
-      orbit.target.x=clamp(orbit.target.x,-12,12);
-      orbit.target.y=clamp(orbit.target.y,0,12);
-      orbit.target.z=clamp(orbit.target.z,-12,12);
-      return;
-    }
-    orbit.target.x=clamp(orbit.target.x,-28,28);
-    orbit.target.y=clamp(orbit.target.y,0,24);
-    orbit.target.z=clamp(orbit.target.z,-28,28);
-  }
-
-  function playEntranceVideo(){
-    if(state.sceneMode!=='exterior'||!entranceVideo||document.body.classList.contains('entrance-video-active'))return;
-    entranceVideo.muted=true;
-    entranceVideo.playsInline=true;
-    entranceVideo.setAttribute('webkit-playsinline','');
-    entranceVideo.preload='auto';
-    entranceVideo.pause();
-    entranceVideo.src=ENTRANCE_VIDEO_URL;
-    entranceVideo.load();
-    document.body.classList.add('entrance-video-active');
-    entranceTransition?.setAttribute('aria-hidden','false');
-    try{entranceVideo.currentTime=0}catch(_){}
-    const playback=entranceVideo.play();
-    playback?.catch?.(()=>finishEntranceVideo());
-  }
-  async function finishEntranceVideo(){
-    if(!entranceVideo)return;
-    entranceVideo.pause();
-    try{
-      if(!state.interiorReady&&state.interiorLoadPromise)await state.interiorLoadPromise;
-      if(state.interiorReady)enterInterior();
-    }finally{
-      document.body.classList.remove('entrance-video-active');
-      entranceTransition?.setAttribute('aria-hidden','true');
-    }
-  }
-  function enterInterior(){
+  function switchToInterior(){
     if(!state.interiorReady||!interiorRoot)return false;
     state.sceneMode='interior';
-    castleRoot.visible=false;
-    cardGroup.visible=false;
-    interiorRoot.visible=true;
-    document.body.classList.remove('castle-door-hover');
-    renderer.domElement.style.cursor='';
-    document.body.dataset.castleDoorHover='false';
     document.body.dataset.sceneMode='interior';
-    orbit.yaw=0;orbit.pitch=.18;orbit.distance=12;orbit.target.set(0,3.1,0);
-    state.targetCamera=null;state.targetLook=null;
-    updateOrbit();resume();return true;
-  }
-  function leaveInterior(){
-    if(state.sceneMode!=='interior')return false;
-    state.sceneMode='exterior';
-    interiorRoot.visible=false;
-    castleRoot.visible=true;
-    cardGroup.visible=true;
-    document.body.dataset.sceneMode='exterior';
-    orbit.yaw=.72;orbit.pitch=.34;orbit.distance=59;orbit.target.set(0,8,0);
-    state.targetCamera=null;state.targetLook=null;
-    updateOrbit();resume();return true;
+    castleRoot.visible=false;
+    interiorRoot.visible=true;
+    cardGroup.visible=false;
+    orbit.yaw=.15;orbit.pitch=.18;orbit.distance=29;orbit.target.set(0,6.7,0);
+    updateOrbit();
+    return true;
   }
 
-  function isCastleDoorHit(event){
-    if(state.sceneMode!=='exterior')return false;
+  function pointerToNdc(event) {
     const rect=renderer.domElement.getBoundingClientRect();
-    const x=(event.clientX-rect.left)/Math.max(1,rect.width);
-    const y=(event.clientY-rect.top)/Math.max(1,rect.height);
-    return x>=.42&&x<=.58&&y>=.48&&y<=.78;
+    pointer.set(
+      ((event.clientX-rect.left)/rect.width)*2-1,
+      -((event.clientY-rect.top)/rect.height)*2+1,
+    );
   }
 
-  function setCastleDoorHover(event){
-    if(state.sceneMode!=='exterior')return;
-    const active=isCastleDoorHit(event);
-    document.body.classList.toggle('castle-door-hover',active);
-    renderer.domElement.style.cursor=active?'pointer':'';
-    document.body.dataset.castleDoorHover=active?'true':'false';
+  function hitCard(event) {
+    pointerToNdc(event);raycaster.setFromCamera(pointer,camera);
+    const hits=raycaster.intersectObjects(state.meshes,false);
+    return hits[0]?.object||null;
+  }
+
+  function cameraForwardHit() {
+    raycaster.setFromCamera(new THREE.Vector2(0,0),camera);
+    const hits=raycaster.intersectObject(castleRoot,true);
+    return hits[0]||null;
+  }
+
+  function maybeEnterCastle(){
+    if(state.sceneMode!=='exterior'||!castleRoot)return false;
+    const hit=cameraForwardHit();
+    if(!hit)return false;
+    const center=new THREE.Vector3();new THREE.Box3().setFromObject(castleRoot).getCenter(center);
+    const nearDoor=Math.abs(hit.point.x-center.x)<5.4&&hit.point.y<9.5&&hit.point.z>center.z+5;
+    document.body.classList.toggle('castle-door-hover',nearDoor);
+    return nearDoor;
+  }
+
+  function beginEntranceSequence(){
+    if(document.body.classList.contains('entrance-video-active'))return;
+    document.body.classList.add('entrance-video-active');
+    entranceTransition.setAttribute('aria-hidden','false');
+    entranceVideo.src=ENTRANCE_VIDEO_URL;
+    entranceVideo.currentTime=0;
+    const finish=()=>{
+      entranceVideo.pause();
+      entranceVideo.removeAttribute('src');entranceVideo.load();
+      document.body.classList.remove('entrance-video-active');
+      entranceTransition.setAttribute('aria-hidden','true');
+      switchToInterior();
+    };
+    entranceVideo.onended=finish;
+    entranceVideo.onerror=finish;
+    entranceVideo.play().catch(finish);
   }
 
   function installEvents() {
-    const canvas=renderer.domElement;
-    listen(canvas,'dblclick',event=>{
-      event.preventDefault();
-      if(isCastleDoorHit(event)&&!pick(event))playEntranceVideo();
-    });
-    if(entranceVideo)listen(entranceVideo,'ended',finishEntranceVideo);
-    if(entranceTransition)listen(entranceTransition,'click',finishEntranceVideo);
-    listen(canvas,'pointerdown',event=>{
-      event.preventDefault();
-      if(event.pointerType==='touch'){
-        state.touches.set(event.pointerId,{x:event.clientX,y:event.clientY});
-        if(state.touches.size===2){
-          const [a,b]=[...state.touches.values()];
-          state.pinch={distance:Math.hypot(a.x-b.x,a.y-b.y),orbitDistance:orbit.distance,center:{x:(a.x+b.x)/2,y:(a.y+b.y)/2},target:orbit.target.clone()};
-        }
-      }
+    listen(renderer.domElement,'pointerdown',event=>{
+      if(event.pointerType==='touch')state.touches.set(event.pointerId,{x:event.clientX,y:event.clientY});
+      state.pointerDown={x:event.clientX,y:event.clientY,time:performance.now(),card:hitCard(event)};
       state.dragging=false;
-      const picked=pick(event);
-      document.body.dataset.pointerDown=String(event.pointerId);
-      document.body.dataset.pickedCardId=picked?.userData.cardId||'';
-      state.pointerDown={pointerId:event.pointerId,cardId:picked?.userData.cardId||'',x:event.clientX,y:event.clientY,t:performance.now(),mesh:picked,yaw:orbit.yaw,pitch:orbit.pitch,target:orbit.target.clone(),panning:event.button===1||event.button===2||event.shiftKey};
-      cancelLongPress();
-      if(state.pointerDown.mesh&&
-          (event.pointerType==='touch'||event.button===0)&&
-          !event.shiftKey&&state.touches.size<2){
-        const down=state.pointerDown;
-        document.body.dataset.longPressState='timer-started';
+      clearTimeout(state.longPressTimer);
+      if(state.pointerDown.card){
         state.longPressTimer=setTimeout(()=>{
-          state.longPressTimer=0;
-          if(state.pointerDown===down&&!state.dragging){
-            down.longPressFired=true;
-            down.suppressNavigation=true;
-            document.body.dataset.longPressState='detected';
-            openCardById(down.cardId);
-          }
+          emit('cardLongPress',{cardId:state.pointerDown?.card?.userData?.card?.id});
+          state.pointerDown=null;
         },LONG_PRESS_MS);
       }
-      canvas.setPointerCapture(event.pointerId);
-      resume();
     });
-    listen(canvas,'pointermove',event=>{
-      setCastleDoorHover(event);
-      const down=state.pointerDown;
-      if(down?.longPressFired||down?.suppressNavigation){
-        event.preventDefault();
-        return;
-      }
+    listen(renderer.domElement,'pointermove',event=>{
       if(event.pointerType==='touch'&&state.touches.has(event.pointerId)){
         state.touches.set(event.pointerId,{x:event.clientX,y:event.clientY});
-        if(state.touches.size===2&&state.pinch){
-          const [a,b]=[...state.touches.values()];
-          const distance=Math.max(20,Math.hypot(a.x-b.x,a.y-b.y));
-          const center={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
-          const minDistance=state.sceneMode==='interior'?5:24;
-          const maxDistance=state.sceneMode==='interior'?28:90;
-          orbit.distance=clamp(state.pinch.orbitDistance*state.pinch.distance/distance,minDistance,maxDistance);
-          const scale=orbit.distance*.0018;
-          const right=new THREE.Vector3().setFromMatrixColumn(camera.matrix,0);
-          const up=new THREE.Vector3().setFromMatrixColumn(camera.matrix,1);
-          orbit.target.copy(state.pinch.target).addScaledVector(right,-(center.x-state.pinch.center.x)*scale).addScaledVector(up,(center.y-state.pinch.center.y)*scale);
-          clampTarget();state.dragging=true;state.targetCamera=null;resume();return;
-        }
       }
-      if(!down)return;
-      const dx=event.clientX-down.x,dy=event.clientY-down.y;
-      if(Math.hypot(dx,dy)>TAP_SLOP_PX){state.dragging=true;document.body.dataset.longPressState='cancelled-movement';cancelLongPress()}
-      if(state.dragging){
-        if(down.panning){
-          const scale=orbit.distance*.0018;
-          const right=new THREE.Vector3().setFromMatrixColumn(camera.matrix,0);
-          const up=new THREE.Vector3().setFromMatrixColumn(camera.matrix,1);
-          orbit.target.copy(down.target).addScaledVector(right,-dx*scale).addScaledVector(up,dy*scale);clampTarget();
-        }else{
-          orbit.yaw=down.yaw-dx*.008;
-          orbit.pitch=clamp(down.pitch+dy*.006,.06,1.18);
+      if(state.pointerDown){
+        const dx=event.clientX-state.pointerDown.x,dy=event.clientY-state.pointerDown.y;
+        if(Math.hypot(dx,dy)>TAP_SLOP_PX){clearTimeout(state.longPressTimer);state.dragging=true}
+        if(state.dragging&&state.touches.size<2){
+          orbit.yaw-=dx*.0048;orbit.pitch=clamp(orbit.pitch+dy*.0038,-.12,1.08);
+          state.pointerDown.x=event.clientX;state.pointerDown.y=event.clientY;updateOrbit();
         }
-        state.targetCamera=null;
-        resume();
+      } else maybeEnterCastle();
+      if(state.touches.size===2){
+        const pair=[...state.touches.values()];
+        const distance=Math.hypot(pair[0].x-pair[1].x,pair[0].y-pair[1].y);
+        if(state.pinch)orbit.distance=clamp(state.pinch.distance*state.pinch.span/distance,12,86);
+        else state.pinch={span:distance,distance:orbit.distance};
+        updateOrbit();
       }
     });
-    listen(canvas,'pointerleave',event=>{
-      document.body.classList.remove('castle-door-hover');
-      renderer.domElement.style.cursor='';
-      document.body.dataset.castleDoorHover='false';
-      const down=state.pointerDown;
-      if(down&&down.pointerId===event.pointerId&&!down.longPressFired){
-        document.body.dataset.longPressState='cancelled-leave';cancelLongPress();
-      }
+    listen(renderer.domElement,'pointerup',event=>{
+      clearTimeout(state.longPressTimer);
+      if(event.pointerType==='touch')state.touches.delete(event.pointerId);
+      if(state.touches.size<2)state.pinch=null;
+      const down=state.pointerDown;state.pointerDown=null;
+      if(!down||state.dragging)return;
+      const card=hitCard(event);
+      if(card&&card===down.card){focusMesh(card);emit('cardTap',{cardId:card.userData.card.id});return}
+      if(maybeEnterCastle())beginEntranceSequence();
     });
-    const release=event=>{
-      event.preventDefault();
-      if(event.pointerType==='touch'){
-        state.touches.delete(event.pointerId);if(state.touches.size<2)state.pinch=null;
-      }
-      const down=state.pointerDown;const wasDragging=state.dragging;
-      cancelLongPress();
-      state.pointerDown=null;state.dragging=false;
-      if(down?.longPressFired)document.body.dataset.longPressState='released';
-      const tappedDoor=state.sceneMode==='exterior'&&event.type==='pointerup'&&down&&!wasDragging&&!down.longPressFired&&!down.mesh&&isCastleDoorHit(event);
-      if(tappedDoor){playEntranceVideo();resume();return}
-      if(state.sceneMode==='interior'||event.type==='pointercancel'||!down||wasDragging||!down.mesh||down.longPressFired){resume();return}
-      const cardId=down.cardId;
-      focusCard(cardId,true);emit('cardSelected',{cardId});
-    };
-    listen(canvas,'pointerup',release);listen(canvas,'pointercancel',release);
-    listen(canvas,'wheel',event=>{event.preventDefault();const minDistance=state.sceneMode==='interior'?5:24;const maxDistance=state.sceneMode==='interior'?28:90;orbit.distance=clamp(orbit.distance+event.deltaY*.025,minDistance,maxDistance);state.targetCamera=null;resume()},{passive:false});
-    listen(canvas,'contextmenu',event=>event.preventDefault());
-    listen(document.getElementById('enter-fullscreen'),'click',enterCastleFullscreen);
-    listen(document.getElementById('exit-fullscreen'),'click',exitCastleFullscreen);
-    listen(document.getElementById('castle-reset'),'click',resetView);
-    listen(document.getElementById('back-to-categories'),'click',requestCategories);
-    listen(document,'fullscreenchange',()=>setFullscreenUi(Boolean(document.fullscreenElement)));
-    listen(document,'visibilitychange',()=>document.hidden?pause():resume());
+    listen(renderer.domElement,'pointercancel',event=>{
+      clearTimeout(state.longPressTimer);state.pointerDown=null;state.dragging=false;
+      if(event.pointerType==='touch')state.touches.delete(event.pointerId);
+      if(state.touches.size<2)state.pinch=null;
+    });
+    listen(renderer.domElement,'wheel',event=>{
+      event.preventDefault();orbit.distance=clamp(orbit.distance+event.deltaY*.022,12,86);updateOrbit();
+    },{passive:false});
     listen(window,'keydown',event=>{
-      if(event.key==='Escape'&&document.body.classList.contains('entrance-video-active')){finishEntranceVideo();event.preventDefault();return}
-      if(event.key==='Escape'&&state.sceneMode==='interior'){leaveInterior();event.preventDefault();return}
-      if(event.key==='Escape'&&state.fullscreenActive){void exitCastleFullscreen();event.preventDefault();return}
-      if(['w','a','s','d','W','A','S','D'].includes(event.key)){keys.add(event.key.toLowerCase());resume();event.preventDefault();return}
-      if(!['ArrowLeft','ArrowRight','Enter'].includes(event.key))return;
-      if(event.key==='Enter'){openFocusedCard();return}
-      moveCardFocus(event.key==='ArrowRight'?1:-1);event.preventDefault();
+      keys.add(event.key.toLowerCase());
+      if(event.key==='Escape'&&document.fullscreenElement)document.exitFullscreen();
     });
     listen(window,'keyup',event=>keys.delete(event.key.toLowerCase()));
-    listen(canvas,'webglcontextlost',event=>{event.preventDefault();emit('rendererError',{reason:'context-lost'})});
-    listen(window,'pagehide',dispose,{once:true});
+    listen(document,'fullscreenchange',()=>{
+      state.fullscreenActive=Boolean(document.fullscreenElement);
+      document.body.classList.toggle('fullscreen-castle',state.fullscreenActive);
+      setTimeout(resize,0);
+    });
+    document.getElementById('castle-reset')?.addEventListener('click',()=>{
+      orbit.yaw=.72;orbit.pitch=.34;orbit.distance=59;orbit.target.set(0,8,0);updateOrbit();
+    },{signal:abort.signal});
+    document.getElementById('enter-fullscreen')?.addEventListener('click',()=>{
+      document.documentElement.requestFullscreen?.();
+    },{signal:abort.signal});
+    document.getElementById('exit-fullscreen')?.addEventListener('click',()=>{
+      document.exitFullscreen?.();
+    },{signal:abort.signal});
+    document.getElementById('back-to-categories')?.addEventListener('click',()=>emit('backToCategories'),{signal:abort.signal});
+    listen(window,'message',event=>{
+      if(event.origin!==location.origin)return;
+      let message=event.data;
+      if(typeof message==='string')try{message=JSON.parse(message)}catch(_){return}
+      if(!message||typeof message!=='object')return;
+      if(message.type==='setCards'){
+        setCards(message.cards||[],message.focusedCardId||null,message.shuffleSeed||0,false,message.activeCategory||'ALL');
+      } else if(message.type==='focusCard'){
+        const mesh=state.meshes.find(candidate=>candidate.userData.card.id===message.cardId);
+        if(mesh)focusMesh(mesh);
+      } else if(message.type==='resetView'){
+        orbit.yaw=.72;orbit.pitch=.34;orbit.distance=59;orbit.target.set(0,8,0);updateOrbit();
+      }
+    });
   }
 
   function updateOrbit() {
-    const cp=Math.cos(orbit.pitch);
-    camera.position.set(orbit.target.x+Math.sin(orbit.yaw)*cp*orbit.distance,orbit.target.y+Math.sin(orbit.pitch)*orbit.distance,orbit.target.z+Math.cos(orbit.yaw)*cp*orbit.distance);
+    if(!camera)return;
+    const cosPitch=Math.cos(orbit.pitch);
+    camera.position.set(
+      orbit.target.x+Math.sin(orbit.yaw)*cosPitch*orbit.distance,
+      orbit.target.y+Math.sin(orbit.pitch)*orbit.distance,
+      orbit.target.z+Math.cos(orbit.yaw)*cosPitch*orbit.distance,
+    );
     camera.lookAt(orbit.target);
   }
-  function syncOrbitFromCamera(){
-    const delta=camera.position.clone().sub(orbit.target);
-    const minDistance=state.sceneMode==='interior'?5:24;
-    const maxDistance=state.sceneMode==='interior'?28:90;
-    orbit.distance=clamp(delta.length(),minDistance,maxDistance);
-    orbit.pitch=clamp(Math.asin(delta.y/orbit.distance),.06,1.18);
-    orbit.yaw=Math.atan2(delta.x,delta.z);
-  }
-  function resetView(){
-    if(state.sceneMode==='interior'){leaveInterior();return}
-    orbit.yaw=.72;orbit.pitch=.34;orbit.distance=59;orbit.target.set(0,8,0);
-    state.targetCamera=null;state.targetLook=null;focusCard('',false);resume();
-  }
-  function resize(){
-    if(!renderer)return;
+
+  function resize() {
+    if(!renderer||!camera)return;
     const width=Math.max(1,root.clientWidth),height=Math.max(1,root.clientHeight);
-    camera.aspect=width/height;camera.fov=width<700?49:43;
-    camera.updateProjectionMatrix();renderer.setSize(width,height,false);
-    resume();
-  }
-  function updateSceneCount(){
-    let count=0;scene?.traverse(()=>count++);
-    document.body.dataset.sceneObjectCount=String(count);
+    renderer.setSize(width,height,false);camera.aspect=width/height;camera.updateProjectionMatrix();
   }
 
-  function animate(now=performance.now()) {
-    state.frame=0;
-    if(state.disposed||!state.visible||document.hidden)return;
-    const delta=Math.min(.25,Math.max(0,(now-(state.lastFrame||now))/1000));state.lastFrame=now;
-    if(state.targetCamera&&state.targetLook){
-      const cameraAlpha=1-Math.exp(-5.2*delta),targetAlpha=1-Math.exp(-6.1*delta);
-      camera.position.lerp(state.targetCamera,cameraAlpha);orbit.target.lerp(state.targetLook,targetAlpha);camera.lookAt(orbit.target);
-      if(camera.position.distanceTo(state.targetCamera)<.08){
-        camera.position.copy(state.targetCamera);orbit.target.copy(state.targetLook);syncOrbitFromCamera();
-        state.targetCamera=null;state.targetLook=null;document.body.dataset.focusSettled='true';
-      }
-    }else{
-      if(keys.size){
-        const forward=new THREE.Vector3();camera.getWorldDirection(forward);forward.y=0;forward.normalize();
-        const right=new THREE.Vector3().crossVectors(forward,camera.up).normalize();const move=new THREE.Vector3();
-        if(keys.has('w'))move.add(forward);if(keys.has('s'))move.sub(forward);if(keys.has('d'))move.add(right);if(keys.has('a'))move.sub(right);
-        if(move.lengthSq())orbit.target.add(move.normalize().multiplyScalar(.14));clampTarget();
-      }
+  function animate(time=0) {
+    if(state.disposed||!state.visible)return;
+    const delta=Math.min((time-state.lastFrame)/1000,.05)||.016;state.lastFrame=time;state.frame++;
+    if(state.targetCamera){
+      camera.position.lerp(state.targetCamera,1-Math.pow(.00035,delta));
+      orbit.target.lerp(state.targetLook,1-Math.pow(.00035,delta));camera.lookAt(orbit.target);
+      if(camera.position.distanceTo(state.targetCamera)<.04){state.targetCamera=null;state.targetLook=null}
+    } else if(keys.size){
+      const speed=delta*8;
+      if(keys.has('arrowleft')||keys.has('a'))orbit.yaw+=speed*.16;
+      if(keys.has('arrowright')||keys.has('d'))orbit.yaw-=speed*.16;
+      if(keys.has('arrowup')||keys.has('w'))orbit.distance=clamp(orbit.distance-speed,12,86);
+      if(keys.has('arrowdown')||keys.has('s'))orbit.distance=clamp(orbit.distance+speed,12,86);
       updateOrbit();
     }
-    renderer.render(scene,camera);
-    if(state.targetCamera||keys.size||state.dragging){
-      state.frame=requestAnimationFrame(animate);
-    }
+    atmosphere.mist.forEach((mist,index)=>{
+      mist.position.x+=Math.sin(time*.00006+index)*delta*.08;
+      mist.material.opacity*=.99995+Math.sin(time*.0002+index)*.00005;
+    });
+    atmosphere.warmLights.forEach((light,index)=>{
+      const base=Number(light.userData.baseIntensity||light.intensity);
+      if(!light.userData.baseIntensity)light.userData.baseIntensity=base;
+      light.intensity=base*(.92+.08*Math.sin(time*.004+index*1.73));
+    });
+    renderer.render(scene,camera);requestAnimationFrame(animate);
   }
-  function resume(){if(!state.ready||state.disposed||!state.visible||document.hidden||state.frame)return;state.lastFrame=performance.now();state.frame=requestAnimationFrame(animate)}
-  function pause(){if(state.frame)cancelAnimationFrame(state.frame);state.frame=0}
+
+  function resume(){if(!state.disposed)requestAnimationFrame(animate)}
+  function pause(){state.lastFrame=0}
 
   function dispose() {
-    if(state.disposed)return;state.disposed=true;pause();cancelLongPress();abort.abort();
-    entranceVideo?.pause();
-    resizeObserver?.disconnect();intersectionObserver?.disconnect();clearCards();
-    state.textures.forEach(texture=>texture.dispose());state.textures.clear();
-    cardGeometry.dispose();
-    if(castleRoot){scene?.remove(castleRoot);disposeObject(castleRoot)}
-    if(interiorRoot){scene?.remove(interiorRoot);disposeObject(interiorRoot)}
-    if(cardGroup)scene?.remove(cardGroup);
-    disposeObject(scene);
-    renderer?.renderLists.dispose();renderer?.dispose();renderer?.forceContextLoss();renderer?.domElement.remove();
+    if(state.disposed)return;state.disposed=true;abort.abort();
+    resizeObserver?.disconnect();intersectionObserver?.disconnect();clearTimeout(state.longPressTimer);
+    clearCards();cardGeometry.dispose();
+    scene?.traverse(object=>{
+      if(object===castleRoot||object===interiorRoot)return;
+      object.geometry?.dispose?.();
+      const materials=Array.isArray(object.material)?object.material:[object.material];
+      materials.filter(Boolean).forEach(material=>{
+        Object.values(material).forEach(value=>value?.isTexture&&value.dispose());
+        material.dispose?.();
+      });
+    });
+    disposeObject(castleRoot);disposeObject(interiorRoot);
+    renderer?.dispose();
   }
-
-  listen(window,'message',event=>{
-    if(event.origin!==location.origin||typeof event.data!=='string')return;
-    let data;try{data=JSON.parse(event.data)}catch(_){return}
-    if(data.type==='setCards')setCards(data.cards||[],data.focusedCardId,data.shuffleSeed||0,data.animateFocus===true,data.activeCategory||'ALL');
-    if(data.type==='focusCard')focusCard(data.cardId||'',data.animate!==false);
-    if(data.type==='enterFullscreen')enterCastleFullscreen();
-    if(data.type==='exitFullscreen')exitCastleFullscreen();
-    if(data.type==='setInAppFullscreen'){
-      if(data.active!==true)setFrameFallback(false);setFullscreenUi(data.active===true);
-    }
-    if(data.type==='dispose')dispose();
-  });
 
   init();
   </script>
