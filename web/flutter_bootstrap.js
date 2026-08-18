@@ -17,8 +17,10 @@ if (buildId && globalThis._flutter?.buildConfig?.builds) {
   }
 }
 
-// Castle renderer compatibility. The Three.js iframe emits the legacy event
-// names while the current Flutter host listens for the newer bridge names.
+// Castle renderer compatibility. The Three.js iframe emits legacy event names
+// while the current Flutter host listens for the newer bridge names. Re-post
+// the translated event through parent.postMessage instead of dispatchEvent so
+// dart:html's window.onMessage stream receives a real MessageEvent.
 window.addEventListener('message', event => {
   let message;
   try {
@@ -34,10 +36,7 @@ window.addEventListener('message', event => {
   }[message.type];
   if (!translatedType) return;
   const translated = {...message, type: translatedType};
-  window.dispatchEvent(new MessageEvent('message', {
-    data: JSON.stringify(translated),
-    origin: event.origin || location.origin,
-  }));
+  window.postMessage(JSON.stringify(translated), location.origin);
 }, true);
 
 const nativeCreateElement = document.createElement.bind(document);
