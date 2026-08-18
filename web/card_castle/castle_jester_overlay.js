@@ -26,13 +26,16 @@ function placeAtGate(castleRoot){
   if(box.isEmpty())return;
   const size=box.getSize(new THREE.Vector3());
   const center=box.getCenter(new THREE.Vector3());
+  // The gate is on the front/visitor edge. Keep the character centred on that
+  // entrance and close to the bridge instead of floating far onto the plaza.
   gatekeeper.root.position.set(
-    center.x-size.x*.035,
-    box.min.y+.05,
-    box.max.z+Math.max(2.2,size.z*.08),
+    center.x,
+    box.min.y+.04,
+    box.max.z+Math.max(.72,size.z*.024),
   );
-  gatekeeper.root.rotation.y=Math.PI;
-  document.body.dataset.castleJesterPlacement='live-gate-direct-v10';
+  // User-facing correction: rotate the previous placement by 180 degrees.
+  gatekeeper.root.rotation.y=0;
+  document.body.dataset.castleJesterPlacement='front-gate-centred-v11';
   document.body.dataset.castleJesterGatePosition=[
     gatekeeper.root.position.x.toFixed(2),
     gatekeeper.root.position.y.toFixed(2),
@@ -106,9 +109,8 @@ function animate(runtime,now=performance.now()){
   if(exterior&&!gatekeeper.clicked)placeAtGate(runtime.castleRoot);
   gatekeeper.setVisible(exterior);
   gatekeeper.update(delta);
-  if(exterior&&runtime.renderer&&runtime.scene&&runtime.camera){
-    runtime.renderer.render(runtime.scene,runtime.camera);
-  }
+  // The castle renderer already owns the render loop. Do not render a second
+  // full frame here; that doubled GPU work and was especially expensive on iOS.
   frame=requestAnimationFrame(t=>animate(runtime,t));
 }
 
@@ -124,7 +126,7 @@ function install(runtime){
   });
   placeAtGate(runtime.castleRoot);
   installPointerHandlers(canvas);
-  document.body.dataset.castleJesterIntegration='direct-runtime-v10';
+  document.body.dataset.castleJesterIntegration='direct-runtime-v11';
   previousTime=performance.now();
   frame=requestAnimationFrame(t=>animate(runtime,t));
   return true;
