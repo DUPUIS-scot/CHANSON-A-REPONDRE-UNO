@@ -33,13 +33,15 @@ function placeAtGate(castleRoot){
   if(box.isEmpty())return;
   const size=box.getSize(new THREE.Vector3());
   const center=box.getCenter(new THREE.Vector3());
+  // The visible gatehouse sits on the visitor-facing right side of this GLB.
+  // Place the jester on that architectural axis instead of at the bounds centre.
   gatekeeper.root.position.set(
-    center.x,
+    center.x+size.x*.30,
     box.min.y+.04,
-    box.max.z+Math.max(.72,size.z*.024),
+    box.max.z+Math.max(.55,size.z*.018),
   );
-  gatekeeper.root.rotation.y=0;
-  document.body.dataset.castleJesterPlacement='front-gate-centred-v12';
+  gatekeeper.root.rotation.y=Math.PI;
+  document.body.dataset.castleJesterPlacement='gatehouse-axis-v13';
   document.body.dataset.castleJesterGatePosition=[
     gatekeeper.root.position.x.toFixed(2),
     gatekeeper.root.position.y.toFixed(2),
@@ -58,8 +60,6 @@ function activateLongPress(event,canvas){
   pointerDown.activated=true;
   document.body.dataset.castleJesterGesture='long-press';
   if(gatekeeper.click(event)){
-    // The long press is the entrance command. Start the cinematic immediately
-    // while the jester's step-aside animation continues underneath the overlay.
     gatekeeper.enterDispatched=true;
     gatekeeper.clearHover();
     canvas.style.cursor='';
@@ -75,14 +75,7 @@ function installPointerHandlers(canvas){
     if(document.body.dataset.sceneMode==='interior')return;
     clearLongPress();
     const jester=gatekeeper?.hitTest(event)===true;
-    pointerDown={
-      pointerId:event.pointerId,
-      x:event.clientX,
-      y:event.clientY,
-      jester,
-      moved:false,
-      activated:false,
-    };
+    pointerDown={pointerId:event.pointerId,x:event.clientX,y:event.clientY,jester,moved:false,activated:false};
     if(jester){
       stop(event);
       canvas.style.cursor='pointer';
@@ -96,48 +89,22 @@ function installPointerHandlers(canvas){
   canvas.addEventListener('pointermove',event=>{
     if(document.body.dataset.sceneMode==='interior')return;
     if(pointerDown&&pointerDown.pointerId===event.pointerId){
-      if(Math.hypot(event.clientX-pointerDown.x,event.clientY-pointerDown.y)>MOVE_SLOP_PX){
-        pointerDown.moved=true;
-        clearLongPress();
-      }
+      if(Math.hypot(event.clientX-pointerDown.x,event.clientY-pointerDown.y)>MOVE_SLOP_PX){pointerDown.moved=true;clearLongPress()}
       if(pointerDown.jester){stop(event);return}
     }
     const hover=gatekeeper?.setHover(event)===true;
     canvas.style.cursor=hover?'pointer':'';
   },true);
 
-  canvas.addEventListener('pointerleave',()=>{
-    clearLongPress();
-    pointerDown=null;
-    gatekeeper?.clearHover();
-    canvas.style.cursor='';
-  },true);
-
-  canvas.addEventListener('pointercancel',event=>{
-    if(pointerDown?.pointerId===event.pointerId){
-      clearLongPress();
-      pointerDown=null;
-    }
-  },true);
-
+  canvas.addEventListener('pointerleave',()=>{clearLongPress();pointerDown=null;gatekeeper?.clearHover();canvas.style.cursor=''},true);
+  canvas.addEventListener('pointercancel',event=>{if(pointerDown?.pointerId===event.pointerId){clearLongPress();pointerDown=null}},true);
   canvas.addEventListener('pointerup',event=>{
     if(document.body.dataset.sceneMode==='interior')return;
-    const down=pointerDown;
-    clearLongPress();
-    pointerDown=null;
+    const down=pointerDown;clearLongPress();pointerDown=null;
     if(!down||down.pointerId!==event.pointerId)return;
-    if(down.jester){
-      stop(event);
-      // A short tap intentionally does nothing. Only the completed long press
-      // may activate the entrance sequence.
-      canvas.style.cursor='';
-      gatekeeper?.clearHover();
-    }
+    if(down.jester){stop(event);canvas.style.cursor='';gatekeeper?.clearHover()}
   },true);
-
-  canvas.addEventListener('contextmenu',event=>{
-    if(gatekeeper?.hitTest(event))stop(event);
-  },true);
+  canvas.addEventListener('contextmenu',event=>{if(gatekeeper?.hitTest(event))stop(event)},true);
 }
 
 function animate(runtime,now=performance.now()){
@@ -154,16 +121,10 @@ function animate(runtime,now=performance.now()){
 function install(runtime){
   if(gatekeeper||!runtime?.scene||!runtime?.camera||!runtime?.renderer||!runtime?.castleRoot)return false;
   const canvas=runtime.renderer.domElement;
-  gatekeeper=new CastleJesterGatekeeper({
-    scene:runtime.scene,
-    camera:runtime.camera,
-    renderer:runtime.renderer,
-    modelUrl,
-    onEnterRequested:requestEntrance,
-  });
+  gatekeeper=new CastleJesterGatekeeper({scene:runtime.scene,camera:runtime.camera,renderer:runtime.renderer,modelUrl,onEnterRequested:requestEntrance});
   placeAtGate(runtime.castleRoot);
   installPointerHandlers(canvas);
-  document.body.dataset.castleJesterIntegration='direct-runtime-v12';
+  document.body.dataset.castleJesterIntegration='direct-runtime-v13';
   document.body.dataset.castleJesterLongPressMs=String(LONG_PRESS_MS);
   previousTime=performance.now();
   frame=requestAnimationFrame(t=>animate(runtime,t));
@@ -172,11 +133,7 @@ function install(runtime){
 
 function waitForRuntime(attempt=0){
   if(install(window.__castleSearchRuntime))return;
-  if(attempt>=600){
-    document.body.dataset.castleJesterIntegration='runtime-timeout';
-    console.warn('Castle jester gatekeeper: live castle runtime unavailable.');
-    return;
-  }
+  if(attempt>=600){document.body.dataset.castleJesterIntegration='runtime-timeout';console.warn('Castle jester gatekeeper: live castle runtime unavailable.');return}
   requestAnimationFrame(()=>waitForRuntime(attempt+1));
 }
 
