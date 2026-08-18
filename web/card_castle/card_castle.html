@@ -81,6 +81,10 @@
     '../assets/assets/models/search_castle.glb',
     document.baseURI,
   ).href;
+  const INTERIOR_URL = new URL(
+    '../assets/assets/models/castle_interior.glb',
+    document.baseURI,
+  ).href;
   const ENTRANCE_VIDEO_URL = new URL('../assets/assets/videos/castle_entrance.mp4',document.baseURI).href;
   const entranceTransition=document.getElementById('castle-entrance-transition');
   const entranceVideo=document.getElementById('castle-entrance-video');
@@ -98,13 +102,14 @@
     fullscreenActive: false, fallbackElements: null, lastFrame: 0,
     frame: 0, visible: true, ready: false, generation: 0,
     surfaceAnchors: [], longPressTimer: 0,
+    sceneMode:'exterior', interiorReady:false, interiorLoadPromise:null,
   };
   const keys = new Set();
   const orbit = {
     yaw: .72, pitch: .34, distance: 59,
     target: new THREE.Vector3(0,8,0),
   };
-  let scene,camera,renderer,raycaster,pointer,cardGroup,castleRoot;
+  let scene,camera,renderer,raycaster,pointer,cardGroup,castleRoot,interiorRoot;
   let resizeObserver,intersectionObserver;
   const atmosphere={mist:[],warmLights:[],highQuality:false};
   const cardGeometry = new THREE.BoxGeometry(1.08,1.62,.035);
@@ -159,12 +164,20 @@
       dispose();
       return;
     }
+    state.interiorLoadPromise=loadInterior().catch(error=>{
+      document.body.dataset.interiorReady='false';
+      document.body.dataset.interiorError=String(error?.message||error);
+      console.warn('Castle interior GLB failed to preload.',{url:INTERIOR_URL,error});
+      return null;
+    });
     document.body.dataset.rendererInstanceId=
       `castle-${Date.now()}-${Math.random().toString(16).slice(2)}`;
     document.body.dataset.atmosphere='scottish-cinematic-night';
     document.body.dataset.atmosphereQuality=atmosphere.highQuality?'high':'efficient';
     document.body.dataset.modelAsset=CASTLE_URL;
+    document.body.dataset.interiorModelAsset=INTERIOR_URL;
     document.body.dataset.entranceVideoAsset=ENTRANCE_VIDEO_URL;
+    document.body.dataset.sceneMode='exterior';
     installEvents();
     resizeObserver=new ResizeObserver(resize);
     resizeObserver.observe(root);
@@ -364,6 +377,39 @@
         if(event.total)document.body.dataset.modelProgress=
           String(Math.round(event.loaded/event.total*100));
       },reject);
+    });
+  }
+
+  function loadInterior(){
+    return new Promise((resolve,reject)=>{
+      new GLTFLoader().load(INTERIOR_URL,gltf=>{
+        if(state.disposed){disposeObject(gltf.scene);reject(new Error('disposed'));return}
+        interiorRoot=gltf.scene;
+        interiorRoot.visible=false;
+        interiorRoot.traverse(object=>{
+          if(!object.isMesh)return;
+          object.castShadow=atmosphere.highQuality;
+          object.receiveShadow=atmosphere.highQuality;
+          const materials=Array.isArray(object.material)?object.material:[object.material];
+          materials.filter(Boolean).forEach(material=>{
+            if(!material.isMeshStandardMaterial&&!material.isMeshPhysicalMaterial)return;
+            material.roughness=clamp(material.roughness??.82,.58,.96);
+            material.metalness=clamp(material.metalness??0,0,.14);
+            material.needsUpdate=true;
+          });
+        });
+        const bounds=new THREE.Box3().setFromObject(interiorRoot);
+        const size=bounds.getSize(new THREE.Vector3());
+        const center=bounds.getCenter(new THREE.Vector3());
+        const scale=34/Math.max(size.x,size.z,.001);
+        interiorRoot.scale.setScalar(scale);
+        interiorRoot.position.set(-center.x*scale,-bounds.min.y*scale,-center.z*scale);
+        scene.add(interiorRoot);
+        state.interiorReady=true;
+        document.body.dataset.interiorReady='true';
+        document.body.dataset.interiorAnimations=String(gltf.animations.length);
+        resolve(interiorRoot);
+      },undefined,reject);
     });
   }
 
@@ -605,6 +651,7 @@
   }
 
   function pick(event) {
+    if(state.sceneMode==='interior')return null;
     const rect=renderer.domElement.getBoundingClientRect();
     pointer.x=((event.clientX-rect.left)/rect.width)*2-1;
     pointer.y=-((event.clientY-rect.top)/rect.height)*2+1;
@@ -613,6 +660,7 @@
   }
 
   function moveCardFocus(delta) {
+    if(state.sceneMode==='interior')return;
     const ids=state.meshes.map(mesh=>mesh.userData.card.id);if(!ids.length)return;
     let index=Math.max(0,ids.indexOf(state.focusedCardId));
     index=(index+delta+ids.length)%ids.length;
@@ -683,6 +731,7 @@
   }
 
   function openCardById(cardId){
+    if(state.sceneMode==='interior')return;
     if(!cardId||!state.meshes.some(mesh=>mesh.userData.cardId===cardId))return;
     document.body.dataset.lastLongPressedCardId=cardId;
     emit('cardLongPressed',{cardId});
@@ -696,27 +745,64 @@
   }
 
   function clampTarget() {
+    if(state.sceneMode==='interior'){
+      orbit.target.x=clamp(orbit.target.x,-12,12);
+      orbit.target.y=clamp(orbit.target.y,0,12);
+      orbit.target.z=clamp(orbit.target.z,-12,12);
+      return;
+    }
     orbit.target.x=clamp(orbit.target.x,-28,28);
     orbit.target.y=clamp(orbit.target.y,0,24);
     orbit.target.z=clamp(orbit.target.z,-28,28);
   }
 
   function playEntranceVideo(){
-    if(!entranceVideo||document.body.classList.contains('entrance-video-active'))return;
+    if(state.sceneMode!=='exterior'||!entranceVideo||document.body.classList.contains('entrance-video-active'))return;
     entranceVideo.src=ENTRANCE_VIDEO_URL;
     document.body.classList.add('entrance-video-active');
     entranceTransition?.setAttribute('aria-hidden','false');
     entranceVideo.currentTime=0;
     entranceVideo.play().catch(()=>finishEntranceVideo());
   }
-  function finishEntranceVideo(){
+  async function finishEntranceVideo(){
     if(!entranceVideo)return;
     entranceVideo.pause();
-    document.body.classList.remove('entrance-video-active');
-    entranceTransition?.setAttribute('aria-hidden','true');
+    try{
+      if(!state.interiorReady&&state.interiorLoadPromise)await state.interiorLoadPromise;
+      if(state.interiorReady)enterInterior();
+    }finally{
+      document.body.classList.remove('entrance-video-active');
+      entranceTransition?.setAttribute('aria-hidden','true');
+    }
+  }
+  function enterInterior(){
+    if(!state.interiorReady||!interiorRoot)return false;
+    state.sceneMode='interior';
+    castleRoot.visible=false;
+    cardGroup.visible=false;
+    interiorRoot.visible=true;
+    document.body.classList.remove('castle-door-hover');
+    renderer.domElement.style.cursor='';
+    document.body.dataset.castleDoorHover='false';
+    document.body.dataset.sceneMode='interior';
+    orbit.yaw=0;orbit.pitch=.18;orbit.distance=12;orbit.target.set(0,3.1,0);
+    state.targetCamera=null;state.targetLook=null;
+    updateOrbit();resume();return true;
+  }
+  function leaveInterior(){
+    if(state.sceneMode!=='interior')return false;
+    state.sceneMode='exterior';
+    interiorRoot.visible=false;
+    castleRoot.visible=true;
+    cardGroup.visible=true;
+    document.body.dataset.sceneMode='exterior';
+    orbit.yaw=.72;orbit.pitch=.34;orbit.distance=59;orbit.target.set(0,8,0);
+    state.targetCamera=null;state.targetLook=null;
+    updateOrbit();resume();return true;
   }
 
   function setCastleDoorHover(event){
+    if(state.sceneMode!=='exterior')return;
     const rect=renderer.domElement.getBoundingClientRect();
     const x=(event.clientX-rect.left)/Math.max(1,rect.width);
     const y=(event.clientY-rect.top)/Math.max(1,rect.height);
@@ -730,7 +816,7 @@
     const canvas=renderer.domElement;
     listen(canvas,'dblclick',event=>{
       event.preventDefault();
-      if(!pick(event))playEntranceVideo();
+      if(state.sceneMode==='exterior'&&!pick(event))playEntranceVideo();
     });
     if(entranceVideo)listen(entranceVideo,'ended',finishEntranceVideo);
     if(entranceTransition)listen(entranceTransition,'click',finishEntranceVideo);
@@ -780,7 +866,9 @@
           const [a,b]=[...state.touches.values()];
           const distance=Math.max(20,Math.hypot(a.x-b.x,a.y-b.y));
           const center={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
-          orbit.distance=clamp(state.pinch.orbitDistance*state.pinch.distance/distance,24,90);
+          const minDistance=state.sceneMode==='interior'?5:24;
+          const maxDistance=state.sceneMode==='interior'?28:90;
+          orbit.distance=clamp(state.pinch.orbitDistance*state.pinch.distance/distance,minDistance,maxDistance);
           const scale=orbit.distance*.0018;
           const right=new THREE.Vector3().setFromMatrixColumn(camera.matrix,0);
           const up=new THREE.Vector3().setFromMatrixColumn(camera.matrix,1);
@@ -823,12 +911,12 @@
       cancelLongPress();
       state.pointerDown=null;state.dragging=false;
       if(down?.longPressFired)document.body.dataset.longPressState='released';
-      if(event.type==='pointercancel'||!down||wasDragging||!down.mesh||down.longPressFired){resume();return}
+      if(state.sceneMode==='interior'||event.type==='pointercancel'||!down||wasDragging||!down.mesh||down.longPressFired){resume();return}
       const cardId=down.cardId;
       focusCard(cardId,true);emit('cardSelected',{cardId});
     };
     listen(canvas,'pointerup',release);listen(canvas,'pointercancel',release);
-    listen(canvas,'wheel',event=>{event.preventDefault();orbit.distance=clamp(orbit.distance+event.deltaY*.025,24,90);state.targetCamera=null;resume()},{passive:false});
+    listen(canvas,'wheel',event=>{event.preventDefault();const minDistance=state.sceneMode==='interior'?5:24;const maxDistance=state.sceneMode==='interior'?28:90;orbit.distance=clamp(orbit.distance+event.deltaY*.025,minDistance,maxDistance);state.targetCamera=null;resume()},{passive:false});
     listen(canvas,'contextmenu',event=>event.preventDefault());
     listen(document.getElementById('enter-fullscreen'),'click',enterCastleFullscreen);
     listen(document.getElementById('exit-fullscreen'),'click',exitCastleFullscreen);
@@ -838,6 +926,7 @@
     listen(document,'visibilitychange',()=>document.hidden?pause():resume());
     listen(window,'keydown',event=>{
       if(event.key==='Escape'&&document.body.classList.contains('entrance-video-active')){finishEntranceVideo();event.preventDefault();return}
+      if(event.key==='Escape'&&state.sceneMode==='interior'){leaveInterior();event.preventDefault();return}
       if(event.key==='Escape'&&state.fullscreenActive){void exitCastleFullscreen();event.preventDefault();return}
       if(['w','a','s','d','W','A','S','D'].includes(event.key)){keys.add(event.key.toLowerCase());resume();event.preventDefault();return}
       if(!['ArrowLeft','ArrowRight','Enter'].includes(event.key))return;
@@ -856,11 +945,14 @@
   }
   function syncOrbitFromCamera(){
     const delta=camera.position.clone().sub(orbit.target);
-    orbit.distance=clamp(delta.length(),24,90);
+    const minDistance=state.sceneMode==='interior'?5:24;
+    const maxDistance=state.sceneMode==='interior'?28:90;
+    orbit.distance=clamp(delta.length(),minDistance,maxDistance);
     orbit.pitch=clamp(Math.asin(delta.y/orbit.distance),.06,1.18);
     orbit.yaw=Math.atan2(delta.x,delta.z);
   }
   function resetView(){
+    if(state.sceneMode==='interior'){leaveInterior();return}
     orbit.yaw=.72;orbit.pitch=.34;orbit.distance=59;orbit.target.set(0,8,0);
     state.targetCamera=null;state.targetLook=null;focusCard('',false);resume();
   }
@@ -911,6 +1003,7 @@
     state.textures.forEach(texture=>texture.dispose());state.textures.clear();
     cardGeometry.dispose();
     if(castleRoot){scene?.remove(castleRoot);disposeObject(castleRoot)}
+    if(interiorRoot){scene?.remove(interiorRoot);disposeObject(interiorRoot)}
     if(cardGroup)scene?.remove(cardGroup);
     disposeObject(scene);
     renderer?.renderLists.dispose();renderer?.dispose();renderer?.forceContextLoss();renderer?.domElement.remove();
