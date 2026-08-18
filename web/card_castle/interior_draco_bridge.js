@@ -52,8 +52,8 @@ if (!window.__castleInteriorDracoBridgeInstalled) {
     const home = {
       target: new THREE.Vector3(0, 3.1, 0),
       yaw: 0,
-      pitch: 0.12,
-      distance: 11,
+      pitch: 0.055,
+      distance: 16,
     };
     let yaw = home.yaw;
     let pitch = home.pitch;
@@ -111,7 +111,7 @@ if (!window.__castleInteriorDracoBridgeInstalled) {
       const width = Math.max(1, root.clientWidth);
       const height = Math.max(1, root.clientHeight);
       camera.aspect = width / height;
-      camera.fov = width < 700 ? 49 : 43;
+      camera.fov = width < 700 ? 54 : 47;
       camera.updateProjectionMatrix();
       renderer.setSize(width, height, false);
       if (active) renderer.render(scene, camera);
@@ -222,12 +222,13 @@ if (!window.__castleInteriorDracoBridgeInstalled) {
           const fittedSize = fitted.getSize(new THREE.Vector3());
           home.target.set(
             0,
-            Math.max(1.8, Math.min(4.2, fittedSize.y * 0.22)),
-            0,
+            Math.max(2.15, Math.min(3.65, fittedSize.y * 0.18)),
+            Math.min(1.2, fittedSize.z * 0.035),
           );
+          home.pitch = 0.055;
           home.distance = Math.max(
-            7,
-            Math.min(13, Math.min(fittedSize.x, fittedSize.z) * 0.34),
+            13,
+            Math.min(20, Math.max(fittedSize.x, fittedSize.z) * 0.48),
           );
           target.copy(home.target);
           yaw = home.yaw;
@@ -239,6 +240,7 @@ if (!window.__castleInteriorDracoBridgeInstalled) {
           document.body.dataset.interiorReady = 'true';
           document.body.dataset.interiorDraco = 'ready';
           document.body.dataset.interiorNavigation = 'orbit-pan-zoom-wasd';
+          document.body.dataset.interiorHomeView = 'straight-throne-establishing';
           document.body.dataset.interiorBounds =
             `${fittedSize.x.toFixed(2)}x${fittedSize.y.toFixed(2)}x${fittedSize.z.toFixed(2)}`;
           resolve(interiorRoot);
@@ -270,6 +272,7 @@ if (!window.__castleInteriorDracoBridgeInstalled) {
       document.body.dataset.castleDoorHover = 'false';
       document.body.dataset.sceneMode = 'interior';
       active = true;
+      resetInteriorView();
       resize();
       renderInterior();
     }
