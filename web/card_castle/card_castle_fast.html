@@ -13,12 +13,22 @@
   sourceUrl.search=location.search;
   const response=await fetch(sourceUrl,{cache:'no-cache'});
   if(!response.ok)throw new Error(`Castle source ${response.status}`);
-  const source=await response.text();
-  document.open();
-  document.write(source.replace(
+  let source=await response.text();
+
+  // The reduced-poly exterior is the production Search castle. The legacy
+  // search_castle.glb is ~42.7 MB and blocks the jester/interactions while it
+  // loads; castle_exterior.glb is ~3.8 MB and preserves the same exterior role.
+  source=source.replace(
+    "../assets/assets/models/search_castle.glb",
+    "../assets/assets/models/castle_exterior.glb",
+  );
+
+  source=source.replace(
     '<body data-renderer-status="loading">',
-    '<body data-renderer-status="loading" data-performance-loader="compatible-v4">',
-  ));
+    '<body data-renderer-status="loading" data-performance-loader="lightweight-exterior-v5">',
+  );
+  document.open();
+  document.write(source);
   document.close();
 })().catch(error=>{
   console.error('Castle loader failed; falling back to direct renderer.',error);
