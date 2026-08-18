@@ -4,6 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Castle loader</title>
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
+  <link rel="dns-prefetch" href="//unpkg.com">
   <style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#02060b}</style>
 </head>
 <body>
@@ -11,7 +13,7 @@
 (async()=>{
   const sourceUrl=new URL('./card_castle.html',document.baseURI);
   sourceUrl.search=location.search;
-  const response=await fetch(sourceUrl,{cache:'no-cache'});
+  const response=await fetch(sourceUrl,{cache:'force-cache'});
   if(!response.ok)throw new Error(`Castle source ${response.status}`);
   let source=await response.text();
 
@@ -49,8 +51,7 @@
     "function castleRectoUrl(path){const value=String(path||'');try{const url=new URL(value,document.baseURI);if(url.origin===location.origin&&url.pathname.includes('/assets/')&&!url.pathname.includes('/assets/assets/'))url.pathname=url.pathname.replace('/assets/','/assets/assets/');return url.href}catch(_){return value}}function assetUrl(path){const value=String(path||'');if(/^(https?:|blob:|data:)/i.test(value))return value;const clean=value.replace(/^\\/+/,''),normalized=clean.startsWith('assets/')?clean:`assets/${clean}`;return new URL(`../${normalized}`,document.baseURI).href}",
   );
 
-  // Mobile Safari can fail some simultaneous image decodes under WebGL memory
-  // pressure. Keep the queue small and retry transient failures twice.
+  // Keep card texture decoding from competing too aggressively with first paint.
   source=source.replace(
     'state.loadQueue.push({mesh,url,generation});pumpTextureQueue()',
     'state.loadQueue.push({mesh,url,generation,retries:0});pumpTextureQueue()',
@@ -64,6 +65,8 @@
     "},undefined,()=>{if(job.retries<2){job.retries++;setTimeout(()=>{if(job.generation===state.generation&&job.mesh.parent){state.loadQueue.push(job);pumpTextureQueue()}},220*job.retries)}state.activeLoads--;pumpTextureQueue()})}}",
   );
 
+  // Derive real rampart anchors with a smaller sampling grid. This keeps the
+  // same surface-based placement while removing hundreds of startup raycasts.
   source=source.replace(
     /function deriveSurfaceAnchors\(limit\)\{[\s\S]*?return out\.slice\(0,limit\)\}/,
     `function deriveSurfaceAnchors(limit){
@@ -93,7 +96,7 @@
         const hits=ray.intersectObjects(meshes,false);
         for(const hit of hits){if(hit.point.y>=minY&&hit.point.y<=maxY){addHit(hit,outward);break}}
       };
-      const xSamples=30,ySamples=10,zSamples=24;
+      const xSamples=22,ySamples=8,zSamples=16;
       const frontZ=bounds.max.z+Math.max(8,size.z*.45);
       for(let yi=0;yi<ySamples&&out.length<limit;yi++){
         const y=THREE.MathUtils.lerp(minY,maxY,yi/(ySamples-1));
@@ -113,19 +116,22 @@
           }
         }
       }
-      document.body.dataset.surfaceAnchorMode='real-rampart-raycasts-v13';
+      document.body.dataset.surfaceAnchorMode='real-rampart-raycasts-v15';
       document.body.dataset.surfaceAnchorCount=String(out.length);
       return out.slice(0,limit);
     }`,
   );
 
+  // Exterior first: expose a usable castle immediately and preload the interior
+  // only once the browser has had an idle window. Gate entry can still trigger
+  // loadInterior immediately through ensureInteriorReady when needed.
   source=source.replace(
     '    state.interiorLoadPromise=loadInterior()',
-    "    window.__castleSearchRuntime={scene,camera,renderer,orbit,updateOrbit,get castleRoot(){return castleRoot},get interiorRoot(){return interiorRoot}};window.dispatchEvent(new CustomEvent('castleRuntimeReady'));\n    state.interiorLoadPromise=loadInterior()",
+    "    window.__castleSearchRuntime={scene,camera,renderer,orbit,updateOrbit,get castleRoot(){return castleRoot},get interiorRoot(){return interiorRoot}};window.dispatchEvent(new CustomEvent('castleRuntimeReady'));\n    state.interiorLoadPromise=null;const preloadInterior=()=>{if(state.disposed||state.interiorReady||state.interiorLoadPromise)return;state.interiorLoadPromise=loadInterior().catch(error=>{document.body.dataset.interiorReady='false';document.body.dataset.interiorError=String(error?.message||error);state.interiorLoadPromise=null;return null})};if('requestIdleCallback'in window)requestIdleCallback(preloadInterior,{timeout:4500});else setTimeout(preloadInterior,2200)",
   );
   source=source.replace(
     '<body data-renderer-status="loading">',
-    `<body data-renderer-status="loading" data-performance-loader="${isIOS?'ios-legacy-exterior-v13':'draco-exterior-v13'}">`,
+    `<body data-renderer-status="loading" data-performance-loader="${isIOS?'ios-legacy-exterior-v15':'draco-exterior-v15'}">`,
   );
   document.open();
   document.write(source);
