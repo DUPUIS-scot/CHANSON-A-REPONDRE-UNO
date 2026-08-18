@@ -65,8 +65,8 @@ document.createElement = function(tagName, options) {
   const element = nativeCreateElement(tagName, options);
   if (String(tagName).toLowerCase() !== 'iframe') return element;
 
-  // Route the Search Castle iframe through a tiny staged loader. The loader
-  // preserves the existing renderer but moves non-critical work off first paint.
+  // Route the Search Castle iframe through a staged loader. The loader keeps
+  // the current renderer intact but moves non-critical work off first paint.
   if (iframeSrcDescriptor?.get && iframeSrcDescriptor?.set) {
     Object.defineProperty(element, 'src', {
       configurable: true,
@@ -90,25 +90,34 @@ document.createElement = function(tagName, options) {
   element.addEventListener('load', () => {
     try {
       if (!element.src.includes('card_castle/card_castle_')) return;
-      const frameDocument = element.contentDocument;
-      if (!frameDocument?.body) return;
-      frameDocument.body.dataset.bootstrapPerformanceMode = 'staged';
 
-      // Required for the deferred compressed interior and card payload bridge.
-      appendCastleScript(frameDocument, {
-        id: 'castle-interior-draco-bridge',
-        path: 'card_castle/interior_draco_bridge.js',
-        module: true,
-      });
-      appendCastleScript(frameDocument, {
-        id: 'castle-bridge-compat',
-        path: 'card_castle/castle_bridge_compat.js',
-      });
+      let essentialsInjected = false;
+      let enhancedInjected = false;
 
-      let enhanced = false;
+      const injectEssentials = () => {
+        if (essentialsInjected) return;
+        const frameDocument = element.contentDocument;
+        if (!frameDocument?.body) return;
+        essentialsInjected = true;
+        frameDocument.body.dataset.bootstrapPerformanceMode = 'staged';
+        appendCastleScript(frameDocument, {
+          id: 'castle-interior-draco-bridge',
+          path: 'card_castle/interior_draco_bridge.js',
+          module: true,
+        });
+        appendCastleScript(frameDocument, {
+          id: 'castle-bridge-compat',
+          path: 'card_castle/castle_bridge_compat.js',
+        });
+        frameDocument.body.dataset.bootstrapEssentialBridges = 'ready';
+      };
+
       const injectEnhancedOverlays = () => {
-        if (enhanced) return;
-        enhanced = true;
+        if (enhancedInjected) return;
+        injectEssentials();
+        const frameDocument = element.contentDocument;
+        if (!frameDocument?.body) return;
+        enhancedInjected = true;
         appendCastleScript(frameDocument, {
           id: 'castle-interior-atmosphere-bridge',
           path: 'card_castle/interior_atmosphere_overlay.js',
@@ -131,6 +140,11 @@ document.createElement = function(tagName, options) {
         }
         if (message?.type !== 'rendererReady') return;
         window.removeEventListener('message', onRendererMessage);
+
+        // The fast loader rewrites its initial document asynchronously. Waiting
+        // for rendererReady ensures these scripts are injected into the final
+        // Castle document, not into the temporary loader document.
+        injectEssentials();
         if ('requestIdleCallback' in window) {
           requestIdleCallback(injectEnhancedOverlays, {timeout: 900});
         } else {
@@ -138,7 +152,10 @@ document.createElement = function(tagName, options) {
         }
       };
       window.addEventListener('message', onRendererMessage);
-      setTimeout(injectEnhancedOverlays, 2200);
+
+      // Safety fallback for browsers where rendererReady is delayed or lost.
+      setTimeout(injectEssentials, 2400);
+      setTimeout(injectEnhancedOverlays, 3400);
     } catch (error) {
       console.warn('Castle staged bridge injection failed.', error);
     }
