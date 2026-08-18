@@ -89,7 +89,8 @@ document.createElement = function(tagName, options) {
 
   element.addEventListener('load', () => {
     try {
-      if (!element.src.includes('card_castle/card_castle_')) return;
+      // Match both the optimized loader and the direct renderer fallback.
+      if (!element.src.includes('card_castle/card_castle')) return;
 
       let essentialsInjected = false;
       let enhancedInjected = false;
