@@ -14,7 +14,9 @@ export class CastleJesterGatekeeper {
     this.modelUrl=modelUrl;
     this.root=new THREE.Group();
     this.root.name='castle-jester-gatekeeper';
-    this.root.position.set(0,0,10.8);
+    // The exterior castle is fitted to roughly 42 scene units. Put the jester
+    // on the visitor side of the main gate so the castle cannot occlude it.
+    this.root.position.set(-2.4,0,22.2);
     this.root.rotation.y=Math.PI;
     this.root.visible=false;
     this.scene.add(this.root);
@@ -42,7 +44,13 @@ export class CastleJesterGatekeeper {
         if(object.isMesh){
           object.castShadow=true;
           object.receiveShadow=true;
+          object.frustumCulled=false;
           object.userData.castleGatekeeper=true;
+          const materials=Array.isArray(object.material)?object.material:[object.material];
+          materials.filter(Boolean).forEach(material=>{
+            material.side=THREE.DoubleSide;
+            material.needsUpdate=true;
+          });
         }
         if(object.isBone){
           const key=(object.name||'').toLowerCase();
@@ -56,13 +64,22 @@ export class CastleJesterGatekeeper {
       const bounds=new THREE.Box3().setFromObject(this.model);
       const size=bounds.getSize(new THREE.Vector3());
       const center=bounds.getCenter(new THREE.Vector3());
-      this.model.position.sub(center);
-      this.model.position.y+=size.y*.5;
-      this.model.scale.setScalar(5.6/Math.max(size.y,.001));
+      const scale=6.4/Math.max(size.y,.001);
+      // Apply the fit scale and compensate the original bounds in scene units.
+      // The previous code subtracted the unscaled center, which could leave a
+      // correctly scaled mesh translated far outside the visible gate area.
+      this.model.scale.setScalar(scale);
+      this.model.position.set(
+        -center.x*scale,
+        -bounds.min.y*scale,
+        -center.z*scale,
+      );
       this.root.add(this.model);
       this.root.visible=true;
       this.ready=true;
       document.body.dataset.castleJester='ready';
+      document.body.dataset.castleJesterPosition=`${this.root.position.x},${this.root.position.y},${this.root.position.z}`;
+      document.body.dataset.castleJesterHeight='6.4';
       document.body.dataset.castleJesterAnimations=String(gltf.animations.length);
       document.body.dataset.castleJesterState='looping';
     },undefined,error=>{
@@ -139,8 +156,8 @@ export class CastleJesterGatekeeper {
     if(this.clicked){
       const progress=clamp01((this.elapsed-this.clickStarted)/1.45);
       const eased=smooth(progress);
-      this.root.position.x=THREE.MathUtils.lerp(this.clickOriginX,5.5,eased);
-      this.root.position.z=THREE.MathUtils.lerp(this.clickOriginZ,9.6,eased);
+      this.root.position.x=THREE.MathUtils.lerp(this.clickOriginX,6.0,eased);
+      this.root.position.z=THREE.MathUtils.lerp(this.clickOriginZ,20.0,eased);
       this.root.rotation.y=THREE.MathUtils.lerp(this.clickOriginRotation,Math.PI*.68,eased);
       if(progress>=1&&!this.enterDispatched){
         this.enterDispatched=true;
