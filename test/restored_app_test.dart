@@ -169,17 +169,23 @@ void main() {
         final castle = File(
           'web/card_castle/card_castle.html',
         ).readAsStringSync();
+        final bridge = File(
+          'web/card_castle/castle_bridge_compat.js',
+        ).readAsStringSync();
         expect(castle, contains('../vendor/three.module.js'));
         expect(castle, contains('assets/assets/models/search_castle.glb'));
         expect(castle, contains("from '../vendor/GLTFLoader.js'"));
         expect(castle, isNot(contains('unpkg.com')));
-        expect(castle, contains('cardLongPressed'));
-        expect(castle, contains('cardSelected'));
-        expect(castle, contains("data.type==='focusCard'"));
-        expect(castle, contains('down.panning'));
+        expect(castle, contains('cardLongPress'));
+        expect(castle, contains('cardTap'));
+        expect(castle, contains("message.type==='focusCard'"));
+        expect(castle, contains('state.dragging'));
         expect(castle, contains('document.body.dataset.cardCount'));
         expect(castle, contains('deriveSurfaceAnchors(84)'));
         expect(castle, contains('document.body.dataset.surfaceAnchorCount'));
+        expect(bridge, contains("type !== 'setCards'"));
+        expect(bridge, contains('imagePath'));
+        expect(bridge, contains('rectoUrl'));
       },
     );
 
