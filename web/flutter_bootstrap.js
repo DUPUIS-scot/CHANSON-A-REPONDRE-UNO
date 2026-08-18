@@ -17,9 +17,9 @@ if (buildId && globalThis._flutter?.buildConfig?.builds) {
   }
 }
 
-// The uploaded Castle interior is Draco-compressed. Inject a dedicated,
-// same-origin Three.js bridge into the Castle iframe as it is created so the
-// interior can preload without relying on Dart iframe DOM APIs.
+// The uploaded Castle interior is Draco-compressed. Inject dedicated,
+// same-origin Three.js/atmosphere bridges into the Castle iframe as it is
+// created so the interior can preload without relying on Dart iframe DOM APIs.
 const nativeCreateElement = document.createElement.bind(document);
 document.createElement = function(tagName, options) {
   const element = nativeCreateElement(tagName, options);
@@ -42,6 +42,16 @@ document.createElement = function(tagName, options) {
         if (buildId) bridgeUrl.searchParams.set('v', buildId);
         script.src = bridgeUrl.href;
         frameDocument.body.appendChild(script);
+
+        const atmosphereScript = frameDocument.createElement('script');
+        atmosphereScript.id = 'castle-interior-atmosphere-bridge';
+        const atmosphereUrl = new URL(
+          'card_castle/interior_atmosphere_overlay.js',
+          document.baseURI,
+        );
+        if (buildId) atmosphereUrl.searchParams.set('v', buildId);
+        atmosphereScript.src = atmosphereUrl.href;
+        frameDocument.body.appendChild(atmosphereScript);
       } catch (error) {
         console.warn('Castle interior bridge injection failed.', error);
       }
