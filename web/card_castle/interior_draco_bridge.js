@@ -49,9 +49,15 @@ if (!window.__castleInteriorDracoBridgeInstalled) {
 
     const camera = new THREE.PerspectiveCamera(49, 1, 0.05, 220);
     const target = new THREE.Vector3(0, 3.1, 0);
-    let yaw = 0;
-    let pitch = 0.12;
-    let distance = 11;
+    const home = {
+      target: new THREE.Vector3(0, 3.1, 0),
+      yaw: 0,
+      pitch: 0.12,
+      distance: 11,
+    };
+    let yaw = home.yaw;
+    let pitch = home.pitch;
+    let distance = home.distance;
     let active = false;
     let dragging = false;
     let pointerId = null;
@@ -59,6 +65,13 @@ if (!window.__castleInteriorDracoBridgeInstalled) {
     let startY = 0;
     let startYaw = 0;
     let startPitch = 0;
+    let panning = false;
+    let startTarget = target.clone();
+    const touches = new Map();
+    let pinch = null;
+    const keys = new Set();
+    let frame = 0;
+    let lastFrame = 0;
 
     scene.add(new THREE.HemisphereLight(0xd5deea, 0x24170e, 2.4));
     scene.add(new THREE.AmbientLight(0xa48668, 0.9));
@@ -72,6 +85,12 @@ if (!window.__castleInteriorDracoBridgeInstalled) {
     right.position.set(8, 5, -1);
     scene.add(right);
 
+    function clampTarget() {
+      target.x = THREE.MathUtils.clamp(target.x, -12, 12);
+      target.y = THREE.MathUtils.clamp(target.y, 0.8, 12);
+      target.z = THREE.MathUtils.clamp(target.z, -12, 12);
+    }
+
     function updateCamera() {
       const cp = Math.cos(pitch);
       camera.position.set(
@@ -82,13 +101,65 @@ if (!window.__castleInteriorDracoBridgeInstalled) {
       camera.lookAt(target);
     }
 
+    function renderInterior() {
+      if (!active) return;
+      updateCamera();
+      renderer.render(scene, camera);
+    }
+
     function resize() {
       const width = Math.max(1, root.clientWidth);
       const height = Math.max(1, root.clientHeight);
       camera.aspect = width / height;
+      camera.fov = width < 700 ? 49 : 43;
       camera.updateProjectionMatrix();
       renderer.setSize(width, height, false);
       if (active) renderer.render(scene, camera);
+    }
+
+    function resetInteriorView() {
+      target.copy(home.target);
+      yaw = home.yaw;
+      pitch = home.pitch;
+      distance = home.distance;
+      renderInterior();
+    }
+
+    function animate(now = performance.now()) {
+      frame = 0;
+      if (!active || document.hidden) return;
+      const delta = Math.min(0.25, Math.max(0, (now - (lastFrame || now)) / 1000));
+      lastFrame = now;
+      if (keys.size) {
+        const forward = new THREE.Vector3();
+        camera.getWorldDirection(forward);
+        forward.y = 0;
+        forward.normalize();
+        const right = new THREE.Vector3().crossVectors(forward, camera.up).normalize();
+        const move = new THREE.Vector3();
+        if (keys.has('w')) move.add(forward);
+        if (keys.has('s')) move.sub(forward);
+        if (keys.has('d')) move.add(right);
+        if (keys.has('a')) move.sub(right);
+        if (move.lengthSq()) {
+          target.add(move.normalize().multiplyScalar(Math.max(0.08, delta * 8.4)));
+          clampTarget();
+        }
+      }
+      updateCamera();
+      renderer.render(scene, camera);
+      if (keys.size || dragging || touches.size) frame = requestAnimationFrame(animate);
+    }
+
+    function resume() {
+      if (!active || document.hidden || frame) return;
+      lastFrame = performance.now();
+      frame = requestAnimationFrame(animate);
+    }
+
+    function pause() {
+      if (frame) cancelAnimationFrame(frame);
+      frame = 0;
     }
 
     updateCamera();
@@ -149,13 +220,25 @@ if (!window.__castleInteriorDracoBridgeInstalled) {
           interiorRoot.updateMatrixWorld(true);
           const fitted = new THREE.Box3().setFromObject(interiorRoot);
           const fittedSize = fitted.getSize(new THREE.Vector3());
-          target.set(0, Math.max(1.8, Math.min(4.2, fittedSize.y * 0.22)), 0);
-          distance = Math.max(7, Math.min(13, Math.min(fittedSize.x, fittedSize.z) * 0.34));
+          home.target.set(
+            0,
+            Math.max(1.8, Math.min(4.2, fittedSize.y * 0.22)),
+            0,
+          );
+          home.distance = Math.max(
+            7,
+            Math.min(13, Math.min(fittedSize.x, fittedSize.z) * 0.34),
+          );
+          target.copy(home.target);
+          yaw = home.yaw;
+          pitch = home.pitch;
+          distance = home.distance;
           updateCamera();
           scene.add(interiorRoot);
           dracoLoader.dispose();
           document.body.dataset.interiorReady = 'true';
           document.body.dataset.interiorDraco = 'ready';
+          document.body.dataset.interiorNavigation = 'orbit-pan-zoom-wasd';
           document.body.dataset.interiorBounds =
             `${fittedSize.x.toFixed(2)}x${fittedSize.y.toFixed(2)}x${fittedSize.z.toFixed(2)}`;
           resolve(interiorRoot);
@@ -188,82 +271,165 @@ if (!window.__castleInteriorDracoBridgeInstalled) {
       document.body.dataset.sceneMode = 'interior';
       active = true;
       resize();
-      renderer.render(scene, camera);
+      renderInterior();
     }
 
     function showExterior() {
       if (!active) return;
       active = false;
+      pause();
+      keys.clear();
+      touches.clear();
+      pinch = null;
       interiorCanvas.style.display = 'none';
       if (exteriorCanvas) exteriorCanvas.style.display = '';
       document.body.dataset.sceneMode = 'exterior';
     }
 
     video.addEventListener('ended', () => void showInterior(), true);
-    transition.addEventListener(
+    transition.addEventListener('click', () => void showInterior(), true);
+    resetButton?.addEventListener(
       'click',
-      () => void showInterior(),
-      true,
-    );
-    resetButton?.addEventListener('click', () => {
-      if (active) showExterior();
-    }, true);
-    window.addEventListener(
-      'keydown',
       (event) => {
-        if (active && event.key === 'Escape') {
-          event.preventDefault();
-          event.stopImmediatePropagation();
-          showExterior();
-        }
+        if (!active) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        resetInteriorView();
       },
       true,
     );
 
+    window.addEventListener(
+      'keydown',
+      (event) => {
+        if (!active) return;
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          showExterior();
+          return;
+        }
+        const keyName = event.key.toLowerCase();
+        if (['w', 'a', 's', 'd'].includes(keyName)) {
+          keys.add(keyName);
+          resume();
+          event.preventDefault();
+          event.stopImmediatePropagation();
+        }
+      },
+      true,
+    );
+    window.addEventListener(
+      'keyup',
+      (event) => {
+        if (!active) return;
+        const keyName = event.key.toLowerCase();
+        if (['w', 'a', 's', 'd'].includes(keyName)) {
+          keys.delete(keyName);
+          event.preventDefault();
+          event.stopImmediatePropagation();
+        }
+      },
+      true,
+    );
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) pause();
+      else if (active) renderInterior();
+    });
+
     interiorCanvas.addEventListener('pointerdown', (event) => {
       if (!active) return;
+      if (event.pointerType === 'touch') {
+        touches.set(event.pointerId, { x: event.clientX, y: event.clientY });
+        if (touches.size === 2) {
+          const [a, b] = [...touches.values()];
+          pinch = {
+            distance: Math.hypot(a.x - b.x, a.y - b.y),
+            orbitDistance: distance,
+            center: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
+            target: target.clone(),
+          };
+        }
+      }
       dragging = true;
       pointerId = event.pointerId;
       startX = event.clientX;
       startY = event.clientY;
       startYaw = yaw;
       startPitch = pitch;
+      startTarget = target.clone();
+      panning = event.button === 1 || event.button === 2 || event.shiftKey;
       interiorCanvas.setPointerCapture(event.pointerId);
+      resume();
       event.preventDefault();
     });
+
     interiorCanvas.addEventListener('pointermove', (event) => {
-      if (!active || !dragging || pointerId !== event.pointerId) return;
-      yaw = startYaw - (event.clientX - startX) * 0.008;
-      pitch = THREE.MathUtils.clamp(
-        startPitch + (event.clientY - startY) * 0.006,
-        -0.18,
-        1.12,
-      );
-      updateCamera();
-      renderer.render(scene, camera);
+      if (!active) return;
+      if (event.pointerType === 'touch' && touches.has(event.pointerId)) {
+        touches.set(event.pointerId, { x: event.clientX, y: event.clientY });
+        if (touches.size === 2 && pinch) {
+          const [a, b] = [...touches.values()];
+          const pinchDistance = Math.max(20, Math.hypot(a.x - b.x, a.y - b.y));
+          const center = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+          distance = THREE.MathUtils.clamp(
+            pinch.orbitDistance * pinch.distance / pinchDistance,
+            4,
+            26,
+          );
+          const scale = distance * 0.0018;
+          const right = new THREE.Vector3().setFromMatrixColumn(camera.matrix, 0);
+          const up = new THREE.Vector3().setFromMatrixColumn(camera.matrix, 1);
+          target.copy(pinch.target)
+            .addScaledVector(right, -(center.x - pinch.center.x) * scale)
+            .addScaledVector(up, (center.y - pinch.center.y) * scale);
+          clampTarget();
+          renderInterior();
+          event.preventDefault();
+          return;
+        }
+      }
+      if (!dragging || pointerId !== event.pointerId) return;
+      const dx = event.clientX - startX;
+      const dy = event.clientY - startY;
+      if (panning) {
+        const scale = distance * 0.0018;
+        const right = new THREE.Vector3().setFromMatrixColumn(camera.matrix, 0);
+        const up = new THREE.Vector3().setFromMatrixColumn(camera.matrix, 1);
+        target.copy(startTarget)
+          .addScaledVector(right, -dx * scale)
+          .addScaledVector(up, dy * scale);
+        clampTarget();
+      } else {
+        yaw = startYaw - dx * 0.008;
+        pitch = THREE.MathUtils.clamp(startPitch + dy * 0.006, 0.06, 1.18);
+      }
+      renderInterior();
       event.preventDefault();
     });
+
     function releasePointer(event) {
+      if (event.pointerType === 'touch') {
+        touches.delete(event.pointerId);
+        if (touches.size < 2) pinch = null;
+      }
       if (pointerId !== event.pointerId) return;
       dragging = false;
       pointerId = null;
     }
+
     interiorCanvas.addEventListener('pointerup', releasePointer);
     interiorCanvas.addEventListener('pointercancel', releasePointer);
     interiorCanvas.addEventListener(
       'wheel',
       (event) => {
         if (!active) return;
-        distance = THREE.MathUtils.clamp(
-          distance + event.deltaY * 0.02,
-          4,
-          26,
-        );
-        updateCamera();
-        renderer.render(scene, camera);
+        distance = THREE.MathUtils.clamp(distance + event.deltaY * 0.025, 4, 26);
+        renderInterior();
         event.preventDefault();
       },
       { passive: false },
     );
+    interiorCanvas.addEventListener('contextmenu', (event) => event.preventDefault());
   }
 }
