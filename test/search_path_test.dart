@@ -134,6 +134,43 @@ void main() {
       expect(castleBridge, contains('widget.onCategoriesRequested()'));
     });
 
+    test('one-category deck keeps exactly one verso Castle entry', () {
+      final searchScreen = File(
+        'lib/screens/search_screen.dart',
+      ).readAsStringSync();
+
+      expect(searchScreen, contains('final singleEntry = categories.length <= 1;'));
+      expect(searchScreen, contains('final category = categories.firstOrNull;'));
+      expect(searchScreen, contains("ValueKey('search-single-category-screen')"));
+      expect(searchScreen, contains('_VersoEntryButton('));
+      expect(
+        searchScreen,
+        contains('? () => onCategorySelected(category.label)'),
+      );
+    });
+
+    test('closing a Castle card fullscreen preserves the Castle underneath', () {
+      final searchScreen = File(
+        'lib/screens/search_screen.dart',
+      ).readAsStringSync();
+
+      expect(searchScreen, contains('Future<void> _openCastleCardFullscreen'));
+      expect(searchScreen, contains('await showGeneralDialog<void>('));
+      expect(
+        searchScreen,
+        contains('pageBuilder: (_, _, _) => _CastleCardFullscreen(card: card)'),
+      );
+      expect(
+        searchScreen,
+        isNot(contains('await context.push(AppRoutes.cardAlias(card.id));\n    } finally')),
+      );
+      expect(searchScreen, contains('onCardOpened: (id) async'));
+      expect(
+        searchScreen,
+        contains('await _openCastleCardFullscreen(card)'),
+      );
+    });
+
     test('castle card source keeps selected built-in decks isolated', () {
       final productionDeck = Deck(
         id: AppConstants.productionDeckId,
