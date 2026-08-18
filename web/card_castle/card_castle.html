@@ -524,7 +524,7 @@
   function pumpTextures() {
     while(state.activeLoads<12&&state.loadQueue.length){
       const item=state.loadQueue.shift();
-      if(item.generation!==state.generation||!item.mesh?.parent)continue;
+      if(item.generation!==state.generation||!state.meshes.includes(item.mesh)||item.mesh.userData.textureUrl!==item.url)continue;
       const cached=state.textures.get(item.url);
       if(cached){applyTexture(item.mesh,item.url,cached);continue}
       state.activeLoads++;
