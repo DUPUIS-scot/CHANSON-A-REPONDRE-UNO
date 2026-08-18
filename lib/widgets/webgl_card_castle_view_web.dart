@@ -237,7 +237,10 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
 
   String _assetUrl(String source) {
     if (!source.startsWith('assets/')) return source;
-    return Uri.base.resolve(source).toString().replaceAll('%', '%25');
+    // Uri.resolve already performs the required URL encoding. Re-encoding every
+    // percent sign here turned valid card assets into %25 paths and made castle
+    // preview textures fail on both desktop and mobile.
+    return Uri.base.resolve(source).toString();
   }
 
   void _post(Map<String, dynamic> data) {
