@@ -247,9 +247,11 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
 
   String _assetUrl(String source) {
     if (!source.startsWith('assets/')) return source;
-    // Flutter emits literal "%20" characters in some GitHub Pages asset
-    // filenames. Encode the percent itself so Three.js requests that real file.
-    return Uri.base.resolve('assets/$source').toString().replaceAll('%', '%25');
+    // card.imagePath already includes Flutter's leading `assets/`. Resolve that
+    // exact published path from the app root; do not prepend a second `assets/`.
+    // Preserve literal percent signs because some GitHub Pages asset filenames
+    // intentionally contain encoded characters such as `%20`.
+    return Uri.base.resolve(source).toString().replaceAll('%', '%25');
   }
 
   void _post(Map<String, dynamic> data) {
