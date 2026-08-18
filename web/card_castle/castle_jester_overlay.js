@@ -124,12 +124,12 @@ function placeAtGate(castleRoot){
   const size=box.getSize(new THREE.Vector3());
   const center=box.getCenter(new THREE.Vector3());
   gatekeeper.root.position.set(
-    center.x+size.x*.30,
+    center.x+size.x*.18,
     box.min.y+.04,
-    box.max.z+Math.max(.55,size.z*.018),
+    box.max.z+Math.max(.85,size.z*.028),
   );
   gatekeeper.root.rotation.y=Math.PI;
-  document.body.dataset.castleJesterPlacement='gatehouse-axis-v13';
+  document.body.dataset.castleJesterPlacement='front-of-gate-v14';
   document.body.dataset.castleJesterGatePosition=[
     gatekeeper.root.position.x.toFixed(2),
     gatekeeper.root.position.y.toFixed(2),
