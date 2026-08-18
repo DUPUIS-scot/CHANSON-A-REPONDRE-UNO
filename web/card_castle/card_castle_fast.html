@@ -18,9 +18,6 @@
   const isIOS=/iP(?:hone|ad|od)/.test(navigator.userAgent)||
     (navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 
-  // Safari/iOS must not depend on a cross-origin Draco module before the main
-  // castle renderer can even start. Use the known compatible legacy exterior on
-  // iOS; desktop keeps the lightweight Draco exterior.
   if(isIOS){
     source=source.replace(
       '../assets/assets/models/castle_exterior.glb',
@@ -31,12 +28,10 @@
       "import { GLTFLoader } from '../vendor/GLTFLoader.js';",
       "import { GLTFLoader } from '../vendor/GLTFLoader.js';\n  import { DRACOLoader } from 'https://unpkg.com/three@0.160.0/examples/jsm/loaders/DRACOLoader.js';",
     );
-
     source=source.replace(
       "  const cardGeometry=new THREE.BoxGeometry(1.08,1.62,.035),cardForward=new THREE.Vector3(0,0,1);",
       "  const dracoLoader=new DRACOLoader();dracoLoader.setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/gltf/');dracoLoader.setWorkerLimit(2);dracoLoader.preload();const castleAssetLoader=new GLTFLoader();castleAssetLoader.setDRACOLoader(dracoLoader);\n  const cardGeometry=new THREE.BoxGeometry(1.08,1.62,.035),cardForward=new THREE.Vector3(0,0,1);",
     );
-
     source=source.replaceAll('new GLTFLoader().load(CASTLE_URL','castleAssetLoader.load(CASTLE_URL');
     source=source.replaceAll('new GLTFLoader().load(INTERIOR_URL','castleAssetLoader.load(INTERIOR_URL');
   }
@@ -45,8 +40,6 @@
   source=source.replaceAll("emit('cardLongPress'","emit('cardLongPressed'");
   source=source.replaceAll("emit('backToCategories'","emit('categoriesRequested'");
 
-  // Flutter web publishes declared assets below /assets/assets/. The bridge
-  // supplies /assets/... URLs, so normalise same-origin rectos exactly once.
   source=source.replace(
     'queueTexture(mesh,card.imagePath,state.generation)',
     'queueTexture(mesh,castleRectoUrl(card.rectoUrl||card.imagePath),state.generation)',
@@ -56,8 +49,21 @@
     "function castleRectoUrl(path){const value=String(path||'');try{const url=new URL(value,document.baseURI);if(url.origin===location.origin&&url.pathname.includes('/assets/')&&!url.pathname.includes('/assets/assets/'))url.pathname=url.pathname.replace('/assets/','/assets/assets/');return url.href}catch(_){return value}}function assetUrl(path){const value=String(path||'');if(/^(https?:|blob:|data:)/i.test(value))return value;const clean=value.replace(/^\\/+/,''),normalized=clean.startsWith('assets/')?clean:`assets/${clean}`;return new URL(`../${normalized}`,document.baseURI).href}",
   );
 
-  // Sample real upper castle geometry only. Every anchor is an actual raycast hit
-  // on a rampart/parapet surface; no synthetic floating wall is generated.
+  // Mobile Safari can fail some simultaneous image decodes under WebGL memory
+  // pressure. Keep the queue small and retry transient failures twice.
+  source=source.replace(
+    'state.loadQueue.push({mesh,url,generation});pumpTextureQueue()',
+    'state.loadQueue.push({mesh,url,generation,retries:0});pumpTextureQueue()',
+  );
+  source=source.replace(
+    'while(state.activeLoads<4&&state.loadQueue.length)',
+    'while(state.activeLoads<2&&state.loadQueue.length)',
+  );
+  source=source.replace(
+    '},undefined,()=>{state.activeLoads--;pumpTextureQueue()})}}',
+    "},undefined,()=>{if(job.retries<2){job.retries++;setTimeout(()=>{if(job.generation===state.generation&&job.mesh.parent){state.loadQueue.push(job);pumpTextureQueue()}},220*job.retries)}state.activeLoads--;pumpTextureQueue()})}}",
+  );
+
   source=source.replace(
     /function deriveSurfaceAnchors\(limit\)\{[\s\S]*?return out\.slice\(0,limit\)\}/,
     `function deriveSurfaceAnchors(limit){
@@ -71,9 +77,7 @@
       const addHit=(hit,outward)=>{
         if(!hit||out.length>=limit)return;
         if(hit.point.y<minY||hit.point.y>maxY)return;
-        const normal=hit.face?.normal
-          ? hit.face.normal.clone().transformDirection(hit.object.matrixWorld)
-          : outward.clone();
+        const normal=hit.face?.normal?hit.face.normal.clone().transformDirection(hit.object.matrixWorld):outward.clone();
         if(normal.dot(outward)<0)normal.negate();
         if(Math.abs(normal.y)>.72)return;
         normal.y=THREE.MathUtils.clamp(normal.y,-.18,.28);
@@ -85,12 +89,9 @@
       const meshes=[];
       castleRoot.traverse(object=>{if(object.isMesh&&object.visible!==false&&!object.userData?.hiddenAsOutlier)meshes.push(object)});
       const cast=(origin,direction,outward)=>{
-        ray.set(origin,direction);
-        ray.near=0;ray.far=Math.max(size.x,size.z)*2.6;
+        ray.set(origin,direction);ray.near=0;ray.far=Math.max(size.x,size.z)*2.6;
         const hits=ray.intersectObjects(meshes,false);
-        for(const hit of hits){
-          if(hit.point.y>=minY&&hit.point.y<=maxY){addHit(hit,outward);break}
-        }
+        for(const hit of hits){if(hit.point.y>=minY&&hit.point.y<=maxY){addHit(hit,outward);break}}
       };
       const xSamples=30,ySamples=10,zSamples=24;
       const frontZ=bounds.max.z+Math.max(8,size.z*.45);
@@ -103,8 +104,7 @@
       }
       for(const side of [-1,1]){
         const x=side<0?bounds.min.x-Math.max(8,size.x*.35):bounds.max.x+Math.max(8,size.x*.35);
-        const direction=new THREE.Vector3(-side,0,0);
-        const outward=new THREE.Vector3(side,0,0);
+        const direction=new THREE.Vector3(-side,0,0),outward=new THREE.Vector3(side,0,0);
         for(let yi=0;yi<ySamples&&out.length<limit;yi++){
           const y=THREE.MathUtils.lerp(minY,maxY,yi/(ySamples-1));
           for(let zi=0;zi<zSamples&&out.length<limit;zi++){
@@ -113,22 +113,19 @@
           }
         }
       }
-      document.body.dataset.surfaceAnchorMode='real-rampart-raycasts-v11';
+      document.body.dataset.surfaceAnchorMode='real-rampart-raycasts-v13';
       document.body.dataset.surfaceAnchorCount=String(out.length);
       return out.slice(0,limit);
     }`,
   );
 
-  // Give the jester module the exact live Three.js objects instead of relying on
-  // prototype monkey-patching and render timing.
   source=source.replace(
     '    state.interiorLoadPromise=loadInterior()',
     "    window.__castleSearchRuntime={scene,camera,renderer,get castleRoot(){return castleRoot}};window.dispatchEvent(new CustomEvent('castleRuntimeReady'));\n    state.interiorLoadPromise=loadInterior()",
   );
-
   source=source.replace(
     '<body data-renderer-status="loading">',
-    `<body data-renderer-status="loading" data-performance-loader="${isIOS?'ios-legacy-exterior-v11':'draco-exterior-v11'}">`,
+    `<body data-renderer-status="loading" data-performance-loader="${isIOS?'ios-legacy-exterior-v13':'draco-exterior-v13'}">`,
   );
   document.open();
   document.write(source);
