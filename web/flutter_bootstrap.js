@@ -52,8 +52,19 @@ document.createElement = function(tagName, options) {
         if (buildId) atmosphereUrl.searchParams.set('v', buildId);
         atmosphereScript.src = atmosphereUrl.href;
         frameDocument.body.appendChild(atmosphereScript);
+
+        const jesterScript = frameDocument.createElement('script');
+        jesterScript.id = 'castle-jester-gatekeeper-bridge';
+        jesterScript.type = 'module';
+        const jesterUrl = new URL(
+          'card_castle/castle_jester_overlay.js',
+          document.baseURI,
+        );
+        if (buildId) jesterUrl.searchParams.set('v', buildId);
+        jesterScript.src = jesterUrl.href;
+        frameDocument.body.appendChild(jesterScript);
       } catch (error) {
-        console.warn('Castle interior bridge injection failed.', error);
+        console.warn('Castle bridge injection failed.', error);
       }
     });
   }
