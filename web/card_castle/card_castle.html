@@ -46,7 +46,7 @@
 <body data-renderer-status="loading">
   <div id="scene"></div>
   <div id="loading">LOADING 3D CASTLE…</div>
-  <div id="castle-entrance-transition" aria-hidden="true"><video id="castle-entrance-video" playsinline preload="metadata"></video></div>
+  <div id="castle-entrance-transition" aria-hidden="true"><video id="castle-entrance-video" muted playsinline webkit-playsinline preload="auto"></video></div>
   <div class="castle-toolbar">
     <div class="castle-toolbar-group">
       <button id="back-to-categories" class="castle-control" type="button" aria-label="Catégories">
@@ -758,11 +758,18 @@
 
   function playEntranceVideo(){
     if(state.sceneMode!=='exterior'||!entranceVideo||document.body.classList.contains('entrance-video-active'))return;
+    entranceVideo.muted=true;
+    entranceVideo.playsInline=true;
+    entranceVideo.setAttribute('webkit-playsinline','');
+    entranceVideo.preload='auto';
+    entranceVideo.pause();
     entranceVideo.src=ENTRANCE_VIDEO_URL;
+    entranceVideo.load();
     document.body.classList.add('entrance-video-active');
     entranceTransition?.setAttribute('aria-hidden','false');
-    entranceVideo.currentTime=0;
-    entranceVideo.play().catch(()=>finishEntranceVideo());
+    try{entranceVideo.currentTime=0}catch(_){}
+    const playback=entranceVideo.play();
+    playback?.catch?.(()=>finishEntranceVideo());
   }
   async function finishEntranceVideo(){
     if(!entranceVideo)return;
@@ -801,12 +808,17 @@
     updateOrbit();resume();return true;
   }
 
-  function setCastleDoorHover(event){
-    if(state.sceneMode!=='exterior')return;
+  function isCastleDoorHit(event){
+    if(state.sceneMode!=='exterior')return false;
     const rect=renderer.domElement.getBoundingClientRect();
     const x=(event.clientX-rect.left)/Math.max(1,rect.width);
     const y=(event.clientY-rect.top)/Math.max(1,rect.height);
-    const active=x>=.42&&x<=.58&&y>=.48&&y<=.78;
+    return x>=.42&&x<=.58&&y>=.48&&y<=.78;
+  }
+
+  function setCastleDoorHover(event){
+    if(state.sceneMode!=='exterior')return;
+    const active=isCastleDoorHit(event);
     document.body.classList.toggle('castle-door-hover',active);
     renderer.domElement.style.cursor=active?'pointer':'';
     document.body.dataset.castleDoorHover=active?'true':'false';
@@ -816,7 +828,7 @@
     const canvas=renderer.domElement;
     listen(canvas,'dblclick',event=>{
       event.preventDefault();
-      if(state.sceneMode==='exterior'&&!pick(event))playEntranceVideo();
+      if(isCastleDoorHit(event)&&!pick(event))playEntranceVideo();
     });
     if(entranceVideo)listen(entranceVideo,'ended',finishEntranceVideo);
     if(entranceTransition)listen(entranceTransition,'click',finishEntranceVideo);
@@ -911,6 +923,8 @@
       cancelLongPress();
       state.pointerDown=null;state.dragging=false;
       if(down?.longPressFired)document.body.dataset.longPressState='released';
+      const tappedDoor=state.sceneMode==='exterior'&&event.type==='pointerup'&&down&&!wasDragging&&!down.longPressFired&&!down.mesh&&isCastleDoorHit(event);
+      if(tappedDoor){playEntranceVideo();resume();return}
       if(state.sceneMode==='interior'||event.type==='pointercancel'||!down||wasDragging||!down.mesh||down.longPressFired){resume();return}
       const cardId=down.cardId;
       focusCard(cardId,true);emit('cardSelected',{cardId});
