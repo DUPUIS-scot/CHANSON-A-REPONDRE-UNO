@@ -33,7 +33,21 @@ class BrowseSelectedCardScreen extends StatelessWidget {
       backgroundColor: Colors.black,
       body: SafeArea(
         child: Stack(children: [
-          Positioned.fill(child: Padding(padding: const EdgeInsets.fromLTRB(10, 58, 10, 12), child: Center(child: Hero(tag: 'browse-hand-card-${liveCard.id}', child: StoredImage(source: liveCard.imagePath, fit: BoxFit.contain))))),
+          Positioned.fill(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(10, 58, 10, 12),
+              child: Center(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => context.go(AppRoutes.cards),
+                  child: Hero(
+                    tag: 'browse-hand-card-${liveCard.id}',
+                    child: StoredImage(source: liveCard.imagePath, fit: BoxFit.contain),
+                  ),
+                ),
+              ),
+            ),
+          ),
           const Positioned(top: 4, right: 8, child: HomeNavigationButton()),
           Positioned(left: 12, right: 12, bottom: 16, child: Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 620), child: Column(mainAxisSize: MainAxisSize.min, children: [
             _GlassRow(children: [Expanded(child: _Action(icon: Icons.fullscreen, label: 'Open Full Screen', onPressed: () => context.go(AppRoutes.cardAlias(liveCard.id)))), const SizedBox(width: 8), Expanded(child: _Action(icon: Icons.share_outlined, label: 'Share', onPressed: () => _share(context)))]),
