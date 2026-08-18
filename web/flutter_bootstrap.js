@@ -17,6 +17,30 @@ if (buildId && globalThis._flutter?.buildConfig?.builds) {
   }
 }
 
+// Castle renderer compatibility. The Three.js iframe emits the legacy event
+// names while the current Flutter host listens for the newer bridge names.
+// Translate only those Castle events; the original messages remain untouched.
+window.addEventListener('message', event => {
+  let message;
+  try {
+    message = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+  } catch (_) {
+    return;
+  }
+  if (!message || typeof message !== 'object') return;
+  const translatedType = {
+    backToCategories: 'categoriesRequested',
+    cardTap: 'cardSelected',
+    cardLongPress: 'cardLongPressed',
+  }[message.type];
+  if (!translatedType) return;
+  const translated = {...message, type: translatedType};
+  window.dispatchEvent(new MessageEvent('message', {
+    data: JSON.stringify(translated),
+    origin: event.origin || location.origin,
+  }));
+}, true);
+
 // The uploaded Castle interior is Draco-compressed. Inject dedicated,
 // same-origin Three.js/atmosphere bridges into the Castle iframe as it is
 // created so the interior can preload without relying on Dart iframe DOM APIs.
@@ -63,6 +87,16 @@ document.createElement = function(tagName, options) {
         if (buildId) jesterUrl.searchParams.set('v', buildId);
         jesterScript.src = jesterUrl.href;
         frameDocument.body.appendChild(jesterScript);
+
+        const compatibilityScript = frameDocument.createElement('script');
+        compatibilityScript.id = 'castle-bridge-compat';
+        const compatibilityUrl = new URL(
+          'card_castle/castle_bridge_compat.js',
+          document.baseURI,
+        );
+        if (buildId) compatibilityUrl.searchParams.set('v', buildId);
+        compatibilityScript.src = compatibilityUrl.href;
+        frameDocument.body.appendChild(compatibilityScript);
       } catch (error) {
         console.warn('Castle bridge injection failed.', error);
       }
