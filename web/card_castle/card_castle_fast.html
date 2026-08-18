@@ -20,20 +20,26 @@
   const isIOS=/iP(?:hone|ad|od)/.test(navigator.userAgent)||
     (navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
   const isWindows=/Windows/i.test(navigator.userAgent);
-  const textureConcurrency=isIOS?2:(isWindows?5:4);
-  const xSamples=isIOS?16:(isWindows?18:20);
-  const ySamples=isIOS?6:7;
-  const zSamples=isIOS?10:(isWindows?12:14);
+  const textureConcurrency=isIOS?1:(isWindows?5:4);
+  const xSamples=isIOS?12:(isWindows?18:20);
+  const ySamples=isIOS?5:7;
+  const zSamples=isIOS?8:(isWindows?12:14);
+  const interiorIdleTimeout=isIOS?9000:3500;
+  const interiorFallbackDelay=isIOS?6000:1600;
 
-  // Use the 3.8 MB compressed exterior on every platform. The former iOS
-  // fallback search_castle.glb is ~42.7 MB and can stall Safari completely.
+  // All platforms use the compact 3.8 MB exterior. On iOS force Draco's
+  // JavaScript decoder instead of WASM; this avoids Safari WASM/worker startup
+  // failures that can otherwise leave the scene permanently on LOADING.
   source=source.replace(
     "import { GLTFLoader } from '../vendor/GLTFLoader.js';",
     "import { GLTFLoader } from '../vendor/GLTFLoader.js';\n  import { DRACOLoader } from 'https://unpkg.com/three@0.160.0/examples/jsm/loaders/DRACOLoader.js';",
   );
+  const dracoSetup=isIOS
+    ? "  const dracoLoader=new DRACOLoader();dracoLoader.setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/gltf/');dracoLoader.setDecoderConfig({type:'js'});dracoLoader.setWorkerLimit(1);dracoLoader.preload();const castleAssetLoader=new GLTFLoader();castleAssetLoader.setDRACOLoader(dracoLoader);\n  const cardGeometry=new THREE.BoxGeometry(1.08,1.62,.035),cardForward=new THREE.Vector3(0,0,1);"
+    : "  const dracoLoader=new DRACOLoader();dracoLoader.setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/gltf/');dracoLoader.setWorkerLimit(2);dracoLoader.preload();const castleAssetLoader=new GLTFLoader();castleAssetLoader.setDRACOLoader(dracoLoader);\n  const cardGeometry=new THREE.BoxGeometry(1.08,1.62,.035),cardForward=new THREE.Vector3(0,0,1);";
   source=source.replace(
     "  const cardGeometry=new THREE.BoxGeometry(1.08,1.62,.035),cardForward=new THREE.Vector3(0,0,1);",
-    "  const dracoLoader=new DRACOLoader();dracoLoader.setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/gltf/');dracoLoader.setWorkerLimit("+(isIOS?1:2)+");dracoLoader.preload();const castleAssetLoader=new GLTFLoader();castleAssetLoader.setDRACOLoader(dracoLoader);\n  const cardGeometry=new THREE.BoxGeometry(1.08,1.62,.035),cardForward=new THREE.Vector3(0,0,1);",
+    dracoSetup,
   );
   source=source.replaceAll('new GLTFLoader().load(CASTLE_URL','castleAssetLoader.load(CASTLE_URL');
   source=source.replaceAll('new GLTFLoader().load(INTERIOR_URL','castleAssetLoader.load(INTERIOR_URL');
@@ -113,7 +119,7 @@
           }
         }
       }
-      document.body.dataset.surfaceAnchorMode='platform-fast-raycasts-v16';
+      document.body.dataset.surfaceAnchorMode='platform-fast-raycasts-v17';
       document.body.dataset.surfaceAnchorCount=String(out.length);
       return out.slice(0,limit);
     }`,
@@ -121,12 +127,23 @@
 
   source=source.replace(
     '    state.interiorLoadPromise=loadInterior()',
-    "    window.__castleSearchRuntime={scene,camera,renderer,orbit,updateOrbit,get castleRoot(){return castleRoot},get interiorRoot(){return interiorRoot}};window.dispatchEvent(new CustomEvent('castleRuntimeReady'));\n    state.interiorLoadPromise=null;const preloadInterior=()=>{if(state.disposed||state.interiorReady||state.interiorLoadPromise)return;state.interiorLoadPromise=loadInterior().catch(error=>{document.body.dataset.interiorReady='false';document.body.dataset.interiorError=String(error?.message||error);state.interiorLoadPromise=null;return null})};if('requestIdleCallback'in window)requestIdleCallback(preloadInterior,{timeout:"+(isIOS?6500:3500)+"});else setTimeout(preloadInterior,"+(isIOS?4000:1600)+")",
+    `    window.__castleSearchRuntime={scene,camera,renderer,orbit,updateOrbit,get castleRoot(){return castleRoot},get interiorRoot(){return interiorRoot}};window.dispatchEvent(new CustomEvent('castleRuntimeReady'));
+    state.interiorLoadPromise=null;const preloadInterior=()=>{if(state.disposed||state.interiorReady||state.interiorLoadPromise)return;state.interiorLoadPromise=loadInterior().catch(error=>{document.body.dataset.interiorReady='false';document.body.dataset.interiorError=String(error?.message||error);state.interiorLoadPromise=null;return null})};if('requestIdleCallback'in window)requestIdleCallback(preloadInterior,{timeout:${interiorIdleTimeout}});else setTimeout(preloadInterior,${interiorFallbackDelay})`,
   );
   source=source.replace(
     '<body data-renderer-status="loading">',
-    `<body data-renderer-status="loading" data-performance-loader="${isIOS?'ios-draco-exterior-v16':(isWindows?'windows-draco-fast-v16':'draco-exterior-v16')}">`,
+    `<body data-renderer-status="loading" data-performance-loader="${isIOS?'ios-draco-js-v17':(isWindows?'windows-draco-fast-v17':'draco-exterior-v17')}">`,
   );
+
+  // Never leave iOS permanently on the loader. If the transformed renderer has
+  // not reached ready state, fall back to the direct renderer after 14 seconds.
+  if(isIOS){
+    source=source.replace(
+      'async function init(){',
+      "async function init(){setTimeout(()=>{if(!document.body.classList.contains('ready')&&document.body.dataset.rendererStatus!=='ready'){document.body.dataset.rendererStatus='ios-timeout';location.replace(new URL('./card_castle.html',document.baseURI).href)}},14000);",
+    );
+  }
+
   document.open();
   document.write(source);
   document.close();
