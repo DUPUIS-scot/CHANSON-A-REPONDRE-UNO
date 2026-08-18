@@ -14,13 +14,13 @@ export class CastleJesterGatekeeper {
     this.modelUrl=modelUrl;
     this.root=new THREE.Group();
     this.root.name='castle-jester-gatekeeper';
-    // Keep the gatekeeper unmistakably on the visitor side of the central gate.
     this.root.position.set(0,0,18.2);
-    this.root.rotation.y=Math.PI;
+    // Rotate the current gatekeeper orientation by 180 degrees.
+    this.root.rotation.y=0;
     this.root.visible=false;
     this.scene.add(this.root);
-    this.keyLight=new THREE.PointLight(0xffb35f,22,15,2);
-    this.keyLight.position.set(0,5.2,2.4);
+    this.keyLight=new THREE.PointLight(0xffb35f,12,11,2);
+    this.keyLight.position.set(0,4.0,2.0);
     this.root.add(this.keyLight);
     this.elapsed=0;
     this.clicked=false;
@@ -68,9 +68,9 @@ export class CastleJesterGatekeeper {
       const bounds=new THREE.Box3().setFromObject(this.model);
       const size=bounds.getSize(new THREE.Vector3());
       const center=bounds.getCenter(new THREE.Vector3());
-      // Large enough to read clearly on phones while remaining human-scale
-      // relative to the gatehouse.
-      const scale=8.4/Math.max(size.y,.001);
+      // Human-scale relative to the gatehouse; the previous 8.4-unit fit was
+      // visually larger than the architecture.
+      const scale=4.9/Math.max(size.y,.001);
       this.model.scale.setScalar(scale);
       this.model.position.set(
         -center.x*scale,
@@ -83,7 +83,7 @@ export class CastleJesterGatekeeper {
       document.body.dataset.castleJester='ready';
       document.body.dataset.castleJesterAnimations=String(gltf.animations.length);
       document.body.dataset.castleJesterState='looping';
-      document.body.dataset.castleJesterPlacement='central-gate-visible-v8';
+      document.body.dataset.castleJesterScale='human-gate-v11';
     },undefined,error=>{
       document.body.dataset.castleJester='failed';
       document.body.dataset.castleJesterError=String(error?.message||error);
@@ -145,8 +145,10 @@ export class CastleJesterGatekeeper {
     if(spine)spine.rotation.x+=0.62*bow;
     if(waist)waist.rotation.x+=0.20*bow;
 
+    // From the new 180-degree base orientation, turn slightly toward the gate
+    // while presenting the entrance.
     const present=segment(6.0,7.0)*(1-segment(8.25,9.45));
-    this.root.rotation.y=Math.PI-.72*present;
+    this.root.rotation.y=.72*present;
     if(leftUpper){leftUpper.rotation.x-=.72*present;leftUpper.rotation.z+=.88*present}
     if(leftFore)leftFore.rotation.x-=.26*present;
     if(leftHand)leftHand.rotation.z+=.18*present;
@@ -158,9 +160,9 @@ export class CastleJesterGatekeeper {
     if(this.clicked){
       const progress=clamp01((this.elapsed-this.clickStarted)/1.45);
       const eased=smooth(progress);
-      this.root.position.x=THREE.MathUtils.lerp(this.clickOriginX,6.8,eased);
-      this.root.position.z=THREE.MathUtils.lerp(this.clickOriginZ,17.2,eased);
-      this.root.rotation.y=THREE.MathUtils.lerp(this.clickOriginRotation,Math.PI*.68,eased);
+      this.root.position.x=THREE.MathUtils.lerp(this.clickOriginX,this.clickOriginX+5.0,eased);
+      this.root.position.z=THREE.MathUtils.lerp(this.clickOriginZ,this.clickOriginZ-.9,eased);
+      this.root.rotation.y=THREE.MathUtils.lerp(this.clickOriginRotation,Math.PI*.32,eased);
       if(progress>=1&&!this.enterDispatched){
         this.enterDispatched=true;
         document.body.dataset.castleJesterState='aside';
