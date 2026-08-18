@@ -57,7 +57,7 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
     viewType = 'search-card-castle-${DateTime.now().microsecondsSinceEpoch}';
     iframe = html.IFrameElement()
       ..id = 'search-card-castle-frame'
-      ..src = Uri.base.resolve('card_castle/card_castle.html').toString()
+      ..src = Uri.base.resolve('card_castle/card_castle_fast.html').toString()
       ..style.border = '0'
       ..style.width = '100%'
       ..style.height = '100%'
@@ -104,9 +104,6 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
   }
 
   void _handleMessage(html.MessageEvent event) {
-    // WindowProxy wrappers are not identity-stable across the Dart/JS boundary,
-    // so comparing `event.source` with `iframe.contentWindow` can reject valid
-    // messages from this same-origin iframe in release builds.
     if (event.origin != html.window.location.origin || event.data is! String) {
       return;
     }
@@ -172,10 +169,9 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
               'id': card.id,
               'category': card.category,
               'question': card.question,
-              'text': [
-                card.question,
-                card.answer,
-              ].where((value) => value.isNotEmpty).join(' '),
+              'text': [card.question, card.answer]
+                  .where((value) => value.isNotEmpty)
+                  .join(' '),
               'tags': card.tags,
               'metadata': {
                 'author': card.author,
@@ -193,11 +189,7 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
   }
 
   void _sendFocus() {
-    _post({
-      'type': 'focusCard',
-      'cardId': widget.focusedCardId,
-      'animate': true,
-    });
+    _post({'type': 'focusCard', 'cardId': widget.focusedCardId, 'animate': true});
   }
 
   void _requestFullscreen() {
@@ -240,17 +232,11 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
   }
 
   String _cardFingerprint(List<CardImageModel> cards) => cards
-      .map(
-        (card) => '${card.id}\u001f${card.imagePath}\u001f${card.aspectRatio}',
-      )
+      .map((card) => '${card.id}\u001f${card.imagePath}\u001f${card.aspectRatio}')
       .join('\u001e');
 
   String _assetUrl(String source) {
     if (!source.startsWith('assets/')) return source;
-    // card.imagePath already includes Flutter's leading `assets/`. Resolve that
-    // exact published path from the app root; do not prepend a second `assets/`.
-    // Preserve literal percent signs because some GitHub Pages asset filenames
-    // intentionally contain encoded characters such as `%20`.
     return Uri.base.resolve(source).toString().replaceAll('%', '%25');
   }
 
