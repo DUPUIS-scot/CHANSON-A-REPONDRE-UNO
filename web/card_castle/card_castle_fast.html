@@ -31,68 +31,83 @@
   source=source.replaceAll("emit('cardLongPress'","emit('cardLongPressed'");
   source=source.replaceAll("emit('backToCategories'","emit('categoriesRequested'");
 
-  // Flutter supplies rectoUrl. Some existing URLs contain a deliberately encoded
-  // percent sequence that the Dart bridge encoded once more. Decode only that
-  // extra layer here, then load the exact public recto URL.
+  // Flutter now supplies a correctly resolved rectoUrl. Use that exact URL.
   source=source.replace(
     'queueTexture(mesh,card.imagePath,state.generation)',
-    "queueTexture(mesh,String(card.rectoUrl||card.imagePath||'').replace(/%25/g,'%'),state.generation)",
+    'queueTexture(mesh,card.rectoUrl||card.imagePath,state.generation)',
   );
   source=source.replace(
     "function assetUrl(path){const clean=String(path||'').replace(/^\\/+/,''),normalized=clean.startsWith('assets/')?clean:`assets/${clean}`;return new URL(`../${normalized}`,document.baseURI).href}",
     "function assetUrl(path){const value=String(path||'');if(/^(https?:|blob:|data:)/i.test(value))return value;const clean=value.replace(/^\\/+/,''),normalized=clean.startsWith('assets/')?clean:`assets/${clean}`;return new URL(`../${normalized}`,document.baseURI).href}",
   );
 
-  // The lightweight castle is made from large merged meshes. Mesh-centre and
-  // general facade raycasts therefore put cards on the lower drum walls. Build
-  // deterministic upper-rampart bands instead: front parapets first, then left
-  // and right upper flanks, then the crown. Positions remain relative to the
-  // fitted castle bounds so they survive future GLB optimisation.
+  // Sample real upper castle geometry only. Every anchor is an actual raycast hit
+  // on a rampart/parapet surface; no synthetic floating wall is generated.
   source=source.replace(
     /function deriveSurfaceAnchors\(limit\)\{[\s\S]*?return out\.slice\(0,limit\)\}/,
     `function deriveSurfaceAnchors(limit){
       const out=[];
-      const bounds=new THREE.Box3().setFromObject(castleRoot),size=bounds.getSize(new THREE.Vector3());
-      const min=bounds.min,max=bounds.max;
-      const push=(x,y,z,nx,ny,nz)=>{if(out.length>=limit)return;out.push({position:new THREE.Vector3(x,y,z),normal:new THREE.Vector3(nx,ny,nz).normalize()})};
-      const frontZ=max.z+.28;
-      const backZ=min.z-.28;
-      const leftX=min.x-.28;
-      const rightX=max.x+.28;
-      const rows=[.57,.68,.79,.88];
-      for(const fy of rows){
-        const y=min.y+size.y*fy;
-        const cols=14;
-        for(let c=0;c<cols&&out.length<limit;c++){
-          const t=cols===1?.5:c/(cols-1);
-          const x=THREE.MathUtils.lerp(min.x+size.x*.12,max.x-size.x*.12,t);
-          push(x,y,frontZ,0,0,1);
+      const bounds=new THREE.Box3().setFromObject(castleRoot);
+      const size=bounds.getSize(new THREE.Vector3());
+      const center=bounds.getCenter(new THREE.Vector3());
+      const ray=new THREE.Raycaster();
+      const minY=bounds.min.y+size.y*.47;
+      const maxY=bounds.min.y+size.y*.94;
+      const minSpacingSq=1.35*1.35;
+      const addHit=(hit,outward)=>{
+        if(!hit||out.length>=limit)return;
+        if(hit.point.y<minY||hit.point.y>maxY)return;
+        const normal=hit.face?.normal
+          ? hit.face.normal.clone().transformDirection(hit.object.matrixWorld)
+          : outward.clone();
+        if(normal.dot(outward)<0)normal.negate();
+        if(Math.abs(normal.y)>.72)return;
+        normal.y=THREE.MathUtils.clamp(normal.y,-.18,.28);
+        normal.normalize();
+        const position=hit.point.clone().addScaledVector(normal,.12);
+        if(out.some(anchor=>anchor.position.distanceToSquared(position)<minSpacingSq))return;
+        out.push({position,normal});
+      };
+      const meshes=[];
+      castleRoot.traverse(object=>{if(object.isMesh&&object.visible!==false&&!object.userData?.hiddenAsOutlier)meshes.push(object)});
+      const cast=(origin,direction,outward)=>{
+        ray.set(origin,direction);
+        ray.near=0;ray.far=Math.max(size.x,size.z)*2.6;
+        const hits=ray.intersectObjects(meshes,false);
+        for(const hit of hits){
+          if(hit.point.y>=minY&&hit.point.y<=maxY){addHit(hit,outward);break}
+        }
+      };
+      const xSamples=30,ySamples=10,zSamples=24;
+      const frontZ=bounds.max.z+Math.max(8,size.z*.45);
+      for(let yi=0;yi<ySamples&&out.length<limit;yi++){
+        const y=THREE.MathUtils.lerp(minY,maxY,yi/(ySamples-1));
+        for(let xi=0;xi<xSamples&&out.length<limit;xi++){
+          const x=THREE.MathUtils.lerp(bounds.min.x+size.x*.04,bounds.max.x-size.x*.04,xi/(xSamples-1));
+          cast(new THREE.Vector3(x,y,frontZ),new THREE.Vector3(0,0,-1),new THREE.Vector3(0,0,1));
         }
       }
-      for(const fy of [.61,.73,.84]){
-        const y=min.y+size.y*fy;
-        const cols=6;
-        for(let c=0;c<cols&&out.length<limit;c++){
-          const t=(c+1)/(cols+1);
-          const z=THREE.MathUtils.lerp(min.z+size.z*.18,max.z-size.z*.18,t);
-          push(leftX,y,z,-1,0,0);
-          push(rightX,y,z,1,0,0);
+      for(const side of [-1,1]){
+        const x=side<0?bounds.min.x-Math.max(8,size.x*.35):bounds.max.x+Math.max(8,size.x*.35);
+        const direction=new THREE.Vector3(-side,0,0);
+        const outward=new THREE.Vector3(side,0,0);
+        for(let yi=0;yi<ySamples&&out.length<limit;yi++){
+          const y=THREE.MathUtils.lerp(minY,maxY,yi/(ySamples-1));
+          for(let zi=0;zi<zSamples&&out.length<limit;zi++){
+            const z=THREE.MathUtils.lerp(bounds.min.z+size.z*.06,bounds.max.z-size.z*.06,zi/(zSamples-1));
+            cast(new THREE.Vector3(x,y,z),direction,outward);
+          }
         }
       }
-      const crownY=min.y+size.y*.93;
-      for(let c=0;c<12&&out.length<limit;c++){
-        const t=(c+.5)/12;
-        const x=THREE.MathUtils.lerp(min.x+size.x*.2,max.x-size.x*.2,t);
-        push(x,crownY,backZ,0,0,-1);
-      }
-      document.body.dataset.surfaceAnchorMode='upper-ramparts-v8';
+      document.body.dataset.surfaceAnchorMode='real-rampart-raycasts-v10';
+      document.body.dataset.surfaceAnchorCount=String(out.length);
       return out.slice(0,limit);
     }`,
   );
 
   source=source.replace(
     '<body data-renderer-status="loading">',
-    '<body data-renderer-status="loading" data-performance-loader="draco-ramparts-v8">',
+    '<body data-renderer-status="loading" data-performance-loader="draco-rampart-raycast-v10">',
   );
   document.open();
   document.write(source);
