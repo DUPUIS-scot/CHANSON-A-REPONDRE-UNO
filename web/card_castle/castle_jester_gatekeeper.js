@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from '../vendor/GLTFLoader.js';
+import { DRACOLoader } from 'https://unpkg.com/three@0.160.0/examples/jsm/loaders/DRACOLoader.js';
 
 const clamp01=value=>Math.max(0,Math.min(1,value));
 const smooth=value=>{const t=clamp01(value);return t*t*(3-2*t)};
@@ -25,11 +26,17 @@ export class CastleJesterGatekeeper {
     this.raycaster=new THREE.Raycaster();
     this.bones={};
     this.base={};
+    this.dracoLoader=new DRACOLoader();
+    this.dracoLoader.setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/gltf/');
+    this.dracoLoader.setWorkerLimit(2);
+    this.dracoLoader.preload();
+    this.loader=new GLTFLoader();
+    this.loader.setDRACOLoader(this.dracoLoader);
     this.load();
   }
 
   load(){
-    new GLTFLoader().load(this.modelUrl,gltf=>{
+    this.loader.load(this.modelUrl,gltf=>{
       this.model=gltf.scene;
       this.model.traverse(object=>{
         if(object.isMesh){
@@ -105,24 +112,20 @@ export class CastleJesterGatekeeper {
     if(neck)neck.rotation.y+=follow*.35;
     if(spine)spine.rotation.z+=0.022*Math.sin(this.elapsed*1.7);
 
-    // Point directly at the visitor.
     const point=pulse(1.3,2.0,3.05);
     if(rightUpper){rightUpper.rotation.x-=1.08*point;rightUpper.rotation.z-=0.24*point}
     if(rightFore)rightFore.rotation.x-=0.38*point;
     if(rightHand)rightHand.rotation.x+=0.12*point;
 
-    // Beckoning gesture.
     const beckon=pulse(2.95,3.55,4.65);
     if(rightUpper){rightUpper.rotation.x-=0.72*beckon;rightUpper.rotation.z-=0.48*beckon}
     if(rightFore)rightFore.rotation.x-=0.62*beckon*(.78+.22*Math.sin(this.elapsed*10));
     if(rightHand)rightHand.rotation.x-=0.28*beckon*Math.sin(this.elapsed*10);
 
-    // Theatrical bow.
     const bow=pulse(4.55,5.2,6.15);
     if(spine)spine.rotation.x+=0.62*bow;
     if(waist)waist.rotation.x+=0.20*bow;
 
-    // Turn toward the gate and present the entrance.
     const present=segment(6.0,7.0)*(1-segment(8.25,9.45));
     this.root.rotation.y=Math.PI-.72*present;
     if(leftUpper){leftUpper.rotation.x-=.72*present;leftUpper.rotation.z+=.88*present}
@@ -188,6 +191,7 @@ export class CastleJesterGatekeeper {
   }
 
   dispose(){
+    this.dracoLoader?.dispose();
     this.scene?.remove(this.root);
   }
 }
