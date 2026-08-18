@@ -121,7 +121,7 @@
 
   source=source.replace(
     '    state.interiorLoadPromise=loadInterior()',
-    "    window.__castleSearchRuntime={scene,camera,renderer,get castleRoot(){return castleRoot}};window.dispatchEvent(new CustomEvent('castleRuntimeReady'));\n    state.interiorLoadPromise=loadInterior()",
+    "    window.__castleSearchRuntime={scene,camera,renderer,orbit,updateOrbit,get castleRoot(){return castleRoot},get interiorRoot(){return interiorRoot}};window.dispatchEvent(new CustomEvent('castleRuntimeReady'));\n    state.interiorLoadPromise=loadInterior()",
   );
   source=source.replace(
     '<body data-renderer-status="loading">',
