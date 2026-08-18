@@ -1,16 +1,32 @@
 import * as THREE from 'three';
 import { CastleJesterGatekeeper } from './castle_jester_gatekeeper.js';
 
-const mainCanvas=document.querySelector('#scene canvas');
-if(!mainCanvas){
-  console.warn('Castle jester gatekeeper: main castle canvas unavailable.');
-} else {
-  const modelUrl=new URL(
-    '../assets/assets/models/castle_jester_rigged.glb',
-    document.baseURI,
-  ).href;
-  document.body.dataset.castleJesterAsset=modelUrl;
-  document.body.dataset.castleEntranceTrigger='rigged-jester';
+const modelUrl=new URL(
+  '../assets/assets/models/castle_jester_rigged.glb',
+  document.baseURI,
+).href;
+document.body.dataset.castleJesterAsset=modelUrl;
+document.body.dataset.castleEntranceTrigger='rigged-jester';
+document.body.dataset.castleJesterIntegration='waiting-for-canvas';
+
+function waitForCastleCanvas(attempt=0){
+  const mainCanvas=document.querySelector('#scene canvas');
+  if(mainCanvas){
+    installGatekeeper(mainCanvas);
+    return;
+  }
+  if(attempt>=300){
+    document.body.dataset.castleJesterIntegration='canvas-timeout';
+    console.warn('Castle jester gatekeeper: main castle canvas unavailable.');
+    return;
+  }
+  requestAnimationFrame(()=>waitForCastleCanvas(attempt+1));
+}
+
+function installGatekeeper(mainCanvas){
+  if(mainCanvas.dataset.castleJesterInstalled==='true')return;
+  mainCanvas.dataset.castleJesterInstalled='true';
+  document.body.dataset.castleJesterIntegration='canvas-ready';
 
   let gatekeeper=null;
   let previousRenderTime=performance.now();
@@ -108,3 +124,5 @@ if(!mainCanvas){
     gatekeeper?.dispose();
   },{once:true});
 }
+
+waitForCastleCanvas();
