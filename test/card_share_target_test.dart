@@ -39,7 +39,7 @@ void main() {
     final cards = find.byType(BrowseHandCard);
     expect(cards, findsNWidgets(5));
     final selected = tester.widget<BrowseHandCard>(cards.at(1)).card;
-    tester.widget<BrowseHandCard>(cards.at(1)).onTap();
+    await tester.tap(cards.at(1));
     await tester.pumpAndSettle();
     expect(router.state.uri.path, '/browse-card/${selected.id}');
     await tester.tap(find.text('Share'));
@@ -73,7 +73,7 @@ void main() {
     final cards = find.byType(BrowseHandCard);
     expect(cards, findsNWidgets(5));
     final selected = tester.widget<BrowseHandCard>(cards.first).card;
-    tester.widget<BrowseHandCard>(cards.first).onTap();
+    await tester.tap(cards.first);
     await tester.pumpAndSettle();
 
     expect(router.state.uri.path, '/browse-card/${selected.id}');
