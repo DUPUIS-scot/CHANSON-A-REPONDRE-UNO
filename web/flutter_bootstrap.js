@@ -19,7 +19,6 @@ if (buildId && globalThis._flutter?.buildConfig?.builds) {
 
 // Castle renderer compatibility. The Three.js iframe emits the legacy event
 // names while the current Flutter host listens for the newer bridge names.
-// Translate only those Castle events; the original messages remain untouched.
 window.addEventListener('message', event => {
   let message;
   try {
@@ -41,67 +40,109 @@ window.addEventListener('message', event => {
   }));
 }, true);
 
-// The uploaded Castle interior is Draco-compressed. Inject dedicated,
-// same-origin Three.js/atmosphere bridges into the Castle iframe as it is
-// created so the interior can preload without relying on Dart iframe DOM APIs.
 const nativeCreateElement = document.createElement.bind(document);
+const iframeSrcDescriptor = Object.getOwnPropertyDescriptor(
+  HTMLIFrameElement.prototype,
+  'src',
+);
+
+function versionedCastleUrl(path) {
+  const url = new URL(path, document.baseURI);
+  if (buildId) url.searchParams.set('v', buildId);
+  return url.href;
+}
+
+function appendCastleScript(frameDocument, {id, path, module = false}) {
+  if (!frameDocument?.body || frameDocument.getElementById(id)) return;
+  const script = frameDocument.createElement('script');
+  script.id = id;
+  if (module) script.type = 'module';
+  script.src = versionedCastleUrl(path);
+  frameDocument.body.appendChild(script);
+}
+
 document.createElement = function(tagName, options) {
   const element = nativeCreateElement(tagName, options);
-  if (String(tagName).toLowerCase() === 'iframe') {
-    element.addEventListener('load', () => {
-      try {
-        if (!element.src.includes('card_castle/card_castle.html')) return;
-        const frameDocument = element.contentDocument;
-        if (!frameDocument?.body ||
-            frameDocument.getElementById('castle-interior-draco-bridge')) {
-          return;
-        }
-        const script = frameDocument.createElement('script');
-        script.id = 'castle-interior-draco-bridge';
-        script.type = 'module';
-        const bridgeUrl = new URL(
-          'card_castle/interior_draco_bridge.js',
-          document.baseURI,
-        );
-        if (buildId) bridgeUrl.searchParams.set('v', buildId);
-        script.src = bridgeUrl.href;
-        frameDocument.body.appendChild(script);
+  if (String(tagName).toLowerCase() !== 'iframe') return element;
 
-        const atmosphereScript = frameDocument.createElement('script');
-        atmosphereScript.id = 'castle-interior-atmosphere-bridge';
-        const atmosphereUrl = new URL(
-          'card_castle/interior_atmosphere_overlay.js',
-          document.baseURI,
-        );
-        if (buildId) atmosphereUrl.searchParams.set('v', buildId);
-        atmosphereScript.src = atmosphereUrl.href;
-        frameDocument.body.appendChild(atmosphereScript);
-
-        const jesterScript = frameDocument.createElement('script');
-        jesterScript.id = 'castle-jester-gatekeeper-bridge';
-        jesterScript.type = 'module';
-        const jesterUrl = new URL(
-          'card_castle/castle_jester_overlay.js',
-          document.baseURI,
-        );
-        if (buildId) jesterUrl.searchParams.set('v', buildId);
-        jesterScript.src = jesterUrl.href;
-        frameDocument.body.appendChild(jesterScript);
-
-        const compatibilityScript = frameDocument.createElement('script');
-        compatibilityScript.id = 'castle-bridge-compat';
-        const compatibilityUrl = new URL(
-          'card_castle/castle_bridge_compat.js',
-          document.baseURI,
-        );
-        if (buildId) compatibilityUrl.searchParams.set('v', buildId);
-        compatibilityScript.src = compatibilityUrl.href;
-        frameDocument.body.appendChild(compatibilityScript);
-      } catch (error) {
-        console.warn('Castle bridge injection failed.', error);
-      }
+  // Route the Search Castle iframe through a tiny staged loader. The loader
+  // preserves the existing renderer but moves non-critical work off first paint.
+  if (iframeSrcDescriptor?.get && iframeSrcDescriptor?.set) {
+    Object.defineProperty(element, 'src', {
+      configurable: true,
+      enumerable: true,
+      get() {
+        return iframeSrcDescriptor.get.call(this);
+      },
+      set(value) {
+        const source = String(value || '');
+        const optimized = source.includes('card_castle/card_castle.html')
+          ? source.replace(
+              'card_castle/card_castle.html',
+              'card_castle/card_castle_fast.html',
+            )
+          : source;
+        iframeSrcDescriptor.set.call(this, optimized);
+      },
     });
   }
+
+  element.addEventListener('load', () => {
+    try {
+      if (!element.src.includes('card_castle/card_castle_')) return;
+      const frameDocument = element.contentDocument;
+      if (!frameDocument?.body) return;
+      frameDocument.body.dataset.bootstrapPerformanceMode = 'staged';
+
+      // Required for the deferred compressed interior and card payload bridge.
+      appendCastleScript(frameDocument, {
+        id: 'castle-interior-draco-bridge',
+        path: 'card_castle/interior_draco_bridge.js',
+        module: true,
+      });
+      appendCastleScript(frameDocument, {
+        id: 'castle-bridge-compat',
+        path: 'card_castle/castle_bridge_compat.js',
+      });
+
+      let enhanced = false;
+      const injectEnhancedOverlays = () => {
+        if (enhanced) return;
+        enhanced = true;
+        appendCastleScript(frameDocument, {
+          id: 'castle-interior-atmosphere-bridge',
+          path: 'card_castle/interior_atmosphere_overlay.js',
+        });
+        appendCastleScript(frameDocument, {
+          id: 'castle-jester-gatekeeper-bridge',
+          path: 'card_castle/castle_jester_overlay.js',
+          module: true,
+        });
+        frameDocument.body.dataset.bootstrapEnhancedOverlays = 'ready';
+      };
+
+      const onRendererMessage = event => {
+        if (event.source !== element.contentWindow) return;
+        let message = event.data;
+        try {
+          if (typeof message === 'string') message = JSON.parse(message);
+        } catch (_) {
+          return;
+        }
+        if (message?.type !== 'rendererReady') return;
+        window.removeEventListener('message', onRendererMessage);
+        if ('requestIdleCallback' in window) {
+          requestIdleCallback(injectEnhancedOverlays, {timeout: 900});
+        } else {
+          setTimeout(injectEnhancedOverlays, 250);
+        }
+      };
+      window.addEventListener('message', onRendererMessage);
+      setTimeout(injectEnhancedOverlays, 2200);
+    } catch (error) {
+      console.warn('Castle staged bridge injection failed.', error);
+    }
+  });
   return element;
 };
 
