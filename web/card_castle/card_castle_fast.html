@@ -31,7 +31,7 @@
   source=source.replaceAll("emit('cardLongPress'","emit('cardLongPressed'");
   source=source.replaceAll("emit('backToCategories'","emit('categoriesRequested'");
 
-  // Flutter now supplies a correctly resolved rectoUrl. Use that exact URL.
+  // Flutter supplies a correctly resolved rectoUrl. Use that exact URL.
   source=source.replace(
     'queueTexture(mesh,card.imagePath,state.generation)',
     'queueTexture(mesh,card.rectoUrl||card.imagePath,state.generation)',
@@ -49,7 +49,6 @@
       const out=[];
       const bounds=new THREE.Box3().setFromObject(castleRoot);
       const size=bounds.getSize(new THREE.Vector3());
-      const center=bounds.getCenter(new THREE.Vector3());
       const ray=new THREE.Raycaster();
       const minY=bounds.min.y+size.y*.47;
       const maxY=bounds.min.y+size.y*.94;
@@ -103,6 +102,13 @@
       document.body.dataset.surfaceAnchorCount=String(out.length);
       return out.slice(0,limit);
     }`,
+  );
+
+  // Give the jester module the exact live Three.js objects instead of relying on
+  // prototype monkey-patching and render timing.
+  source=source.replace(
+    '    state.interiorLoadPromise=loadInterior()',
+    "    window.__castleSearchRuntime={scene,camera,renderer,get castleRoot(){return castleRoot}};window.dispatchEvent(new CustomEvent('castleRuntimeReady'));\n    state.interiorLoadPromise=loadInterior()",
   );
 
   source=source.replace(
