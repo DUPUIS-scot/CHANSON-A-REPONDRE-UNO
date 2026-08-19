@@ -20,16 +20,15 @@
   const isIOS=/iP(?:hone|ad|od)/.test(navigator.userAgent)||
     (navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
   const isWindows=/Windows/i.test(navigator.userAgent);
+  const params=new URLSearchParams(location.search);
+  const iosRetry=Number(params.get('iosRetry')||0);
   const textureConcurrency=isIOS?1:(isWindows?5:4);
-  const xSamples=isIOS?12:(isWindows?18:20);
-  const ySamples=isIOS?5:7;
-  const zSamples=isIOS?8:(isWindows?12:14);
-  const interiorIdleTimeout=isIOS?9000:3500;
-  const interiorFallbackDelay=isIOS?6000:1600;
+  const xSamples=isIOS?10:(isWindows?18:20);
+  const ySamples=isIOS?4:7;
+  const zSamples=isIOS?6:(isWindows?12:14);
+  const interiorIdleTimeout=isIOS?12000:3500;
+  const interiorFallbackDelay=isIOS?8000:1600;
 
-  // All platforms use the compact 3.8 MB exterior. On iOS force Draco's
-  // JavaScript decoder instead of WASM; this avoids Safari WASM/worker startup
-  // failures that can otherwise leave the scene permanently on LOADING.
   source=source.replace(
     "import { GLTFLoader } from '../vendor/GLTFLoader.js';",
     "import { GLTFLoader } from '../vendor/GLTFLoader.js';\n  import { DRACOLoader } from 'https://unpkg.com/three@0.160.0/examples/jsm/loaders/DRACOLoader.js';",
@@ -119,7 +118,7 @@
           }
         }
       }
-      document.body.dataset.surfaceAnchorMode='platform-fast-raycasts-v17';
+      document.body.dataset.surfaceAnchorMode='platform-fast-raycasts-v18';
       document.body.dataset.surfaceAnchorCount=String(out.length);
       return out.slice(0,limit);
     }`,
@@ -132,15 +131,16 @@
   );
   source=source.replace(
     '<body data-renderer-status="loading">',
-    `<body data-renderer-status="loading" data-performance-loader="${isIOS?'ios-draco-js-v17':(isWindows?'windows-draco-fast-v17':'draco-exterior-v17')}">`,
+    `<body data-renderer-status="loading" data-performance-loader="${isIOS?'ios-draco-js-v18':(isWindows?'windows-draco-fast-v18':'draco-exterior-v18')}">`,
   );
 
-  // Never leave iOS permanently on the loader. If the transformed renderer has
-  // not reached ready state, fall back to the direct renderer after 14 seconds.
+  // iOS must never redirect into card_castle.html because that direct renderer
+  // has no DRACOLoader for the compressed exterior. Retry this same Draco path
+  // once with a cache-busting URL, then keep waiting for the active decoder.
   if(isIOS){
     source=source.replace(
       'async function init(){',
-      "async function init(){setTimeout(()=>{if(!document.body.classList.contains('ready')&&document.body.dataset.rendererStatus!=='ready'){document.body.dataset.rendererStatus='ios-timeout';location.replace(new URL('./card_castle.html',document.baseURI).href)}},14000);",
+      `async function init(){setTimeout(()=>{if(!document.body.classList.contains('ready')&&document.body.dataset.rendererStatus!=='ready'&&${iosRetry}<1){const retry=new URL('./card_castle_fast.html',document.baseURI);retry.searchParams.set('iosRetry','1');retry.searchParams.set('v',Date.now().toString());location.replace(retry.href)}},18000);`,
     );
   }
 
@@ -148,10 +148,12 @@
   document.write(source);
   document.close();
 })().catch(error=>{
-  console.error('Castle loader failed; falling back to direct renderer.',error);
-  const fallback=new URL('./card_castle.html',document.baseURI);
-  fallback.search=location.search;
-  location.replace(fallback.href);
+  console.error('Castle loader failed.',error);
+  if(isIOS){
+    const retry=new URL('./card_castle_fast.html',document.baseURI);
+    if(iosRetry<1){retry.searchParams.set('iosRetry','1');retry.searchParams.set('v',Date.now().toString());location.replace(retry.href);return}
+  }
+  document.body.dataset.loaderError=String(error?.message||error);
 });
 </script>
 </body>
