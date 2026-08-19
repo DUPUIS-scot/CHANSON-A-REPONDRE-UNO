@@ -3,7 +3,6 @@
   window.__castleDirectEnvironmentInstalled = true;
 
   const GROUND_URL = new URL('../assets/assets/images/castle_exterior_ground.png', document.baseURI).href;
-  const ATMOSPHERE_URL = new URL('../assets/assets/images/castle_exterior_atmosphere.png', document.baseURI).href;
   let attempts = 0;
 
   function install() {
@@ -20,69 +19,72 @@
     document.head.appendChild(marker);
 
     const scene = runtime.scene;
+
+    // Remove only the generated exterior floor/plaza primitives from the base
+    // renderer. Keep the procedural night sky and every GLB object untouched.
+    const generatedGround = [];
+    for (const child of [...scene.children]) {
+      if (!child?.isMesh || child === runtime.castleRoot) continue;
+      const type = child.geometry?.type || '';
+      const isGeneratedFloor =
+        type === 'CircleGeometry' ||
+        type === 'CylinderGeometry' ||
+        type === 'TorusGeometry';
+      if (!isGeneratedFloor) continue;
+      child.visible = false;
+      child.userData.castleGeneratedGroundHidden = true;
+      generatedGround.push(child);
+    }
+
     const group = new THREE.Group();
-    group.name = 'castle-direct-exterior-environment';
-    group.renderOrder = -5;
+    group.name = 'castle-direct-exterior-ground';
     scene.add(group);
     window.__castleDirectExteriorEnvironment = group;
 
+    document.body.dataset.exteriorAtmosphere = 'procedural-sky-only';
+    document.body.dataset.exteriorEnvironment = 'loading-ground-only-v32';
+
     const loader = new THREE.TextureLoader();
-    let atmosphereTexture = null;
-    let remaining = 2;
-    document.body.dataset.exteriorEnvironment = 'loading-direct-v31';
-
-    const finishOne = () => {
-      remaining -= 1;
-      if (remaining > 0) return;
-      document.body.dataset.exteriorEnvironment = 'ready';
-      document.body.dataset.exteriorEnvironmentMode = 'direct-runtime-v31';
-      window.dispatchEvent(new CustomEvent('castleExteriorEnvironmentReady'));
-      syncSceneMode();
-    };
-
-    loader.load(
-      ATMOSPHERE_URL,
-      texture => {
-        texture.colorSpace = THREE.SRGBColorSpace;
-        texture.needsUpdate = true;
-        atmosphereTexture = texture;
-        document.body.dataset.exteriorAtmosphere = 'uploaded-direct';
-        finishOne();
-      },
-      undefined,
-      () => {
-        document.body.dataset.exteriorAtmosphere = 'failed';
-        finishOne();
-      },
-    );
-
     loader.load(
       GROUND_URL,
       texture => {
         texture.colorSpace = THREE.SRGBColorSpace;
         texture.anisotropy = Math.min(runtime.renderer.capabilities.getMaxAnisotropy(), 4);
+        texture.wrapS = THREE.ClampToEdgeWrapping;
+        texture.wrapT = THREE.ClampToEdgeWrapping;
         texture.needsUpdate = true;
-        const geometry = new THREE.PlaneGeometry(82, 62, 1, 1);
+
+        const image = texture.image;
+        const aspect = image?.width && image?.height ? image.width / image.height : 4 / 3;
+        const width = 58;
+        const depth = width / Math.max(0.75, aspect);
+        const geometry = new THREE.PlaneGeometry(width, depth, 1, 1);
         const material = new THREE.MeshBasicMaterial({
           map: texture,
           side: THREE.DoubleSide,
           depthWrite: true,
           toneMapped: false,
         });
-        const groundMesh = new THREE.Mesh(geometry, material);
-        groundMesh.name = 'castle-uploaded-exterior-ground';
-        groundMesh.rotation.x = -Math.PI / 2;
-        groundMesh.rotation.z = Math.PI;
-        groundMesh.position.set(0, -0.06, 14);
-        groundMesh.renderOrder = -2;
-        group.add(groundMesh);
-        document.body.dataset.exteriorGround = 'uploaded-direct-exterior-only';
-        finishOne();
+        const ground = new THREE.Mesh(geometry, material);
+        ground.name = 'castle-uploaded-exterior-ground';
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.set(0, -0.025, 18);
+        ground.renderOrder = -1;
+        group.add(ground);
+
+        document.body.dataset.exteriorGround = 'reference-2-ground-only';
+        document.body.dataset.exteriorEnvironment = 'ready';
+        document.body.dataset.exteriorEnvironmentMode = 'ground-only-direct-v32';
+        syncSceneMode();
+        window.dispatchEvent(new CustomEvent('castleExteriorEnvironmentReady'));
       },
       undefined,
-      () => {
+      error => {
+        console.warn('Castle exterior ground failed to load.', error);
         document.body.dataset.exteriorGround = 'failed';
-        finishOne();
+        document.body.dataset.exteriorEnvironment = 'ready';
+        generatedGround.forEach(mesh => { mesh.visible = true; });
+        window.dispatchEvent(new CustomEvent('castleExteriorEnvironmentReady'));
       },
     );
 
@@ -93,10 +95,12 @@
         scene.background = new THREE.Color(0x010307);
         scene.fog = new THREE.FogExp2(0x02060b, 0.012);
       } else {
-        if (atmosphereTexture) scene.background = atmosphereTexture;
+        // Do not install an exterior atmosphere image. The base renderer's
+        // procedural night sky remains the only exterior atmosphere.
+        scene.background = new THREE.Color(0x02060b);
         scene.fog = new THREE.FogExp2(0x08131e, 0.0062);
       }
-      document.body.dataset.directEnvironmentScene = interior ? 'interior-hidden' : 'exterior-visible';
+      document.body.dataset.directEnvironmentScene = interior ? 'interior-hidden' : 'exterior-ground-visible';
     }
 
     const observer = new MutationObserver(syncSceneMode);
