@@ -17,6 +17,9 @@ void main() {
     final directCards = File(
       'web/card_castle/castle_cards_direct.js',
     ).readAsStringSync();
+    final jesterOverlay = File(
+      'web/card_castle/castle_jester_overlay.js',
+    ).readAsStringSync();
     final navigation = File(
       'web/card_castle/castle_navigation_overlay.js',
     ).readAsStringSync();
@@ -36,7 +39,8 @@ void main() {
     expect(fastLoader, contains('const isMobile=isIOS||isAndroid'));
     expect(fastLoader, contains('const isWindows='));
     expect(fastLoader, contains('DRACOLoader'));
-    expect(fastLoader, contains('setWorkerLimit("+(isMobile?1:2)+")'));
+    expect(fastLoader, contains('dracoLoader.setWorkerLimit'));
+    expect(fastLoader, contains('isMobile?1:2'));
     expect(fastLoader, contains('pixelRatioCap=isIOS?1.1:1.15'));
     expect(fastLoader, contains("atmosphere.highQuality=false"));
     expect(fastLoader, contains("windows-deferred-after-jester"));
@@ -82,6 +86,14 @@ void main() {
     );
     expect(directCards, contains('const concurrency = isIOS ? 1'));
     expect(directCards, isNot(contains('const xSamples = isIOS ?')));
+
+    expect(jesterOverlay, contains('rotateExistingCardAnchorsWithCastle'));
+    expect(jesterOverlay, contains('mesh.position.applyAxisAngle(axis,angle)'));
+    expect(jesterOverlay, contains('mesh.quaternion.premultiply(turn)'));
+    expect(
+      jesterOverlay,
+      contains("castleAnchorAlignment='cards-follow-castle-270deg-v40'"),
+    );
 
     expect(navigation, contains("addEventListener('pointerdown'"));
     expect(navigation, contains("addEventListener('pointermove'"));
