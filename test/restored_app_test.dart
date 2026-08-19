@@ -175,6 +175,9 @@ void main() {
         final directCards = File(
           'web/card_castle/castle_cards_direct.js',
         ).readAsStringSync();
+        final castleHost = File(
+          'lib/widgets/webgl_card_castle_view_web.dart',
+        ).readAsStringSync();
         expect(castle, contains('../vendor/three.module.js'));
         expect(castle, contains('assets/assets/models/castle_exterior.glb'));
         expect(castle, contains("from '../vendor/GLTFLoader.js'"));
@@ -183,7 +186,7 @@ void main() {
         expect(castle, contains('longPressTimer:0'));
         expect(directCards, contains('cardSelected'));
         expect(directCards, contains('cardLongPressed'));
-        expect(castle, contains("message.type==='focusCard'"));
+        expect(castleHost, contains("'type': 'focusCard'"));
         expect(castle, contains('state.dragging'));
         expect(castle, contains('document.body.dataset.cardCount'));
         expect(castle, contains('deriveSurfaceAnchors(84)'));
