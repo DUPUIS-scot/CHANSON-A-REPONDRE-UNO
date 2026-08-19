@@ -4,19 +4,63 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Castle loader</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
   <style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#02060b}</style>
 </head>
 <body>
 <script>
-(() => {
-  // Emergency compatibility loader. The previous transform wrapper embedded a
-  // literal closing script tag inside its own script source, causing browsers
-  // to terminate this script early and render the remaining JavaScript as text.
-  // Route directly to the stable Castle document while preserving query args.
-  const target = new URL('./card_castle.html', document.baseURI);
-  target.search = location.search;
-  location.replace(target.href);
-})();
+(async()=>{
+  const sourceUrl=new URL('./card_castle.html',document.baseURI);
+  sourceUrl.search=location.search;
+  const response=await fetch(sourceUrl,{cache:'no-cache'});
+  if(!response.ok)throw new Error(`Castle source ${response.status}`);
+  let source=await response.text();
+
+  const isIOS=/iP(?:hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  const isWindows=/Windows/i.test(navigator.userAgent);
+
+  source=source.replace(
+    "import { GLTFLoader } from '../vendor/GLTFLoader.js';",
+    "import { GLTFLoader } from '../vendor/GLTFLoader.js';\n  import { DRACOLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/DRACOLoader.js';"
+  );
+  source=source.replace(
+    "  const cardGeometry=new THREE.BoxGeometry(1.08,1.62,.035),cardForward=new THREE.Vector3(0,0,1);",
+    "  const dracoLoader=new DRACOLoader();dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');dracoLoader.setDecoderConfig({type:"+(isIOS?"'js'":"'wasm'")+'});dracoLoader.setWorkerLimit('+(isIOS?1:2)+");dracoLoader.preload();const castleAssetLoader=new GLTFLoader();castleAssetLoader.setDRACOLoader(dracoLoader);\n  const cardGeometry=new THREE.BoxGeometry(1.08,1.62,.035),cardForward=new THREE.Vector3(0,0,1);"
+  );
+  source=source.replaceAll('new GLTFLoader().load(CASTLE_URL','castleAssetLoader.load(CASTLE_URL');
+  source=source.replaceAll('new GLTFLoader().load(INTERIOR_URL','castleAssetLoader.load(INTERIOR_URL');
+
+  source=source.replaceAll("emit('cardTap'","emit('cardSelected'");
+  source=source.replaceAll("emit('cardLongPress'","emit('cardLongPressed'");
+  source=source.replaceAll("emit('backToCategories'","emit('categoriesRequested'");
+
+  if(isIOS){
+    source=source.replace("renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.35));","renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.1));");
+    source=source.replace("atmosphere.highQuality=matchMedia('(min-width: 1100px)').matches&&(navigator.hardwareConcurrency||4)>=6&&devicePixelRatio<=1.75;","atmosphere.highQuality=false;");
+  }
+
+  const originalInteriorPreload="    state.interiorLoadPromise=loadInterior().catch(error=>{document.body.dataset.interiorReady='false';document.body.dataset.interiorError=String(error?.message||error);return null});";
+  source=source.replace(originalInteriorPreload,"    state.interiorLoadPromise=null;document.body.dataset.interiorReady='deferred';");
+
+  if(isWindows){
+    const ready="resume();emit('rendererReady');";
+    const staged="resume();emit('rendererReady');const preloadInterior=()=>{if(state.disposed||state.interiorReady||state.interiorLoadPromise)return;ensureInteriorReady().catch(()=>{})};if('requestIdleCallback'in window)requestIdleCallback(preloadInterior,{timeout:3500});else setTimeout(preloadInterior,1600);";
+    source=source.replace(ready,staged);
+  }
+
+  source=source.replace(
+    '<body data-renderer-status="loading">',
+    `<body data-renderer-status="loading" data-performance-loader="${isIOS?'ios-draco-safe-v28':(isWindows?'windows-draco-safe-v28':'draco-safe-v28')}">`
+  );
+
+  document.open();
+  document.write(source);
+  document.close();
+})().catch(error=>{
+  console.error('Castle loader failed.',error);
+  document.body.dataset.loaderError=String(error&&error.message||error);
+});
 </script>
 </body>
 </html>
