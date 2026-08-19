@@ -48,6 +48,9 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
   late final html.IFrameElement iframe;
   StreamSubscription<html.MessageEvent>? messages;
   StreamSubscription<html.Event>? frameLoads;
+  Timer? cardOverlayReleaseTimer;
+  DateTime? cardOverlayReleasedAt;
+  late final bool isIos;
   bool rendererFailed = false;
   bool rendererReady = false;
   bool cardOverlayActive = false;
@@ -59,7 +62,7 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
 
     final navigator = html.window.navigator;
     final userAgent = navigator.userAgent;
-    final isIos = RegExp(r'iP(?:hone|ad|od)').hasMatch(userAgent) ||
+    isIos = RegExp(r'iP(?:hone|ad|od)').hasMatch(userAgent) ||
         (navigator.platform == 'MacIntel' && (navigator.maxTouchPoints ?? 0) > 1);
     final castleUri = Uri.base.resolve('card_castle/card_castle_fast.html');
     final castleSrc = castleUri
@@ -82,7 +85,8 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
       ..setAttribute('allowfullscreen', 'true')
       ..setAttribute('popover', 'manual')
       ..setAttribute('title', 'Three.js Search card castle');
-    iframe.dataset['iosLoaderMode'] = isIos ? 'draco-js-watchdog' : 'compressed-draco';
+    iframe.dataset['iosLoaderMode'] =
+        isIos ? 'draco-js-watchdog' : 'compressed-draco';
     ui_web.platformViewRegistry.registerViewFactory(viewType, (_) => iframe);
     frameLoads = iframe.onLoad.listen((_) => _sendState());
     messages = html.window.onMessage.listen(_handleMessage);
@@ -116,6 +120,7 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
     _post({'type': 'dispose'});
     frameLoads?.cancel();
     messages?.cancel();
+    cardOverlayReleaseTimer?.cancel();
     _setInAppFullscreen(false);
     super.dispose();
   }
@@ -148,8 +153,8 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
             unawaited(
               Future<void>.sync(() => widget.onCardOpened(id)).whenComplete(() {
                 if (!mounted) return;
-                _setCardOverlayMode(false);
                 cardOverlayActive = false;
+                _setCardOverlayMode(false);
               }),
             );
           }
@@ -164,6 +169,11 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
           if (!active) _setInAppFullscreen(false);
           widget.onFullscreenChanged(active);
         case 'categoriesRequested':
+          if (_suppressCategoriesAfterCardClose()) {
+            iframe.dataset['suppressedCategoryRequest'] =
+                'ios-post-card-overlay';
+            return;
+          }
           _setInAppFullscreen(false);
           widget.onFullscreenChanged(false);
           widget.onCategoriesRequested();
@@ -197,7 +207,8 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
                 'year': card.year,
               },
               'isMatch': widget.matchingCardIds.contains(card.id),
-              'rectoUrl': _assetUrl(card.imagePath),
+              'rectoUrl': _castlePreviewUrl(card),
+              'imagePath': _assetUrl(card.imagePath),
               'aspectRatio': card.aspectRatio,
             },
           )
@@ -237,15 +248,52 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
   }
 
   void _setCardOverlayMode(bool active) {
-    iframe.style
-      ..pointerEvents = active ? 'none' : ''
-      ..visibility = active ? 'hidden' : '';
+    cardOverlayReleaseTimer?.cancel();
     iframe.dataset['cardOverlayActive'] = active.toString();
     if (active) {
+      iframe.style
+        ..pointerEvents = 'none'
+        ..visibility = 'hidden';
       iframe.setAttribute('aria-hidden', 'true');
-    } else {
-      iframe.attributes.remove('aria-hidden');
+      return;
     }
+
+    iframe.style.visibility = '';
+    iframe.attributes.remove('aria-hidden');
+    if (!isIos) {
+      iframe.style.pointerEvents = '';
+      return;
+    }
+
+    // Safari/iOS can deliver the closing tap to the iframe underneath the
+    // fullscreen card. Keep the Castle non-interactive briefly so that tap
+    // cannot hit the top-left CATEGORIES control and leave the Castle.
+    cardOverlayReleasedAt = DateTime.now();
+    iframe.style.pointerEvents = 'none';
+    cardOverlayReleaseTimer = Timer(const Duration(milliseconds: 520), () {
+      if (!mounted || cardOverlayActive) return;
+      iframe.style.pointerEvents = '';
+    });
+  }
+
+  bool _suppressCategoriesAfterCardClose() {
+    if (cardOverlayActive) return true;
+    final releasedAt = cardOverlayReleasedAt;
+    if (!isIos || releasedAt == null) return false;
+    return DateTime.now().difference(releasedAt) <
+        const Duration(milliseconds: 850);
+  }
+
+  String _castlePreviewUrl(CardImageModel card) {
+    final uno = RegExp(r'^final-84-(\d{1,2})$').firstMatch(card.id);
+    if (uno != null) {
+      final number = int.tryParse(uno.group(1) ?? '');
+      if (number != null && number >= 1 && number <= 84) {
+        final slug = number.toString().padLeft(3, '0');
+        return Uri.base.resolve('assets/share-previews/UNO-$slug.jpg').toString();
+      }
+    }
+    return _assetUrl(card.imagePath);
   }
 
   String _cardFingerprint(List<CardImageModel> cards) => cards
