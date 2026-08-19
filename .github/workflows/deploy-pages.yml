@@ -83,12 +83,13 @@ jobs:
             --dart-define=APP_BUILD_SHA="${{ github.sha }}"
 
       - name: Generate lightweight card previews
+        timeout-minutes: 4
         shell: bash
         run: |
           set -euo pipefail
           if ! command -v convert >/dev/null 2>&1; then
-            sudo apt-get update -qq
-            sudo apt-get install -y --no-install-recommends imagemagick
+            timeout 90s sudo apt-get update -qq
+            timeout 120s sudo apt-get install -y --no-install-recommends imagemagick
           fi
           mkdir -p build/web/assets/share-previews
           for index in $(seq 1 16); do
@@ -96,15 +97,17 @@ jobs:
             source="build/web/assets/assets/decks/chanson_a_repondre_brio/cards/${card}.jpeg"
             target="build/web/assets/share-previews/BRIO-${card}.jpg"
             test -f "$source"
-            convert "$source" -auto-orient -resize '600x900^' -gravity center -extent 600x900 -strip -sampling-factor 4:2:0 -interlace Plane -quality 62 "$target"
+            echo "Generating BRIO-${card} preview"
+            timeout 12s convert "$source" -auto-orient -resize '600x900^' -gravity center -extent 600x900 -strip -sampling-factor 4:2:0 -interlace Plane -quality 62 "$target"
             size="$(stat -c%s "$target")"
             if [ "$size" -gt 350000 ]; then
-              convert "$source" -auto-orient -resize '600x900^' -gravity center -extent 600x900 -strip -sampling-factor 4:2:0 -interlace Plane -quality 50 "$target"
+              timeout 12s convert "$source" -auto-orient -resize '600x900^' -gravity center -extent 600x900 -strip -sampling-factor 4:2:0 -interlace Plane -quality 50 "$target"
               size="$(stat -c%s "$target")"
             fi
             test "$size" -le 350000
           done
-          python3 scripts/generate_uno_texture_previews.py
+          echo "Generating UNO texture previews"
+          timeout 90s python3 scripts/generate_uno_texture_previews.py
 
       - name: Version Flutter entry bundle by commit SHA
         shell: bash
