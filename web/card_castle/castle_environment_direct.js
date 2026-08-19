@@ -42,7 +42,7 @@
     window.__castleDirectExteriorEnvironment = group;
 
     document.body.dataset.exteriorAtmosphere = 'procedural-sky-only';
-    document.body.dataset.exteriorEnvironment = 'loading-ground-only-v32';
+    document.body.dataset.exteriorEnvironment = 'loading-ground-only-v33';
 
     const loader = new THREE.TextureLoader();
     loader.load(
@@ -68,13 +68,13 @@
         const ground = new THREE.Mesh(geometry, material);
         ground.name = 'castle-uploaded-exterior-ground';
         ground.rotation.x = -Math.PI / 2;
-        ground.position.set(0, -0.025, 18);
+        ground.position.set(0, -0.47, 18);
         ground.renderOrder = -1;
         group.add(ground);
 
         document.body.dataset.exteriorGround = 'reference-2-ground-only';
         document.body.dataset.exteriorEnvironment = 'ready';
-        document.body.dataset.exteriorEnvironmentMode = 'ground-only-direct-v32';
+        document.body.dataset.exteriorEnvironmentMode = 'ground-only-direct-v33';
         syncSceneMode();
         window.dispatchEvent(new CustomEvent('castleExteriorEnvironmentReady'));
       },
