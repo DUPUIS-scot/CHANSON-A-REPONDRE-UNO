@@ -51,7 +51,7 @@
   );
   source=source.replace(
     "function switchToInterior(){if(!state.interiorReady||!interiorRoot)return false;state.sceneMode='interior';document.body.dataset.sceneMode='interior';castleRoot.visible=false;interiorRoot.visible=true;cardGroup.visible=false;orbit.yaw=.15;orbit.pitch=.18;orbit.distance=29;orbit.target.set(0,6.7,0);updateOrbit();return true}",
-    "function switchToInterior(){if(!state.interiorReady||!interiorRoot)return false;state.sceneMode='interior';document.body.dataset.sceneMode='interior';castleRoot.visible=false;interiorRoot.visible=true;cardGroup.visible=false;orbit.yaw=.15;orbit.pitch=.18;orbit.distance=29;orbit.target.set(0,6.7,0);updateOrbit();return true}function switchToExterior(){if(!castleRoot)return false;state.sceneMode='exterior';state.entranceStarted=false;document.body.dataset.sceneMode='exterior';castleRoot.visible=true;if(interiorRoot)interiorRoot.visible=false;cardGroup.visible=true;state.targetCamera=null;state.targetLook=null;setDefaultView();updateSceneCount();return true}",
+    "function setInteriorStartingView(){orbit.yaw=0;orbit.pitch=.10;orbit.distance=24;orbit.target.set(0,7.9,-1.8);state.targetCamera=null;state.targetLook=null;updateOrbit();document.body.dataset.interiorStartingView='construction-panel-staircase-throne'}function switchToInterior(){if(!state.interiorReady||!interiorRoot)return false;state.sceneMode='interior';document.body.dataset.sceneMode='interior';castleRoot.visible=false;interiorRoot.visible=true;cardGroup.visible=false;setInteriorStartingView();return true}function switchToExterior(){if(!castleRoot)return false;state.sceneMode='exterior';state.entranceStarted=false;document.body.dataset.sceneMode='exterior';castleRoot.visible=true;if(interiorRoot)interiorRoot.visible=false;cardGroup.visible=true;state.targetCamera=null;state.targetLook=null;setDefaultView();updateSceneCount();return true}",
   );
   source=source.replace(
     "document.getElementById('castle-reset')?.addEventListener",
@@ -79,7 +79,18 @@
     '    state.interiorLoadPromise=loadInterior()',
     `    window.__castleSearchRuntime={scene,camera,renderer,orbit,updateOrbit,get castleRoot(){return castleRoot},get interiorRoot(){return interiorRoot}};window.dispatchEvent(new CustomEvent('castleRuntimeReady'));state.interiorLoadPromise=null;const preloadInterior=()=>{if(state.disposed||state.interiorReady||state.interiorLoadPromise)return;state.interiorLoadPromise=loadInterior().catch(error=>{document.body.dataset.interiorReady='false';document.body.dataset.interiorError=String(error?.message||error);state.interiorLoadPromise=null;return null})};if('requestIdleCallback'in window)requestIdleCallback(preloadInterior,{timeout:${interiorIdleTimeout}});else setTimeout(preloadInterior,${interiorFallbackDelay})`,
   );
-  source=source.replace('<body data-renderer-status="loading">',`<body data-renderer-status="loading" data-performance-loader="${isIOS?'ios-draco-wasm-v20':(isWindows?'windows-draco-wasm-v20':'draco-wasm-v20')}">`);
+
+  source=source.replace(
+    "  const ENTRANCE_VIDEO_URL=new URL('../assets/assets/videos/castle_entrance.mp4',document.baseURI).href;",
+    "  const ENTRANCE_VIDEO_URL=new URL('../assets/assets/videos/castle_entrance.mp4',document.baseURI).href;\n  const EXTERIOR_GROUND_URL=new URL('../assets/assets/images/castle_exterior_ground.jpg',document.baseURI).href;\n  const EXTERIOR_ATMOSPHERE_URL=new URL('../assets/assets/images/castle_exterior_atmosphere.jpg',document.baseURI).href;",
+  );
+  source=source.replace(
+    /function buildEnvironment\(\)\{[\s\S]*?document\.body\.dataset\.logoForecourt='front-centred-upright-plaza';\n  \}/,
+    `function buildEnvironment(){const base=new THREE.Mesh(new THREE.CircleGeometry(76,96),new THREE.MeshStandardMaterial({color:0x071019,roughness:.96,metalness:.01}));base.rotation.x=-Math.PI/2;base.position.y=-.16;base.receiveShadow=atmosphere.highQuality;scene.add(base);const groundTexture=new THREE.TextureLoader().load(EXTERIOR_GROUND_URL,tex=>{tex.colorSpace=THREE.SRGBColorSpace;tex.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),4);tex.wrapS=tex.wrapT=THREE.ClampToEdgeWrapping;tex.needsUpdate=true});const plaza=new THREE.Mesh(new THREE.CylinderGeometry(31,31,.18,96),new THREE.MeshStandardMaterial({map:groundTexture,color:0xffffff,roughness:.76,metalness:.02}));plaza.position.set(0,-.02,19.5);plaza.scale.z=.72;plaza.receiveShadow=atmosphere.highQuality;scene.add(plaza);const atmosphereTexture=new THREE.TextureLoader().load(EXTERIOR_ATMOSPHERE_URL,tex=>{tex.colorSpace=THREE.SRGBColorSpace;tex.mapping=THREE.EquirectangularReflectionMapping;tex.needsUpdate=true});const sky=new THREE.Mesh(new THREE.SphereGeometry(130,32,20),new THREE.MeshBasicMaterial({map:atmosphereTexture,side:THREE.BackSide,fog:false}));sky.rotation.y=Math.PI;scene.add(sky);document.body.dataset.logoForecourt='uploaded-ground-artwork';document.body.dataset.exteriorAtmosphere='uploaded-moon-cloud-artwork'}`,
+  );
+  source=source.replace("scene.fog=new THREE.FogExp2(0x08131e,.0062)","scene.fog=new THREE.FogExp2(0x07111d,.0048)");
+  source=source.replace("const moon=new THREE.DirectionalLight(0xd9ecff,7.8);moon.position.set(-18,38,4)","const moon=new THREE.DirectionalLight(0xcfe5ff,8.8);moon.position.set(-24,42,6)");
+  source=source.replace('<body data-renderer-status="loading">',`<body data-renderer-status="loading" data-performance-loader="${isIOS?'ios-draco-wasm-v21-art':(isWindows?'windows-draco-wasm-v21-art':'draco-wasm-v21-art')}">`);
 
   document.open();document.write(source);document.close();
 })().catch(error=>{
