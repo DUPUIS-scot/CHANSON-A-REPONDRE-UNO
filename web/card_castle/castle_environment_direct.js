@@ -37,13 +37,25 @@
       generatedGround.push(child);
     }
 
+    // The base renderer also creates one opaque BackSide SphereGeometry sky.
+    // Hide only that generated sky so the uploaded atmosphere scene.background
+    // is visible. GLB groups/meshes, cards and the jester are untouched.
+    const generatedSky = [];
+    for (const child of [...scene.children]) {
+      if (!child?.isMesh || child === runtime.castleRoot) continue;
+      if ((child.geometry?.type || '') !== 'SphereGeometry') continue;
+      child.visible = false;
+      child.userData.castleGeneratedSkyHidden = true;
+      generatedSky.push(child);
+    }
+
     const group = new THREE.Group();
     group.name = 'castle-direct-exterior-ground';
     scene.add(group);
     window.__castleDirectExteriorEnvironment = group;
 
-    document.body.dataset.exteriorAtmosphere = 'loading-fullscreen-v34';
-    document.body.dataset.exteriorEnvironment = 'loading-ground-and-atmosphere-v34';
+    document.body.dataset.exteriorAtmosphere = 'loading-fullscreen-v35';
+    document.body.dataset.exteriorEnvironment = 'loading-ground-and-atmosphere-v35';
 
     const loader = new THREE.TextureLoader();
     let atmosphereTexture = null;
@@ -53,7 +65,7 @@
     const finishIfReady = () => {
       if (!groundReady || !atmosphereReady) return;
       document.body.dataset.exteriorEnvironment = 'ready';
-      document.body.dataset.exteriorEnvironmentMode = 'ground-plus-fullscreen-atmosphere-v34';
+      document.body.dataset.exteriorEnvironmentMode = 'ground-plus-fullscreen-atmosphere-v35-sky-hidden';
       syncSceneMode();
       window.dispatchEvent(new CustomEvent('castleExteriorEnvironmentReady'));
     };
@@ -67,7 +79,7 @@
         texture.needsUpdate = true;
         atmosphereTexture = texture;
         atmosphereReady = true;
-        document.body.dataset.exteriorAtmosphere = 'fullscreen-ready-v34';
+        document.body.dataset.exteriorAtmosphere = 'fullscreen-ready-v35';
         syncSceneMode();
         finishIfReady();
       },
@@ -76,6 +88,7 @@
         console.warn('Castle exterior atmosphere failed to load.', error);
         atmosphereReady = true;
         document.body.dataset.exteriorAtmosphere = 'failed';
+        generatedSky.forEach(mesh => { mesh.visible = true; });
         finishIfReady();
       },
     );
@@ -108,7 +121,7 @@
         group.add(ground);
 
         groundReady = true;
-        document.body.dataset.exteriorGround = 'reference-2-ground-v34';
+        document.body.dataset.exteriorGround = 'reference-2-ground-v35';
         finishIfReady();
       },
       undefined,
@@ -125,17 +138,17 @@
       const interior = document.body.dataset.sceneMode === 'interior';
       group.visible = !interior;
       if (interior) {
+        generatedSky.forEach(mesh => { mesh.visible = false; });
         scene.background = new THREE.Color(0x010307);
         scene.fog = new THREE.FogExp2(0x02060b, 0.012);
       } else {
-        // Scene backgrounds render as a screen-space quad, so the uploaded
-        // atmosphere always fills the complete Castle viewport behind the 3D.
+        generatedSky.forEach(mesh => { mesh.visible = !atmosphereTexture; });
         scene.background = atmosphereTexture || new THREE.Color(0x02060b);
         scene.fog = new THREE.FogExp2(0x08131e, 0.0062);
       }
       document.body.dataset.directEnvironmentScene = interior
         ? 'interior-hidden'
-        : (atmosphereTexture ? 'exterior-fullscreen-atmosphere' : 'exterior-fallback');
+        : (atmosphereTexture ? 'exterior-fullscreen-atmosphere-sky-hidden' : 'exterior-fallback');
     }
 
     const observer = new MutationObserver(syncSceneMode);

@@ -46,6 +46,24 @@
     : "    state.interiorLoadPromise=null;document.body.dataset.interiorReady='deferred-until-entrance';";
   source=source.replace(originalInteriorPreload,deferredInterior);
 
+  // Rotate the interior another 180 degrees while preserving the base loader's
+  // post-rotation bounds/recentering logic.
+  source=source.replace(
+    "interiorRoot.rotation.y=Math.PI*2.5;",
+    "interiorRoot.rotation.y=Math.PI*3.5;document.body.dataset.interiorRotation='current-plus-180-v35';"
+  );
+
+  // Add a dedicated interior-only return control. The existing navigation
+  // overlay already owns #return-exterior and routes it through switchToExterior().
+  source=source.replace(
+    "    #fullscreen-controls{display:none}",
+    "    #return-exterior{display:none}\n    body[data-scene-mode=\"interior\"] #return-exterior{display:flex}\n    #fullscreen-controls{display:none}"
+  );
+  source=source.replace(
+    '</span></button></div>\n    <div id="castle-controls" class="castle-toolbar-group">',
+    '</span></button><button id="return-exterior" class="castle-control" type="button" aria-label="Retour au château extérieur"><span class="control-medallion">←</span><span class="control-copy"><span class="control-title">EXTÉRIEUR</span><span class="control-subtitle">Retour au château</span></span></button></div>\n    <div id="castle-controls" class="castle-toolbar-group">'
+  );
+
   source=source.replace(
     '<body data-renderer-status="loading">',
     `<body data-renderer-status="loading" data-performance-loader="${isIOS?'ios-draco-direct-v31':(isWindows?'windows-draco-direct-v31':'draco-direct-v31')}">`
