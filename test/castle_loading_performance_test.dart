@@ -56,6 +56,8 @@ void main() {
       fastLoader,
       contains("source=source.replace(inlineJesterScript,'')"),
     );
+    expect(fastLoader, contains('legacyCardTextureConcurrency'));
+    expect(fastLoader, contains('String(isAndroid?0:4)'));
     expect(fastLoader, contains('baseExteriorView'));
     expect(fastLoader, contains('iosExteriorView'));
     expect(fastLoader, contains('ios-portrait-balanced-v39'));
@@ -65,7 +67,7 @@ void main() {
     expect(fastLoader, contains('castle_ios_uno_preview_fix.js'));
     expect(fastLoader, contains('castle_cards_direct.js'));
     expect(fastLoader, contains('ios-draco-direct-v40'));
-    expect(fastLoader, contains('android-draco-mobile-v40'));
+    expect(fastLoader, contains('android-draco-mobile-v41-staged-cards'));
     expect(fastLoader, contains('windows-draco-direct-v40'));
     expect(fastLoader, contains('jester-timeout'));
     expect(fastLoader, contains('jester-failed'));
@@ -93,7 +95,21 @@ void main() {
       directCards,
       contains("surfaceAnchorMode = 'direct-raycast-desktop-density-v39'"),
     );
-    expect(directCards, contains('const concurrency = isIOS ? 1'));
+    expect(directCards, contains('function postJesterStageReady()'));
+    expect(
+      directCards,
+      contains("directCardsStage = 'waiting-for-environment-and-jester'"),
+    );
+    expect(directCards, contains("environment === 'ready'"));
+    expect(directCards, contains("jester === 'ready'"));
+    expect(directCards, contains("fallback === 'jester-timeout'"));
+    expect(directCards, contains('const isAndroid = /Android/i'));
+    expect(directCards, contains('isAndroid ? 2'));
+    expect(directCards, contains('directCardTextureConcurrency'));
+    expect(
+      directCards,
+      contains("directCardPreviewMode = 'rampart-textures-v40-staged'"),
+    );
     expect(directCards, isNot(contains('const xSamples = isIOS ?')));
 
     expect(jesterOverlay, contains('rotateExistingCardAnchorsWithCastle'));

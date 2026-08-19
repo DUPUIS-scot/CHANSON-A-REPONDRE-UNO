@@ -37,6 +37,15 @@
   source=source.replaceAll("emit('cardLongPress'","emit('cardLongPressed'");
   source=source.replaceAll("emit('backToCategories'","emit('categoriesRequested'");
 
+  // Android uses castle_cards_direct.js as the single card-texture owner.
+  // Keep the legacy meshes available for compatibility, but prevent their
+  // four-way TextureLoader queue from competing with environment and jester
+  // decoding during startup.
+  source=source.replace(
+    'function pumpTextureQueue(){while(state.activeLoads<4&&state.loadQueue.length){',
+    'function pumpTextureQueue(){const legacyLimit='+String(isAndroid?0:4)+';document.body.dataset.legacyCardTextureConcurrency=String(legacyLimit);while(state.activeLoads<legacyLimit&&state.loadQueue.length){'
+  );
+
   const inlineJesterScript='<script type="module" src="./castle_jester_overlay.js"></scr'+'ipt>';
   source=source.replace(inlineJesterScript,'');
 
@@ -75,7 +84,7 @@
   const performanceLoader=isIOS
     ? 'ios-draco-direct-v40'
     : (isAndroid
-        ? 'android-draco-mobile-v40'
+        ? 'android-draco-mobile-v41-staged-cards'
         : (isWindows?'windows-draco-direct-v40':'draco-direct-v40'));
   source=source.replace(
     '<body data-renderer-status="loading">',

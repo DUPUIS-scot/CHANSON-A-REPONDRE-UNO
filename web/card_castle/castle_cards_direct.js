@@ -4,6 +4,8 @@
 
   let pendingCards = null;
   let installAttempts = 0;
+  let stagingAttempts = 0;
+  let retryTimer = 0;
 
   function decode(event) {
     let message = event.data;
@@ -155,15 +157,46 @@
     return anchors.slice(0, limit);
   }
 
+  function postJesterStageReady() {
+    const body = document.body;
+    const environment = body.dataset.exteriorEnvironment;
+    const jester = body.dataset.castleJester;
+    const fallback = body.dataset.castleLoaderFallback;
+    return environment === 'ready' && (
+      jester === 'ready' ||
+      jester === 'failed' ||
+      fallback === 'jester-timeout' ||
+      fallback === 'jester-failed'
+    );
+  }
+
+  function scheduleRenderRetry() {
+    if (retryTimer) return;
+    retryTimer = setTimeout(() => {
+      retryTimer = 0;
+      renderWhenReady();
+    }, 100);
+  }
+
   function renderWhenReady() {
     if (!pendingCards) return;
+    if (!postJesterStageReady()) {
+      document.body.dataset.directCardsStage = 'waiting-for-environment-and-jester';
+      if (stagingAttempts++ < 1200) scheduleRenderRetry();
+      return;
+    }
     const THREE = window.THREE;
     const runtime = window.__castleSearchRuntime;
     if (!THREE || !runtime?.scene || !runtime?.renderer || !runtime?.camera || !runtime?.castleRoot) {
-      if (installAttempts++ < 240) setTimeout(renderWhenReady, 100);
+      if (installAttempts++ < 240) scheduleRenderRetry();
       return;
     }
-    renderCards(THREE, runtime, pendingCards);
+    document.body.dataset.directCardsStage = 'post-jester-textures';
+    const payload = pendingCards;
+    pendingCards = null;
+    stagingAttempts = 0;
+    installAttempts = 0;
+    renderCards(THREE, runtime, payload);
   }
 
   function renderCards(THREE, runtime, payload) {
@@ -193,9 +226,11 @@
     const loader = new THREE.TextureLoader();
     const isIOS = /iP(?:hone|ad|od)/.test(navigator.userAgent) ||
       (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    // Keep iOS texture decoding strictly sequential for memory stability even
-    // though anchor discovery now matches the denser desktop grid.
-    const concurrency = isIOS ? 1 : (/Windows/i.test(navigator.userAgent) ? 5 : 4);
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    // iOS remains sequential. Android gets a conservative two-way decoder
+    // only after environment + jester have completed, avoiding startup spikes.
+    const concurrency = isIOS ? 1 : (isAndroid ? 2 : (/Windows/i.test(navigator.userAgent) ? 5 : 4));
+    document.body.dataset.directCardTextureConcurrency = String(concurrency);
     const queue = [];
     let active = 0;
     let loadedCount = 0;
@@ -276,7 +311,7 @@
 
     group.visible = document.body.dataset.sceneMode !== 'interior';
     document.body.dataset.directCardPreviewCount = String(group.children.length);
-    document.body.dataset.directCardPreviewMode = 'rampart-textures-v39';
+    document.body.dataset.directCardPreviewMode = 'rampart-textures-v40-staged';
     document.body.dataset.directCardTextureLoaded = '0';
     document.body.dataset.directCardTextureFailures = '0';
     pump();
