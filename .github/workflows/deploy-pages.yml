@@ -87,26 +87,36 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if ! command -v convert >/dev/null 2>&1; then
-            echo "ImageMagick is not preinstalled; installing with mirror retries."
-            timeout 240s sudo apt-get update -qq -o Acquire::Retries=5
-            timeout 240s sudo apt-get install -y --no-install-recommends -o Acquire::Retries=5 imagemagick
+          CONVERT_BIN="$(command -v convert || true)"
+          if [ -z "$CONVERT_BIN" ]; then
+            echo "ImageMagick convert is unavailable; using Python/Pillow preview generation instead."
           fi
           mkdir -p build/web/assets/share-previews
-          for index in $(seq 1 16); do
-            card="$(printf '%03d' "$index")"
-            source="build/web/assets/assets/decks/chanson_a_repondre_brio/cards/${card}.jpeg"
-            target="build/web/assets/share-previews/BRIO-${card}.jpg"
-            test -f "$source"
-            echo "Generating BRIO-${card} preview"
-            timeout 12s convert "$source" -auto-orient -resize '600x900^' -gravity center -extent 600x900 -strip -sampling-factor 4:2:0 -interlace Plane -quality 62 "$target"
-            size="$(stat -c%s "$target")"
-            if [ "$size" -gt 350000 ]; then
-              timeout 12s convert "$source" -auto-orient -resize '600x900^' -gravity center -extent 600x900 -strip -sampling-factor 4:2:0 -interlace Plane -quality 50 "$target"
-              size="$(stat -c%s "$target")"
-            fi
-            test "$size" -le 350000
-          done
+          python3 - <<'PY'
+          from pathlib import Path
+          from PIL import Image, ImageOps
+
+          out = Path('build/web/assets/share-previews')
+          src_dir = Path('build/web/assets/assets/decks/chanson_a_repondre_brio/cards')
+          for index in range(1, 17):
+              card = f'{index:03d}'
+              source = src_dir / f'{card}.jpeg'
+              target = out / f'BRIO-{card}.jpg'
+              if not source.exists():
+                  raise SystemExit(f'Missing source {source}')
+              with Image.open(source) as image:
+                  image = ImageOps.exif_transpose(image).convert('RGB')
+                  fitted = ImageOps.fit(image, (600, 900), method=Image.Resampling.LANCZOS)
+                  fitted.save(target, 'JPEG', quality=62, optimize=True, progressive=True, subsampling=2)
+              if target.stat().st_size > 350000:
+                  with Image.open(source) as image:
+                      image = ImageOps.exif_transpose(image).convert('RGB')
+                      fitted = ImageOps.fit(image, (600, 900), method=Image.Resampling.LANCZOS)
+                      fitted.save(target, 'JPEG', quality=50, optimize=True, progressive=True, subsampling=2)
+              if target.stat().st_size > 350000:
+                  raise SystemExit(f'Preview too large: {target}')
+              print(f'Generated BRIO-{card} preview')
+          PY
           echo "Generating UNO texture previews"
           timeout 420s python3 scripts/generate_uno_texture_previews.py
 
