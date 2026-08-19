@@ -3,6 +3,7 @@
   window.__castleDirectEnvironmentInstalled = true;
 
   const GROUND_URL = new URL('../assets/assets/images/castle_exterior_ground.png', document.baseURI).href;
+  const ATMOSPHERE_URL = new URL('../assets/assets/images/castle_exterior_atmosphere.png', document.baseURI).href;
   let attempts = 0;
 
   function install() {
@@ -21,7 +22,7 @@
     const scene = runtime.scene;
 
     // Remove only the generated exterior floor/plaza primitives from the base
-    // renderer. Keep the procedural night sky and every GLB object untouched.
+    // renderer. Keep every GLB object untouched.
     const generatedGround = [];
     for (const child of [...scene.children]) {
       if (!child?.isMesh || child === runtime.castleRoot) continue;
@@ -41,10 +42,44 @@
     scene.add(group);
     window.__castleDirectExteriorEnvironment = group;
 
-    document.body.dataset.exteriorAtmosphere = 'procedural-sky-only';
-    document.body.dataset.exteriorEnvironment = 'loading-ground-only-v33';
+    document.body.dataset.exteriorAtmosphere = 'loading-fullscreen-v34';
+    document.body.dataset.exteriorEnvironment = 'loading-ground-and-atmosphere-v34';
 
     const loader = new THREE.TextureLoader();
+    let atmosphereTexture = null;
+    let groundReady = false;
+    let atmosphereReady = false;
+
+    const finishIfReady = () => {
+      if (!groundReady || !atmosphereReady) return;
+      document.body.dataset.exteriorEnvironment = 'ready';
+      document.body.dataset.exteriorEnvironmentMode = 'ground-plus-fullscreen-atmosphere-v34';
+      syncSceneMode();
+      window.dispatchEvent(new CustomEvent('castleExteriorEnvironmentReady'));
+    };
+
+    loader.load(
+      ATMOSPHERE_URL,
+      texture => {
+        texture.colorSpace = THREE.SRGBColorSpace;
+        texture.wrapS = THREE.ClampToEdgeWrapping;
+        texture.wrapT = THREE.ClampToEdgeWrapping;
+        texture.needsUpdate = true;
+        atmosphereTexture = texture;
+        atmosphereReady = true;
+        document.body.dataset.exteriorAtmosphere = 'fullscreen-ready-v34';
+        syncSceneMode();
+        finishIfReady();
+      },
+      undefined,
+      error => {
+        console.warn('Castle exterior atmosphere failed to load.', error);
+        atmosphereReady = true;
+        document.body.dataset.exteriorAtmosphere = 'failed';
+        finishIfReady();
+      },
+    );
+
     loader.load(
       GROUND_URL,
       texture => {
@@ -72,19 +107,17 @@
         ground.renderOrder = -1;
         group.add(ground);
 
-        document.body.dataset.exteriorGround = 'reference-2-ground-only';
-        document.body.dataset.exteriorEnvironment = 'ready';
-        document.body.dataset.exteriorEnvironmentMode = 'ground-only-direct-v33';
-        syncSceneMode();
-        window.dispatchEvent(new CustomEvent('castleExteriorEnvironmentReady'));
+        groundReady = true;
+        document.body.dataset.exteriorGround = 'reference-2-ground-v34';
+        finishIfReady();
       },
       undefined,
       error => {
         console.warn('Castle exterior ground failed to load.', error);
+        groundReady = true;
         document.body.dataset.exteriorGround = 'failed';
-        document.body.dataset.exteriorEnvironment = 'ready';
         generatedGround.forEach(mesh => { mesh.visible = true; });
-        window.dispatchEvent(new CustomEvent('castleExteriorEnvironmentReady'));
+        finishIfReady();
       },
     );
 
@@ -95,12 +128,14 @@
         scene.background = new THREE.Color(0x010307);
         scene.fog = new THREE.FogExp2(0x02060b, 0.012);
       } else {
-        // Do not install an exterior atmosphere image. The base renderer's
-        // procedural night sky remains the only exterior atmosphere.
-        scene.background = new THREE.Color(0x02060b);
+        // Scene backgrounds render as a screen-space quad, so the uploaded
+        // atmosphere always fills the complete Castle viewport behind the 3D.
+        scene.background = atmosphereTexture || new THREE.Color(0x02060b);
         scene.fog = new THREE.FogExp2(0x08131e, 0.0062);
       }
-      document.body.dataset.directEnvironmentScene = interior ? 'interior-hidden' : 'exterior-ground-visible';
+      document.body.dataset.directEnvironmentScene = interior
+        ? 'interior-hidden'
+        : (atmosphereTexture ? 'exterior-fullscreen-atmosphere' : 'exterior-fallback');
     }
 
     const observer = new MutationObserver(syncSceneMode);
