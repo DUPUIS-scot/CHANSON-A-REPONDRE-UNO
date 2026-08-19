@@ -4,7 +4,7 @@ import { DRACOLoader } from 'https://unpkg.com/three@0.160.0/examples/jsm/loader
 
 const clamp01=value=>Math.max(0,Math.min(1,value));
 const smooth=value=>{const t=clamp01(value);return t*t*(3-2*t)};
-const BASE_ROTATION=Math.PI+Math.PI/2;
+const BASE_ROTATION=Math.PI*1.5;
 
 export class CastleJesterGatekeeper {
   constructor({scene,camera,renderer,onEnterRequested,modelUrl}) {
@@ -118,7 +118,7 @@ export class CastleJesterGatekeeper {
     if(spine)spine.rotation.x+=0.62*bow;
     if(waist)waist.rotation.x+=0.20*bow;
     const present=segment(6.0,7.0)*(1-segment(8.25,9.45));
-    // Preserve the 90-degree-right base orientation throughout the loop.
+    // Preserve the +90-degree base orientation throughout the loop.
     this.root.rotation.y=BASE_ROTATION+.42*present;
     if(leftUpper){leftUpper.rotation.x-=.72*present;leftUpper.rotation.z+=.88*present}
     if(leftFore)leftFore.rotation.x-=.26*present;
@@ -146,7 +146,15 @@ export class CastleJesterGatekeeper {
     this.pointer.x=((event.clientX-rect.left)/Math.max(1,rect.width))*2-1;
     this.pointer.y=-((event.clientY-rect.top)/Math.max(1,rect.height))*2+1;
     this.raycaster.setFromCamera(this.pointer,this.camera);
-    return this.raycaster.intersectObject(this.root,true).some(hit=>hit.object.userData.castleGatekeeper===true);
+    // Any rendered mesh that belongs to the jester is clickable, including skinned/accessory meshes.
+    return this.raycaster.intersectObject(this.root,true).some(hit=>{
+      let object=hit.object;
+      while(object&&object!==this.root){
+        if(object.isMesh||object.userData?.castleGatekeeper===true)return true;
+        object=object.parent;
+      }
+      return false;
+    });
   }
 
   setHover(event){const active=this.hitTest(event);this.hover=active;document.body.dataset.castleJesterHover=active?'true':'false';return active}
