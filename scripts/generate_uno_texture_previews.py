@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 import json
-import subprocess
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
+
+from PIL import Image, ImageOps
 
 CATALOG = Path('assets/json/cards.json')
 BUILD = Path('build/web')
 TARGET_DIR = BUILD / 'assets/share-previews'
 MAX_BYTES = 350_000
 MAX_WORKERS = 4
-CONVERT_TIMEOUT_SECONDS = 12
 
 with CATALOG.open('r', encoding='utf-8-sig') as handle:
     payload = json.load(handle)
@@ -30,10 +30,6 @@ def generate_preview(index: int, card: dict) -> str:
     if not image_path:
         raise RuntimeError(f'Missing image path for UNO-{index:03d}')
 
-    # Generate previews from the checked-out source asset first. Flutter's web
-    # asset output layout is an implementation detail and can vary between
-    # toolchain versions. Keep the packaged locations as fallbacks so this
-    # script remains compatible with existing build layouts.
     source_candidates = [
         Path(image_path),
         BUILD / 'assets' / image_path,
@@ -46,18 +42,21 @@ def generate_preview(index: int, card: dict) -> str:
         raise RuntimeError(f'Missing UNO source for {target.name}; checked: {checked}')
 
     def convert(quality: int) -> None:
-        subprocess.run([
-            'convert', str(source),
-            '-auto-orient',
-            '-resize', '600x900^',
-            '-gravity', 'center',
-            '-extent', '600x900',
-            '-strip',
-            '-sampling-factor', '4:2:0',
-            '-interlace', 'Plane',
-            '-quality', str(quality),
-            str(target),
-        ], check=True, timeout=CONVERT_TIMEOUT_SECONDS)
+        with Image.open(source) as image:
+            image = ImageOps.exif_transpose(image).convert('RGB')
+            fitted = ImageOps.fit(
+                image,
+                (600, 900),
+                method=Image.Resampling.LANCZOS,
+            )
+            fitted.save(
+                target,
+                'JPEG',
+                quality=quality,
+                optimize=True,
+                progressive=True,
+                subsampling=2,
+            )
 
     convert(62)
     if target.stat().st_size > MAX_BYTES:
