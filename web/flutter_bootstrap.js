@@ -4,6 +4,7 @@
 // Forward the page cache-busting build ID to the compiled Flutter entrypoint.
 const searchParams = new URLSearchParams(window.location.search);
 const buildId = searchParams.get('v');
+const isWindows = /Windows/i.test(navigator.userAgent);
 if (buildId && globalThis._flutter?.buildConfig?.builds) {
   for (const build of globalThis._flutter.buildConfig.builds) {
     if (typeof build.mainJsPath === 'string' && build.mainJsPath.length > 0) {
@@ -103,6 +104,42 @@ document.createElement = function(tagName, options) {
         frameDocument.body.dataset.bootstrapEssentialBridges = 'ready';
       };
 
+      const finishWindowsPostExteriorStage = () => {
+        if (!isWindows) return;
+        const frameDocument = element.contentDocument;
+        const frameWindow = element.contentWindow;
+        if (!frameDocument?.body || !frameWindow) return;
+        frameWindow.__castleEnableDeferredQuality?.();
+        frameWindow.__castlePreloadInterior?.();
+        frameDocument.body.dataset.windowsPostExteriorStage = 'complete';
+      };
+
+      const waitForWindowsJester = () => {
+        if (!isWindows) return;
+        const frameDocument = element.contentDocument;
+        if (!frameDocument?.body) return;
+        frameDocument.body.dataset.windowsPostExteriorStage = 'waiting-for-jester';
+        let jesterPolls = 0;
+        const jesterPoll = setInterval(() => {
+          const body = element.contentDocument?.body;
+          const jesterState = body?.dataset.castleJester;
+          if (
+            jesterState !== 'ready' &&
+            jesterState !== 'failed' &&
+            jesterPolls++ <= 120
+          ) {
+            return;
+          }
+          clearInterval(jesterPoll);
+          const finish = () => finishWindowsPostExteriorStage();
+          if ('requestIdleCallback' in window) {
+            requestIdleCallback(finish, {timeout: 5000});
+          } else {
+            setTimeout(finish, 1500);
+          }
+        }, 250);
+      };
+
       const injectEnhancedOverlays = () => {
         if (enhancedInjected) return;
         injectEssentials();
@@ -119,6 +156,7 @@ document.createElement = function(tagName, options) {
           module: true,
         });
         frameDocument.body.dataset.bootstrapEnhancedOverlays = 'ready';
+        waitForWindowsJester();
       };
 
       const handleRendererReady = () => {
