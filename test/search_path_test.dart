@@ -100,6 +100,9 @@ void main() {
       final castle = File(
         'web/card_castle/card_castle.html',
       ).readAsStringSync();
+      final fastLoader = File(
+        'web/card_castle/card_castle_fast.html',
+      ).readAsStringSync();
       final castleBridge = File(
         'lib/widgets/webgl_card_castle_view_web.dart',
       ).readAsStringSync();
@@ -127,9 +130,13 @@ void main() {
       );
 
       expect(castle, contains('id="back-to-categories"'));
-      expect(castle, contains("emit('categoriesRequested')"));
-      expect(castle, contains('assets/assets/models/search_castle.glb'));
+      expect(castle, contains("emit('backToCategories')"));
+      expect(castle, contains('assets/assets/models/castle_exterior.glb'));
       expect(castle, contains('deriveSurfaceAnchors(84)'));
+      expect(
+        fastLoader,
+        contains("source.replaceAll(\"emit('backToCategories'\",\"emit('categoriesRequested'\")"),
+      );
       expect(castleBridge, contains("case 'categoriesRequested':"));
       expect(castleBridge, contains('widget.onCategoriesRequested()'));
     });
