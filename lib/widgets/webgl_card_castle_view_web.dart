@@ -59,7 +59,7 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
     final navigator = html.window.navigator;
     final userAgent = navigator.userAgent;
     final isIos = RegExp(r'iP(?:hone|ad|od)').hasMatch(userAgent) ||
-        (navigator.platform == 'MacIntel' && navigator.maxTouchPoints > 1);
+        (navigator.platform == 'MacIntel' && (navigator.maxTouchPoints ?? 0) > 1);
     final castleUri = Uri.base.resolve('card_castle/card_castle_fast.html');
     final castleSrc = isIos
         ? castleUri
