@@ -286,7 +286,7 @@ async function main() {
       result.textureCount !== visibleCardCount ||
       result.activeCategory !== 'CLASSIQUE' ||
       result.surfaceAnchorCount !== 84 ||
-      result.modelPath !== `${basePath}assets/assets/models/search_castle.glb` ||
+      result.modelPath !== `${basePath}assets/assets/models/castle_exterior.glb` ||
       result.framePath !== `${basePath}card_castle/card_castle.html` ||
       !result.threeLoaded
     ) {
