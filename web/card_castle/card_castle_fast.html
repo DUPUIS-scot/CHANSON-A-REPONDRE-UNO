@@ -19,10 +19,6 @@
 
   const isIOS=/iP(?:hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
   const isWindows=/Windows/i.test(navigator.userAgent);
-  const textureConcurrency=isIOS?1:(isWindows?5:4);
-  const xSamples=isIOS?8:(isWindows?18:20);
-  const ySamples=isIOS?4:7;
-  const zSamples=isIOS?5:(isWindows?12:14);
 
   source=source.replace(
     "import { GLTFLoader } from '../vendor/GLTFLoader.js';",
@@ -39,27 +35,6 @@
   source=source.replaceAll("emit('cardLongPress'","emit('cardLongPressed'");
   source=source.replaceAll("emit('backToCategories'","emit('categoriesRequested'");
 
-  source=source.replace(
-    'queueTexture(mesh,card.imagePath,state.generation)',
-    'queueTexture(mesh,card.rectoUrl||card.imagePath,state.generation)'
-  );
-  source=source.replace(
-    "function queueTexture(mesh,path,generation){const url=assetUrl(path);state.loadQueue.push({mesh,url,generation});pumpTextureQueue()}",
-    "function queueTexture(mesh,path,generation){const url=castleRectoUrl(path);state.loadQueue.push({mesh,url,generation,retries:0});pumpTextureQueue()}"
-  );
-  source=source.replace(
-    "function pumpTextureQueue(){while(state.activeLoads<4&&state.loadQueue.length){const job=state.loadQueue.shift();if(job.generation!==state.generation||!job.mesh.parent)continue;state.activeLoads++;new THREE.TextureLoader().load(job.url,texture=>{texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),4);if(job.mesh.parent){const current=job.mesh.material[4];job.mesh.material[4]=new THREE.MeshStandardMaterial({map:texture,roughness:.68});current.dispose()}state.activeLoads--;pumpTextureQueue()},undefined,()=>{state.activeLoads--;pumpTextureQueue()})}}",
-    "function pumpTextureQueue(){while(state.activeLoads<"+textureConcurrency+"&&state.loadQueue.length){const job=state.loadQueue.shift();if(job.generation!==state.generation||!job.mesh.parent)continue;state.activeLoads++;new THREE.TextureLoader().load(job.url,texture=>{texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),4);if(job.mesh.parent){const current=job.mesh.material[4];job.mesh.material[4]=new THREE.MeshStandardMaterial({map:texture,roughness:.68});current.dispose()}state.activeLoads--;pumpTextureQueue()},undefined,()=>{state.activeLoads--;if(job.retries<2&&job.generation===state.generation&&job.mesh.parent){job.retries++;setTimeout(()=>{if(job.generation===state.generation&&job.mesh.parent){state.loadQueue.push(job);pumpTextureQueue()}},260*job.retries)}pumpTextureQueue()})}}"
-  );
-  source=source.replace(
-    "function assetUrl(path){const clean=String(path||'').replace(/^\\/+/,''),normalized=clean.startsWith('assets/')?clean:`assets/${clean}`;return new URL(`../${normalized}`,document.baseURI).href}",
-    "function castleRectoUrl(path){const value=String(path||'').trim();if(!value)return '';if(/^(blob:|data:)/i.test(value))return value;if(/^https?:/i.test(value)){try{const url=new URL(value);if(url.origin===location.origin&&url.pathname.includes('/assets/')&&!url.pathname.includes('/assets/assets/'))url.pathname=url.pathname.replace('/assets/','/assets/assets/');return url.href}catch(_){return value}}const clean=value.replace(/^\\/+/,''),normalized=clean.startsWith('assets/assets/')?clean:(clean.startsWith('assets/')?`assets/${clean}`:`assets/assets/${clean}`);return new URL(`../${normalized}`,document.baseURI).href}function assetUrl(path){const value=String(path||'').trim();if(/^(https?:|blob:|data:)/i.test(value))return value;const clean=value.replace(/^\\/+/,''),normalized=clean.startsWith('assets/')?clean:`assets/${clean}`;return new URL(`../${normalized}`,document.baseURI).href}"
-  );
-  source=source.replace(
-    /function deriveSurfaceAnchors\(limit\)\{[\s\S]*?return out\.slice\(0,limit\)\}/,
-    `function deriveSurfaceAnchors(limit){const out=[];const bounds=new THREE.Box3().setFromObject(castleRoot);const size=bounds.getSize(new THREE.Vector3());const ray=new THREE.Raycaster();const minY=bounds.min.y+size.y*.47,maxY=bounds.min.y+size.y*.94,minSpacingSq=1.35*1.35;const addHit=(hit,outward)=>{if(!hit||out.length>=limit||hit.point.y<minY||hit.point.y>maxY)return;const normal=hit.face?.normal?hit.face.normal.clone().transformDirection(hit.object.matrixWorld):outward.clone();if(normal.dot(outward)<0)normal.negate();if(Math.abs(normal.y)>.72)return;normal.y=THREE.MathUtils.clamp(normal.y,-.18,.28);normal.normalize();const position=hit.point.clone().addScaledVector(normal,.12);if(out.some(anchor=>anchor.position.distanceToSquared(position)<minSpacingSq))return;out.push({position,normal})};const meshes=[];castleRoot.traverse(object=>{if(object.isMesh&&object.visible!==false&&!object.userData?.hiddenAsOutlier)meshes.push(object)});const cast=(origin,direction,outward)=>{ray.set(origin,direction);ray.near=0;ray.far=Math.max(size.x,size.z)*2.6;const hits=ray.intersectObjects(meshes,false);for(const hit of hits){if(hit.point.y>=minY&&hit.point.y<=maxY){addHit(hit,outward);break}}};const xSamples=${xSamples},ySamples=${ySamples},zSamples=${zSamples};const frontZ=bounds.max.z+Math.max(8,size.z*.45);for(let yi=0;yi<ySamples&&out.length<limit;yi++){const y=THREE.MathUtils.lerp(minY,maxY,yi/(ySamples-1));for(let xi=0;xi<xSamples&&out.length<limit;xi++){const x=THREE.MathUtils.lerp(bounds.min.x+size.x*.04,bounds.max.x-size.x*.04,xi/(xSamples-1));cast(new THREE.Vector3(x,y,frontZ),new THREE.Vector3(0,0,-1),new THREE.Vector3(0,0,1))}}for(const side of[-1,1]){const x=side<0?bounds.min.x-Math.max(8,size.x*.35):bounds.max.x+Math.max(8,size.x*.35),direction=new THREE.Vector3(-side,0,0),outward=new THREE.Vector3(side,0,0);for(let yi=0;yi<ySamples&&out.length<limit;yi++){const y=THREE.MathUtils.lerp(minY,maxY,yi/(ySamples-1));for(let zi=0;zi<zSamples&&out.length<limit;zi++){const z=THREE.MathUtils.lerp(bounds.min.z+size.z*.06,bounds.max.z-size.z*.06,zi/(zSamples-1));cast(new THREE.Vector3(x,y,z),direction,outward)}}}document.body.dataset.surfaceAnchorMode='platform-fast-raycasts-v30';document.body.dataset.surfaceAnchorCount=String(out.length);return out.slice(0,limit)}`
-  );
-
   if(isIOS){
     source=source.replace("renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.35));","renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.1));");
     source=source.replace("atmosphere.highQuality=matchMedia('(min-width: 1100px)').matches&&(navigator.hardwareConcurrency||4)>=6&&devicePixelRatio<=1.75;","atmosphere.highQuality=false;");
@@ -72,38 +47,14 @@
   source=source.replace(originalInteriorPreload,deferredInterior);
 
   source=source.replace(
-    "  const ENTRANCE_VIDEO_URL=new URL('../assets/assets/videos/castle_entrance.mp4',document.baseURI).href;",
-    "  const ENTRANCE_VIDEO_URL=new URL('../assets/assets/videos/castle_entrance.mp4',document.baseURI).href;\n  const EXTERIOR_GROUND_URL=new URL('../assets/assets/images/castle_exterior_ground.png',document.baseURI).href;\n  const EXTERIOR_ATMOSPHERE_URL=new URL('../assets/assets/images/castle_exterior_atmosphere.png',document.baseURI).href;"
-  );
-
-  source=source.replace(
-    /function buildEnvironment\(\)\{[\s\S]*?document\.body\.dataset\.logoForecourt='[^']+';\n  \}/,
-    `function buildEnvironment(){const exteriorGroup=new THREE.Group();exteriorGroup.name='castle-exterior-environment';scene.add(exteriorGroup);window.__castleExteriorEnvironmentGroup=exteriorGroup;const base=new THREE.Mesh(new THREE.CircleGeometry(72,64),new THREE.MeshStandardMaterial({color:0x081119,roughness:.98,metalness:.01}));base.rotation.x=-Math.PI/2;base.position.y=-.14;exteriorGroup.add(base);const startupSky=new THREE.Mesh(new THREE.SphereGeometry(129,16,10),new THREE.MeshBasicMaterial({color:0x081522,side:THREE.BackSide,fog:false}));exteriorGroup.add(startupSky);document.body.dataset.logoForecourt='startup-minimal-exterior-first';document.body.dataset.exteriorEnvironment='deferred'}function loadDeferredEnvironment(){if(document.body.dataset.exteriorEnvironment==='loading'||document.body.dataset.exteriorEnvironment==='ready')return;const exteriorGroup=window.__castleExteriorEnvironmentGroup;if(!exteriorGroup)return;document.body.dataset.exteriorEnvironment='loading';let remaining=2;const done=()=>{remaining--;if(remaining<=0){document.body.dataset.exteriorEnvironment='ready';window.dispatchEvent(new CustomEvent('castleExteriorEnvironmentReady'))}};new THREE.TextureLoader().load(EXTERIOR_GROUND_URL,groundTexture=>{groundTexture.colorSpace=THREE.SRGBColorSpace;groundTexture.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),isIOS?2:4);groundTexture.wrapS=groundTexture.wrapT=THREE.ClampToEdgeWrapping;groundTexture.center.set(.5,.5);groundTexture.rotation=Math.PI;groundTexture.needsUpdate=true;const plaza=new THREE.Mesh(new THREE.CircleGeometry(38,72),new THREE.MeshStandardMaterial({map:groundTexture,color:0xffffff,roughness:.78,metalness:.01}));plaza.rotation.x=-Math.PI/2;plaza.position.set(0,-.035,15.8);plaza.scale.set(1,.78,1);exteriorGroup.add(plaza);document.body.dataset.exteriorGround='uploaded-ground-exterior-only';done()},undefined,()=>{document.body.dataset.exteriorGround='failed';done()});new THREE.TextureLoader().load(EXTERIOR_ATMOSPHERE_URL,atmosphereTexture=>{atmosphereTexture.colorSpace=THREE.SRGBColorSpace;atmosphereTexture.needsUpdate=true;const sky=new THREE.Mesh(new THREE.SphereGeometry(130,24,14),new THREE.MeshBasicMaterial({map:atmosphereTexture,side:THREE.BackSide,fog:false}));sky.rotation.y=Math.PI;exteriorGroup.add(sky);document.body.dataset.exteriorAtmosphere='uploaded-atmosphere-exterior-only';done()},undefined,()=>{document.body.dataset.exteriorAtmosphere='failed';done()})}`
-  );
-
-  const originalSwitch="function switchToInterior(){if(!state.interiorReady||!interiorRoot)return false;state.sceneMode='interior';document.body.dataset.sceneMode='interior';castleRoot.visible=false;interiorRoot.visible=true;cardGroup.visible=false;orbit.yaw=.15;orbit.pitch=.18;orbit.distance=29;orbit.target.set(0,6.7,0);updateOrbit();return true}";
-  const sceneSwitch="function switchToInterior(){if(!state.interiorReady||!interiorRoot)return false;state.sceneMode='interior';document.body.dataset.sceneMode='interior';castleRoot.visible=false;if(window.__castleExteriorEnvironmentGroup)window.__castleExteriorEnvironmentGroup.visible=false;interiorRoot.visible=true;cardGroup.visible=false;orbit.yaw=.15;orbit.pitch=.18;orbit.distance=29;orbit.target.set(0,6.7,0);updateOrbit();return true}function switchToExterior(){if(!castleRoot)return false;state.sceneMode='exterior';state.entranceStarted=false;document.body.dataset.sceneMode='exterior';castleRoot.visible=true;if(window.__castleExteriorEnvironmentGroup)window.__castleExteriorEnvironmentGroup.visible=true;if(interiorRoot)interiorRoot.visible=false;cardGroup.visible=true;state.targetCamera=null;state.targetLook=null;setDefaultView();updateSceneCount();return true}";
-  source=source.replace(originalSwitch,sceneSwitch);
-  source=source.replace(
-    "  window.__castleSearchRuntime={get scene(){return scene},get camera(){return camera},get renderer(){return renderer},get castleRoot(){return castleRoot},get interiorRoot(){return interiorRoot},orbit,updateOrbit,setCards};",
-    "  window.__castleSearchRuntime={get scene(){return scene},get camera(){return camera},get renderer(){return renderer},get castleRoot(){return castleRoot},get interiorRoot(){return interiorRoot},orbit,updateOrbit,setCards,switchToExterior};"
-  );
-
-  const rendererReady="resume();emit('rendererReady');";
-  if(isWindows){
-    const staged="resume();emit('rendererReady');let stableExteriorFrames=0;const stageExterior=()=>{stableExteriorFrames++;if(stableExteriorFrames<4){requestAnimationFrame(stageExterior);return}loadDeferredEnvironment()};requestAnimationFrame(stageExterior);";
-    source=source.replace(rendererReady,staged);
-  }else{
-    const delay=isIOS?500:100;
-    const timeout=isIOS?1200:500;
-    const staged="resume();emit('rendererReady');const hydrateExterior=()=>loadDeferredEnvironment();if('requestIdleCallback'in window)requestIdleCallback(hydrateExterior,{timeout:"+timeout+"});else setTimeout(hydrateExterior,"+delay+");";
-    source=source.replace(rendererReady,staged);
-  }
-
-  source=source.replace(
     '<body data-renderer-status="loading">',
-    `<body data-renderer-status="loading" data-performance-loader="${isIOS?'ios-draco-environment-cards-v30':(isWindows?'windows-draco-environment-cards-v30':'draco-environment-cards-v30')}">`
+    `<body data-renderer-status="loading" data-performance-loader="${isIOS?'ios-draco-direct-v31':(isWindows?'windows-draco-direct-v31':'draco-direct-v31')}">`
   );
+
+  const directScripts=
+    '<script src="./castle_environment_direct.js"></scr'+'ipt>'+
+    '<script src="./castle_cards_direct.js"></scr'+'ipt>';
+  source=source.replace('</body>',directScripts+'</body>');
 
   document.open();
   document.write(source);
