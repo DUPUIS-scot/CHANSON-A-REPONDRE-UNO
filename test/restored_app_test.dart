@@ -187,7 +187,7 @@ void main() {
         expect(directCards, contains('cardSelected'));
         expect(directCards, contains('cardLongPressed'));
         expect(castleHost, contains("'type': 'focusCard'"));
-        expect(castle, contains('state.dragging'));
+        expect(castle, contains('dragging:false'));
         expect(castle, contains('document.body.dataset.cardCount'));
         expect(castle, contains('deriveSurfaceAnchors(84)'));
         expect(castle, contains('document.body.dataset.surfaceAnchorCount'));
