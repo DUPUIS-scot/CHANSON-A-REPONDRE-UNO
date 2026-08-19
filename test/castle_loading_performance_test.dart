@@ -29,10 +29,12 @@ void main() {
     expect(bootstrap, isNot(contains('setTimeout(injectEssentials, 2400)')));
 
     expect(fastLoader, contains('const isIOS='));
+    expect(fastLoader, contains('const isAndroid=/Android/i'));
+    expect(fastLoader, contains('const isMobile=isIOS||isAndroid'));
     expect(fastLoader, contains('const isWindows='));
     expect(fastLoader, contains('DRACOLoader'));
-    expect(fastLoader, contains('setWorkerLimit("+(isIOS?1:2)+")'));
-    expect(fastLoader, contains("devicePixelRatio||1,1.1"));
+    expect(fastLoader, contains('setWorkerLimit("+(isMobile?1:2)+")'));
+    expect(fastLoader, contains('pixelRatioCap=isIOS?1.1:1.15'));
     expect(fastLoader, contains("atmosphere.highQuality=false"));
     expect(fastLoader, contains("windows-deferred-after-jester"));
     expect(fastLoader, contains("deferred-until-entrance"));
@@ -47,8 +49,9 @@ void main() {
     expect(fastLoader, contains('castle_environment_direct.js'));
     expect(fastLoader, contains('castle_ios_uno_preview_fix.js'));
     expect(fastLoader, contains('castle_cards_direct.js'));
-    expect(fastLoader, contains('ios-draco-direct-v37'));
-    expect(fastLoader, contains('windows-draco-direct-v37'));
+    expect(fastLoader, contains('ios-draco-direct-v38'));
+    expect(fastLoader, contains('android-draco-mobile-v38'));
+    expect(fastLoader, contains('windows-draco-direct-v38'));
     expect(fastLoader, isNot(contains('search_castle.glb')));
 
     expect(environment, contains('castle_exterior_ground.png'));

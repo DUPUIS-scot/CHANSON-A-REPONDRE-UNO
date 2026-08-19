@@ -18,6 +18,8 @@
   let source=await response.text();
 
   const isIOS=/iP(?:hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  const isAndroid=/Android/i.test(navigator.userAgent);
+  const isMobile=isIOS||isAndroid;
   const isWindows=/Windows/i.test(navigator.userAgent);
 
   source=source.replace(
@@ -26,7 +28,7 @@
   );
   source=source.replace(
     "  const cardGeometry=new THREE.BoxGeometry(1.08,1.62,.035),cardForward=new THREE.Vector3(0,0,1);",
-    "  const dracoLoader=new DRACOLoader();dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');dracoLoader.setDecoderConfig({type:"+(isIOS?"'js'":"'wasm'")+'});dracoLoader.setWorkerLimit('+(isIOS?1:2)+");dracoLoader.preload();const castleAssetLoader=new GLTFLoader();castleAssetLoader.setDRACOLoader(dracoLoader);\n  const cardGeometry=new THREE.BoxGeometry(1.08,1.62,.035),cardForward=new THREE.Vector3(0,0,1);"
+    "  const dracoLoader=new DRACOLoader();dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');dracoLoader.setDecoderConfig({type:"+(isIOS?"'js'":"'wasm'")+'});dracoLoader.setWorkerLimit('+(isMobile?1:2)+");dracoLoader.preload();const castleAssetLoader=new GLTFLoader();castleAssetLoader.setDRACOLoader(dracoLoader);\n  const cardGeometry=new THREE.BoxGeometry(1.08,1.62,.035),cardForward=new THREE.Vector3(0,0,1);"
   );
   source=source.replaceAll('new GLTFLoader().load(CASTLE_URL','castleAssetLoader.load(CASTLE_URL');
   source=source.replaceAll('new GLTFLoader().load(INTERIOR_URL','castleAssetLoader.load(INTERIOR_URL');
@@ -41,8 +43,9 @@
   const inlineJesterScript='<script type="module" src="./castle_jester_overlay.js"></scr'+'ipt>';
   source=source.replace(inlineJesterScript,'');
 
-  if(isIOS){
-    source=source.replace("renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.35));","renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.1));");
+  if(isMobile){
+    const pixelRatioCap=isIOS?1.1:1.15;
+    source=source.replace("renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.35));",`renderer.setPixelRatio(Math.min(devicePixelRatio||1,${pixelRatioCap}));`);
     source=source.replace("atmosphere.highQuality=matchMedia('(min-width: 1100px)').matches&&(navigator.hardwareConcurrency||4)>=6&&devicePixelRatio<=1.75;","atmosphere.highQuality=false;");
   }
 
@@ -70,13 +73,18 @@
     '</span></button><button id="return-exterior" class="castle-control" type="button" aria-label="Retour au château extérieur"><span class="control-medallion">←</span><span class="control-copy"><span class="control-title">EXTÉRIEUR</span><span class="control-subtitle">Retour au château</span></span></button></div>\n    <div id="castle-controls" class="castle-toolbar-group">'
   );
 
+  const performanceLoader=isIOS
+    ? 'ios-draco-direct-v38'
+    : (isAndroid
+        ? 'android-draco-mobile-v38'
+        : (isWindows?'windows-draco-direct-v38':'draco-direct-v38'));
   source=source.replace(
     '<body data-renderer-status="loading">',
-    `<body data-renderer-status="loading" data-performance-loader="${isIOS?'ios-draco-direct-v37':(isWindows?'windows-draco-direct-v37':'draco-direct-v37')}">`
+    `<body data-renderer-status="loading" data-performance-loader="${performanceLoader}">`
   );
 
   // Keep direct Castle helpers on the same build revision as the iframe. This
-  // prevents Safari/Windows caches mixing a fresh Flutter host with stale
+  // prevents mobile/desktop caches mixing a fresh Flutter host with stale
   // environment, preview or card-rendering scripts.
   const directVersion=new URLSearchParams(location.search).get('v');
   const directSuffix=directVersion?`?v=${encodeURIComponent(directVersion)}`:'';
