@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('3D jester page uses external AI without claiming URL image access', () {
+  test('3D jester page uses external AI with explicit image-source fallbacks', () {
     final screen = File(
       'lib/screens/card_transcription_screen.dart',
     ).readAsStringSync();
@@ -30,32 +30,32 @@ void main() {
     expect(sheet, contains("Text('COPY PROMPT')"));
     expect(sheet, contains('selected card image'));
     expect(sheet, contains('No app AI backend is used.'));
-    expect(sheet, isNot(contains('receives the direct public card-image URL')));
 
     expect(service, contains('PublicCardShareService.shareUrlFor'));
-    expect(service, contains("'CARD LINK:'"));
-    expect(service, isNot(contains("'LIGHTWEIGHT CARD PREVIEW:'")));
-    expect(service, isNot(contains("'ORIGINAL FULL-RESOLUTION CARD IMAGE:'")));
-    expect(service, isNot(contains('previewImageUrlFor')));
+    expect(service, contains("'CARD:'"));
+    expect(service, contains("'CARD IMAGE:'"));
+    expect(service, contains("'CARD IMAGE FALLBACK:'"));
+    expect(service, contains('previewImageUrlFor'));
+    expect(service, contains('PublicCardShareService.publicImageUrlFor'));
     expect(service, contains("'CARD TEXT PROVIDED BY THE APP:'"));
-    expect(service, contains('actual image attachment'));
     expect(service, contains('card.question'));
     expect(service, contains('card.answer'));
-    expect(service, isNot(contains('Open and analyze the CARD IMAGE directly')));
+    expect(service, contains('Do not claim to have viewed either image'));
   });
 
-  test('AI prompt uses one canonical card link and remains deck agnostic', () {
+  test('AI prompt uses canonical card and deck-agnostic preview identities', () {
     final service = File(
       'lib/services/external_ai_handoff_service.dart',
     ).readAsStringSync();
 
     expect(service, contains('cardId: card.id'));
     expect(service, contains('deckId: deck.id'));
-    expect(service, contains("'CARD LINK:'"));
-    expect(service, isNot(contains('share-previews')));
-    expect(service, isNot(contains('DIRECT PUBLIC CARD IMAGE:')));
-    expect(service, isNot(contains('UNO-')));
-    expect(service, isNot(contains('BRIO-')));
+    expect(service, contains("'CARD:'"));
+    expect(service, contains("'CARD IMAGE:'"));
+    expect(service, contains('share-previews'));
+    expect(service, isNot(contains("deck.id == '")));
+    expect(service, isNot(contains('AppConstants.productionDeckId')));
+    expect(service, isNot(contains('AppConstants.brioDeckId')));
   });
 
   test('transcription AI provider flow is deck agnostic for UNO and BRIO', () {
