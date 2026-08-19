@@ -61,15 +61,11 @@
     : "    state.interiorLoadPromise=null;document.body.dataset.interiorReady='deferred-until-entrance';";
   source=source.replace(originalInteriorPreload,deferredInterior);
 
-  // Rotate the interior another 180 degrees while preserving the base loader's
-  // post-rotation bounds/recentering logic.
   source=source.replace(
     "interiorRoot.rotation.y=Math.PI*2.5;",
     "interiorRoot.rotation.y=Math.PI*3.5;document.body.dataset.interiorRotation='current-plus-180-v35';"
   );
 
-  // Add a dedicated interior-only return control. The existing navigation
-  // overlay already owns #return-exterior and routes it through switchToExterior().
   source=source.replace(
     "    #fullscreen-controls{display:none}",
     "    #return-exterior{display:none}\n    body[data-scene-mode=\"interior\"] #return-exterior{display:flex}\n    #fullscreen-controls{display:none}"
@@ -77,6 +73,16 @@
   source=source.replace(
     '</span></button></div>\n    <div id="castle-controls" class="castle-toolbar-group">',
     '</span></button><button id="return-exterior" class="castle-control" type="button" aria-label="Retour au château extérieur"><span class="control-medallion">←</span><span class="control-copy"><span class="control-title">EXTÉRIEUR</span><span class="control-subtitle">Retour au château</span></span></button></div>\n    <div id="castle-controls" class="castle-toolbar-group">'
+  );
+
+  const performanceLoader=isIOS
+    ? 'ios-draco-direct-v39'
+    : (isAndroid
+        ? 'android-draco-mobile-v39'
+        : (isWindows?'windows-draco-direct-v39':'draco-direct-v39'));
+  source=source.replace(
+    '<body data-renderer-status="loading">',
+    `<body data-renderer-status="loading" data-performance-loader="${performanceLoader}">`
   );
 
   const loaderMarkup=`<div id="castle-jester-loader" aria-live="polite"><div class="castle-loader-shell"><div class="castle-loader-track"><div id="castle-loader-fill"></div><div class="castle-loader-jester" aria-hidden="true">🃏</div></div><div id="castle-loader-percent">0%</div><div id="castle-loader-stage">INITIALISATION</div></div></div>`;
@@ -94,27 +100,15 @@
   </style>`;
   source=source.replace('</head>',loaderStyles+'</head>');
   source=source.replace(/<body([^>]*)>/,match=>match+loaderMarkup);
-  source=source.replace('</body>',`<script>(function(){const root=document.getElementById('castle-jester-loader'),fill=document.getElementById('castle-loader-fill'),percent=document.getElementById('castle-loader-percent'),stage=document.getElementById('castle-loader-stage');if(!root||!fill||!percent||!stage)return;let current=0,target=3,done=false;const stages=[[0,'INITIALISATION'],[18,'CHÂTEAU LOADING'],[60,'ENVIRONMENT LOADING'],[75,'JESTER LOADING'],[95,'ACTIVATING INTERACTION'],[100,'READY']];function setTarget(value,label){target=Math.max(target,Math.min(100,value));if(label)stage.textContent=label}function stageFor(value){let result=stages[0][1];for(const pair of stages)if(value>=pair[0])result=pair[1];return result}function tick(){if(done)return;current+=(target-current)*.09;if(target-current<.2)current=target;fill.style.width=Math.max(0,Math.min(100,current))+'%';percent.textContent=Math.round(current)+'%';if(!stage.dataset.locked)stage.textContent=stageFor(current);requestAnimationFrame(tick)}requestAnimationFrame(tick);const body=document.body;const observer=new MutationObserver(()=>{const renderer=body.dataset.rendererStatus;const environment=body.dataset.exteriorEnvironment;const jester=body.dataset.castleJester;if(renderer==='ready')setTarget(60,'ENVIRONMENT LOADING');if(environment==='ready')setTarget(75,'JESTER LOADING');if(jester==='ready'){stage.dataset.locked='true';stage.textContent='ACTIVATING INTERACTION';setTarget(100);const complete=()=>{if(done)return;done=true;fill.style.width='100%';percent.textContent='100%';stage.textContent='READY';setTimeout(()=>root.classList.add('is-done'),220);setTimeout(()=>root.remove(),900)};setTimeout(complete,260)}if(jester==='failed'){stage.dataset.locked='true';stage.textContent='JESTER LOAD FAILED';root.style.pointerEvents='none'}});observer.observe(body,{attributes:true,attributeFilter:['data-renderer-status','data-exterior-environment','data-castle-jester']});window.addEventListener('castleRuntimeReady',()=>setTarget(60,'ENVIRONMENT LOADING'),{once:true});setTimeout(()=>setTarget(18,'CHÂTEAU LOADING'),120);})();</scr`+`ipt>`+directScripts+'</body>');
 
-  const performanceLoader=isIOS
-    ? 'ios-draco-direct-v39'
-    : (isAndroid
-        ? 'android-draco-mobile-v39'
-        : (isWindows?'windows-draco-direct-v39':'draco-direct-v39'));
-  source=source.replace(
-    '<body data-renderer-status="loading">',
-    `<body data-renderer-status="loading" data-performance-loader="${performanceLoader}">`
-  );
-
-  // Keep direct Castle helpers on the same build revision as the iframe. This
-  // prevents mobile/desktop caches mixing a fresh Flutter host with stale
-  // environment, preview or card-rendering scripts.
   const directVersion=new URLSearchParams(location.search).get('v');
   const directSuffix=directVersion?`?v=${encodeURIComponent(directVersion)}`:'';
   const directScripts=
     '<script src="./castle_environment_direct.js'+directSuffix+'"></scr'+'ipt>'+
     '<script src="./castle_ios_uno_preview_fix.js'+directSuffix+'"></scr'+'ipt>'+
     '<script src="./castle_cards_direct.js'+directSuffix+'"></scr'+'ipt>';
+  const loaderScript='<script>(function(){const root=document.getElementById("castle-jester-loader"),fill=document.getElementById("castle-loader-fill"),percent=document.getElementById("castle-loader-percent"),stage=document.getElementById("castle-loader-stage");if(!root||!fill||!percent||!stage)return;let current=0,target=3,done=false;const stages=[[0,"INITIALISATION"],[18,"CHÂTEAU LOADING"],[60,"ENVIRONMENT LOADING"],[75,"JESTER LOADING"],[95,"ACTIVATING INTERACTION"],[100,"READY"]];function setTarget(value,label){target=Math.max(target,Math.min(100,value));if(label)stage.textContent=label}function stageFor(value){let result=stages[0][1];for(const pair of stages)if(value>=pair[0])result=pair[1];return result}function tick(){if(done)return;current+=(target-current)*.09;if(target-current<.2)current=target;fill.style.width=Math.max(0,Math.min(100,current))+"%";percent.textContent=Math.round(current)+"%";if(!stage.dataset.locked)stage.textContent=stageFor(current);requestAnimationFrame(tick)}requestAnimationFrame(tick);const body=document.body;const observer=new MutationObserver(()=>{const renderer=body.dataset.rendererStatus,environment=body.dataset.exteriorEnvironment,jester=body.dataset.castleJester;if(renderer==="ready")setTarget(60,"ENVIRONMENT LOADING");if(environment==="ready")setTarget(75,"JESTER LOADING");if(jester==="ready"){stage.dataset.locked="true";stage.textContent="ACTIVATING INTERACTION";setTarget(100);setTimeout(()=>{if(done)return;done=true;fill.style.width="100%";percent.textContent="100%";stage.textContent="READY";setTimeout(()=>root.classList.add("is-done"),220);setTimeout(()=>root.remove(),900)},260)}if(jester==="failed"){stage.dataset.locked="true";stage.textContent="JESTER LOAD FAILED";root.style.pointerEvents="none"}});observer.observe(body,{attributes:true,attributeFilter:["data-renderer-status","data-exterior-environment","data-castle-jester"]});window.addEventListener("castleRuntimeReady",()=>setTarget(60,"ENVIRONMENT LOADING"),{once:true});setTimeout(()=>setTarget(18,"CHÂTEAU LOADING"),120)})();</scr'+'ipt>';
+  source=source.replace('</body>',loaderScript+directScripts+'</body>');
 
   document.open();
   document.write(source);
