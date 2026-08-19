@@ -82,7 +82,9 @@
     `<body data-renderer-status="loading" data-performance-loader="${performanceLoader}">`
   );
 
-  const loaderArtwork=new URL('../../assets/images/castle_jester_loading_bar.png',document.baseURI).href;
+  // Flutter web emits declared assets under build/web/assets/assets/.
+  // From build/web/card_castle/card_castle_fast.html the correct runtime path is ../assets/assets/...
+  const loaderArtwork=new URL('../assets/assets/images/castle_jester_loading_bar.png',document.baseURI).href;
   const loaderMarkup=`<div id="castle-jester-loader" aria-live="polite"><div class="castle-loader-shell"><div class="castle-loader-artwork" style="--castle-loader-art:url('${loaderArtwork}')"><div class="castle-loader-artwork-base"></div><div id="castle-loader-fill" class="castle-loader-artwork-fill"></div></div><div id="castle-loader-percent">0%</div><div id="castle-loader-stage">INITIALISATION</div></div></div>`;
   const loaderStyles=`<style>
     #castle-jester-loader{position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;background:radial-gradient(circle at 50% 44%,rgba(66,6,5,.42),rgba(2,6,11,.96) 58%,#02060b);transition:opacity .42s ease,visibility .42s ease;pointer-events:auto}
@@ -90,7 +92,7 @@
     .castle-loader-shell{width:min(94vw,1280px);text-align:center;padding:18px}
     .castle-loader-artwork{position:relative;width:100%;aspect-ratio:2.5/1;max-height:52vh;margin:auto;filter:drop-shadow(0 18px 30px rgba(0,0,0,.7));overflow:hidden}
     .castle-loader-artwork-base,.castle-loader-artwork-fill{position:absolute;inset:0;background-image:var(--castle-loader-art);background-repeat:no-repeat;background-position:center;background-size:contain;pointer-events:none}
-    .castle-loader-artwork-base{filter:brightness(.24) saturate(.35);opacity:.8}
+    .castle-loader-artwork-base{filter:brightness(.38) saturate(.55);opacity:1}
     .castle-loader-artwork-fill{width:0;right:auto;filter:brightness(1.04) saturate(1.08);transition:width .28s ease;overflow:hidden;background-size:auto 100%;background-position:left center}
     #castle-loader-percent{margin-top:10px;color:#e8b660;font:600 clamp(26px,4vw,44px)/1.1 Georgia,serif;text-shadow:0 2px 12px rgba(0,0,0,.8)}
     #castle-loader-stage{margin-top:8px;color:#d7c8b0;font:600 clamp(13px,2vw,18px)/1.2 Georgia,serif;letter-spacing:.18em;text-transform:uppercase}
