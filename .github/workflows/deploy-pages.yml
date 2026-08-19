@@ -83,7 +83,7 @@ jobs:
             --dart-define=APP_BUILD_SHA="${{ github.sha }}"
 
       - name: Generate lightweight card previews
-        timeout-minutes: 4
+        timeout-minutes: 6
         shell: bash
         run: |
           set -euo pipefail
@@ -107,7 +107,7 @@ jobs:
             test "$size" -le 350000
           done
           echo "Generating UNO texture previews"
-          timeout 90s python3 scripts/generate_uno_texture_previews.py
+          timeout 240s python3 scripts/generate_uno_texture_previews.py
 
       - name: Version Flutter entry bundle by commit SHA
         shell: bash
