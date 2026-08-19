@@ -1,0 +1,39 @@
+name: Rotate interior castle once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/rotate-interior-castle-once.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  rotate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Rotate interior GLB 90 degrees left
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('web/card_castle/card_castle.html')
+          s = p.read_text()
+          old = "interiorRoot.scale.setScalar(scale);interiorRoot.position.set(-center.x*scale,-bounds.min.y*scale,-center.z*scale);scene.add(interiorRoot);"
+          new = "interiorRoot.scale.setScalar(scale);interiorRoot.rotation.y=Math.PI/2;interiorRoot.position.set(-center.x*scale,-bounds.min.y*scale,-center.z*scale);scene.add(interiorRoot);"
+          if old not in s:
+              raise SystemExit('Expected interior transform block not found; refusing broad edit')
+          p.write_text(s.replace(old, new, 1))
+      - name: Remove one-shot workflow
+        run: rm .github/workflows/rotate-interior-castle-once.yml
+      - name: Commit fix to latest main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add web/card_castle/card_castle.html .github/workflows/rotate-interior-castle-once.yml
+          git commit -m "Rotate interior castle 90 degrees left"
+          git push origin HEAD:main
