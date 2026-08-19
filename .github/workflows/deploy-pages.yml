@@ -83,7 +83,7 @@ jobs:
             --dart-define=APP_BUILD_SHA="${{ github.sha }}"
 
       - name: Generate lightweight card previews
-        timeout-minutes: 6
+        timeout-minutes: 8
         shell: bash
         run: |
           set -euo pipefail
@@ -107,7 +107,7 @@ jobs:
             test "$size" -le 350000
           done
           echo "Generating UNO texture previews"
-          timeout 240s python3 scripts/generate_uno_texture_previews.py
+          timeout 420s python3 scripts/generate_uno_texture_previews.py
 
       - name: Version Flutter entry bundle by commit SHA
         shell: bash
@@ -201,10 +201,6 @@ jobs:
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
-      # A workflow rerun keeps artifacts from the previous attempt. Uploading the
-      # same fixed `github-pages` name again makes deploy-pages fail because two
-      # artifacts match. Only build/upload on the first attempt; failed deploys
-      # can then be rerun safely against that single artifact.
       - name: Upload GitHub Pages artifact
         if: ${{ github.run_attempt == 1 }}
         uses: actions/upload-pages-artifact@v4
