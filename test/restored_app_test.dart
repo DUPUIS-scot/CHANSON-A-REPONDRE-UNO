@@ -176,7 +176,8 @@ void main() {
         expect(castle, contains('assets/assets/models/castle_exterior.glb'));
         expect(castle, contains("from '../vendor/GLTFLoader.js'"));
         expect(castle, isNot(contains('unpkg.com')));
-        expect(castle, contains('cardLongPress'));
+        expect(castle, contains('LONG_PRESS_MS=600'));
+        expect(castle, contains('longPressTimer:0'));
         expect(castle, contains('cardTap'));
         expect(castle, contains("message.type==='focusCard'"));
         expect(castle, contains('state.dragging'));
@@ -212,7 +213,6 @@ void main() {
       final homeViewport = File(
         'lib/widgets/home_3d_video_viewport.dart',
       ).readAsStringSync();
-
       expect(viewport, contains('rotation.value * math.pi * 2'));
       expect(viewport, contains('..rotateY(yaw)'));
       expect(viewport, contains('..rotateX(pitch)'));
