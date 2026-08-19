@@ -83,13 +83,14 @@ jobs:
             --dart-define=APP_BUILD_SHA="${{ github.sha }}"
 
       - name: Generate lightweight card previews
-        timeout-minutes: 8
+        timeout-minutes: 12
         shell: bash
         run: |
           set -euo pipefail
           if ! command -v convert >/dev/null 2>&1; then
-            timeout 90s sudo apt-get update -qq
-            timeout 120s sudo apt-get install -y --no-install-recommends imagemagick
+            echo "ImageMagick is not preinstalled; installing with mirror retries."
+            timeout 240s sudo apt-get update -qq -o Acquire::Retries=5
+            timeout 240s sudo apt-get install -y --no-install-recommends -o Acquire::Retries=5 imagemagick
           fi
           mkdir -p build/web/assets/share-previews
           for index in $(seq 1 16); do
