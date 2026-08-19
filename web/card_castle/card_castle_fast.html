@@ -47,6 +47,25 @@
   source=source.replaceAll("emit('cardLongPress'","emit('cardLongPressed'");
   source=source.replaceAll("emit('backToCategories'","emit('categoriesRequested'");
 
+  // Interior navigation: keep both GLBs resident and expose a control only
+  // while the visitor is inside the castle.
+  source=source.replace(
+    'body.fullscreen-castle #enter-fullscreen{display:none}',
+    'body.fullscreen-castle #enter-fullscreen{display:none}#return-exterior{display:none}body[data-scene-mode="interior"] #return-exterior{display:flex}',
+  );
+  source=source.replace(
+    '<button id="castle-reset" class="castle-control" type="button" aria-label="Réinitialiser la vue">',
+    '<button id="return-exterior" class="castle-control" type="button" aria-label="Retour à l’extérieur"><span class="control-medallion">↩</span><span class="control-copy"><span class="control-title">EXTÉRIEUR</span><span class="control-subtitle">Retour au château</span></span></button>\n      <button id="castle-reset" class="castle-control" type="button" aria-label="Réinitialiser la vue">',
+  );
+  source=source.replace(
+    "function switchToInterior(){if(!state.interiorReady||!interiorRoot)return false;state.sceneMode='interior';document.body.dataset.sceneMode='interior';castleRoot.visible=false;interiorRoot.visible=true;cardGroup.visible=false;orbit.yaw=.15;orbit.pitch=.18;orbit.distance=29;orbit.target.set(0,6.7,0);updateOrbit();return true}",
+    "function switchToInterior(){if(!state.interiorReady||!interiorRoot)return false;state.sceneMode='interior';document.body.dataset.sceneMode='interior';castleRoot.visible=false;interiorRoot.visible=true;cardGroup.visible=false;orbit.yaw=.15;orbit.pitch=.18;orbit.distance=29;orbit.target.set(0,6.7,0);updateOrbit();return true}function switchToExterior(){if(!castleRoot)return false;state.sceneMode='exterior';state.entranceStarted=false;document.body.dataset.sceneMode='exterior';castleRoot.visible=true;if(interiorRoot)interiorRoot.visible=false;cardGroup.visible=true;state.targetCamera=null;state.targetLook=null;setDefaultView();updateSceneCount();return true}",
+  );
+  source=source.replace(
+    "document.getElementById('castle-reset')?.addEventListener",
+    "document.getElementById('return-exterior')?.addEventListener('click',()=>switchToExterior(),{signal:abort.signal});document.getElementById('castle-reset')?.addEventListener",
+  );
+
   source=source.replace(
     'queueTexture(mesh,card.imagePath,state.generation)',
     'queueTexture(mesh,castleRectoUrl(card.rectoUrl||card.imagePath),state.generation)',
@@ -118,7 +137,7 @@
           }
         }
       }
-      document.body.dataset.surfaceAnchorMode='platform-fast-raycasts-v18';
+      document.body.dataset.surfaceAnchorMode='platform-fast-raycasts-v19';
       document.body.dataset.surfaceAnchorCount=String(out.length);
       return out.slice(0,limit);
     }`,
@@ -131,7 +150,7 @@
   );
   source=source.replace(
     '<body data-renderer-status="loading">',
-    `<body data-renderer-status="loading" data-performance-loader="${isIOS?'ios-draco-js-v18':(isWindows?'windows-draco-fast-v18':'draco-exterior-v18')}">`,
+    `<body data-renderer-status="loading" data-performance-loader="${isIOS?'ios-draco-js-v19':(isWindows?'windows-draco-fast-v19':'draco-exterior-v19')}">`,
   );
 
   // iOS must never redirect into card_castle.html because that direct renderer
