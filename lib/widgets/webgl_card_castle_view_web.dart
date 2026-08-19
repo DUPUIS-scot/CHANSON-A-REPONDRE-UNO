@@ -7,9 +7,11 @@ import 'dart:ui_web' as ui_web;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../core/app_config.dart';
 import '../models/card_image_model.dart';
+import '../providers/dj_who_player_provider.dart';
 
 class WebGlCardCastleView extends StatefulWidget {
   const WebGlCardCastleView({
@@ -49,11 +51,14 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
   StreamSubscription<html.MessageEvent>? messages;
   StreamSubscription<html.Event>? frameLoads;
   Timer? cardOverlayReleaseTimer;
+  Timer? djWhoContinuityTimer;
   DateTime? cardOverlayReleasedAt;
+  DjWhoPlayerProvider? djWhoPlayer;
   late final bool isIos;
   bool rendererFailed = false;
   bool rendererReady = false;
   bool cardOverlayActive = false;
+  bool djWhoContinuityStarted = false;
 
   @override
   void initState() {
@@ -88,8 +93,27 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
     iframe.dataset['iosLoaderMode'] =
         isIos ? 'draco-js-watchdog' : 'compressed-draco';
     ui_web.platformViewRegistry.registerViewFactory(viewType, (_) => iframe);
-    frameLoads = iframe.onLoad.listen((_) => _sendState());
+    frameLoads = iframe.onLoad.listen((_) {
+      _sendState();
+      _keepDjWhoPlaying();
+    });
     messages = html.window.onMessage.listen(_handleMessage);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (djWhoContinuityStarted) return;
+
+    final player = context.read<DjWhoPlayerProvider>();
+    djWhoPlayer = player;
+    djWhoContinuityStarted = true;
+    player.beginCastlePlaybackContinuity();
+    _keepDjWhoPlaying();
+    djWhoContinuityTimer = Timer.periodic(
+      const Duration(seconds: 2),
+      (_) => _keepDjWhoPlaying(),
+    );
   }
 
   @override
@@ -121,8 +145,16 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
     frameLoads?.cancel();
     messages?.cancel();
     cardOverlayReleaseTimer?.cancel();
+    djWhoContinuityTimer?.cancel();
+    djWhoPlayer?.endCastlePlaybackContinuity();
     _setInAppFullscreen(false);
     super.dispose();
+  }
+
+  void _keepDjWhoPlaying() {
+    final player = djWhoPlayer;
+    if (player == null) return;
+    unawaited(player.ensureCastlePlaybackContinuity());
   }
 
   void _handleMessage(html.MessageEvent event) {
@@ -136,6 +168,7 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
       switch (decoded['type']) {
         case 'rendererReady':
           rendererReady = true;
+          _keepDjWhoPlaying();
           _sendState();
           if (widget.fullscreenRequestId > 0) _requestFullscreen();
         case 'rendererError':
