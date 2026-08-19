@@ -87,10 +87,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          CONVERT_BIN="$(command -v convert || true)"
-          if [ -z "$CONVERT_BIN" ]; then
-            echo "ImageMagick convert is unavailable; using Python/Pillow preview generation instead."
-          fi
+          python3 -m pip install --user --disable-pip-version-check pillow
           mkdir -p build/web/assets/share-previews
           python3 - <<'PY'
           from pathlib import Path
