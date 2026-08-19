@@ -84,13 +84,12 @@
   }
   function makeLogoTexture(){
     const canvas=document.createElement('canvas');canvas.width=2048;canvas.height=1536;const c=canvas.getContext('2d');
-    c.save();c.translate(1024,768);c.rotate(Math.PI);c.translate(-1024,-768);
     const grad=c.createRadialGradient(1024,760,120,1024,760,900);grad.addColorStop(0,'#6f281e');grad.addColorStop(.46,'#541d16');grad.addColorStop(.48,'#1b1d1e');grad.addColorStop(.72,'#141719');grad.addColorStop(1,'#0a0e10');c.fillStyle=grad;c.fillRect(0,0,2048,1536);
     const ring=(rx,ry,w,color)=>{c.beginPath();c.ellipse(1024,790,rx,ry,0,0,Math.PI*2);c.lineWidth=w;c.strokeStyle=color;c.stroke()};
     ring(870,620,26,'#221a11');ring(835,585,12,'#d4a44e');ring(785,535,18,'#241b12');ring(748,500,7,'#aa7b38');ring(690,438,18,'#2b2116');
     c.save();c.translate(1024,640);c.fillStyle='#e2b76b';c.strokeStyle='#3a2815';c.lineWidth=18;c.textAlign='center';c.textBaseline='middle';c.font='bold 104px Georgia, serif';c.strokeText('CHANSON À RÉPONDRE',0,0);c.fillText('CHANSON À RÉPONDRE',0,0);c.restore();
-    c.fillStyle='#f0c875';c.strokeStyle='#2e2418';c.lineWidth=34;c.textAlign='center';c.textBaseline='middle';c.font='bold 430px Arial Black, Arial, sans-serif';c.strokeText('UNO',1024,955);c.fillText('UNO',1024,955);c.restore();
-    const tex=new THREE.CanvasTexture(canvas);tex.colorSpace=THREE.SRGBColorSpace;tex.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),4);return tex;
+    c.fillStyle='#f0c875';c.strokeStyle='#2e2418';c.lineWidth=34;c.textAlign='center';c.textBaseline='middle';c.font='bold 430px Arial Black, Arial, sans-serif';c.strokeText('UNO',1024,955);c.fillText('UNO',1024,955);
+    const tex=new THREE.CanvasTexture(canvas);tex.center.set(.5,.5);tex.rotation=Math.PI;tex.colorSpace=THREE.SRGBColorSpace;tex.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),4);return tex;
   }
   function buildEnvironment(){
     const base=new THREE.Mesh(new THREE.CircleGeometry(72,96),new THREE.MeshStandardMaterial({color:0x0b1217,roughness:.95,metalness:.01}));base.rotation.x=-Math.PI/2;base.position.y=-.14;base.receiveShadow=atmosphere.highQuality;scene.add(base);
@@ -98,7 +97,7 @@
     const outer=new THREE.Mesh(new THREE.TorusGeometry(28.2,.38,14,96),new THREE.MeshStandardMaterial({color:0xc18b3e,roughness:.5,metalness:.32}));outer.rotation.x=Math.PI/2;outer.position.set(0,.1,19.5);outer.scale.z=.72;scene.add(outer);
     const inner=new THREE.Mesh(new THREE.TorusGeometry(26.1,.18,10,96),new THREE.MeshStandardMaterial({color:0xe0ad59,roughness:.45,metalness:.25}));inner.rotation.x=Math.PI/2;inner.position.set(0,.13,19.5);inner.scale.z=.72;scene.add(inner);
     const sky=new THREE.Mesh(new THREE.SphereGeometry(130,24,16),new THREE.ShaderMaterial({side:THREE.BackSide,uniforms:{top:{value:new THREE.Color(0x17324a)},middle:{value:new THREE.Color(0x0b2030)},bottom:{value:new THREE.Color(0x02070b)}},vertexShader:'varying float h;void main(){h=normalize(position).y;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',fragmentShader:'varying float h;uniform vec3 top;uniform vec3 middle;uniform vec3 bottom;void main(){vec3 low=mix(bottom,middle,smoothstep(-.42,.18,h));vec3 colour=mix(low,top,smoothstep(.08,.92,h));gl_FragColor=vec4(colour,1.0);}'}));scene.add(sky);
-    document.body.dataset.logoForecourt='front-centred-upright-plaza';
+    document.body.dataset.logoForecourt='front-centred-rotated-180-plaza';
   }
   function buildLights(){
     scene.add(new THREE.HemisphereLight(0xa9c7dc,0x2d251d,2.65));scene.add(new THREE.AmbientLight(0x8a98a5,.9));
