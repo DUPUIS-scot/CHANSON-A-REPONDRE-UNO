@@ -109,40 +109,46 @@ document.createElement = function(tagName, options) {
         frameDocument.body.dataset.bootstrapEssentialBridges = 'ready';
       };
 
-      const finishWindowsPostExteriorStage = () => {
+      const finishWindowsPostExteriorStage = jesterState => {
         if (!isWindows) return;
         const frameDocument = element.contentDocument;
         const frameWindow = element.contentWindow;
         if (!frameDocument?.body || !frameWindow) return;
-        frameWindow.__castleEnableDeferredQuality?.();
+        frameDocument.body.dataset.windowsPostExteriorStage =
+            `interior-preload-after-jester-${jesterState}`;
         frameWindow.__castlePreloadInterior?.();
-        frameDocument.body.dataset.windowsPostExteriorStage = 'complete';
       };
 
       const waitForWindowsJester = () => {
         if (!isWindows) return;
         const frameDocument = element.contentDocument;
-        if (!frameDocument?.body) return;
-        frameDocument.body.dataset.windowsPostExteriorStage = 'waiting-for-jester';
-        let jesterPolls = 0;
-        const jesterPoll = setInterval(() => {
-          const body = element.contentDocument?.body;
-          const jesterState = body?.dataset.castleJester;
-          if (
-            jesterState !== 'ready' &&
-            jesterState !== 'failed' &&
-            jesterPolls++ <= 120
-          ) {
-            return;
-          }
-          clearInterval(jesterPoll);
-          const finish = () => finishWindowsPostExteriorStage();
+        const body = frameDocument?.body;
+        if (!body) return;
+        body.dataset.windowsPostExteriorStage = 'waiting-for-jester-terminal-state';
+
+        let observer;
+        let finished = false;
+        const finishIfTerminal = () => {
+          if (finished) return true;
+          const jesterState = body.dataset.castleJester;
+          if (jesterState !== 'ready' && jesterState !== 'failed') return false;
+          finished = true;
+          observer?.disconnect();
+          const finish = () => finishWindowsPostExteriorStage(jesterState);
           if ('requestIdleCallback' in window) {
             requestIdleCallback(finish, {timeout: 5000});
           } else {
             setTimeout(finish, 1500);
           }
-        }, 250);
+          return true;
+        };
+
+        if (finishIfTerminal()) return;
+        observer = new MutationObserver(finishIfTerminal);
+        observer.observe(body, {
+          attributes: true,
+          attributeFilter: ['data-castle-jester'],
+        });
       };
 
       const injectEnhancedOverlays = () => {
