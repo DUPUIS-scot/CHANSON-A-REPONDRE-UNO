@@ -1,0 +1,2 @@
+Deploy GitHub Pages with Castle fix commit 37e2f0b1c812d4a5d3f593420dab3e8de8e6c9f7.
+This file exists only to create a main-branch push event for the Pages workflow.
