@@ -35,6 +35,12 @@
   source=source.replaceAll("emit('cardLongPress'","emit('cardLongPressed'");
   source=source.replaceAll("emit('backToCategories'","emit('categoriesRequested'");
 
+  // The base Castle document includes the jester module for standalone use.
+  // Production must remove that copy so flutter_bootstrap.js is the sole owner
+  // of the staged post-exterior jester load.
+  const inlineJesterScript='<script type="module" src="./castle_jester_overlay.js"></scr'+'ipt>';
+  source=source.replace(inlineJesterScript,'');
+
   if(isIOS){
     source=source.replace("renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.35));","renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.1));");
     source=source.replace("atmosphere.highQuality=matchMedia('(min-width: 1100px)').matches&&(navigator.hardwareConcurrency||4)>=6&&devicePixelRatio<=1.75;","atmosphere.highQuality=false;");
@@ -66,13 +72,18 @@
 
   source=source.replace(
     '<body data-renderer-status="loading">',
-    `<body data-renderer-status="loading" data-performance-loader="${isIOS?'ios-draco-direct-v31':(isWindows?'windows-draco-direct-v31':'draco-direct-v31')}">`
+    `<body data-renderer-status="loading" data-performance-loader="${isIOS?'ios-draco-direct-v37':(isWindows?'windows-draco-direct-v37':'draco-direct-v37')}">`
   );
 
+  // Keep direct Castle helpers on the same build revision as the iframe. This
+  // prevents Safari/Windows caches mixing a fresh Flutter host with stale
+  // environment, preview or card-rendering scripts.
+  const directVersion=new URLSearchParams(location.search).get('v');
+  const directSuffix=directVersion?`?v=${encodeURIComponent(directVersion)}`:'';
   const directScripts=
-    '<script src="./castle_environment_direct.js"></scr'+'ipt>'+
-    '<script src="./castle_ios_uno_preview_fix.js"></scr'+'ipt>'+
-    '<script src="./castle_cards_direct.js"></scr'+'ipt>';
+    '<script src="./castle_environment_direct.js'+directSuffix+'"></scr'+'ipt>'+
+    '<script src="./castle_ios_uno_preview_fix.js'+directSuffix+'"></scr'+'ipt>'+
+    '<script src="./castle_cards_direct.js'+directSuffix+'"></scr'+'ipt>';
   source=source.replace('</body>',directScripts+'</body>');
 
   document.open();
