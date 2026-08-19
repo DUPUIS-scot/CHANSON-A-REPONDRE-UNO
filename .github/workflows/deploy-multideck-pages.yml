@@ -152,7 +152,7 @@ jobs:
           test -f build/web/assets/assets/models/jester_player.glb
           test -f build/web/assets/assets/models/play_jester_rigged.glb
           test -s build/web/assets/assets/models/play_jester_rigged.glb
-          test -f build/web/assets/assets/models/search_castle.glb
+          test -f build/web/assets/assets/models/castle_exterior.glb
           grep -q 'assets/assets/models/play_jester_rigged.glb' build/web/puppet_dealer.js
           grep -q 'puppet_dealer.js?v=play-jester-rigged-' build/web/index.html
           test -f build/web/card_castle/card_castle.html
