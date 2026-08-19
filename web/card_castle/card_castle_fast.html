@@ -66,7 +66,10 @@
   }
 
   const originalInteriorPreload="    state.interiorLoadPromise=loadInterior().catch(error=>{document.body.dataset.interiorReady='false';document.body.dataset.interiorError=String(error?.message||error);return null});";
-  source=source.replace(originalInteriorPreload,"    state.interiorLoadPromise=null;document.body.dataset.interiorReady='deferred';");
+  const deferredInterior=isWindows
+    ? "    state.interiorLoadPromise=null;document.body.dataset.interiorReady='windows-deferred-after-jester';window.__castlePreloadInterior=()=>{if(state.disposed||state.interiorReady||state.interiorLoadPromise)return state.interiorLoadPromise;document.body.dataset.interiorReady='windows-preloading';return ensureInteriorReady()};"
+    : "    state.interiorLoadPromise=null;document.body.dataset.interiorReady='deferred-until-entrance';";
+  source=source.replace(originalInteriorPreload,deferredInterior);
 
   source=source.replace(
     "  const ENTRANCE_VIDEO_URL=new URL('../assets/assets/videos/castle_entrance.mp4',document.baseURI).href;",
@@ -88,7 +91,7 @@
 
   const rendererReady="resume();emit('rendererReady');";
   if(isWindows){
-    const staged="resume();emit('rendererReady');let stableExteriorFrames=0;const stageExterior=()=>{stableExteriorFrames++;if(stableExteriorFrames<4){requestAnimationFrame(stageExterior);return}loadDeferredEnvironment()};window.addEventListener('castleExteriorEnvironmentReady',()=>{const preloadInterior=()=>{if(state.disposed||state.interiorReady||state.interiorLoadPromise)return;ensureInteriorReady().catch(()=>{})};if('requestIdleCallback'in window)requestIdleCallback(preloadInterior,{timeout:3500});else setTimeout(preloadInterior,1600)},{once:true});requestAnimationFrame(stageExterior);";
+    const staged="resume();emit('rendererReady');let stableExteriorFrames=0;const stageExterior=()=>{stableExteriorFrames++;if(stableExteriorFrames<4){requestAnimationFrame(stageExterior);return}loadDeferredEnvironment()};requestAnimationFrame(stageExterior);";
     source=source.replace(rendererReady,staged);
   }else{
     const delay=isIOS?500:100;
