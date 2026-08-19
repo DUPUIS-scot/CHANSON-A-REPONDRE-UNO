@@ -140,11 +140,15 @@
       if (interior) {
         generatedSky.forEach(mesh => { mesh.visible = false; });
         scene.background = new THREE.Color(0x010307);
-        scene.fog = new THREE.FogExp2(0x02060b, 0.012);
+        // Interior fog is intentionally owned by interior_atmosphere_overlay.js.
+        // Do not assign it here: both runtimes observe the same scene-mode
+        // mutation and competing fog writes made iOS interiors unpredictably dark.
+        document.body.dataset.directEnvironmentInteriorFog = 'owned-by-interior-lighting';
       } else {
         generatedSky.forEach(mesh => { mesh.visible = !atmosphereTexture; });
         scene.background = atmosphereTexture || new THREE.Color(0x02060b);
         scene.fog = new THREE.FogExp2(0x08131e, 0.0062);
+        delete document.body.dataset.directEnvironmentInteriorFog;
       }
       document.body.dataset.directEnvironmentScene = interior
         ? 'interior-hidden'
