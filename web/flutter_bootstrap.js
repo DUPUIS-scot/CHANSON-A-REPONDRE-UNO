@@ -101,6 +101,11 @@ document.createElement = function(tagName, options) {
           id: 'castle-bridge-compat',
           path: 'card_castle/castle_bridge_compat.js',
         });
+        appendCastleScript(frameDocument, {
+          id: 'castle-navigation-bridge',
+          path: 'card_castle/castle_navigation_overlay.js',
+          module: true,
+        });
         frameDocument.body.dataset.bootstrapEssentialBridges = 'ready';
       };
 

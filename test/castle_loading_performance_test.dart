@@ -8,10 +8,16 @@ void main() {
     final fastLoader = File(
       'web/card_castle/card_castle_fast.html',
     ).readAsStringSync();
+    final navigation = File(
+      'web/card_castle/castle_navigation_overlay.js',
+    ).readAsStringSync();
+
     expect(bootstrap, contains("'card_castle/card_castle_fast.html'"));
     expect(bootstrap, contains('requestIdleCallback'));
     expect(bootstrap, contains("bootstrapPerformanceMode = 'exterior-first'"));
     expect(bootstrap, isNot(contains('castle-interior-draco-bridge')));
+    expect(bootstrap, contains('castle-navigation-bridge'));
+    expect(bootstrap, contains('castle_navigation_overlay.js'));
     expect(bootstrap, contains('castle-jester-gatekeeper-bridge'));
     expect(bootstrap, contains("body?.dataset.rendererStatus === 'ready'"));
     expect(bootstrap, isNot(contains('setTimeout(injectEssentials, 2400)')));
@@ -48,5 +54,16 @@ void main() {
     expect(fastLoader, isNot(contains('25000')));
     expect(fastLoader, contains("searchParams.set('iosRetry','1')"));
     expect(fastLoader, isNot(contains('search_castle.glb')));
+
+    expect(navigation, contains("addEventListener('pointerdown'"));
+    expect(navigation, contains("addEventListener('pointermove'"));
+    expect(navigation, contains("addEventListener('wheel'"));
+    expect(navigation, contains("addEventListener('keydown'"));
+    expect(navigation, contains("pinch-pan-zoom"));
+    expect(navigation, contains("orbit-pan-zoom-wasd-v27"));
+    expect(navigation, contains("return-exterior"));
+    expect(navigation, contains("sceneMode() === 'interior'"));
+    expect(navigation, isNot(contains('DRACOLoader')));
+    expect(navigation, isNot(contains('.glb')));
   });
 }
