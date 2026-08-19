@@ -28,6 +28,8 @@ void main() {
     expect(fastLoader, contains("interiorStartingView='construction-panel-staircase-throne'"));
     expect(fastLoader, contains('castle_exterior_ground.jpg'));
     expect(fastLoader, contains('castle_exterior_atmosphere.jpg'));
-    expect(fastLoader, contains("ios-draco-wasm-v21-art"));
+    expect(fastLoader, contains("ios-draco-js-v22"));
+    expect(fastLoader, contains("ios-uncompressed-fallback-v22"));
+    expect(fastLoader, contains("searchParams.set('iosLegacy','1')"));
   });
 }
