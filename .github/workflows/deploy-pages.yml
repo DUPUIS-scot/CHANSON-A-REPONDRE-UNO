@@ -201,7 +201,12 @@ jobs:
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
+      # A workflow rerun keeps artifacts from the previous attempt. Uploading the
+      # same fixed `github-pages` name again makes deploy-pages fail because two
+      # artifacts match. Only build/upload on the first attempt; failed deploys
+      # can then be rerun safely against that single artifact.
       - name: Upload GitHub Pages artifact
+        if: ${{ github.run_attempt == 1 }}
         uses: actions/upload-pages-artifact@v4
         with:
           path: build/web
