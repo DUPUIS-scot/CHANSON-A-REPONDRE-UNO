@@ -88,11 +88,24 @@ void main() {
     expect(directCards, isNot(contains('const xSamples = isIOS ?')));
 
     expect(jesterOverlay, contains('rotateExistingCardAnchorsWithCastle'));
-    expect(jesterOverlay, contains('mesh.position.applyAxisAngle(axis,angle)'));
-    expect(jesterOverlay, contains('mesh.quaternion.premultiply(turn)'));
+    expect(jesterOverlay, contains('pivot=castleRoot.getWorldPosition'));
+    expect(jesterOverlay, contains('worldPosition=mesh.getWorldPosition'));
     expect(
       jesterOverlay,
-      contains("castleAnchorAlignment='cards-follow-castle-270deg-v40'"),
+      contains('.sub(pivot).applyQuaternion(turn).add(pivot)'),
+    );
+    expect(jesterOverlay, contains('parent.worldToLocal(worldPosition)'));
+    expect(
+      jesterOverlay,
+      contains('parentWorldQuaternion.invert().multiply(worldQuaternion)'),
+    );
+    expect(
+      jesterOverlay,
+      contains("castleAnchorAlignment='cards-follow-castle-pivot-270deg-v41'"),
+    );
+    expect(
+      jesterOverlay,
+      isNot(contains('mesh.position.applyAxisAngle(axis,angle)')),
     );
 
     expect(navigation, contains("addEventListener('pointerdown'"));
