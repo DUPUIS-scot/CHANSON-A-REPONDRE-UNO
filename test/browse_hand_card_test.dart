@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:uno_chanson_2/models/card_image_model.dart';
 import 'package:uno_chanson_2/widgets/browse_hand_card.dart';
 
 void main() {
-  testWidgets('uses fixed 2:3 card ratio and supports select and open', (
+  testWidgets('uses card aspect ratio and single tap selects and opens', (
     tester,
   ) async {
     var selected = 0;
@@ -42,15 +41,10 @@ void main() {
       ),
     );
     final ratio = tester.widget<AspectRatio>(find.byType(AspectRatio));
-    expect(ratio.aspectRatio, 2 / 3);
+    expect(ratio.aspectRatio, 900 / 1600);
     await tester.tap(find.byType(BrowseHandCard));
-    await tester.pump(kDoubleTapTimeout + const Duration(milliseconds: 1));
+    await tester.pump();
     expect(selected, 1);
-    final detector = find.descendant(
-      of: find.byType(BrowseHandCard),
-      matching: find.byType(GestureDetector),
-    );
-    tester.widget<GestureDetector>(detector).onDoubleTap!.call();
     expect(opened, 1);
   });
 
