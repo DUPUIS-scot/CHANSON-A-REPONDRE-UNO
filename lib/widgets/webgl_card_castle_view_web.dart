@@ -60,17 +60,7 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
     final userAgent = navigator.userAgent;
     final isIos = RegExp(r'iP(?:hone|ad|od)').hasMatch(userAgent) ||
         (navigator.platform == 'MacIntel' && (navigator.maxTouchPoints ?? 0) > 1);
-    final castleUri = Uri.base.resolve('card_castle/card_castle_fast.html');
-    final castleSrc = isIos
-        ? castleUri
-            .replace(
-              queryParameters: {
-                ...castleUri.queryParameters,
-                'iosRetry': '1',
-              },
-            )
-            .toString()
-        : castleUri.toString();
+    final castleSrc = Uri.base.resolve('card_castle/card_castle_fast.html').toString();
 
     iframe = html.IFrameElement()
       ..id = 'search-card-castle-frame'
@@ -83,7 +73,7 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
       ..setAttribute('allowfullscreen', 'true')
       ..setAttribute('popover', 'manual')
       ..setAttribute('title', 'Three.js Search card castle');
-    iframe.dataset['iosLoaderMode'] = isIos ? 'draco-js-stable' : 'compressed-draco';
+    iframe.dataset['iosLoaderMode'] = isIos ? 'draco-js-watchdog' : 'compressed-draco';
     ui_web.platformViewRegistry.registerViewFactory(viewType, (_) => iframe);
     frameLoads = iframe.onLoad.listen((_) => _sendState());
     messages = html.window.onMessage.listen(_handleMessage);
