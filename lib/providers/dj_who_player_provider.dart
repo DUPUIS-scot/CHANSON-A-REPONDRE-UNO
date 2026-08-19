@@ -20,6 +20,7 @@ class DjWhoPlayerProvider extends ChangeNotifier {
   bool _isPlaying = false;
   bool _shouldResumePlaying = false;
   bool _playerRouteMounted = false;
+  bool _castleContinuityActive = false;
   bool _advancing = false;
   double _resumeSeconds = 0;
 
@@ -27,9 +28,12 @@ class DjWhoPlayerProvider extends ChangeNotifier {
   YoutubePlayerController? get controller => _controller;
   int get selectedIndex => _selectedIndex;
   bool get isActive => _active;
-  bool get isPlaying => _controller != null ? _isPlaying : _shouldResumePlaying;
+  bool get isPlaying => _controller != null
+      ? (_isPlaying || (_castleContinuityActive && _shouldResumePlaying))
+      : _shouldResumePlaying;
   bool get hasMountedPlayer => _controller != null;
   bool get isPlayerRouteMounted => _playerRouteMounted;
+  bool get isCastleContinuityActive => _castleContinuityActive;
   double get resumeSeconds => _resumeSeconds;
   VideoItem? get selectedVideo =>
       _videos.isEmpty ? null : _videos[_selectedIndex];
@@ -96,9 +100,40 @@ class DjWhoPlayerProvider extends ChangeNotifier {
     }
 
     // Intentionally keep the controller and iframe alive. The persistent
-    // widget moves the same player surface into a tiny clipped transparent
-    // host off-route so audio continues without exposing a platform view.
+    // widget keeps the same player surface rendered off-route so audio can
+    // continue while navigation and the Castle renderer are initialising.
     notifyListeners();
+  }
+
+  void beginCastlePlaybackContinuity() {
+    _castleContinuityActive = true;
+    if (_isPlaying) _shouldResumePlaying = true;
+  }
+
+  Future<void> ensureCastlePlaybackContinuity() async {
+    if (!_castleContinuityActive ||
+        !_active ||
+        !_shouldResumePlaying ||
+        _advancing) {
+      return;
+    }
+
+    final controller = _controller;
+    if (controller == null) return;
+
+    try {
+      // playVideo is idempotent while already playing. Reasserting it during
+      // Castle loading prevents Safari/iOS from leaving the hidden YouTube
+      // surface paused after a competing WebGL iframe or decoder starts.
+      await controller.playVideo();
+    } catch (_) {
+      // The iframe can briefly be between browser composition states while the
+      // Castle platform view mounts. The Castle heartbeat will retry.
+    }
+  }
+
+  void endCastlePlaybackContinuity() {
+    _castleContinuityActive = false;
   }
 
   void _onPlayerValue(YoutubePlayerValue value) {
@@ -107,7 +142,16 @@ class DjWhoPlayerProvider extends ChangeNotifier {
 
     if (_isPlaying != playing) {
       _isPlaying = playing;
-      _shouldResumePlaying = playing;
+      changed = true;
+    }
+    if (playing && !_shouldResumePlaying) {
+      _shouldResumePlaying = true;
+      changed = true;
+    } else if (!playing && !_castleContinuityActive && _shouldResumePlaying) {
+      // Outside the Castle, a genuine player pause should still update the
+      // persistent player's intent. During Castle loading, transient pauses
+      // must not erase the user's request to keep DJ WHO playing.
+      _shouldResumePlaying = false;
       changed = true;
     }
     if (playing && !_active) {
@@ -170,7 +214,7 @@ class DjWhoPlayerProvider extends ChangeNotifier {
       return;
     }
 
-    if (_isPlaying) {
+    if (_isPlaying || _shouldResumePlaying) {
       _shouldResumePlaying = false;
       notifyListeners();
       await controller.pauseVideo();
@@ -199,6 +243,7 @@ class DjWhoPlayerProvider extends ChangeNotifier {
     _active = false;
     _isPlaying = false;
     _shouldResumePlaying = false;
+    _castleContinuityActive = false;
     _resumeSeconds = 0;
     notifyListeners();
   }
