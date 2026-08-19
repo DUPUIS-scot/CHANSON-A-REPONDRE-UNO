@@ -2,25 +2,19 @@
 {{flutter_build_config}}
 
 // Forward the page cache-busting build ID to the compiled Flutter entrypoint.
-// GitHub Pages can cache static JS independently from index.html, so a URL like
-// ?v=<commit> must also version main.dart.js to guarantee that the selected
-// deployment is the one the browser executes.
 const searchParams = new URLSearchParams(window.location.search);
 const buildId = searchParams.get('v');
 if (buildId && globalThis._flutter?.buildConfig?.builds) {
   for (const build of globalThis._flutter.buildConfig.builds) {
     if (typeof build.mainJsPath === 'string' && build.mainJsPath.length > 0) {
       const separator = build.mainJsPath.includes('?') ? '&' : '?';
-      build.mainJsPath =
-          `${build.mainJsPath}${separator}v=${encodeURIComponent(buildId)}`;
+      build.mainJsPath = `${build.mainJsPath}${separator}v=${encodeURIComponent(buildId)}`;
     }
   }
 }
 
 // Castle renderer compatibility. The Three.js iframe emits legacy event names
-// while the current Flutter host listens for the newer bridge names. Re-post
-// the translated event through parent.postMessage instead of dispatchEvent so
-// dart:html's window.onMessage stream receives a real MessageEvent.
+// while the current Flutter host listens for the newer bridge names.
 window.addEventListener('message', event => {
   let message;
   try {
@@ -35,8 +29,10 @@ window.addEventListener('message', event => {
     cardLongPress: 'cardLongPressed',
   }[message.type];
   if (!translatedType) return;
-  const translated = {...message, type: translatedType};
-  window.postMessage(JSON.stringify(translated), location.origin);
+  window.postMessage(
+    JSON.stringify({...message, type: translatedType}),
+    location.origin,
+  );
 }, true);
 
 const nativeCreateElement = document.createElement.bind(document);
@@ -64,8 +60,6 @@ document.createElement = function(tagName, options) {
   const element = nativeCreateElement(tagName, options);
   if (String(tagName).toLowerCase() !== 'iframe') return element;
 
-  // Route the Search Castle iframe through a staged loader. The loader keeps
-  // the current renderer intact but moves non-critical work off first paint.
   if (iframeSrcDescriptor?.get && iframeSrcDescriptor?.set) {
     Object.defineProperty(element, 'src', {
       configurable: true,
@@ -88,9 +82,11 @@ document.createElement = function(tagName, options) {
 
   element.addEventListener('load', () => {
     try {
-      // Match both the optimized loader and the direct renderer fallback.
       if (!element.src.includes('card_castle/card_castle')) return;
+      if (element.dataset.castleStagingArmed === 'true') return;
+      element.dataset.castleStagingArmed = 'true';
 
+      let readyHandled = false;
       let essentialsInjected = false;
       let enhancedInjected = false;
 
@@ -99,12 +95,7 @@ document.createElement = function(tagName, options) {
         const frameDocument = element.contentDocument;
         if (!frameDocument?.body) return;
         essentialsInjected = true;
-        frameDocument.body.dataset.bootstrapPerformanceMode = 'staged';
-        appendCastleScript(frameDocument, {
-          id: 'castle-interior-draco-bridge',
-          path: 'card_castle/interior_draco_bridge.js',
-          module: true,
-        });
+        frameDocument.body.dataset.bootstrapPerformanceMode = 'exterior-first';
         appendCastleScript(frameDocument, {
           id: 'castle-bridge-compat',
           path: 'card_castle/castle_bridge_compat.js',
@@ -130,6 +121,29 @@ document.createElement = function(tagName, options) {
         frameDocument.body.dataset.bootstrapEnhancedOverlays = 'ready';
       };
 
+      const handleRendererReady = () => {
+        if (readyHandled) return;
+        readyHandled = true;
+        injectEssentials();
+
+        // The jester is the heaviest post-exterior GLB. Do not begin it until
+        // the deferred ground/atmosphere hydration has finished (or a bounded
+        // safety window expires). This keeps the exterior-first contract real.
+        let environmentPolls = 0;
+        const environmentPoll = setInterval(() => {
+          const environmentState =
+              element.contentDocument?.body?.dataset.exteriorEnvironment;
+          if (environmentState !== 'ready' && environmentPolls++ <= 32) return;
+          clearInterval(environmentPoll);
+          const hydrate = () => injectEnhancedOverlays();
+          if ('requestIdleCallback' in window) {
+            requestIdleCallback(hydrate, {timeout: 1800});
+          } else {
+            setTimeout(hydrate, 900);
+          }
+        }, 250);
+      };
+
       const onRendererMessage = event => {
         if (event.source !== element.contentWindow) return;
         let message = event.data;
@@ -140,24 +154,31 @@ document.createElement = function(tagName, options) {
         }
         if (message?.type !== 'rendererReady') return;
         window.removeEventListener('message', onRendererMessage);
-
-        // The fast loader rewrites its initial document asynchronously. Waiting
-        // for rendererReady ensures these scripts are injected into the final
-        // Castle document, not into the temporary loader document.
-        injectEssentials();
-        if ('requestIdleCallback' in window) {
-          requestIdleCallback(injectEnhancedOverlays, {timeout: 900});
-        } else {
-          setTimeout(injectEnhancedOverlays, 250);
-        }
+        handleRendererReady();
       };
       window.addEventListener('message', onRendererMessage);
 
-      // Safety fallback for browsers where rendererReady is delayed or lost.
-      setTimeout(injectEssentials, 2400);
-      setTimeout(injectEnhancedOverlays, 3400);
+      // Safety polling never injects heavy Castle work before the renderer is
+      // actually ready. This replaces the old 2.4s/3.4s unconditional timers.
+      let polls = 0;
+      const readyPoll = setInterval(() => {
+        const body = element.contentDocument?.body;
+        if (
+          body?.dataset.rendererStatus === 'ready' ||
+          body?.classList.contains('ready')
+        ) {
+          clearInterval(readyPoll);
+          window.removeEventListener('message', onRendererMessage);
+          handleRendererReady();
+          return;
+        }
+        if (polls++ > 180) {
+          clearInterval(readyPoll);
+          window.removeEventListener('message', onRendererMessage);
+        }
+      }, 1000);
     } catch (error) {
-      console.warn('Castle staged bridge injection failed.', error);
+      console.warn('Castle exterior-first staging failed.', error);
     }
   });
   return element;
