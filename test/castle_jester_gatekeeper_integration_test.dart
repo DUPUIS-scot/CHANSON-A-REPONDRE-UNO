@@ -10,8 +10,12 @@ void main() {
 
     expect(bootstrap, contains('castle_jester_overlay.js'));
     expect(overlay, contains('castle_jester_rigged.glb'));
-    expect(overlay, contains("castleEntranceTrigger='jester-only'"));
-    expect(overlay, contains("classList.remove('castle-door-hover')"));
+    expect(
+      overlay,
+      contains("castleEntranceTrigger='rigged-jester-single-click'"),
+    );
+    expect(overlay, contains("dataset.castleJesterGesture='single-click'"));
+    expect(overlay, contains("window.dispatchEvent(new CustomEvent('castleJesterEnter'))"));
     expect(controller, contains("dataset.castleJesterState='looping'"));
     expect(controller, contains('onEnterRequested?.()'));
   });
