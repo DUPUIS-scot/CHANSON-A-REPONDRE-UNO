@@ -25,11 +25,15 @@ void main() {
     expect(fastLoader, contains('setWorkerLimit("+(isIOS?1:2)+")'));
     expect(fastLoader, contains("requestIdleCallback(preloadInterior"));
     expect(fastLoader, contains("setInteriorStartingView()"));
-    expect(fastLoader, contains("interiorStartingView='construction-panel-staircase-throne'"));
-    expect(fastLoader, contains('castle_exterior_ground.jpg'));
-    expect(fastLoader, contains('castle_exterior_atmosphere.jpg'));
-    expect(fastLoader, contains("ios-draco-js-v22"));
-    expect(fastLoader, contains("ios-uncompressed-fallback-v22"));
-    expect(fastLoader, contains("searchParams.set('iosLegacy','1')"));
+    expect(
+      fastLoader,
+      contains("interiorStartingView='construction-panel-staircase-throne'"),
+    );
+    expect(fastLoader, contains('castle_exterior_ground.png'));
+    expect(fastLoader, contains('castle_exterior_atmosphere.png'));
+    expect(fastLoader, contains("ios-draco-js-v23"));
+    expect(fastLoader, contains("ios-draco-js-retry-v23"));
+    expect(fastLoader, contains("searchParams.set('iosRetry','1')"));
+    expect(fastLoader, isNot(contains('search_castle.glb')));
   });
 }
