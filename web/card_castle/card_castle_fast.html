@@ -19,6 +19,8 @@
 
   const isIOS=/iP(?:hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
   const isWindows=/Windows/i.test(navigator.userAgent);
+  const params=new URLSearchParams(location.search);
+  const iosLegacy=isIOS&&params.get('iosLegacy')==='1';
   const textureConcurrency=isIOS?1:(isWindows?5:4);
   const xSamples=isIOS?8:(isWindows?18:20);
   const ySamples=isIOS?4:7;
@@ -26,16 +28,23 @@
   const interiorIdleTimeout=isIOS?14000:3500;
   const interiorFallbackDelay=isIOS?9000:1600;
 
-  source=source.replace(
-    "import { GLTFLoader } from '../vendor/GLTFLoader.js';",
-    "import { GLTFLoader } from '../vendor/GLTFLoader.js';\n  import { DRACOLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/DRACOLoader.js';",
-  );
-  source=source.replace(
-    "  const cardGeometry=new THREE.BoxGeometry(1.08,1.62,.035),cardForward=new THREE.Vector3(0,0,1);",
-    "  const dracoLoader=new DRACOLoader();dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');dracoLoader.setWorkerLimit("+(isIOS?1:2)+");dracoLoader.preload();const castleAssetLoader=new GLTFLoader();castleAssetLoader.setDRACOLoader(dracoLoader);\n  const cardGeometry=new THREE.BoxGeometry(1.08,1.62,.035),cardForward=new THREE.Vector3(0,0,1);",
-  );
-  source=source.replaceAll('new GLTFLoader().load(CASTLE_URL','castleAssetLoader.load(CASTLE_URL');
-  source=source.replaceAll('new GLTFLoader().load(INTERIOR_URL','castleAssetLoader.load(INTERIOR_URL');
+  if(iosLegacy){
+    source=source.replace(
+      "const CASTLE_URL=new URL('../assets/assets/models/castle_exterior.glb',document.baseURI).href;",
+      "const CASTLE_URL=new URL('../assets/assets/models/search_castle.glb',document.baseURI).href;",
+    );
+  }else{
+    source=source.replace(
+      "import { GLTFLoader } from '../vendor/GLTFLoader.js';",
+      "import { GLTFLoader } from '../vendor/GLTFLoader.js';\n  import { DRACOLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/DRACOLoader.js';",
+    );
+    source=source.replace(
+      "  const cardGeometry=new THREE.BoxGeometry(1.08,1.62,.035),cardForward=new THREE.Vector3(0,0,1);",
+      "  const dracoLoader=new DRACOLoader();dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');dracoLoader.setDecoderConfig({type:"+(isIOS?"'js'":"'wasm'")+"});dracoLoader.setWorkerLimit("+(isIOS?1:2)+");dracoLoader.preload();const castleAssetLoader=new GLTFLoader();castleAssetLoader.setDRACOLoader(dracoLoader);\n  const cardGeometry=new THREE.BoxGeometry(1.08,1.62,.035),cardForward=new THREE.Vector3(0,0,1);",
+    );
+    source=source.replaceAll('new GLTFLoader().load(CASTLE_URL','castleAssetLoader.load(CASTLE_URL');
+    source=source.replaceAll('new GLTFLoader().load(INTERIOR_URL','castleAssetLoader.load(INTERIOR_URL');
+  }
 
   source=source.replaceAll("emit('cardTap'","emit('cardSelected'");
   source=source.replaceAll("emit('cardLongPress'","emit('cardLongPressed'");
@@ -72,7 +81,7 @@
 
   source=source.replace(
     /function deriveSurfaceAnchors\(limit\)\{[\s\S]*?return out\.slice\(0,limit\)\}/,
-    `function deriveSurfaceAnchors(limit){const out=[];const bounds=new THREE.Box3().setFromObject(castleRoot);const size=bounds.getSize(new THREE.Vector3());const ray=new THREE.Raycaster();const minY=bounds.min.y+size.y*.47,maxY=bounds.min.y+size.y*.94,minSpacingSq=1.35*1.35;const addHit=(hit,outward)=>{if(!hit||out.length>=limit||hit.point.y<minY||hit.point.y>maxY)return;const normal=hit.face?.normal?hit.face.normal.clone().transformDirection(hit.object.matrixWorld):outward.clone();if(normal.dot(outward)<0)normal.negate();if(Math.abs(normal.y)>.72)return;normal.y=THREE.MathUtils.clamp(normal.y,-.18,.28);normal.normalize();const position=hit.point.clone().addScaledVector(normal,.12);if(out.some(anchor=>anchor.position.distanceToSquared(position)<minSpacingSq))return;out.push({position,normal})};const meshes=[];castleRoot.traverse(object=>{if(object.isMesh&&object.visible!==false&&!object.userData?.hiddenAsOutlier)meshes.push(object)});const cast=(origin,direction,outward)=>{ray.set(origin,direction);ray.near=0;ray.far=Math.max(size.x,size.z)*2.6;const hits=ray.intersectObjects(meshes,false);for(const hit of hits){if(hit.point.y>=minY&&hit.point.y<=maxY){addHit(hit,outward);break}}};const xSamples=${xSamples},ySamples=${ySamples},zSamples=${zSamples};const frontZ=bounds.max.z+Math.max(8,size.z*.45);for(let yi=0;yi<ySamples&&out.length<limit;yi++){const y=THREE.MathUtils.lerp(minY,maxY,yi/(ySamples-1));for(let xi=0;xi<xSamples&&out.length<limit;xi++){const x=THREE.MathUtils.lerp(bounds.min.x+size.x*.04,bounds.max.x-size.x*.04,xi/(xSamples-1));cast(new THREE.Vector3(x,y,frontZ),new THREE.Vector3(0,0,-1),new THREE.Vector3(0,0,1))}}for(const side of[-1,1]){const x=side<0?bounds.min.x-Math.max(8,size.x*.35):bounds.max.x+Math.max(8,size.x*.35),direction=new THREE.Vector3(-side,0,0),outward=new THREE.Vector3(side,0,0);for(let yi=0;yi<ySamples&&out.length<limit;yi++){const y=THREE.MathUtils.lerp(minY,maxY,yi/(ySamples-1));for(let zi=0;zi<zSamples&&out.length<limit;zi++){const z=THREE.MathUtils.lerp(bounds.min.z+size.z*.06,bounds.max.z-size.z*.06,zi/(zSamples-1));cast(new THREE.Vector3(x,y,z),direction,outward)}}}document.body.dataset.surfaceAnchorMode='platform-fast-raycasts-v20';document.body.dataset.surfaceAnchorCount=String(out.length);return out.slice(0,limit)}`,
+    `function deriveSurfaceAnchors(limit){const out=[];const bounds=new THREE.Box3().setFromObject(castleRoot);const size=bounds.getSize(new THREE.Vector3());const ray=new THREE.Raycaster();const minY=bounds.min.y+size.y*.47,maxY=bounds.min.y+size.y*.94,minSpacingSq=1.35*1.35;const addHit=(hit,outward)=>{if(!hit||out.length>=limit||hit.point.y<minY||hit.point.y>maxY)return;const normal=hit.face?.normal?hit.face.normal.clone().transformDirection(hit.object.matrixWorld):outward.clone();if(normal.dot(outward)<0)normal.negate();if(Math.abs(normal.y)>.72)return;normal.y=THREE.MathUtils.clamp(normal.y,-.18,.28);normal.normalize();const position=hit.point.clone().addScaledVector(normal,.12);if(out.some(anchor=>anchor.position.distanceToSquared(position)<minSpacingSq))return;out.push({position,normal})};const meshes=[];castleRoot.traverse(object=>{if(object.isMesh&&object.visible!==false&&!object.userData?.hiddenAsOutlier)meshes.push(object)});const cast=(origin,direction,outward)=>{ray.set(origin,direction);ray.near=0;ray.far=Math.max(size.x,size.z)*2.6;const hits=ray.intersectObjects(meshes,false);for(const hit of hits){if(hit.point.y>=minY&&hit.point.y<=maxY){addHit(hit,outward);break}}};const xSamples=${xSamples},ySamples=${ySamples},zSamples=${zSamples};const frontZ=bounds.max.z+Math.max(8,size.z*.45);for(let yi=0;yi<ySamples&&out.length<limit;yi++){const y=THREE.MathUtils.lerp(minY,maxY,yi/(ySamples-1));for(let xi=0;xi<xSamples&&out.length<limit;xi++){const x=THREE.MathUtils.lerp(bounds.min.x+size.x*.04,bounds.max.x-size.x*.04,xi/(xSamples-1));cast(new THREE.Vector3(x,y,frontZ),new THREE.Vector3(0,0,-1),new THREE.Vector3(0,0,1))}}for(const side of[-1,1]){const x=side<0?bounds.min.x-Math.max(8,size.x*.35):bounds.max.x+Math.max(8,size.x*.35),direction=new THREE.Vector3(-side,0,0),outward=new THREE.Vector3(side,0,0);for(let yi=0;yi<ySamples&&out.length<limit;yi++){const y=THREE.MathUtils.lerp(minY,maxY,yi/(ySamples-1));for(let zi=0;zi<zSamples&&out.length<limit;zi++){const z=THREE.MathUtils.lerp(bounds.min.z+size.z*.06,bounds.max.z-size.z*.06,zi/(zSamples-1));cast(new THREE.Vector3(x,y,z),direction,outward)}}}document.body.dataset.surfaceAnchorMode='platform-fast-raycasts-v22';document.body.dataset.surfaceAnchorCount=String(out.length);return out.slice(0,limit)}`,
   );
 
   source=source.replace(
@@ -90,11 +99,24 @@
   );
   source=source.replace("scene.fog=new THREE.FogExp2(0x08131e,.0062)","scene.fog=new THREE.FogExp2(0x07111d,.0048)");
   source=source.replace("const moon=new THREE.DirectionalLight(0xd9ecff,7.8);moon.position.set(-18,38,4)","const moon=new THREE.DirectionalLight(0xcfe5ff,8.8);moon.position.set(-24,42,6)");
-  source=source.replace('<body data-renderer-status="loading">',`<body data-renderer-status="loading" data-performance-loader="${isIOS?'ios-draco-wasm-v21-art':(isWindows?'windows-draco-wasm-v21-art':'draco-wasm-v21-art')}">`);
+  source=source.replace('<body data-renderer-status="loading">',`<body data-renderer-status="loading" data-performance-loader="${iosLegacy?'ios-uncompressed-fallback-v22':(isIOS?'ios-draco-js-v22':(isWindows?'windows-draco-wasm-v22':'draco-wasm-v22'))}">`);
+
+  if(isIOS&&!iosLegacy){
+    source=source.replace(
+      '<script type="module">',
+      `<script>setTimeout(function(){if(!document.body.classList.contains('ready')&&document.body.dataset.rendererStatus!=='ready'){var retry=new URL('./card_castle_fast.html',document.baseURI);retry.searchParams.set('iosLegacy','1');retry.searchParams.set('v',Date.now().toString());location.replace(retry.href)}},12000);<\/script>\n  <script type="module">`,
+    );
+  }
 
   document.open();document.write(source);document.close();
 })().catch(error=>{
   console.error('Castle loader failed.',error);
+  const isIOS=/iP(?:hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  const params=new URLSearchParams(location.search);
+  if(isIOS&&params.get('iosLegacy')!=='1'){
+    const retry=new URL('./card_castle_fast.html',document.baseURI);
+    retry.searchParams.set('iosLegacy','1');retry.searchParams.set('v',Date.now().toString());location.replace(retry.href);return;
+  }
   document.body.dataset.loaderError=String(error?.message||error);
 });
 </script>
