@@ -4,6 +4,8 @@
 
   const GROUND_URL = new URL('../assets/assets/images/castle_exterior_ground.png', document.baseURI).href;
   const ATMOSPHERE_URL = new URL('../assets/assets/images/castle_exterior_atmosphere.png', document.baseURI).href;
+  const isIOS = /iP(?:hone|ad|od)/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   let attempts = 0;
 
   function install() {
@@ -54,19 +56,36 @@
     scene.add(group);
     window.__castleDirectExteriorEnvironment = group;
 
-    document.body.dataset.exteriorAtmosphere = 'loading-fullscreen-v35';
-    document.body.dataset.exteriorEnvironment = 'loading-ground-and-atmosphere-v35';
+    document.body.dataset.exteriorAtmosphere = 'loading-fullscreen-v42';
+    document.body.dataset.exteriorEnvironment = 'loading-ground-and-atmosphere-v42';
 
     const loader = new THREE.TextureLoader();
     let atmosphereTexture = null;
     let groundReady = false;
     let atmosphereReady = false;
 
+    // The later iOS portrait override moved the bridge back across the curved
+    // CHANSON A REPONDRE title. Restore the authoritative exterior camera used
+    // by the reference composition, without changing the ground position.
+    function applyIOSReferenceExteriorView() {
+      if (!isIOS || innerHeight <= innerWidth) return;
+      if (document.body.dataset.sceneMode === 'interior') return;
+      const orbit = runtime.orbit;
+      if (!orbit?.target || typeof runtime.updateOrbit !== 'function') return;
+      orbit.yaw = 0;
+      orbit.pitch = 0.14;
+      orbit.distance = 58;
+      orbit.target.set(0, 6.2, 5.5);
+      runtime.updateOrbit();
+      document.body.dataset.exteriorStartingView = 'ios-portrait-reference-2-v42';
+    }
+
     const finishIfReady = () => {
       if (!groundReady || !atmosphereReady) return;
       document.body.dataset.exteriorEnvironment = 'ready';
-      document.body.dataset.exteriorEnvironmentMode = 'ground-plus-fullscreen-atmosphere-v35-sky-hidden';
+      document.body.dataset.exteriorEnvironmentMode = 'ground-plus-fullscreen-atmosphere-v42-ellipse';
       syncSceneMode();
+      applyIOSReferenceExteriorView();
       window.dispatchEvent(new CustomEvent('castleExteriorEnvironmentReady'));
     };
 
@@ -79,7 +98,7 @@
         texture.needsUpdate = true;
         atmosphereTexture = texture;
         atmosphereReady = true;
-        document.body.dataset.exteriorAtmosphere = 'fullscreen-ready-v35';
+        document.body.dataset.exteriorAtmosphere = 'fullscreen-ready-v42';
         syncSceneMode();
         finishIfReady();
       },
@@ -106,7 +125,11 @@
         const aspect = image?.width && image?.height ? image.width / image.height : 4 / 3;
         const width = 58;
         const depth = width / Math.max(0.75, aspect);
-        const geometry = new THREE.PlaneGeometry(width, depth, 1, 1);
+
+        // The uploaded ground artwork has black rectangular corners around its
+        // oval. Clip the mesh itself to an ellipse so those corners can never
+        // mask the full-screen cloud atmosphere behind the Castle.
+        const geometry = new THREE.CircleGeometry(width / 2, 96);
         const material = new THREE.MeshBasicMaterial({
           map: texture,
           side: THREE.DoubleSide,
@@ -115,13 +138,14 @@
         });
         const ground = new THREE.Mesh(geometry, material);
         ground.name = 'castle-uploaded-exterior-ground';
+        ground.scale.set(1, depth / width, 1);
         ground.rotation.x = -Math.PI / 2;
         ground.position.set(0, -0.47, 18);
         ground.renderOrder = -1;
         group.add(ground);
 
         groundReady = true;
-        document.body.dataset.exteriorGround = 'reference-2-ground-v35';
+        document.body.dataset.exteriorGround = 'reference-2-ellipse-v42';
         finishIfReady();
       },
       undefined,
@@ -155,7 +179,18 @@
         : (atmosphereTexture ? 'exterior-fullscreen-atmosphere-sky-hidden' : 'exterior-fallback');
     }
 
-    const observer = new MutationObserver(syncSceneMode);
+    // The base reset button still invokes the old injected iOS portrait view.
+    // Re-apply the reference camera on the next frame after that handler runs.
+    document.getElementById('castle-reset')?.addEventListener('click', () => {
+      requestAnimationFrame(applyIOSReferenceExteriorView);
+    });
+
+    const observer = new MutationObserver(() => {
+      syncSceneMode();
+      if (document.body.dataset.sceneMode !== 'interior') {
+        requestAnimationFrame(applyIOSReferenceExteriorView);
+      }
+    });
     observer.observe(document.body, { attributes: true, attributeFilter: ['data-scene-mode'] });
     syncSceneMode();
   }
