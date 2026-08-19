@@ -43,15 +43,38 @@
   const originalInteriorPreload="    state.interiorLoadPromise=loadInterior().catch(error=>{document.body.dataset.interiorReady='false';document.body.dataset.interiorError=String(error?.message||error);return null});";
   source=source.replace(originalInteriorPreload,"    state.interiorLoadPromise=null;document.body.dataset.interiorReady='deferred';");
 
+  source=source.replace(
+    "  const ENTRANCE_VIDEO_URL=new URL('../assets/assets/videos/castle_entrance.mp4',document.baseURI).href;",
+    "  const ENTRANCE_VIDEO_URL=new URL('../assets/assets/videos/castle_entrance.mp4',document.baseURI).href;\n  const EXTERIOR_GROUND_URL=new URL('../assets/assets/images/castle_exterior_ground.png',document.baseURI).href;\n  const EXTERIOR_ATMOSPHERE_URL=new URL('../assets/assets/images/castle_exterior_atmosphere.png',document.baseURI).href;"
+  );
+
+  source=source.replace(
+    /function buildEnvironment\(\)\{[\s\S]*?document\.body\.dataset\.logoForecourt='[^']+';\n  \}/,
+    `function buildEnvironment(){const exteriorGroup=new THREE.Group();exteriorGroup.name='castle-exterior-environment';scene.add(exteriorGroup);window.__castleExteriorEnvironmentGroup=exteriorGroup;const base=new THREE.Mesh(new THREE.CircleGeometry(72,64),new THREE.MeshStandardMaterial({color:0x081119,roughness:.98,metalness:.01}));base.rotation.x=-Math.PI/2;base.position.y=-.14;exteriorGroup.add(base);const startupSky=new THREE.Mesh(new THREE.SphereGeometry(129,16,10),new THREE.MeshBasicMaterial({color:0x081522,side:THREE.BackSide,fog:false}));exteriorGroup.add(startupSky);document.body.dataset.logoForecourt='startup-minimal-exterior-first';document.body.dataset.exteriorEnvironment='deferred'}function loadDeferredEnvironment(){if(document.body.dataset.exteriorEnvironment==='loading'||document.body.dataset.exteriorEnvironment==='ready')return;const exteriorGroup=window.__castleExteriorEnvironmentGroup;if(!exteriorGroup)return;document.body.dataset.exteriorEnvironment='loading';let remaining=2;const done=()=>{remaining--;if(remaining<=0){document.body.dataset.exteriorEnvironment='ready';window.dispatchEvent(new CustomEvent('castleExteriorEnvironmentReady'))}};new THREE.TextureLoader().load(EXTERIOR_GROUND_URL,groundTexture=>{groundTexture.colorSpace=THREE.SRGBColorSpace;groundTexture.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),isIOS?2:4);groundTexture.wrapS=groundTexture.wrapT=THREE.ClampToEdgeWrapping;groundTexture.center.set(.5,.5);groundTexture.rotation=Math.PI;groundTexture.needsUpdate=true;const plaza=new THREE.Mesh(new THREE.CircleGeometry(38,72),new THREE.MeshStandardMaterial({map:groundTexture,color:0xffffff,roughness:.78,metalness:.01}));plaza.rotation.x=-Math.PI/2;plaza.position.set(0,-.035,15.8);plaza.scale.set(1,.78,1);exteriorGroup.add(plaza);document.body.dataset.exteriorGround='uploaded-ground-exterior-only';done()},undefined,()=>{document.body.dataset.exteriorGround='failed';done()});new THREE.TextureLoader().load(EXTERIOR_ATMOSPHERE_URL,atmosphereTexture=>{atmosphereTexture.colorSpace=THREE.SRGBColorSpace;atmosphereTexture.needsUpdate=true;const sky=new THREE.Mesh(new THREE.SphereGeometry(130,24,14),new THREE.MeshBasicMaterial({map:atmosphereTexture,side:THREE.BackSide,fog:false}));sky.rotation.y=Math.PI;exteriorGroup.add(sky);document.body.dataset.exteriorAtmosphere='uploaded-atmosphere-exterior-only';done()},undefined,()=>{document.body.dataset.exteriorAtmosphere='failed';done()})}`
+  );
+
+  const originalSwitch="function switchToInterior(){if(!state.interiorReady||!interiorRoot)return false;state.sceneMode='interior';document.body.dataset.sceneMode='interior';castleRoot.visible=false;interiorRoot.visible=true;cardGroup.visible=false;orbit.yaw=.15;orbit.pitch=.18;orbit.distance=29;orbit.target.set(0,6.7,0);updateOrbit();return true}";
+  const sceneSwitch="function switchToInterior(){if(!state.interiorReady||!interiorRoot)return false;state.sceneMode='interior';document.body.dataset.sceneMode='interior';castleRoot.visible=false;if(window.__castleExteriorEnvironmentGroup)window.__castleExteriorEnvironmentGroup.visible=false;interiorRoot.visible=true;cardGroup.visible=false;orbit.yaw=.15;orbit.pitch=.18;orbit.distance=29;orbit.target.set(0,6.7,0);updateOrbit();return true}function switchToExterior(){if(!castleRoot)return false;state.sceneMode='exterior';state.entranceStarted=false;document.body.dataset.sceneMode='exterior';castleRoot.visible=true;if(window.__castleExteriorEnvironmentGroup)window.__castleExteriorEnvironmentGroup.visible=true;if(interiorRoot)interiorRoot.visible=false;cardGroup.visible=true;state.targetCamera=null;state.targetLook=null;setDefaultView();updateSceneCount();return true}";
+  source=source.replace(originalSwitch,sceneSwitch);
+  source=source.replace(
+    "  window.__castleSearchRuntime={get scene(){return scene},get camera(){return camera},get renderer(){return renderer},get castleRoot(){return castleRoot},get interiorRoot(){return interiorRoot},orbit,updateOrbit,setCards};",
+    "  window.__castleSearchRuntime={get scene(){return scene},get camera(){return camera},get renderer(){return renderer},get castleRoot(){return castleRoot},get interiorRoot(){return interiorRoot},orbit,updateOrbit,setCards,switchToExterior};"
+  );
+
+  const rendererReady="resume();emit('rendererReady');";
   if(isWindows){
-    const ready="resume();emit('rendererReady');";
-    const staged="resume();emit('rendererReady');const preloadInterior=()=>{if(state.disposed||state.interiorReady||state.interiorLoadPromise)return;ensureInteriorReady().catch(()=>{})};if('requestIdleCallback'in window)requestIdleCallback(preloadInterior,{timeout:3500});else setTimeout(preloadInterior,1600);";
-    source=source.replace(ready,staged);
+    const staged="resume();emit('rendererReady');let stableExteriorFrames=0;const stageExterior=()=>{stableExteriorFrames++;if(stableExteriorFrames<4){requestAnimationFrame(stageExterior);return}loadDeferredEnvironment()};window.addEventListener('castleExteriorEnvironmentReady',()=>{const preloadInterior=()=>{if(state.disposed||state.interiorReady||state.interiorLoadPromise)return;ensureInteriorReady().catch(()=>{})};if('requestIdleCallback'in window)requestIdleCallback(preloadInterior,{timeout:3500});else setTimeout(preloadInterior,1600)},{once:true});requestAnimationFrame(stageExterior);";
+    source=source.replace(rendererReady,staged);
+  }else{
+    const delay=isIOS?500:100;
+    const timeout=isIOS?1200:500;
+    const staged="resume();emit('rendererReady');const hydrateExterior=()=>loadDeferredEnvironment();if('requestIdleCallback'in window)requestIdleCallback(hydrateExterior,{timeout:"+timeout+"});else setTimeout(hydrateExterior,"+delay+");";
+    source=source.replace(rendererReady,staged);
   }
 
   source=source.replace(
     '<body data-renderer-status="loading">',
-    `<body data-renderer-status="loading" data-performance-loader="${isIOS?'ios-draco-safe-v28':(isWindows?'windows-draco-safe-v28':'draco-safe-v28')}">`
+    `<body data-renderer-status="loading" data-performance-loader="${isIOS?'ios-draco-environment-v29':(isWindows?'windows-draco-environment-v29':'draco-environment-v29')}">`
   );
 
   document.open();
