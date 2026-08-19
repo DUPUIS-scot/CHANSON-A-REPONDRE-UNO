@@ -49,6 +49,12 @@
     source=source.replace("atmosphere.highQuality=matchMedia('(min-width: 1100px)').matches&&(navigator.hardwareConcurrency||4)>=6&&devicePixelRatio<=1.75;","atmosphere.highQuality=false;");
   }
 
+  if(isIOS){
+    const baseExteriorView="function setDefaultView(){orbit.yaw=0;orbit.pitch=.14;orbit.distance=58;orbit.target.set(0,6.2,5.5);updateOrbit()}";
+    const iosExteriorView="function setDefaultView(){const portrait=innerHeight>innerWidth;orbit.yaw=0;orbit.pitch=portrait?0.12:0.14;orbit.distance=58;orbit.target.set(0,portrait?6.7:6.2,portrait?4.5:5.5);updateOrbit();document.body.dataset.exteriorStartingView=portrait?'ios-portrait-balanced-v39':'ios-landscape-default-v39'}";
+    source=source.replace(baseExteriorView,iosExteriorView);
+  }
+
   const originalInteriorPreload="    state.interiorLoadPromise=loadInterior().catch(error=>{document.body.dataset.interiorReady='false';document.body.dataset.interiorError=String(error?.message||error);return null});";
   const deferredInterior=isWindows
     ? "    state.interiorLoadPromise=null;document.body.dataset.interiorReady='windows-deferred-after-jester';window.__castlePreloadInterior=()=>{if(state.disposed||state.interiorReady||state.interiorLoadPromise)return state.interiorLoadPromise;document.body.dataset.interiorReady='windows-preloading';return ensureInteriorReady()};"
@@ -74,10 +80,10 @@
   );
 
   const performanceLoader=isIOS
-    ? 'ios-draco-direct-v38'
+    ? 'ios-draco-direct-v39'
     : (isAndroid
-        ? 'android-draco-mobile-v38'
-        : (isWindows?'windows-draco-direct-v38':'draco-direct-v38'));
+        ? 'android-draco-mobile-v39'
+        : (isWindows?'windows-draco-direct-v39':'draco-direct-v39'));
   source=source.replace(
     '<body data-renderer-status="loading">',
     `<body data-renderer-status="loading" data-performance-loader="${performanceLoader}">`
