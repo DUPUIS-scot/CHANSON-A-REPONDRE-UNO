@@ -1,8 +1,10 @@
 (() => {
-  const isIOS = /iP(?:hone|ad|od)/.test(navigator.userAgent) ||
-    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  if (!isIOS || window.__castleIosUnoPreviewFixInstalled) return;
-  window.__castleIosUnoPreviewFixInstalled = true;
+  // The direct card renderer may derive an /assets/assets/share-previews URL
+  // before trying the canonical /assets/share-previews location. Normalize
+  // that request on every web platform so Windows does not pay for a failed
+  // texture request and iOS keeps the existing safe path correction.
+  if (window.__castleUnoPreviewFixInstalled) return;
+  window.__castleUnoPreviewFixInstalled = true;
 
   let attempts = 0;
   function install() {
@@ -12,10 +14,10 @@
       if (attempts++ < 240) setTimeout(install, 50);
       return;
     }
-    if (prototype.__castleIosUnoPreviewPathFixed) return;
+    if (prototype.__castleUnoPreviewPathFixed) return;
 
     const originalLoad = prototype.load;
-    prototype.load = function castleIosUnoPreviewLoad(url, onLoad, onProgress, onError) {
+    prototype.load = function castleUnoPreviewLoad(url, onLoad, onProgress, onError) {
       let fixedUrl = url;
       if (typeof fixedUrl === 'string') {
         fixedUrl = fixedUrl.replace(
@@ -25,8 +27,8 @@
       }
       return originalLoad.call(this, fixedUrl, onLoad, onProgress, onError);
     };
-    prototype.__castleIosUnoPreviewPathFixed = true;
-    document.body.dataset.iosUnoPreviewPathFix = 'canonical-share-preview-v36';
+    prototype.__castleUnoPreviewPathFixed = true;
+    document.body.dataset.unoPreviewPathFix = 'canonical-share-preview-all-platforms-v37';
   }
 
   install();
