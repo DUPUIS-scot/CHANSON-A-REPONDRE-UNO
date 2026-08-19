@@ -102,11 +102,12 @@
       if (hit) addHit(hit, outward);
     };
 
-    const isIOS = /iP(?:hone|ad|od)/.test(navigator.userAgent) ||
-      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    const xSamples = isIOS ? 12 : 18;
-    const ySamples = isIOS ? 5 : 7;
-    const zSamples = isIOS ? 7 : 11;
+    // Anchor discovery is cheap compared with texture decoding. Use the same
+    // dense sampling grid on iOS as desktop so every platform derives the same
+    // Castle coverage, while texture concurrency remains separately throttled.
+    const xSamples = 18;
+    const ySamples = 7;
+    const zSamples = 11;
     const frontZ = bounds.max.z + Math.max(8, size.z * 0.45);
 
     for (let yi = 0; yi < ySamples && anchors.length < limit; yi += 1) {
@@ -149,7 +150,7 @@
       document.body.dataset.surfaceAnchorFallback = 'front-rampart-grid';
     }
 
-    document.body.dataset.surfaceAnchorMode = 'direct-raycast-with-fallback-v32';
+    document.body.dataset.surfaceAnchorMode = 'direct-raycast-desktop-density-v39';
     document.body.dataset.surfaceAnchorCount = String(anchors.length);
     return anchors.slice(0, limit);
   }
@@ -192,6 +193,8 @@
     const loader = new THREE.TextureLoader();
     const isIOS = /iP(?:hone|ad|od)/.test(navigator.userAgent) ||
       (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    // Keep iOS texture decoding strictly sequential for memory stability even
+    // though anchor discovery now matches the denser desktop grid.
     const concurrency = isIOS ? 1 : (/Windows/i.test(navigator.userAgent) ? 5 : 4);
     const queue = [];
     let active = 0;
@@ -273,7 +276,7 @@
 
     group.visible = document.body.dataset.sceneMode !== 'interior';
     document.body.dataset.directCardPreviewCount = String(group.children.length);
-    document.body.dataset.directCardPreviewMode = 'rampart-textures-v32';
+    document.body.dataset.directCardPreviewMode = 'rampart-textures-v39';
     document.body.dataset.directCardTextureLoaded = '0';
     document.body.dataset.directCardTextureFailures = '0';
     pump();

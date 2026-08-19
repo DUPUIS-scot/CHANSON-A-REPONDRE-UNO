@@ -14,6 +14,9 @@ void main() {
     final previewFix = File(
       'web/card_castle/castle_ios_uno_preview_fix.js',
     ).readAsStringSync();
+    final directCards = File(
+      'web/card_castle/castle_cards_direct.js',
+    ).readAsStringSync();
     final navigation = File(
       'web/card_castle/castle_navigation_overlay.js',
     ).readAsStringSync();
@@ -44,14 +47,17 @@ void main() {
       fastLoader,
       contains("source=source.replace(inlineJesterScript,'')"),
     );
+    expect(fastLoader, contains('baseExteriorView'));
+    expect(fastLoader, contains('iosExteriorView'));
+    expect(fastLoader, contains('ios-portrait-balanced-v39'));
     expect(fastLoader, contains('directVersion'));
     expect(fastLoader, contains('directSuffix'));
     expect(fastLoader, contains('castle_environment_direct.js'));
     expect(fastLoader, contains('castle_ios_uno_preview_fix.js'));
     expect(fastLoader, contains('castle_cards_direct.js'));
-    expect(fastLoader, contains('ios-draco-direct-v38'));
-    expect(fastLoader, contains('android-draco-mobile-v38'));
-    expect(fastLoader, contains('windows-draco-direct-v38'));
+    expect(fastLoader, contains('ios-draco-direct-v39'));
+    expect(fastLoader, contains('android-draco-mobile-v39'));
+    expect(fastLoader, contains('windows-draco-direct-v39'));
     expect(fastLoader, isNot(contains('search_castle.glb')));
 
     expect(environment, contains('castle_exterior_ground.png'));
@@ -66,6 +72,16 @@ void main() {
       contains('/assets/share-previews/\$1\$2'),
     );
     expect(previewFix, isNot(contains('if (!isIOS')));
+
+    expect(directCards, contains('const xSamples = 18;'));
+    expect(directCards, contains('const ySamples = 7;'));
+    expect(directCards, contains('const zSamples = 11;'));
+    expect(
+      directCards,
+      contains("surfaceAnchorMode = 'direct-raycast-desktop-density-v39'"),
+    );
+    expect(directCards, contains('const concurrency = isIOS ? 1'));
+    expect(directCards, isNot(contains('const xSamples = isIOS ?')));
 
     expect(navigation, contains("addEventListener('pointerdown'"));
     expect(navigation, contains("addEventListener('pointermove'"));
