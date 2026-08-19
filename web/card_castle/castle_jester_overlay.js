@@ -80,8 +80,6 @@ function focusInteriorOnConstructionPanel(runtime){
     target.y+=Math.max(.15,Math.min(match.size.y*.08,.55));
     document.body.dataset.castleInteriorEntryTarget=match.label||match.object.name||'construction-panel-geometry';
   }else{
-    // Stable fallback matching the entrance composition: lower-left foreground,
-    // where the construction panel sits relative to the current interior origin.
     target=new THREE.Vector3(-3.6,2.8,5.0);
     document.body.dataset.castleInteriorEntryTarget='construction-panel-fallback';
   }
@@ -117,19 +115,25 @@ function requestEntrance(){
   window.dispatchEvent(new CustomEvent('castleJesterEnter'));
 }
 
-function placeAtGate(castleRoot){
+function placeAtGate(castleRoot,camera){
   if(!gatekeeper||!castleRoot||gatekeeper.clicked)return;
   const box=new THREE.Box3().setFromObject(castleRoot);
   if(box.isEmpty())return;
   const size=box.getSize(new THREE.Vector3());
   const center=box.getCenter(new THREE.Vector3());
   gatekeeper.root.position.set(
-    center.x+size.x*.18,
+    center.x,
     box.min.y+.04,
     box.max.z+Math.max(.85,size.z*.028),
   );
-  gatekeeper.root.rotation.y=Math.PI;
-  document.body.dataset.castleJesterPlacement='front-of-gate-v14';
+  if(camera){
+    const cameraWorld=new THREE.Vector3();
+    camera.getWorldPosition(cameraWorld);
+    gatekeeper.root.lookAt(cameraWorld.x,gatekeeper.root.position.y,cameraWorld.z);
+  }else{
+    gatekeeper.root.rotation.y=0;
+  }
+  document.body.dataset.castleJesterPlacement='gate-center-camera-facing-v15';
   document.body.dataset.castleJesterGatePosition=[
     gatekeeper.root.position.x.toFixed(2),
     gatekeeper.root.position.y.toFixed(2),
@@ -195,7 +199,7 @@ function animate(runtime,now=performance.now()){
   const delta=Math.min(.05,Math.max(0,(now-previousTime)/1000));
   previousTime=now;
   const exterior=document.body.dataset.sceneMode!=='interior';
-  if(exterior&&!gatekeeper.clicked)placeAtGate(runtime.castleRoot);
+  if(exterior&&!gatekeeper.clicked)placeAtGate(runtime.castleRoot,runtime.camera);
   gatekeeper.setVisible(exterior);
   gatekeeper.update(delta);
   frame=requestAnimationFrame(t=>animate(runtime,t));
@@ -206,7 +210,7 @@ function install(runtime){
   activeRuntime=runtime;
   const canvas=runtime.renderer.domElement;
   gatekeeper=new CastleJesterGatekeeper({scene:runtime.scene,camera:runtime.camera,renderer:runtime.renderer,modelUrl,onEnterRequested:requestEntrance});
-  placeAtGate(runtime.castleRoot);
+  placeAtGate(runtime.castleRoot,runtime.camera);
   installPointerHandlers(canvas);
   document.body.dataset.castleJesterIntegration='direct-runtime-single-click-v1';
   previousTime=performance.now();
