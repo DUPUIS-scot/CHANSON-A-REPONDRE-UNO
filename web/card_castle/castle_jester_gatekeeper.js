@@ -169,6 +169,17 @@ export class CastleJesterGatekeeper {
     document.body.dataset.castleJesterState='entering';
     return true;
   }
+  restartLoop(){
+    if(!this.ready)return;
+    this.clicked=false;
+    this.enterDispatched=false;
+    this.elapsed=0;
+    this.clickStarted=0;
+    this.clearHover();
+    this.resetBones();
+    this.root.rotation.y=BASE_ROTATION;
+    document.body.dataset.castleJesterState='looping';
+  }
   setVisible(active){this.root.visible=Boolean(active&&this.ready);if(!active)this.clearHover()}
   dispose(){this.dracoLoader?.dispose();this.scene?.remove(this.root)}
 }
