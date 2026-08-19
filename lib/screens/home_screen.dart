@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -6,6 +8,7 @@ import '../core/app_router.dart';
 import '../providers/background_provider.dart';
 import '../providers/home_experience_provider.dart';
 import '../services/background_import_service.dart';
+import '../services/local_storage_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/background_widget.dart';
 import '../widgets/home_3d_video_viewport.dart';
@@ -15,6 +18,31 @@ import '../widgets/interactive_curtain_overlay.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
+
+  static const _searchStorageKey = 'search_path_state_v1';
+
+  Future<void> _openCastleFromHome(BuildContext context) async {
+    final storage = context.read<LocalStorageService>();
+    final source = await storage.read(_searchStorageKey);
+
+    if (source != null) {
+      try {
+        final decoded = jsonDecode(source);
+        if (decoded is Map<String, dynamic>) {
+          decoded['castleActive'] = false;
+          decoded['category'] = null;
+          decoded['selectedCardId'] = null;
+          await storage.write(_searchStorageKey, decoded);
+        } else {
+          await storage.remove(_searchStorageKey);
+        }
+      } on Object {
+        await storage.remove(_searchStorageKey);
+      }
+    }
+
+    if (context.mounted) context.go(AppRoutes.search);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +79,10 @@ class HomeScreen extends StatelessWidget {
               child: AnimatedOpacity(
                 opacity: homeInteractive ? 1 : 0,
                 duration: const Duration(milliseconds: 500),
-                child: _ArtisticHome(onNavigate: (route) => context.go(route)),
+                child: _ArtisticHome(
+                  onNavigate: (route) => context.go(route),
+                  onCastle: () => _openCastleFromHome(context),
+                ),
               ),
             ),
           ),
@@ -84,9 +115,10 @@ class HomeScreen extends StatelessWidget {
 }
 
 class _ArtisticHome extends StatelessWidget {
-  const _ArtisticHome({required this.onNavigate});
+  const _ArtisticHome({required this.onNavigate, required this.onCastle});
 
   final ValueChanged<String> onNavigate;
+  final VoidCallback onCastle;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
@@ -123,7 +155,7 @@ class _ArtisticHome extends StatelessWidget {
                     _PrimaryEntrance(
                       icon: Icons.castle_rounded,
                       label: 'CASTLE',
-                      onTap: () => onNavigate(AppRoutes.search),
+                      onTap: onCastle,
                     ),
                     _PrimaryEntrance(
                       icon: Icons.graphic_eq_rounded,
