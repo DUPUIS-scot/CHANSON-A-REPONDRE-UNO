@@ -79,6 +79,23 @@
     '</span></button><button id="return-exterior" class="castle-control" type="button" aria-label="Retour au château extérieur"><span class="control-medallion">←</span><span class="control-copy"><span class="control-title">EXTÉRIEUR</span><span class="control-subtitle">Retour au château</span></span></button></div>\n    <div id="castle-controls" class="castle-toolbar-group">'
   );
 
+  const loaderMarkup=`<div id="castle-jester-loader" aria-live="polite"><div class="castle-loader-shell"><div class="castle-loader-track"><div id="castle-loader-fill"></div><div class="castle-loader-jester" aria-hidden="true">🃏</div></div><div id="castle-loader-percent">0%</div><div id="castle-loader-stage">INITIALISATION</div></div></div>`;
+  const loaderStyles=`<style>
+    #castle-jester-loader{position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;background:radial-gradient(circle at 50% 44%,rgba(66,6,5,.42),rgba(2,6,11,.96) 58%,#02060b);transition:opacity .42s ease,visibility .42s ease;pointer-events:auto}
+    #castle-jester-loader.is-done{opacity:0;visibility:hidden;pointer-events:none}
+    .castle-loader-shell{width:min(88vw,1100px);text-align:center;padding:24px}
+    .castle-loader-track{position:relative;height:92px;border-radius:46px;border:3px solid #d59a42;background:linear-gradient(180deg,#080808,#111 55%,#050505);box-shadow:0 0 0 2px #5b240d inset,0 0 28px rgba(179,35,16,.3);overflow:visible}
+    .castle-loader-track:before{content:'';position:absolute;inset:8px;border-radius:38px;border:1px solid rgba(255,95,42,.7);pointer-events:none}
+    #castle-loader-fill{position:absolute;left:10px;top:10px;bottom:10px;width:0;border-radius:34px;background:repeating-linear-gradient(90deg,#5d0908 0 26px,#8e130c 26px 52px,#c72b13 52px 78px,#ff7a28 78px 104px);box-shadow:0 0 22px rgba(255,68,18,.9) inset,0 0 18px rgba(255,65,18,.65);transition:width .28s ease}
+    .castle-loader-jester{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:132px;height:132px;border-radius:50%;display:grid;place-items:center;font-size:78px;line-height:1;background:radial-gradient(circle at 50% 38%,#52100d 0 46%,#1a0505 68%,#070202 100%);border:4px solid #c98d37;box-shadow:0 0 0 3px #4d1b0b,0 8px 28px rgba(0,0,0,.75),0 0 28px rgba(214,55,16,.45)}
+    #castle-loader-percent{margin-top:32px;color:#e8b660;font:600 clamp(26px,4vw,44px)/1.1 Georgia,serif;text-shadow:0 2px 12px rgba(0,0,0,.8)}
+    #castle-loader-stage{margin-top:8px;color:#d7c8b0;font:600 clamp(13px,2vw,18px)/1.2 Georgia,serif;letter-spacing:.18em;text-transform:uppercase}
+    @media(max-width:700px){.castle-loader-track{height:64px;border-radius:34px}.castle-loader-jester{width:94px;height:94px;font-size:55px}.castle-loader-shell{width:92vw;padding:12px}}
+  </style>`;
+  source=source.replace('</head>',loaderStyles+'</head>');
+  source=source.replace(/<body([^>]*)>/,match=>match+loaderMarkup);
+  source=source.replace('</body>',`<script>(function(){const root=document.getElementById('castle-jester-loader'),fill=document.getElementById('castle-loader-fill'),percent=document.getElementById('castle-loader-percent'),stage=document.getElementById('castle-loader-stage');if(!root||!fill||!percent||!stage)return;let current=0,target=3,done=false;const stages=[[0,'INITIALISATION'],[18,'CHÂTEAU LOADING'],[60,'ENVIRONMENT LOADING'],[75,'JESTER LOADING'],[95,'ACTIVATING INTERACTION'],[100,'READY']];function setTarget(value,label){target=Math.max(target,Math.min(100,value));if(label)stage.textContent=label}function stageFor(value){let result=stages[0][1];for(const pair of stages)if(value>=pair[0])result=pair[1];return result}function tick(){if(done)return;current+=(target-current)*.09;if(target-current<.2)current=target;fill.style.width=Math.max(0,Math.min(100,current))+'%';percent.textContent=Math.round(current)+'%';if(!stage.dataset.locked)stage.textContent=stageFor(current);requestAnimationFrame(tick)}requestAnimationFrame(tick);const body=document.body;const observer=new MutationObserver(()=>{const renderer=body.dataset.rendererStatus;const environment=body.dataset.exteriorEnvironment;const jester=body.dataset.castleJester;if(renderer==='ready')setTarget(60,'ENVIRONMENT LOADING');if(environment==='ready')setTarget(75,'JESTER LOADING');if(jester==='ready'){stage.dataset.locked='true';stage.textContent='ACTIVATING INTERACTION';setTarget(100);const complete=()=>{if(done)return;done=true;fill.style.width='100%';percent.textContent='100%';stage.textContent='READY';setTimeout(()=>root.classList.add('is-done'),220);setTimeout(()=>root.remove(),900)};setTimeout(complete,260)}if(jester==='failed'){stage.dataset.locked='true';stage.textContent='JESTER LOAD FAILED';root.style.pointerEvents='none'}});observer.observe(body,{attributes:true,attributeFilter:['data-renderer-status','data-exterior-environment','data-castle-jester']});window.addEventListener('castleRuntimeReady',()=>setTarget(60,'ENVIRONMENT LOADING'),{once:true});setTimeout(()=>setTarget(18,'CHÂTEAU LOADING'),120);})();</scr`+`ipt>`+directScripts+'</body>');
+
   const performanceLoader=isIOS
     ? 'ios-draco-direct-v39'
     : (isAndroid
@@ -98,7 +115,6 @@
     '<script src="./castle_environment_direct.js'+directSuffix+'"></scr'+'ipt>'+
     '<script src="./castle_ios_uno_preview_fix.js'+directSuffix+'"></scr'+'ipt>'+
     '<script src="./castle_cards_direct.js'+directSuffix+'"></scr'+'ipt>';
-  source=source.replace('</body>',directScripts+'</body>');
 
   document.open();
   document.write(source);
