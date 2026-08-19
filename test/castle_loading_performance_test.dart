@@ -20,6 +20,9 @@ void main() {
     final jesterOverlay = File(
       'web/card_castle/castle_jester_overlay.js',
     ).readAsStringSync();
+    final jesterGatekeeper = File(
+      'web/card_castle/castle_jester_gatekeeper.js',
+    ).readAsStringSync();
     final navigation = File(
       'web/card_castle/castle_navigation_overlay.js',
     ).readAsStringSync();
@@ -39,6 +42,8 @@ void main() {
     expect(fastLoader, contains('const isMobile=isIOS||isAndroid'));
     expect(fastLoader, contains('const isWindows='));
     expect(fastLoader, contains('DRACOLoader'));
+    expect(fastLoader, contains('window.DRACOLoader=DRACOLoader'));
+    expect(fastLoader, contains('window.__castleSharedDraco'));
     expect(fastLoader, contains('dracoLoader.setWorkerLimit'));
     expect(fastLoader, contains('isMobile?1:2'));
     expect(fastLoader, contains('pixelRatioCap=isIOS?1.1:1.15'));
@@ -59,9 +64,13 @@ void main() {
     expect(fastLoader, contains('castle_environment_direct.js'));
     expect(fastLoader, contains('castle_ios_uno_preview_fix.js'));
     expect(fastLoader, contains('castle_cards_direct.js'));
-    expect(fastLoader, contains('ios-draco-direct-v39'));
-    expect(fastLoader, contains('android-draco-mobile-v39'));
-    expect(fastLoader, contains('windows-draco-direct-v39'));
+    expect(fastLoader, contains('ios-draco-direct-v40'));
+    expect(fastLoader, contains('android-draco-mobile-v40'));
+    expect(fastLoader, contains('windows-draco-direct-v40'));
+    expect(fastLoader, contains('jester-timeout'));
+    expect(fastLoader, contains('jester-failed'));
+    expect(fastLoader, contains('renderer-failed'));
+    expect(fastLoader, contains('90000'));
     expect(fastLoader, isNot(contains('search_castle.glb')));
 
     expect(environment, contains('castle_exterior_ground.png'));
@@ -107,6 +116,13 @@ void main() {
       jesterOverlay,
       isNot(contains('mesh.position.applyAxisAngle(axis,angle)')),
     );
+
+    expect(jesterGatekeeper, contains('const SharedDRACOLoader=window.DRACOLoader'));
+    expect(jesterGatekeeper, contains("setDecoderConfig({type:isIOS?'js':'wasm'})"));
+    expect(jesterGatekeeper, contains('setWorkerLimit(isMobile?1:2)'));
+    expect(jesterGatekeeper, contains('www.gstatic.com/draco/versioned/decoders/1.5.7/'));
+    expect(jesterGatekeeper, isNot(contains('unpkg.com')));
+    expect(jesterGatekeeper, contains("castleJesterDraco=isIOS?'shared-js-worker-1'"));
 
     expect(navigation, contains("addEventListener('pointerdown'"));
     expect(navigation, contains("addEventListener('pointermove'"));
