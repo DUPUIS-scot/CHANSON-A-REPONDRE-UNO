@@ -5,6 +5,7 @@
   let pendingCards = null;
   let installAttempts = 0;
   let stagingAttempts = 0;
+  let retryTimer = 0;
 
   function decode(event) {
     let message = event.data;
@@ -169,21 +170,33 @@
     );
   }
 
+  function scheduleRenderRetry() {
+    if (retryTimer) return;
+    retryTimer = setTimeout(() => {
+      retryTimer = 0;
+      renderWhenReady();
+    }, 100);
+  }
+
   function renderWhenReady() {
     if (!pendingCards) return;
     if (!postJesterStageReady()) {
       document.body.dataset.directCardsStage = 'waiting-for-environment-and-jester';
-      if (stagingAttempts++ < 1200) setTimeout(renderWhenReady, 100);
+      if (stagingAttempts++ < 1200) scheduleRenderRetry();
       return;
     }
     const THREE = window.THREE;
     const runtime = window.__castleSearchRuntime;
     if (!THREE || !runtime?.scene || !runtime?.renderer || !runtime?.camera || !runtime?.castleRoot) {
-      if (installAttempts++ < 240) setTimeout(renderWhenReady, 100);
+      if (installAttempts++ < 240) scheduleRenderRetry();
       return;
     }
     document.body.dataset.directCardsStage = 'post-jester-textures';
-    renderCards(THREE, runtime, pendingCards);
+    const payload = pendingCards;
+    pendingCards = null;
+    stagingAttempts = 0;
+    installAttempts = 0;
+    renderCards(THREE, runtime, payload);
   }
 
   function renderCards(THREE, runtime, payload) {

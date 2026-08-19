@@ -172,13 +172,17 @@ void main() {
         final bridge = File(
           'web/card_castle/castle_bridge_compat.js',
         ).readAsStringSync();
+        final directCards = File(
+          'web/card_castle/castle_cards_direct.js',
+        ).readAsStringSync();
         expect(castle, contains('../vendor/three.module.js'));
         expect(castle, contains('assets/assets/models/castle_exterior.glb'));
         expect(castle, contains("from '../vendor/GLTFLoader.js'"));
         expect(castle, isNot(contains('unpkg.com')));
         expect(castle, contains('LONG_PRESS_MS=600'));
         expect(castle, contains('longPressTimer:0'));
-        expect(castle, contains('cardTap'));
+        expect(directCards, contains('cardSelected'));
+        expect(directCards, contains('cardLongPressed'));
         expect(castle, contains("message.type==='focusCard'"));
         expect(castle, contains('state.dragging'));
         expect(castle, contains('document.body.dataset.cardCount'));
