@@ -31,8 +31,16 @@ void main() {
     );
     expect(fastLoader, contains('castle_exterior_ground.png'));
     expect(fastLoader, contains('castle_exterior_atmosphere.png'));
-    expect(fastLoader, contains("ios-draco-js-v23"));
-    expect(fastLoader, contains("ios-draco-js-retry-v23"));
+    expect(fastLoader, contains("ios-draco-progress-v25"));
+    expect(fastLoader, contains("ios-draco-progress-retry-v25"));
+    expect(fastLoader, contains('window.__castleLoadState'));
+    expect(fastLoader, contains('castleLoadProgress'));
+    expect(fastLoader, contains('window.__castleReloadForLoadFailure'));
+    expect(
+      fastLoader,
+      contains("stallLimit=loadState.phase==='decode'?180000:60000"),
+    );
+    expect(fastLoader, isNot(contains('25000')));
     expect(fastLoader, contains("searchParams.set('iosRetry','1')"));
     expect(fastLoader, isNot(contains('search_castle.glb')));
   });
