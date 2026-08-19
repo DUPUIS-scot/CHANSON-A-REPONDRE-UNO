@@ -22,27 +22,47 @@
     }
   }, true);
 
-  function cardTextureUrl(source) {
-    const value = String(source || '').trim();
-    if (!value) return '';
-    if (/^(blob:|data:)/i.test(value)) return value;
-    try {
-      const url = new URL(value, location.href);
-      if (url.origin === location.origin) {
-        if (url.pathname.includes('/assets/') && !url.pathname.includes('/assets/assets/')) {
-          url.pathname = url.pathname.replace('/assets/', '/assets/assets/');
-        }
-      }
-      return url.href;
-    } catch (_) {
-      const clean = value.replace(/^\/+/, '');
-      const normalized = clean.startsWith('assets/assets/')
-        ? clean
-        : clean.startsWith('assets/')
-          ? `assets/${clean}`
-          : `assets/assets/${clean}`;
-      return new URL(`../${normalized}`, document.baseURI).href;
+  function textureCandidates(card) {
+    const urls = [];
+    const add = value => {
+      if (!value || urls.includes(value)) return;
+      urls.push(value);
+    };
+
+    const id = String(card?.id || '').toLowerCase();
+    const brio = id.match(/^brio-(\d{1,3})$/);
+    if (brio) {
+      const number = brio[1].padStart(3, '0');
+      add(new URL(`../assets/assets/decks/chanson_a_repondre_brio/cards/${number}.jpeg`, document.baseURI).href);
     }
+
+    const source = String(card?.rectoUrl || card?.imagePath || card?.thumbnailUrl || '').trim();
+    if (!source) return urls;
+    if (/^(blob:|data:)/i.test(source)) {
+      add(source);
+      return urls;
+    }
+
+    try {
+      const resolved = new URL(source, location.href);
+      if (resolved.origin === location.origin) {
+        let path = resolved.pathname;
+        path = path.replace(/^\/assets\/(?:assets\/)+/, '/assets/assets/');
+        if (path.startsWith('/assets/') && !path.startsWith('/assets/assets/')) {
+          add(new URL(`/assets${path}${resolved.search}`, location.origin).href);
+        }
+        const normalized = new URL(resolved.href);
+        normalized.pathname = path;
+        add(normalized.href);
+      }
+      add(resolved.href);
+    } catch (_) {
+      const clean = source.replace(/^\/+/, '');
+      const relative = clean.replace(/^assets\/(?:assets\/)?/, '');
+      add(new URL(`../assets/assets/${relative}`, document.baseURI).href);
+      add(new URL(source, document.baseURI).href);
+    }
+    return urls;
   }
 
   function deriveAnchors(THREE, castleRoot, limit) {
@@ -57,7 +77,7 @@
 
     const minY = bounds.min.y + size.y * 0.43;
     const maxY = bounds.min.y + size.y * 0.92;
-    const minSpacingSq = 1.28 * 1.28;
+    const minSpacingSq = 1.22 * 1.22;
 
     const addHit = (hit, outward) => {
       if (!hit || anchors.length >= limit) return;
@@ -68,7 +88,7 @@
       if (Math.abs(normal.y) > 0.75) return;
       normal.y = THREE.MathUtils.clamp(normal.y, -0.16, 0.24);
       normal.normalize();
-      const position = hit.point.clone().addScaledVector(normal, 0.11);
+      const position = hit.point.clone().addScaledVector(normal, 0.12);
       if (anchors.some(anchor => anchor.position.distanceToSquared(position) < minSpacingSq)) return;
       anchors.push({ position, normal });
     };
@@ -129,7 +149,7 @@
       document.body.dataset.surfaceAnchorFallback = 'front-rampart-grid';
     }
 
-    document.body.dataset.surfaceAnchorMode = 'direct-raycast-with-fallback-v31';
+    document.body.dataset.surfaceAnchorMode = 'direct-raycast-with-fallback-v32';
     document.body.dataset.surfaceAnchorCount = String(anchors.length);
     return anchors.slice(0, limit);
   }
@@ -155,7 +175,8 @@
     }
 
     while (group.children.length) {
-      const child = group.children.pop();
+      const child = group.children[0];
+      group.remove(child);
       child.geometry?.dispose?.();
       child.material?.map?.dispose?.();
       child.material?.dispose?.();
@@ -174,6 +195,8 @@
     const concurrency = isIOS ? 1 : (/Windows/i.test(navigator.userAgent) ? 5 : 4);
     const queue = [];
     let active = 0;
+    let loadedCount = 0;
+    let failedCount = 0;
 
     const orient = (mesh, normal) => {
       const up = Math.abs(normal.y) > 0.9 ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(0, 1, 0);
@@ -185,9 +208,16 @@
     const pump = () => {
       while (active < concurrency && queue.length) {
         const job = queue.shift();
+        if (!job.mesh.parent) continue;
+        const url = job.urls[job.urlIndex];
+        if (!url) {
+          failedCount += 1;
+          document.body.dataset.directCardTextureFailures = String(failedCount);
+          continue;
+        }
         active += 1;
         loader.load(
-          job.url,
+          url,
           texture => {
             texture.colorSpace = THREE.SRGBColorSpace;
             texture.anisotropy = Math.min(runtime.renderer.capabilities.getMaxAnisotropy(), 4);
@@ -195,6 +225,8 @@
               const old = job.mesh.material;
               job.mesh.material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide, toneMapped: false });
               old.dispose();
+              loadedCount += 1;
+              document.body.dataset.directCardTextureLoaded = String(loadedCount);
             }
             active -= 1;
             pump();
@@ -202,9 +234,21 @@
           undefined,
           () => {
             active -= 1;
-            if (job.retries < 2 && job.mesh.parent) {
+            if (!job.mesh.parent) {
+              pump();
+              return;
+            }
+            if (job.urlIndex + 1 < job.urls.length) {
+              job.urlIndex += 1;
+              queue.push(job);
+            } else if (job.retries < 2) {
               job.retries += 1;
-              setTimeout(() => { queue.push(job); pump(); }, 300 * job.retries);
+              job.urlIndex = 0;
+              setTimeout(() => { if (job.mesh.parent) { queue.push(job); pump(); } }, 260 * job.retries);
+            } else {
+              failedCount += 1;
+              job.mesh.material.color.setHex(0x2b1c15);
+              document.body.dataset.directCardTextureFailures = String(failedCount);
             }
             pump();
           },
@@ -215,7 +259,7 @@
     cards.slice(0, anchors.length).forEach((card, index) => {
       const anchor = anchors[index];
       const geometry = new THREE.PlaneGeometry(1.12, 1.68);
-      const material = new THREE.MeshBasicMaterial({ color: 0xf1e7d3, side: THREE.DoubleSide, toneMapped: false });
+      const material = new THREE.MeshBasicMaterial({ color: 0x1b1713, side: THREE.DoubleSide, toneMapped: false });
       const mesh = new THREE.Mesh(geometry, material);
       mesh.userData.card = card;
       mesh.position.copy(anchor.position);
@@ -223,13 +267,15 @@
       orient(mesh, anchor.normal);
       mesh.renderOrder = 5;
       group.add(mesh);
-      const url = cardTextureUrl(card.rectoUrl || card.imagePath || card.thumbnailUrl);
-      if (url) queue.push({ mesh, url, retries: 0 });
+      const urls = textureCandidates(card);
+      if (urls.length) queue.push({ mesh, urls, urlIndex: 0, retries: 0 });
     });
 
     group.visible = document.body.dataset.sceneMode !== 'interior';
     document.body.dataset.directCardPreviewCount = String(group.children.length);
-    document.body.dataset.directCardPreviewMode = 'rampart-raycast-v31';
+    document.body.dataset.directCardPreviewMode = 'rampart-textures-v32';
+    document.body.dataset.directCardTextureLoaded = '0';
+    document.body.dataset.directCardTextureFailures = '0';
     pump();
 
     if (!group.userData.sceneObserver) {
