@@ -66,7 +66,7 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
             .replace(
               queryParameters: {
                 ...castleUri.queryParameters,
-                'iosLegacy': '1',
+                'iosRetry': '1',
               },
             )
             .toString()
@@ -83,7 +83,7 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
       ..setAttribute('allowfullscreen', 'true')
       ..setAttribute('popover', 'manual')
       ..setAttribute('title', 'Three.js Search card castle');
-    iframe.dataset['iosLoaderMode'] = isIos ? 'legacy-no-draco' : 'compressed-draco';
+    iframe.dataset['iosLoaderMode'] = isIos ? 'draco-js-stable' : 'compressed-draco';
     ui_web.platformViewRegistry.registerViewFactory(viewType, (_) => iframe);
     frameLoads = iframe.onLoad.listen((_) => _sendState());
     messages = html.window.onMessage.listen(_handleMessage);
