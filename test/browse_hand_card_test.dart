@@ -4,7 +4,7 @@ import 'package:uno_chanson_2/models/card_image_model.dart';
 import 'package:uno_chanson_2/widgets/browse_hand_card.dart';
 
 void main() {
-  testWidgets('uses card aspect ratio and single tap selects and opens', (
+  testWidgets('uses fixed 2:3 card ratio and single tap selects and opens', (
     tester,
   ) async {
     var selected = 0;
@@ -41,7 +41,7 @@ void main() {
       ),
     );
     final ratio = tester.widget<AspectRatio>(find.byType(AspectRatio));
-    expect(ratio.aspectRatio, 900 / 1600);
+    expect(ratio.aspectRatio, 2 / 3);
     await tester.tap(find.byType(BrowseHandCard));
     await tester.pump();
     expect(selected, 1);
