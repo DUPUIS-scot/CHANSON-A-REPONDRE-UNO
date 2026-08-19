@@ -98,15 +98,15 @@ class _PersistentDjWhoPlayerState extends State<PersistentDjWhoPlayer> {
                       Positioned(
                         left: 0,
                         bottom: 0,
-                        width: 1,
-                        height: 1,
+                        width: 160,
+                        height: 90,
                         child: IgnorePointer(
                           child: ClipRect(
                             child: Opacity(
                               opacity: 0.01,
                               child: SizedBox(
-                                width: 1,
-                                height: 1,
+                                width: 160,
+                                height: 90,
                                 child: YoutubePlayer(
                                   key: _youtubePlayerKey,
                                   controller: player.controller!,
