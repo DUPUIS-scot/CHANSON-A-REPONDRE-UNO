@@ -8,6 +8,7 @@ import 'dart:ui_web' as ui_web;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../core/app_config.dart';
 import '../models/card_image_model.dart';
 
 class WebGlCardCastleView extends StatefulWidget {
@@ -60,7 +61,15 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
     final userAgent = navigator.userAgent;
     final isIos = RegExp(r'iP(?:hone|ad|od)').hasMatch(userAgent) ||
         (navigator.platform == 'MacIntel' && (navigator.maxTouchPoints ?? 0) > 1);
-    final castleSrc = Uri.base.resolve('card_castle/card_castle_fast.html').toString();
+    final castleUri = Uri.base.resolve('card_castle/card_castle_fast.html');
+    final castleSrc = castleUri
+        .replace(
+          queryParameters: <String, String>{
+            ...castleUri.queryParameters,
+            'v': AppConfig.appBuildSha,
+          },
+        )
+        .toString();
 
     iframe = html.IFrameElement()
       ..id = 'search-card-castle-frame'
