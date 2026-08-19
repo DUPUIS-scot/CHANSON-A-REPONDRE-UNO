@@ -173,7 +173,7 @@ void main() {
           'web/card_castle/castle_bridge_compat.js',
         ).readAsStringSync();
         expect(castle, contains('../vendor/three.module.js'));
-        expect(castle, contains('assets/assets/models/search_castle.glb'));
+        expect(castle, contains('assets/assets/models/castle_exterior.glb'));
         expect(castle, contains("from '../vendor/GLTFLoader.js'"));
         expect(castle, isNot(contains('unpkg.com')));
         expect(castle, contains('cardLongPress'));
