@@ -1,0 +1,155 @@
+name: Fix Castle exterior/interior once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-castle-exterior-interior-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Add interior return button and rotate interior 180 degrees
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path('web/card_castle/card_castle.html')
+          source = path.read_text()
+
+          old_css = "    #fullscreen-controls{display:none}"
+          new_css = "    #return-exterior{display:none}\n    body[data-scene-mode=\"interior\"] #return-exterior{display:flex}\n    #fullscreen-controls{display:none}"
+          if source.count(old_css) != 1:
+              raise SystemExit(f'Expected fullscreen controls CSS once, found {source.count(old_css)}')
+          source = source.replace(old_css, new_css, 1)
+
+          marker = "</span></button></div>\n    <div id=\"castle-controls\" class=\"castle-toolbar-group\">"
+          replacement = "</span></button><button id=\"return-exterior\" class=\"castle-control\" type=\"button\" aria-label=\"Retour au château extérieur\"><span class=\"control-medallion\">←</span><span class=\"control-copy\"><span class=\"control-title\">EXTÉRIEUR</span><span class=\"control-subtitle\">Retour au château</span></span></button></div>\n    <div id=\"castle-controls\" class=\"castle-toolbar-group\">"
+          if source.count(marker) != 1:
+              raise SystemExit(f'Expected left toolbar marker once, found {source.count(marker)}')
+          source = source.replace(marker, replacement, 1)
+
+          old_rotation = "interiorRoot.rotation.y=Math.PI*2.5;"
+          new_rotation = "interiorRoot.rotation.y=Math.PI*3.5;document.body.dataset.interiorRotation='current-plus-180-v35';"
+          if source.count(old_rotation) != 1:
+              raise SystemExit(f'Expected interior rotation once, found {source.count(old_rotation)}')
+          source = source.replace(old_rotation, new_rotation, 1)
+
+          path.write_text(source)
+
+      - name: Reveal uploaded exterior atmosphere
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path('web/card_castle/castle_environment_direct.js')
+          source = path.read_text()
+
+          old_block = """    const group = new THREE.Group();
+    group.name = 'castle-direct-exterior-ground';
+"""
+          new_block = """    // The base renderer also creates an opaque BackSide SphereGeometry sky.
+    // Hide only that generated sky so the uploaded atmosphere scene.background
+    // can actually be seen. GLB meshes/groups are never touched here.
+    const generatedSky = [];
+    for (const child of [...scene.children]) {
+      if (!child?.isMesh || child === runtime.castleRoot) continue;
+      if ((child.geometry?.type || '') !== 'SphereGeometry') continue;
+      child.visible = false;
+      child.userData.castleGeneratedSkyHidden = true;
+      generatedSky.push(child);
+    }
+
+    const group = new THREE.Group();
+    group.name = 'castle-direct-exterior-ground';
+"""
+          if source.count(old_block) != 1:
+              raise SystemExit(f'Expected direct environment group marker once, found {source.count(old_block)}')
+          source = source.replace(old_block, new_block, 1)
+
+          old_error = """        atmosphereReady = true;
+        document.body.dataset.exteriorAtmosphere = 'failed';
+        finishIfReady();
+"""
+          new_error = """        atmosphereReady = true;
+        document.body.dataset.exteriorAtmosphere = 'failed';
+        generatedSky.forEach(mesh => { mesh.visible = true; });
+        finishIfReady();
+"""
+          if source.count(old_error) != 1:
+              raise SystemExit(f'Expected atmosphere error block once, found {source.count(old_error)}')
+          source = source.replace(old_error, new_error, 1)
+
+          old_sync = """      group.visible = !interior;
+      if (interior) {
+        scene.background = new THREE.Color(0x010307);
+        scene.fog = new THREE.FogExp2(0x02060b, 0.012);
+      } else {
+        // Scene backgrounds render as a screen-space quad, so the uploaded
+        // atmosphere always fills the complete Castle viewport behind the 3D.
+        scene.background = atmosphereTexture || new THREE.Color(0x02060b);
+        scene.fog = new THREE.FogExp2(0x08131e, 0.0062);
+      }
+"""
+          new_sync = """      group.visible = !interior;
+      if (interior) {
+        generatedSky.forEach(mesh => { mesh.visible = false; });
+        scene.background = new THREE.Color(0x010307);
+        scene.fog = new THREE.FogExp2(0x02060b, 0.012);
+      } else {
+        // Keep the old procedural sky hidden whenever the uploaded atmosphere
+        // is available; restore it only as an error fallback.
+        generatedSky.forEach(mesh => { mesh.visible = !atmosphereTexture; });
+        scene.background = atmosphereTexture || new THREE.Color(0x02060b);
+        scene.fog = new THREE.FogExp2(0x08131e, 0.0062);
+      }
+"""
+          if source.count(old_sync) != 1:
+              raise SystemExit(f'Expected scene sync block once, found {source.count(old_sync)}')
+          source = source.replace(old_sync, new_sync, 1)
+
+          source = source.replace("ground-plus-fullscreen-atmosphere-v34", "ground-plus-fullscreen-atmosphere-v35-sky-hidden")
+          path.write_text(source)
+
+      - name: Validate Castle interaction contract
+        shell: python
+        run: |
+          from pathlib import Path
+
+          castle = Path('web/card_castle/card_castle.html').read_text()
+          environment = Path('web/card_castle/castle_environment_direct.js').read_text()
+          navigation = Path('web/card_castle/castle_navigation_overlay.js').read_text()
+          gatekeeper = Path('web/card_castle/castle_jester_gatekeeper.js').read_text()
+
+          assert 'id="return-exterior"' in castle
+          assert 'body[data-scene-mode="interior"] #return-exterior{display:flex}' in castle
+          assert "interiorRoot.rotation.y=Math.PI*3.5" in castle
+          assert "interiorRotation='current-plus-180-v35'" in castle
+          assert "document.getElementById('return-exterior')" in navigation
+          assert "runtime.switchToExterior" in navigation
+          assert "SphereGeometry" in environment
+          assert "castleGeneratedSkyHidden" in environment
+          assert "scene.background = atmosphereTexture" in environment
+          assert "object.userData.castleGatekeeper=true" in gatekeeper
+          assert "intersectObject(this.root,true)" in gatekeeper
+          assert "restartLoop()" in gatekeeper
+
+      - name: Remove one-shot workflow and commit repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/fix-castle-exterior-interior-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add web/card_castle/card_castle.html web/card_castle/castle_environment_direct.js .github/workflows/fix-castle-exterior-interior-once.yml
+          git commit -m "Show Castle atmosphere and rotate interior 180 degrees"
+          git push origin HEAD:main
