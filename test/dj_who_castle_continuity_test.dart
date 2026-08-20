@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('DJ WHO playback continuity stays wired through Castle loading', () {
+  test('DJ WHO pauses for Castle load and resumes after loader completion', () {
     final provider = File(
       'lib/providers/dj_who_player_provider.dart',
     ).readAsStringSync();
@@ -13,20 +13,29 @@ void main() {
     final castleView = File(
       'lib/widgets/webgl_card_castle_view_web.dart',
     ).readAsStringSync();
+    final environment = File(
+      'web/card_castle/castle_environment_direct.js',
+    ).readAsStringSync();
 
-    expect(provider, contains('_castleContinuityActive'));
-    expect(provider, contains('beginCastlePlaybackContinuity'));
-    expect(provider, contains('ensureCastlePlaybackContinuity'));
+    expect(provider, contains('suspendForCastleLoad'));
+    expect(provider, contains('await controller.pauseVideo()'));
+    expect(provider, contains('resumeAfterCastleLoad'));
     expect(provider, contains('await controller.playVideo()'));
-    expect(provider, contains('endCastlePlaybackContinuity'));
+    expect(provider, contains('controller.cueVideoById'));
+    expect(provider, isNot(contains('ensureCastlePlaybackContinuity')));
 
     expect(persistentPlayer, contains('width: 160'));
     expect(persistentPlayer, contains('height: 90'));
     expect(persistentPlayer, contains('keepAlive: true'));
 
-    expect(castleView, contains('beginCastlePlaybackContinuity'));
-    expect(castleView, contains('Timer.periodic'));
-    expect(castleView, contains('ensureCastlePlaybackContinuity'));
-    expect(castleView, contains('endCastlePlaybackContinuity'));
+    expect(castleView, contains('player.suspendForCastleLoad()'));
+    expect(castleView, contains("case 'castleLoadingComplete':"));
+    expect(castleView, contains('player.resumeAfterCastleLoad()'));
+    expect(castleView, isNot(contains('Timer.periodic')));
+    expect(castleView, isNot(contains('ensureCastlePlaybackContinuity')));
+
+    expect(environment, contains("type: 'castleLoadingComplete'"));
+    expect(environment, contains("classList.contains('is-done')"));
+    expect(environment, contains('window.parent.postMessage'));
   });
 }
