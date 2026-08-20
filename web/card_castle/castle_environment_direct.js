@@ -2,6 +2,36 @@
   if (window.__castleDirectEnvironmentInstalled) return;
   window.__castleDirectEnvironmentInstalled = true;
 
+  let castleLoadingCompleteSent = false;
+  function notifyCastleLoadingComplete() {
+    if (castleLoadingCompleteSent) return;
+    castleLoadingCompleteSent = true;
+    try {
+      window.parent.postMessage(
+        JSON.stringify({ type: 'castleLoadingComplete' }),
+        location.origin,
+      );
+    } catch (_) {}
+  }
+
+  function watchCastleLoaderCompletion() {
+    const loaderRoot = document.getElementById('castle-jester-loader');
+    if (!loaderRoot) {
+      notifyCastleLoadingComplete();
+      return;
+    }
+    const observer = new MutationObserver(() => {
+      if (!loaderRoot.classList.contains('is-done')) return;
+      observer.disconnect();
+      notifyCastleLoadingComplete();
+    });
+    observer.observe(loaderRoot, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+  }
+  watchCastleLoaderCompletion();
+
   const GROUND_URL = new URL('../assets/assets/images/castle_exterior_ground.png', document.baseURI).href;
   const ATMOSPHERE_URL = new URL('../assets/assets/images/castle_exterior_atmosphere.png', document.baseURI).href;
   const isIOS = /iP(?:hone|ad|od)/.test(navigator.userAgent) ||

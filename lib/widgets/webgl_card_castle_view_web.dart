@@ -51,14 +51,14 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
   StreamSubscription<html.MessageEvent>? messages;
   StreamSubscription<html.Event>? frameLoads;
   Timer? cardOverlayReleaseTimer;
-  Timer? djWhoContinuityTimer;
   DateTime? cardOverlayReleasedAt;
   DjWhoPlayerProvider? djWhoPlayer;
   late final bool isIos;
   bool rendererFailed = false;
   bool rendererReady = false;
   bool cardOverlayActive = false;
-  bool djWhoContinuityStarted = false;
+  bool djWhoSuspensionStarted = false;
+  bool castleLoadingComplete = false;
 
   @override
   void initState() {
@@ -93,27 +93,19 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
     iframe.dataset['iosLoaderMode'] =
         isIos ? 'draco-js-watchdog' : 'compressed-draco';
     ui_web.platformViewRegistry.registerViewFactory(viewType, (_) => iframe);
-    frameLoads = iframe.onLoad.listen((_) {
-      _sendState();
-      _keepDjWhoPlaying();
-    });
+    frameLoads = iframe.onLoad.listen((_) => _sendState());
     messages = html.window.onMessage.listen(_handleMessage);
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (djWhoContinuityStarted) return;
+    if (djWhoSuspensionStarted) return;
 
     final player = context.read<DjWhoPlayerProvider>();
     djWhoPlayer = player;
-    djWhoContinuityStarted = true;
-    player.beginCastlePlaybackContinuity();
-    _keepDjWhoPlaying();
-    djWhoContinuityTimer = Timer.periodic(
-      const Duration(seconds: 2),
-      (_) => _keepDjWhoPlaying(),
-    );
+    djWhoSuspensionStarted = true;
+    unawaited(player.suspendForCastleLoad());
   }
 
   @override
@@ -145,16 +137,18 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
     frameLoads?.cancel();
     messages?.cancel();
     cardOverlayReleaseTimer?.cancel();
-    djWhoContinuityTimer?.cancel();
-    djWhoPlayer?.endCastlePlaybackContinuity();
+    _resumeDjWhoAfterCastleLoad();
     _setInAppFullscreen(false);
     super.dispose();
   }
 
-  void _keepDjWhoPlaying() {
+  void _resumeDjWhoAfterCastleLoad() {
+    if (!djWhoSuspensionStarted || castleLoadingComplete) return;
+    castleLoadingComplete = true;
     final player = djWhoPlayer;
-    if (player == null) return;
-    unawaited(player.ensureCastlePlaybackContinuity());
+    if (player != null) {
+      unawaited(player.resumeAfterCastleLoad());
+    }
   }
 
   void _handleMessage(html.MessageEvent event) {
@@ -168,10 +162,12 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
       switch (decoded['type']) {
         case 'rendererReady':
           rendererReady = true;
-          _keepDjWhoPlaying();
           _sendState();
           if (widget.fullscreenRequestId > 0) _requestFullscreen();
+        case 'castleLoadingComplete':
+          _resumeDjWhoAfterCastleLoad();
         case 'rendererError':
+          _resumeDjWhoAfterCastleLoad();
           if (mounted) setState(() => rendererFailed = true);
         case 'cardSelected':
           final id = decoded['cardId'] as String?;
@@ -207,6 +203,7 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
                 'ios-post-card-overlay';
             return;
           }
+          _resumeDjWhoAfterCastleLoad();
           _setInAppFullscreen(false);
           widget.onFullscreenChanged(false);
           widget.onCategoriesRequested();

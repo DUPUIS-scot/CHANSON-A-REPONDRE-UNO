@@ -20,7 +20,8 @@ class DjWhoPlayerProvider extends ChangeNotifier {
   bool _isPlaying = false;
   bool _shouldResumePlaying = false;
   bool _playerRouteMounted = false;
-  bool _castleContinuityActive = false;
+  bool _castleLoadSuspended = false;
+  bool _resumeAfterCastleLoad = false;
   bool _advancing = false;
   double _resumeSeconds = 0;
 
@@ -29,11 +30,16 @@ class DjWhoPlayerProvider extends ChangeNotifier {
   int get selectedIndex => _selectedIndex;
   bool get isActive => _active;
   bool get isPlaying => _controller != null
-      ? (_isPlaying || (_castleContinuityActive && _shouldResumePlaying))
+      ? (_isPlaying ||
+            (_castleLoadSuspended &&
+                _resumeAfterCastleLoad &&
+                _shouldResumePlaying))
       : _shouldResumePlaying;
   bool get hasMountedPlayer => _controller != null;
   bool get isPlayerRouteMounted => _playerRouteMounted;
-  bool get isCastleContinuityActive => _castleContinuityActive;
+  bool get isCastleLoadSuspended => _castleLoadSuspended;
+  bool get willResumeAfterCastleLoad =>
+      _castleLoadSuspended && _resumeAfterCastleLoad && _shouldResumePlaying;
   double get resumeSeconds => _resumeSeconds;
   VideoItem? get selectedVideo =>
       _videos.isEmpty ? null : _videos[_selectedIndex];
@@ -96,44 +102,57 @@ class DjWhoPlayerProvider extends ChangeNotifier {
       } catch (_) {
         // Keep the last known position if the player is between frames.
       }
-      _shouldResumePlaying = _isPlaying;
+      if (!_castleLoadSuspended) {
+        _shouldResumePlaying = _isPlaying;
+      }
     }
 
-    // Intentionally keep the controller and iframe alive. The persistent
-    // widget keeps the same player surface rendered off-route so audio can
-    // continue while navigation and the Castle renderer are initialising.
+    // Keep the controller and iframe alive off-route. Castle startup can pause
+    // decoding temporarily without destroying the selected track or position.
     notifyListeners();
   }
 
-  void beginCastlePlaybackContinuity() {
-    _castleContinuityActive = true;
-    if (_isPlaying) _shouldResumePlaying = true;
-  }
-
-  Future<void> ensureCastlePlaybackContinuity() async {
-    if (!_castleContinuityActive ||
-        !_active ||
-        !_shouldResumePlaying ||
-        _advancing) {
-      return;
+  Future<void> suspendForCastleLoad() async {
+    if (_castleLoadSuspended) return;
+    _castleLoadSuspended = true;
+    _resumeAfterCastleLoad =
+        _active && (_isPlaying || _shouldResumePlaying);
+    if (_resumeAfterCastleLoad) {
+      _shouldResumePlaying = true;
     }
 
     final controller = _controller;
-    if (controller == null) return;
-
-    try {
-      // playVideo is idempotent while already playing. Reasserting it during
-      // Castle loading prevents Safari/iOS from leaving the hidden YouTube
-      // surface paused after a competing WebGL iframe or decoder starts.
-      await controller.playVideo();
-    } catch (_) {
-      // The iframe can briefly be between browser composition states while the
-      // Castle platform view mounts. The Castle heartbeat will retry.
+    if (controller != null) {
+      try {
+        _resumeSeconds = await controller.currentTime;
+      } catch (_) {
+        // Keep the latest known position if the iframe is transitioning.
+      }
+      try {
+        await controller.pauseVideo();
+      } catch (_) {
+        // Castle mount can briefly recompose the platform view on mobile.
+      }
     }
+    notifyListeners();
   }
 
-  void endCastlePlaybackContinuity() {
-    _castleContinuityActive = false;
+  Future<void> resumeAfterCastleLoad() async {
+    if (!_castleLoadSuspended) return;
+    _castleLoadSuspended = false;
+    final shouldResume =
+        _resumeAfterCastleLoad && _active && _shouldResumePlaying;
+    _resumeAfterCastleLoad = false;
+    final controller = _controller;
+    notifyListeners();
+
+    if (!shouldResume || controller == null) return;
+    try {
+      await controller.playVideo();
+    } catch (_) {
+      // Leaving the Castle or a final iframe composition can briefly race the
+      // media surface. The user's playback intent remains preserved.
+    }
   }
 
   void _onPlayerValue(YoutubePlayerValue value) {
@@ -144,15 +163,14 @@ class DjWhoPlayerProvider extends ChangeNotifier {
       _isPlaying = playing;
       changed = true;
     }
-    if (playing && !_shouldResumePlaying) {
-      _shouldResumePlaying = true;
-      changed = true;
-    } else if (!playing && !_castleContinuityActive && _shouldResumePlaying) {
-      // Outside the Castle, a genuine player pause should still update the
-      // persistent player's intent. During Castle loading, transient pauses
-      // must not erase the user's request to keep DJ WHO playing.
-      _shouldResumePlaying = false;
-      changed = true;
+    if (!_castleLoadSuspended) {
+      if (playing && !_shouldResumePlaying) {
+        _shouldResumePlaying = true;
+        changed = true;
+      } else if (!playing && _shouldResumePlaying) {
+        _shouldResumePlaying = false;
+        changed = true;
+      }
     }
     if (playing && !_active) {
       _active = true;
@@ -181,11 +199,18 @@ class DjWhoPlayerProvider extends ChangeNotifier {
     _active = true;
     _resumeSeconds = 0;
     _shouldResumePlaying = true;
+    if (_castleLoadSuspended) {
+      _resumeAfterCastleLoad = true;
+    }
     notifyListeners();
 
     final controller = _controller;
     if (controller != null) {
-      await controller.loadVideoById(videoId: _videos[index].videoId);
+      if (_castleLoadSuspended) {
+        await controller.cueVideoById(videoId: _videos[index].videoId);
+      } else {
+        await controller.loadVideoById(videoId: _videos[index].videoId);
+      }
     }
   }
 
@@ -208,6 +233,19 @@ class DjWhoPlayerProvider extends ChangeNotifier {
     }
 
     final controller = _controller;
+    if (_castleLoadSuspended) {
+      final wantsResume = !(_resumeAfterCastleLoad && _shouldResumePlaying);
+      _resumeAfterCastleLoad = wantsResume;
+      _shouldResumePlaying = wantsResume;
+      notifyListeners();
+      if (!wantsResume && controller != null) {
+        try {
+          await controller.pauseVideo();
+        } catch (_) {}
+      }
+      return;
+    }
+
     if (controller == null) {
       _shouldResumePlaying = !_shouldResumePlaying;
       notifyListeners();
@@ -243,7 +281,8 @@ class DjWhoPlayerProvider extends ChangeNotifier {
     _active = false;
     _isPlaying = false;
     _shouldResumePlaying = false;
-    _castleContinuityActive = false;
+    _castleLoadSuspended = false;
+    _resumeAfterCastleLoad = false;
     _resumeSeconds = 0;
     notifyListeners();
   }
