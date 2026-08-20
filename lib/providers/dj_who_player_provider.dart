@@ -15,6 +15,7 @@ class DjWhoPlayerProvider extends ChangeNotifier {
   final List<VideoItem> _videos;
   YoutubePlayerController? _controller;
   StreamSubscription<YoutubePlayerValue>? _playerSubscription;
+  Timer? _iosResumeGuardTimer;
   int _selectedIndex = 0;
   bool _active = false;
   bool _isPlaying = false;
@@ -22,6 +23,8 @@ class DjWhoPlayerProvider extends ChangeNotifier {
   bool _playerRouteMounted = false;
   bool _castleLoadSuspended = false;
   bool _resumeAfterCastleLoad = false;
+  bool _iosCastleResumePending = false;
+  bool _iosResumeRequiresGesture = false;
   bool _advancing = false;
   double _resumeSeconds = 0;
 
@@ -40,6 +43,8 @@ class DjWhoPlayerProvider extends ChangeNotifier {
   bool get isCastleLoadSuspended => _castleLoadSuspended;
   bool get willResumeAfterCastleLoad =>
       _castleLoadSuspended && _resumeAfterCastleLoad && _shouldResumePlaying;
+  bool get isIosCastleResumePending => _iosCastleResumePending;
+  bool get iosResumeRequiresGesture => _iosResumeRequiresGesture;
   double get resumeSeconds => _resumeSeconds;
   VideoItem? get selectedVideo =>
       _videos.isEmpty ? null : _videos[_selectedIndex];
@@ -54,6 +59,7 @@ class DjWhoPlayerProvider extends ChangeNotifier {
         showControls: true,
         showFullscreenButton: true,
         enableKeyboard: true,
+        playsInline: true,
         strictRelatedVideos: true,
         interfaceLanguage: 'fr',
       ),
@@ -102,7 +108,7 @@ class DjWhoPlayerProvider extends ChangeNotifier {
       } catch (_) {
         // Keep the last known position if the player is between frames.
       }
-      if (!_castleLoadSuspended) {
+      if (!_castleLoadSuspended && !_iosCastleResumePending) {
         _shouldResumePlaying = _isPlaying;
       }
     }
@@ -114,6 +120,10 @@ class DjWhoPlayerProvider extends ChangeNotifier {
 
   Future<void> suspendForCastleLoad() async {
     if (_castleLoadSuspended) return;
+    _iosResumeGuardTimer?.cancel();
+    _iosResumeGuardTimer = null;
+    _iosCastleResumePending = false;
+    _iosResumeRequiresGesture = false;
     _castleLoadSuspended = true;
     _resumeAfterCastleLoad =
         _active && (_isPlaying || _shouldResumePlaying);
@@ -137,22 +147,57 @@ class DjWhoPlayerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> resumeAfterCastleLoad() async {
+  Future<void> resumeAfterCastleLoad({bool isIos = false}) async {
     if (!_castleLoadSuspended) return;
     _castleLoadSuspended = false;
     final shouldResume =
         _resumeAfterCastleLoad && _active && _shouldResumePlaying;
     _resumeAfterCastleLoad = false;
     final controller = _controller;
+
+    _iosResumeGuardTimer?.cancel();
+    _iosResumeGuardTimer = null;
+    _iosCastleResumePending = isIos && shouldResume && controller != null;
+    _iosResumeRequiresGesture = false;
     notifyListeners();
 
     if (!shouldResume || controller == null) return;
     try {
       await controller.playVideo();
     } catch (_) {
-      // Leaving the Castle or a final iframe composition can briefly race the
-      // media surface. The user's playback intent remains preserved.
+      if (isIos) {
+        _markIosResumeRequiresGesture();
+      }
+      return;
     }
+
+    if (!isIos) return;
+    _iosResumeGuardTimer = Timer(const Duration(milliseconds: 2200), () {
+      _iosResumeGuardTimer = null;
+      if (!_active || _isPlaying || !_shouldResumePlaying) {
+        final changed = _iosCastleResumePending || _iosResumeRequiresGesture;
+        _iosCastleResumePending = false;
+        _iosResumeRequiresGesture = false;
+        if (changed) notifyListeners();
+        return;
+      }
+      _markIosResumeRequiresGesture();
+    });
+  }
+
+  void _markIosResumeRequiresGesture() {
+    _iosResumeGuardTimer?.cancel();
+    _iosResumeGuardTimer = null;
+    _iosCastleResumePending = false;
+    if (!_active) {
+      _iosResumeRequiresGesture = false;
+      _shouldResumePlaying = false;
+      notifyListeners();
+      return;
+    }
+    _iosResumeRequiresGesture = true;
+    _shouldResumePlaying = false;
+    notifyListeners();
   }
 
   void _onPlayerValue(YoutubePlayerValue value) {
@@ -163,11 +208,20 @@ class DjWhoPlayerProvider extends ChangeNotifier {
       _isPlaying = playing;
       changed = true;
     }
-    if (!_castleLoadSuspended) {
+    if (playing && (_iosCastleResumePending || _iosResumeRequiresGesture)) {
+      _iosResumeGuardTimer?.cancel();
+      _iosResumeGuardTimer = null;
+      _iosCastleResumePending = false;
+      _iosResumeRequiresGesture = false;
+      changed = true;
+    }
+    if (!_castleLoadSuspended && !_iosCastleResumePending) {
       if (playing && !_shouldResumePlaying) {
         _shouldResumePlaying = true;
         changed = true;
-      } else if (!playing && _shouldResumePlaying) {
+      } else if (!playing &&
+          !_iosResumeRequiresGesture &&
+          _shouldResumePlaying) {
         _shouldResumePlaying = false;
         changed = true;
       }
@@ -195,6 +249,10 @@ class DjWhoPlayerProvider extends ChangeNotifier {
   Future<void> selectVideo(int index) async {
     if (index < 0 || index >= _videos.length) return;
 
+    _iosResumeGuardTimer?.cancel();
+    _iosResumeGuardTimer = null;
+    _iosCastleResumePending = false;
+    _iosResumeRequiresGesture = false;
     _selectedIndex = index;
     _active = true;
     _resumeSeconds = 0;
@@ -246,6 +304,35 @@ class DjWhoPlayerProvider extends ChangeNotifier {
       return;
     }
 
+    if (_iosCastleResumePending) {
+      _iosResumeGuardTimer?.cancel();
+      _iosResumeGuardTimer = null;
+      _iosCastleResumePending = false;
+      _shouldResumePlaying = false;
+      notifyListeners();
+      if (controller != null) {
+        try {
+          await controller.pauseVideo();
+        } catch (_) {}
+      }
+      return;
+    }
+
+    if (_iosResumeRequiresGesture) {
+      _iosResumeRequiresGesture = false;
+      _shouldResumePlaying = true;
+      notifyListeners();
+      if (controller == null) return;
+      try {
+        await controller.playVideo();
+      } catch (_) {
+        _iosResumeRequiresGesture = true;
+        _shouldResumePlaying = false;
+        notifyListeners();
+      }
+      return;
+    }
+
     if (controller == null) {
       _shouldResumePlaying = !_shouldResumePlaying;
       notifyListeners();
@@ -265,6 +352,8 @@ class DjWhoPlayerProvider extends ChangeNotifier {
   }
 
   Future<void> stopAndDismiss() async {
+    _iosResumeGuardTimer?.cancel();
+    _iosResumeGuardTimer = null;
     final controller = _controller;
     if (controller != null) {
       try {
@@ -283,12 +372,15 @@ class DjWhoPlayerProvider extends ChangeNotifier {
     _shouldResumePlaying = false;
     _castleLoadSuspended = false;
     _resumeAfterCastleLoad = false;
+    _iosCastleResumePending = false;
+    _iosResumeRequiresGesture = false;
     _resumeSeconds = 0;
     notifyListeners();
   }
 
   @override
   void dispose() {
+    _iosResumeGuardTimer?.cancel();
     unawaited(_playerSubscription?.cancel());
     unawaited(_controller?.close());
     super.dispose();
