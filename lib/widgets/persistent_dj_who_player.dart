@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
@@ -76,6 +77,10 @@ class _PersistentDjWhoPlayerState extends State<PersistentDjWhoPlayer> {
           return LayoutBuilder(
             builder: (context, constraints) {
               final desktop = constraints.maxWidth >= 850;
+              final iosWeb =
+                  kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
+              final hiddenPlayerWidth = iosWeb ? 356.0 : 160.0;
+              final hiddenPlayerHeight = iosWeb ? 200.0 : 90.0;
 
               return Stack(
                 fit: StackFit.expand,
@@ -98,15 +103,15 @@ class _PersistentDjWhoPlayerState extends State<PersistentDjWhoPlayer> {
                       Positioned(
                         left: 0,
                         bottom: 0,
-                        width: 160,
-                        height: 90,
+                        width: hiddenPlayerWidth,
+                        height: hiddenPlayerHeight,
                         child: IgnorePointer(
                           child: ClipRect(
                             child: Opacity(
                               opacity: 0.01,
                               child: SizedBox(
-                                width: 160,
-                                height: 90,
+                                width: hiddenPlayerWidth,
+                                height: hiddenPlayerHeight,
                                 child: YoutubePlayer(
                                   key: _youtubePlayerKey,
                                   controller: player.controller!,
@@ -230,19 +235,35 @@ class _MiniPlayerBar extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
     final castleSuspended = player.isCastleLoadSuspended;
     final resumesAfterCastle = player.willResumeAfterCastleLoad;
+    final iosResumePending = player.isIosCastleResumePending;
+    final iosResumeRequiresGesture = player.iosResumeRequiresGesture;
     final statusText = castleSuspended
         ? (resumesAfterCastle
               ? 'CASTLE LOADING · DJ WHO PAUSED'
               : 'CASTLE LOADING · AUTO-RESUME OFF')
+        : iosResumePending
+        ? 'RESUMING DJ WHO…'
+        : iosResumeRequiresGesture
+        ? 'TAP TO RESUME DJ WHO'
         : video.title;
     final playbackTooltip = castleSuspended
         ? (resumesAfterCastle
               ? 'Cancel DJ WHO resume after Castle loading'
               : 'Resume DJ WHO after Castle loading')
+        : iosResumePending
+        ? 'Cancel DJ WHO resume'
+        : iosResumeRequiresGesture
+        ? 'Resume DJ WHO on iOS'
         : (player.isPlaying ? 'Pause DJ WHO' : 'Play DJ WHO');
     final playbackIcon = castleSuspended
         ? (resumesAfterCastle ? Icons.schedule_rounded : Icons.play_arrow_rounded)
+        : iosResumePending
+        ? Icons.schedule_rounded
+        : iosResumeRequiresGesture
+        ? Icons.play_arrow_rounded
         : (player.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded);
+    final transientStatus =
+        castleSuspended || iosResumePending || iosResumeRequiresGesture;
 
     return Material(
       key: const Key('persistent-dj-who-mini-player'),
@@ -272,7 +293,7 @@ class _MiniPlayerBar extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontWeight: castleSuspended ? FontWeight.w600 : null,
+                      fontWeight: transientStatus ? FontWeight.w600 : null,
                     ),
                   ),
                 ],
