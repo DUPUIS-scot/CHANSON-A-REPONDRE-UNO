@@ -29,7 +29,12 @@ class DjWhoPlayerProvider extends ChangeNotifier {
   YoutubePlayerController? get controller => _controller;
   int get selectedIndex => _selectedIndex;
   bool get isActive => _active;
-  bool get isPlaying => _controller != null ? _isPlaying : _shouldResumePlaying;
+  bool get isPlaying => _controller != null
+      ? (_isPlaying ||
+            (_castleLoadSuspended &&
+                _resumeAfterCastleLoad &&
+                _shouldResumePlaying))
+      : _shouldResumePlaying;
   bool get hasMountedPlayer => _controller != null;
   bool get isPlayerRouteMounted => _playerRouteMounted;
   bool get isCastleLoadSuspended => _castleLoadSuspended;
