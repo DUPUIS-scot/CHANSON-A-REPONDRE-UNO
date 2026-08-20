@@ -50,6 +50,7 @@ class DjWhoPlayerProvider extends ChangeNotifier {
       _videos.isEmpty ? null : _videos[_selectedIndex];
 
   bool get _canCreateEmbeddedPlayer => kIsWeb;
+  bool get _isIosWeb => kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
 
   YoutubePlayerController _createController() {
     return YoutubePlayerController.fromVideoId(
@@ -149,6 +150,7 @@ class DjWhoPlayerProvider extends ChangeNotifier {
 
   Future<void> resumeAfterCastleLoad({bool isIos = false}) async {
     if (!_castleLoadSuspended) return;
+    final guardIosResume = isIos || _isIosWeb;
     _castleLoadSuspended = false;
     final shouldResume =
         _resumeAfterCastleLoad && _active && _shouldResumePlaying;
@@ -157,7 +159,8 @@ class DjWhoPlayerProvider extends ChangeNotifier {
 
     _iosResumeGuardTimer?.cancel();
     _iosResumeGuardTimer = null;
-    _iosCastleResumePending = isIos && shouldResume && controller != null;
+    _iosCastleResumePending =
+        guardIosResume && shouldResume && controller != null;
     _iosResumeRequiresGesture = false;
     notifyListeners();
 
@@ -165,13 +168,13 @@ class DjWhoPlayerProvider extends ChangeNotifier {
     try {
       await controller.playVideo();
     } catch (_) {
-      if (isIos) {
+      if (guardIosResume) {
         _markIosResumeRequiresGesture();
       }
       return;
     }
 
-    if (!isIos) return;
+    if (!guardIosResume) return;
     _iosResumeGuardTimer = Timer(const Duration(milliseconds: 2200), () {
       _iosResumeGuardTimer = null;
       if (!_active || _isPlaying || !_shouldResumePlaying) {
