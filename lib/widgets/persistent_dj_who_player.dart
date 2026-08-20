@@ -228,6 +228,21 @@ class _MiniPlayerBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final video = player.selectedVideo!;
     final colors = Theme.of(context).colorScheme;
+    final castleSuspended = player.isCastleLoadSuspended;
+    final resumesAfterCastle = player.willResumeAfterCastleLoad;
+    final statusText = castleSuspended
+        ? (resumesAfterCastle
+              ? 'CASTLE LOADING · DJ WHO PAUSED'
+              : 'CASTLE LOADING · AUTO-RESUME OFF')
+        : video.title;
+    final playbackTooltip = castleSuspended
+        ? (resumesAfterCastle
+              ? 'Cancel DJ WHO resume after Castle loading'
+              : 'Resume DJ WHO after Castle loading')
+        : (player.isPlaying ? 'Pause DJ WHO' : 'Play DJ WHO');
+    final playbackIcon = castleSuspended
+        ? (resumesAfterCastle ? Icons.schedule_rounded : Icons.play_arrow_rounded)
+        : (player.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded);
 
     return Material(
       key: const Key('persistent-dj-who-mini-player'),
@@ -253,10 +268,12 @@ class _MiniPlayerBar extends StatelessWidget {
                     style: TextStyle(fontWeight: FontWeight.w700),
                   ),
                   Text(
-                    video.title,
+                    statusText,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodySmall,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontWeight: castleSuspended ? FontWeight.w600 : null,
+                    ),
                   ),
                 ],
               ),
@@ -267,10 +284,8 @@ class _MiniPlayerBar extends StatelessWidget {
               onPressed: () => unawaited(player.previous()),
             ),
             _MiniButton(
-              tooltip: player.isPlaying ? 'Pause DJ WHO' : 'Play DJ WHO',
-              icon: player.isPlaying
-                  ? Icons.pause_rounded
-                  : Icons.play_arrow_rounded,
+              tooltip: playbackTooltip,
+              icon: playbackIcon,
               onPressed: () => unawaited(player.togglePlayback()),
             ),
             _MiniButton(
