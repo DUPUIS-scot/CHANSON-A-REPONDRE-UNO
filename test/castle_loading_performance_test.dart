@@ -26,6 +26,16 @@ void main() {
     final navigation = File(
       'web/card_castle/castle_navigation_overlay.js',
     ).readAsStringSync();
+    final castleSource = File(
+      'web/card_castle/card_castle.html',
+    ).readAsStringSync();
+    final pubspec = File('pubspec.yaml').readAsStringSync();
+
+    expect(
+      castleSource,
+      contains('../assets/assets/models/test/castle_interior.glb'),
+    );
+    expect(pubspec, contains('- assets/models/test/'));
 
     expect(bootstrap, contains("'card_castle/card_castle_fast.html'"));
     expect(bootstrap, contains('requestIdleCallback'));
