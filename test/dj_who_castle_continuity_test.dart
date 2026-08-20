@@ -25,15 +25,23 @@ void main() {
     expect(provider, contains('resumeAfterCastleLoad'));
     expect(provider, contains('await controller.playVideo()'));
     expect(provider, contains('controller.cueVideoById'));
+    expect(provider, contains('playsInline: true'));
+    expect(provider, contains('_isIosWeb'));
+    expect(provider, contains('_iosCastleResumePending'));
+    expect(provider, contains('_iosResumeRequiresGesture'));
+    expect(provider, contains('Duration(milliseconds: 2200)'));
+    expect(provider, contains('_markIosResumeRequiresGesture'));
     expect(provider, isNot(contains('ensureCastlePlaybackContinuity')));
 
-    expect(persistentPlayer, contains('width: 160'));
-    expect(persistentPlayer, contains('height: 90'));
+    expect(persistentPlayer, contains('hiddenPlayerWidth'));
+    expect(persistentPlayer, contains('iosWeb ? 356.0 : 160.0'));
+    expect(persistentPlayer, contains('iosWeb ? 200.0 : 90.0'));
     expect(persistentPlayer, contains('keepAlive: true'));
     expect(persistentPlayer, contains('CASTLE LOADING · DJ WHO PAUSED'));
     expect(persistentPlayer, contains('CASTLE LOADING · AUTO-RESUME OFF'));
-    expect(persistentPlayer, contains('Cancel DJ WHO resume after Castle loading'));
-    expect(persistentPlayer, contains('Resume DJ WHO after Castle loading'));
+    expect(persistentPlayer, contains('RESUMING DJ WHO…'));
+    expect(persistentPlayer, contains('TAP TO RESUME DJ WHO'));
+    expect(persistentPlayer, contains('Resume DJ WHO on iOS'));
 
     expect(castleView, contains('player.suspendForCastleLoad()'));
     expect(castleView, contains("case 'castleLoadingComplete':"));
