@@ -157,6 +157,8 @@ void main() {
     expect(environment, contains("exteriorEnvironment = 'ready'"));
     expect(environment, contains("const exterior = document.body.dataset.sceneMode === 'exterior'"));
     expect(environment, contains('group.visible = exterior'));
+    expect(environment, contains("directEnvironmentScene = exterior"));
+    expect(environment, contains("'model-preview-exterior-hidden'"));
     expect(environment, contains("new THREE.FogExp2(0x050506, 0)"));
 
     expect(previewFix, contains('__castleUnoPreviewFixInstalled'));
