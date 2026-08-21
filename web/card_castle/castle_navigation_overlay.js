@@ -1,3 +1,4 @@
+import './castle_android_stability_v57.js?v=57';
 import './castle_navigation_overlay_core.js';
 import './castle_laboratory_medallion_button.js';
 import './castle_bureau_video_bridge.js';
