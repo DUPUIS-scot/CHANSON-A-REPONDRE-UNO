@@ -29,6 +29,9 @@ void main() {
     final castleSource = File(
       'web/card_castle/card_castle.html',
     ).readAsStringSync();
+    final webBridge = File(
+      'lib/widgets/webgl_card_castle_view_web.dart',
+    ).readAsStringSync();
     final pubspec = File('pubspec.yaml').readAsStringSync();
 
     expect(
@@ -36,6 +39,15 @@ void main() {
       contains('../assets/assets/models/test/castle_interior.glb'),
     );
     expect(pubspec, contains('- assets/models/test/'));
+    expect(castleSource, contains('id="ai-bureau"'));
+    expect(castleSource, contains('AI Bureau of Affairs'));
+    expect(castleSource, contains("emit('aiBureauRequested',{cardId})"));
+    expect(
+      castleSource,
+      contains('body[data-scene-mode="interior"] #ai-bureau'),
+    );
+    expect(webBridge, contains("case 'aiBureauRequested':"));
+    expect(webBridge, contains('AppRoutes.cardChat(id)'));
 
     expect(bootstrap, contains("'card_castle/card_castle_fast.html'"));
     expect(bootstrap, contains('requestIdleCallback'));
