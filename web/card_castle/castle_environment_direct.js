@@ -234,3 +234,150 @@
   });
   setTimeout(install, 1200);
 })();
+
+(() => {
+  if (window.__castleInteriorCameraAnimationPatchInstalled) return;
+  window.__castleInteriorCameraAnimationPatchInstalled = true;
+
+  let interiorMixer = null;
+  let animationFrame = 0;
+  let lastAnimationTime = performance.now();
+
+  function normalizeName(value) {
+    return String(value || '').toLowerCase().replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+
+  function findNamed(root, preferred, fallback) {
+    let exact = null;
+    let loose = null;
+    root?.traverse?.(object => {
+      if (exact) return;
+      const name = normalizeName(object.name);
+      if (!name) return;
+      if (preferred.some(token => name.includes(token))) exact = object;
+      else if (!loose && fallback.some(token => name.includes(token))) loose = object;
+    });
+    return exact || loose;
+  }
+
+  function applyInteriorReferenceView() {
+    if (document.body.dataset.sceneMode !== 'interior') return;
+    const THREE = window.THREE;
+    const runtime = window.__castleSearchRuntime;
+    const root = runtime?.interiorRoot;
+    if (!THREE || !runtime?.orbit || !root) return;
+
+    root.updateMatrixWorld(true);
+    const compressed = findNamed(
+      root,
+      ['compressed (e)', 'compressed(e)', 'compressed e'],
+      ['compressed'],
+    );
+    const throne = findNamed(root, ['throne', 'trône', 'trone'], ['chair']);
+    if (!compressed || !throne) {
+      document.body.dataset.interiorStartingView = 'compressed-e-throne-anchor-missing';
+      return;
+    }
+
+    const compressedPos = new THREE.Vector3();
+    const thronePos = new THREE.Vector3();
+    compressed.getWorldPosition(compressedPos);
+    throne.getWorldPosition(thronePos);
+
+    const horizontalAxis = thronePos.clone().sub(compressedPos);
+    horizontalAxis.y = 0;
+    if (horizontalAxis.lengthSq() < 1e-5) return;
+    const span = horizontalAxis.length();
+    horizontalAxis.normalize();
+
+    const target = thronePos.clone();
+    target.y = Math.max(compressedPos.y + 1.6, Math.min(thronePos.y + 1.1, compressedPos.y + 4.2));
+    const cameraPosition = compressedPos
+      .clone()
+      .addScaledVector(horizontalAxis, -Math.max(5.5, Math.min(11, span * 0.42)));
+    cameraPosition.y = Math.max(1.55, compressedPos.y + 1.35);
+
+    const offset = cameraPosition.clone().sub(target);
+    const distance = Math.max(1, offset.length());
+    runtime.orbit.target.copy(target);
+    runtime.orbit.distance = distance;
+    runtime.orbit.pitch = Math.asin(THREE.MathUtils.clamp(offset.y / distance, -0.98, 0.98));
+    runtime.orbit.yaw = Math.atan2(offset.x, offset.z);
+    runtime.updateOrbit();
+    document.body.dataset.interiorStartingView = 'compressed-e-to-throne-world-axis-v43';
+    document.body.dataset.interiorCameraAnchor = `${compressed.name || 'compressed'} -> ${throne.name || 'throne'}`;
+  }
+
+  function startAnimationLoop() {
+    if (animationFrame) return;
+    lastAnimationTime = performance.now();
+    const tick = now => {
+      animationFrame = requestAnimationFrame(tick);
+      const delta = Math.min(0.05, Math.max(0, (now - lastAnimationTime) / 1000));
+      lastAnimationTime = now;
+      if (interiorMixer && document.body.dataset.sceneMode === 'interior') {
+        interiorMixer.update(delta);
+      }
+    };
+    animationFrame = requestAnimationFrame(tick);
+  }
+
+  async function patchInteriorLoader() {
+    try {
+      const moduleUrl = new URL('../vendor/GLTFLoader.js', document.baseURI).href;
+      const { GLTFLoader } = await import(moduleUrl);
+      if (GLTFLoader.prototype.__castleInteriorLoopPatched) return;
+      GLTFLoader.prototype.__castleInteriorLoopPatched = true;
+      const originalLoad = GLTFLoader.prototype.load;
+      GLTFLoader.prototype.load = function(url, onLoad, onProgress, onError) {
+        const isInterior = String(url || '').includes('castle_interior_jester_camera_aligned.glb');
+        if (!isInterior) return originalLoad.call(this, url, onLoad, onProgress, onError);
+        return originalLoad.call(this, url, gltf => {
+          onLoad?.(gltf);
+          requestAnimationFrame(() => requestAnimationFrame(() => {
+            const THREE = window.THREE;
+            const runtime = window.__castleSearchRuntime;
+            const root = runtime?.interiorRoot;
+            if (THREE && root && Array.isArray(gltf.animations) && gltf.animations.length) {
+              interiorMixer?.stopAllAction?.();
+              interiorMixer = new THREE.AnimationMixer(root);
+              gltf.animations.forEach(clip => {
+                const action = interiorMixer.clipAction(clip);
+                action.enabled = true;
+                action.clampWhenFinished = false;
+                action.setLoop(THREE.LoopRepeat, Infinity);
+                action.reset().play();
+              });
+              document.body.dataset.interiorAnimationPlayback = 'loop-repeat-v43';
+              document.body.dataset.interiorAnimationCount = String(gltf.animations.length);
+              startAnimationLoop();
+            } else {
+              document.body.dataset.interiorAnimationPlayback = 'no-clips';
+            }
+            if (document.body.dataset.sceneMode === 'interior') applyInteriorReferenceView();
+          }));
+        }, onProgress, onError);
+      };
+      document.body.dataset.interiorRuntimePatch = 'camera-plus-loop-v43';
+    } catch (error) {
+      console.warn('Interior camera/animation patch failed to install.', error);
+      document.body.dataset.interiorRuntimePatch = 'failed';
+    }
+  }
+
+  const sceneObserver = new MutationObserver(() => {
+    if (document.body.dataset.sceneMode !== 'interior') return;
+    requestAnimationFrame(() => requestAnimationFrame(applyInteriorReferenceView));
+  });
+  sceneObserver.observe(document.body, {
+    attributes: true,
+    attributeFilter: ['data-scene-mode'],
+  });
+
+  document.getElementById('castle-reset')?.addEventListener('click', () => {
+    if (document.body.dataset.sceneMode !== 'interior') return;
+    requestAnimationFrame(() => requestAnimationFrame(applyInteriorReferenceView));
+  });
+
+  patchInteriorLoader();
+})();
