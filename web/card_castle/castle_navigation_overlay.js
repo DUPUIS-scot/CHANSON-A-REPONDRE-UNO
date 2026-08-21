@@ -5,3 +5,4 @@ import './castle_scene_lighting_fix.js';
 import './castle_regression_hotfix.js';
 import './castle_cross_platform_navigation_fix.js';
 import './castle_interior_background_fix.js';
+import './castle_bright_lab_ui_patch.js';
