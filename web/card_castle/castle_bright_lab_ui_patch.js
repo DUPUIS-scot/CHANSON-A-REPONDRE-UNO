@@ -3,30 +3,18 @@ import * as THREE from 'three';
 if (!window.__castleBrightLabUiPatchInstalled) {
   window.__castleBrightLabUiPatchInstalled = true;
   let attempts=0,labFillRig=null,lastMode='';
-  function ensureLabFillRig(){const runtime=window.__castleSearchRuntime;if(!runtime?.scene||labFillRig)return labFillRig;const rig=new THREE.Group();rig.name='laboratory-extra-readable-light-v6';rig.visible=false;rig.add(new THREE.AmbientLight(0x8aa8bc,.98));rig.add(new THREE.HemisphereLight(0xd2e4ee,0x38291f,1.08));const front=new THREE.DirectionalLight(0xe0f2fb,1.9);front.position.set(2,11,12);rig.add(front);const warm=new THREE.PointLight(0xffc184,18,20,2);warm.position.set(0,5.5,2);rig.add(warm);const side=new THREE.PointLight(0xb8e0f2,16,24,2);side.position.set(-8,6,-2);rig.add(side);runtime.scene.add(rig);labFillRig=rig;return rig;}
-  function ensureBackButton(){let b=document.getElementById('laboratory-back-interior');if(b)return b;b=document.createElement('button');b.id='laboratory-back-interior';b.type='button';b.className='castle-control';b.setAttribute('aria-label','Retour au château intérieur');b.innerHTML='<span class="control-medallion">←</span><span class="control-copy"><span class="control-title">CHÂTEAU INTÉRIEUR</span><span class="control-subtitle">Retour</span></span>';Object.assign(b.style,{position:'fixed',left:'18px',top:'18px',zIndex:'10020',display:'none'});b.addEventListener('click',e=>{e.preventDefault();document.getElementById('bureau-of-ai')?.click();});document.body.appendChild(b);return b;}
-  function setReferenceLabView(runtime){
-    // Elevated three-quarter overview matching the supplied reference: bureau
-    // foreground, fountain left-centre, stained-glass wall fully readable.
-    runtime.orbit.target.set(0,5.4,-1.0);
-    runtime.orbit.yaw=-0.34;
-    runtime.orbit.pitch=0.43;
-    runtime.orbit.distance=31;
-    runtime.updateOrbit?.();
-    document.body.dataset.laboratoryStartingView='reference-overview-v51';
-  }
-  function sync(){const runtime=window.__castleSearchRuntime;if(!runtime?.scene||!runtime?.renderer){if(attempts++<180)setTimeout(sync,100);return;}const mode=document.body.dataset.sceneMode||'exterior',lab=mode==='laboratory';const rig=ensureLabFillRig();if(rig)rig.visible=lab;
-    const gatekeeper=runtime.scene.getObjectByName('castle-jester-gatekeeper');
-    // Jester is restored in the castle interior, but never appears in lab.
-    if(gatekeeper) gatekeeper.visible=(mode==='exterior'||mode==='interior');
-    if(mode==='interior'&&lastMode==='laboratory'){
-      gatekeeper?.userData && (gatekeeper.userData.restoredFromLaboratory=true);
-    }
+  function ensureLabFillRig(){const r=window.__castleSearchRuntime;if(!r?.scene||labFillRig)return labFillRig;const g=new THREE.Group();g.name='laboratory-extra-readable-light-v7';g.visible=false;g.add(new THREE.AmbientLight(0x8aa8bc,.98));g.add(new THREE.HemisphereLight(0xd2e4ee,0x38291f,1.08));const a=new THREE.DirectionalLight(0xe0f2fb,1.9);a.position.set(2,11,12);g.add(a);const b=new THREE.PointLight(0xffc184,18,20,2);b.position.set(0,5.5,2);g.add(b);const c=new THREE.PointLight(0xb8e0f2,16,24,2);c.position.set(-8,6,-2);g.add(c);r.scene.add(g);return labFillRig=g;}
+  function backButton(){let b=document.getElementById('laboratory-back-interior');if(b)return b;b=document.createElement('button');b.id='laboratory-back-interior';b.type='button';b.className='castle-control';b.innerHTML='<span class="control-medallion">←</span><span class="control-copy"><span class="control-title">CHÂTEAU INTÉRIEUR</span><span class="control-subtitle">Retour</span></span>';Object.assign(b.style,{position:'fixed',left:'18px',top:'18px',zIndex:'10020',display:'none'});b.onclick=e=>{e.preventDefault();document.getElementById('bureau-of-ai')?.click();};document.body.appendChild(b);return b;}
+  function labRoot(r){return r.scene.getObjectByName('BureauOfAI')||r.bureauRoot||null;}
+  function rotateLab(r){const root=labRoot(r);if(!root)return;root.rotation.y=Math.PI;root.updateMatrixWorld(true);document.body.dataset.laboratoryOrientation='rotated-y-180-v52';}
+  function labView(r){r.orbit.target.set(0,5.2,0);r.orbit.yaw=0.12;r.orbit.pitch=.34;r.orbit.distance=34;r.updateOrbit?.();document.body.dataset.laboratoryStartingView='rotated-reference-overview-v52';}
+  function restoreInteriorJester(r){const j=r.scene.getObjectByName('castle-jester-gatekeeper');if(j){j.visible=true;j.traverse(o=>{if(o.userData?.castleGatekeeper===true)o.visible=true;});document.body.dataset.interiorJester='restored-v52';}}
+  function sync(){const r=window.__castleSearchRuntime;if(!r?.scene||!r?.renderer){if(attempts++<180)setTimeout(sync,100);return;}const mode=document.body.dataset.sceneMode||'exterior',lab=mode==='laboratory';const rig=ensureLabFillRig();if(rig)rig.visible=lab;
+    const j=r.scene.getObjectByName('castle-jester-gatekeeper');if(lab&&j)j.visible=false;if(mode==='interior')restoreInteriorJester(r);
     const bureau=document.getElementById('bureau-of-ai');if(bureau){bureau.hidden=true;bureau.style.display='none';bureau.setAttribute('aria-hidden','true');}
-    const med=document.getElementById('laboratory-medallion-button');if(med)med.style.display=mode==='interior'?'':'none';const label=document.querySelector('#laboratory-medallion-button .lab-medallion-label');if(label){label.textContent='';label.style.display='none';}
-    ensureBackButton().style.display=lab?'flex':'none';
-    if(lab){runtime.renderer.toneMapping=THREE.ACESFilmicToneMapping;runtime.renderer.toneMappingExposure=2.05;runtime.scene.fog=new THREE.FogExp2(0x182630,.0015);const canvas=runtime.renderer.domElement;if(canvas)canvas.style.filter='contrast(.94) saturate(.92) brightness(1.18)';document.body.dataset.laboratoryLighting='extra-bright-readable-v6';if(lastMode!=='laboratory')setTimeout(()=>setReferenceLabView(runtime),80);}
+    const med=document.getElementById('laboratory-medallion-button');if(med)med.style.display=mode==='interior'?'':'none';const label=document.querySelector('#laboratory-medallion-button .lab-medallion-label');if(label){label.textContent='';label.style.display='none';}backButton().style.display=lab?'flex':'none';
+    if(lab){rotateLab(r);r.renderer.toneMapping=THREE.ACESFilmicToneMapping;r.renderer.toneMappingExposure=2.05;r.scene.fog=new THREE.FogExp2(0x182630,.0015);const canvas=r.renderer.domElement;if(canvas)canvas.style.filter='contrast(.94) saturate(.92) brightness(1.18)';if(lastMode!=='laboratory')setTimeout(()=>labView(r),120);}
     lastMode=mode;
   }
-  const observer=new MutationObserver(()=>requestAnimationFrame(sync));observer.observe(document.body,{attributes:true,attributeFilter:['data-scene-mode','data-laboratory-ready']});window.addEventListener('castleRuntimeReady',sync);setInterval(()=>{const m=document.body.dataset.sceneMode;if(m==='laboratory'||m==='interior')sync();},500);sync();
+  const ob=new MutationObserver(()=>requestAnimationFrame(sync));ob.observe(document.body,{attributes:true,attributeFilter:['data-scene-mode','data-laboratory-ready']});window.addEventListener('castleRuntimeReady',sync);setInterval(()=>{const m=document.body.dataset.sceneMode;if(m==='laboratory'||m==='interior')sync();},500);sync();
 }
