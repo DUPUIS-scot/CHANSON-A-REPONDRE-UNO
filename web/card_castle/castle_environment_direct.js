@@ -390,3 +390,96 @@
 
   patchInteriorLoader();
 })();
+
+(() => {
+  if (window.__castleSceneBackgroundsInstalled) return;
+  window.__castleSceneBackgroundsInstalled = true;
+
+  const CASTLE_INTERIOR_BACKGROUND_URL = new URL(
+    '../assets/assets/images/castle_interior_environment.jpg',
+    document.baseURI,
+  ).href;
+  const LABORATORY_BACKGROUND_URL = new URL(
+    '../assets/assets/images/laboratory_environment.png',
+    document.baseURI,
+  ).href;
+
+  let attempts = 0;
+  function installBackgrounds() {
+    const THREE = window.THREE;
+    const runtime = window.__castleSearchRuntime;
+    if (!THREE || !runtime?.scene) {
+      if (attempts++ < 240) setTimeout(installBackgrounds, 100);
+      return;
+    }
+
+    const loader = new THREE.TextureLoader();
+    let castleInteriorTexture = null;
+    let laboratoryTexture = null;
+
+    function prepare(texture) {
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.wrapS = THREE.ClampToEdgeWrapping;
+      texture.wrapT = THREE.ClampToEdgeWrapping;
+      texture.minFilter = THREE.LinearFilter;
+      texture.magFilter = THREE.LinearFilter;
+      texture.generateMipmaps = false;
+      texture.needsUpdate = true;
+      return texture;
+    }
+
+    function apply() {
+      const interior = document.body.dataset.sceneMode === 'interior';
+      if (!interior) return;
+      const laboratory = document.body.dataset.castleSubscene === 'laboratory';
+      if (laboratory) {
+        runtime.scene.background = laboratoryTexture || new THREE.Color(0x010307);
+        document.body.dataset.sceneEnvironmentBackground = laboratoryTexture
+          ? 'laboratory-environment-v45'
+          : 'laboratory-environment-loading';
+      } else {
+        runtime.scene.background = castleInteriorTexture || new THREE.Color(0x010307);
+        document.body.dataset.sceneEnvironmentBackground = castleInteriorTexture
+          ? 'castle-interior-environment-v45'
+          : 'castle-interior-environment-loading';
+      }
+    }
+
+    loader.load(
+      CASTLE_INTERIOR_BACKGROUND_URL,
+      texture => {
+        castleInteriorTexture = prepare(texture);
+        document.body.dataset.castleInteriorEnvironment = 'ready';
+        apply();
+      },
+      undefined,
+      error => {
+        console.warn('Castle interior environment background failed to load.', error);
+        document.body.dataset.castleInteriorEnvironment = 'failed';
+      },
+    );
+
+    loader.load(
+      LABORATORY_BACKGROUND_URL,
+      texture => {
+        laboratoryTexture = prepare(texture);
+        document.body.dataset.laboratoryEnvironment = 'ready';
+        apply();
+      },
+      undefined,
+      error => {
+        console.warn('Laboratory environment background failed to load.', error);
+        document.body.dataset.laboratoryEnvironment = 'failed';
+      },
+    );
+
+    const observer = new MutationObserver(() => requestAnimationFrame(apply));
+    observer.observe(document.body, {
+      attributes: true,
+      attributeFilter: ['data-scene-mode', 'data-castle-subscene'],
+    });
+    apply();
+  }
+
+  setTimeout(installBackgrounds, 100);
+})();
