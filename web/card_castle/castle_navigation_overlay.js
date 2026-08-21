@@ -6,4 +6,4 @@ import './castle_regression_hotfix.js?v=54';
 import './castle_interior_background_fix.js';
 import './castle_bright_lab_ui_patch.js?v=54';
 import './castle_platform_stability_v54.js?v=54';
-import './castle_visual_regression_v55.js?v=55';
+import './castle_visual_regression_v55.js?v=56';
