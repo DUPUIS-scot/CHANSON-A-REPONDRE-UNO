@@ -26,6 +26,9 @@ void main() {
     final navigation = File(
       'web/card_castle/castle_navigation_overlay.js',
     ).readAsStringSync();
+    final interiorAtmosphere = File(
+      'web/card_castle/interior_atmosphere_overlay.js',
+    ).readAsStringSync();
     final castleSource = File(
       'web/card_castle/card_castle.html',
     ).readAsStringSync();
@@ -41,7 +44,15 @@ void main() {
     expect(pubspec, contains('- assets/models/test/'));
     expect(castleSource, contains('id="ai-bureau"'));
     expect(castleSource, contains('AI Bureau of Affairs'));
-    expect(castleSource, contains("emit('aiBureauRequested',{cardId})"));
+    expect(
+      castleSource,
+      contains('../assets/assets/models/test/ai_bureau_mystical_library.glb'),
+    );
+    expect(castleSource, contains('function loadBureau()'));
+    expect(castleSource, contains('async function ensureBureauReady()'));
+    expect(castleSource, contains('function switchToBureau()'));
+    expect(castleSource, contains("setSceneLighting('bureau')"));
+    expect(castleSource, contains('id="return-interior"'));
     expect(
       castleSource,
       contains('body[data-scene-mode="interior"] #ai-bureau'),
@@ -53,7 +64,12 @@ void main() {
     expect(castleSource, contains("interiorLightGroup.name='interior-lighting'"));
     expect(castleSource, contains("setSceneLighting('interior')"));
     expect(castleSource, contains("setSceneLighting('exterior')"));
-    expect(castleSource, contains("interior?'interior-low':'exterior-cinematic'"));
+    expect(castleSource, contains("mode==='bureau'?'bureau-library-low'"));
+    expect(
+      interiorAtmosphere,
+      contains('base-profile-single-owner-0.82'),
+    );
+    expect(interiorAtmosphere, isNot(contains('mobileInterior ? 3.15 : 2.90')));
 
     expect(bootstrap, contains("'card_castle/card_castle_fast.html'"));
     expect(bootstrap, contains('requestIdleCallback'));
@@ -76,8 +92,9 @@ void main() {
     expect(fastLoader, contains('isMobile?1:2'));
     expect(fastLoader, contains('pixelRatioCap=isIOS?1.1:1.15'));
     expect(fastLoader, contains("atmosphere.highQuality=false"));
-    expect(fastLoader, contains("windows-deferred-after-jester"));
-    expect(fastLoader, contains("deferred-until-entrance"));
+    expect(fastLoader, contains("interiorLoadStrategy='preload-after-exterior'"));
+    expect(fastLoader, contains("new GLTFLoader().load(BUREAU_URL"));
+    expect(fastLoader, contains("castleAssetLoader.load(BUREAU_URL"));
     expect(fastLoader, contains('window.__castlePreloadInterior'));
     expect(fastLoader, contains('inlineJesterScript'));
     expect(
