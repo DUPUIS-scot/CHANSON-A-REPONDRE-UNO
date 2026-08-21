@@ -100,129 +100,23 @@ if (!window.__castleInteriorAtmosphereInstalled) {
     let lightingAttempts = 0;
 
     const installThreeLighting = () => {
-      const THREE = window.THREE;
       const runtime = window.__castleSearchRuntime;
-      if (!THREE || !runtime?.scene || !runtime?.renderer) {
+      const renderer = runtime?.renderer;
+      if (!renderer) {
         if (lightingAttempts++ < 120) setTimeout(installThreeLighting, 100);
         return;
       }
-      if (window.__castleInteriorLightingRig) {
-        syncThreeLighting = window.__castleInteriorLightingRig.sync;
-        syncThreeLighting();
-        return;
-      }
-
-      const scene = runtime.scene;
-      const renderer = runtime.renderer;
-      const exteriorExposure = renderer.toneMappingExposure;
-      const exteriorLights = scene.children.filter(object => object?.isLight);
-      const exteriorIntensities = new Map(exteriorLights.map(light => [light, light.intensity]));
-
-      const rig = new THREE.Group();
-      rig.name = 'castle-interior-gothic-lighting';
-      rig.visible = false;
-      scene.add(rig);
-
-      const add = light => {
-        rig.add(light);
-        return light;
-      };
-      const addTargeted = (light, targetPosition) => {
-        const target = new THREE.Object3D();
-        target.position.copy(targetPosition);
-        rig.add(target);
-        light.target = target;
-        rig.add(light);
-        return light;
-      };
-
-      // Strong architectural base so the hall remains immediately readable on
-      // iPhone while the directional lights preserve theatrical depth.
-      add(new THREE.AmbientLight(0x6d879e, 1.15));
-      add(new THREE.HemisphereLight(0xc0d7e9, 0x3a2015, 1.42));
-
-      // Broad frontal fill reveals the nave, staircase, arches and lower hall.
-      const architecturalFill = new THREE.DirectionalLight(0xb5d9f5, 4.8);
-      architecturalFill.position.set(2, 21, 24);
-      addTargeted(architecturalFill, new THREE.Vector3(0, 6.5, -3.2));
-
-      // A softer side fill prevents the central architecture disappearing into
-      // black on narrow/mobile views without flattening the entire hall.
-      const sideFill = new THREE.DirectionalLight(0x88b9df, 2.65);
-      sideFill.position.set(-18, 12, 10);
-      addTargeted(sideFill, new THREE.Vector3(0, 6.2, -2.5));
-
-      // Silver-blue moonlight remains the dominant gothic key.
-      const moon = new THREE.SpotLight(0xc0e3ff, 268, 72, Math.PI / 6.3, 0.64, 1.28);
-      moon.position.set(-13, 27, 9);
-      addTargeted(moon, new THREE.Vector3(1, 8.3, -4.2));
-
-      // Warm throne/jester key, balanced by a colder rear rim.
-      const throneKey = new THREE.SpotLight(0xffc274, 184, 44, Math.PI / 7.0, 0.66, 1.38);
-      throneKey.position.set(5, 19, 4);
-      addTargeted(throneKey, new THREE.Vector3(0, 9.2, -7.2));
-
-      const throneRim = new THREE.SpotLight(0xa0d4ff, 118, 40, Math.PI / 6.0, 0.64, 1.38);
-      throneRim.position.set(-7, 14, -15);
-      addTargeted(throneRim, new THREE.Vector3(0, 8.5, -7));
-
-      // Dedicated warm museum light for the DUPUIS* construction panel.
-      const panelLight = new THREE.SpotLight(0xffd493, 132, 34, Math.PI / 6.1, 0.66, 1.42);
-      panelLight.position.set(-2, 13, 10);
-      addTargeted(panelLight, new THREE.Vector3(0, 4.8, 3.8));
-
-      // Strong local amber torch pools retain the warm/cold gothic contrast.
-      [
-        [-8, 5.2, -1.2, 72, 18],
-        [8, 5.2, -1.2, 72, 18],
-        [-10.5, 4.2, 6.0, 62, 17],
-        [10.5, 4.2, 6.0, 62, 17],
-      ].forEach(([x, y, z, intensity, distance]) => {
-        const fire = new THREE.PointLight(0xffaa55, intensity, distance, 1.72);
-        fire.position.set(x, y, z);
-        add(fire);
-      });
-
-      // Selective shadows only on capable desktop/high-quality profiles.
-      if (renderer.shadowMap.enabled) {
-        [moon, throneKey].forEach(light => {
-          light.castShadow = true;
-          light.shadow.mapSize.set(1024, 1024);
-          light.shadow.camera.near = 1;
-          light.shadow.camera.far = 72;
-          light.shadow.bias = -0.00035;
-        });
-      }
-
       syncThreeLighting = () => {
         const interior = document.body.dataset.sceneMode === 'interior';
-        rig.visible = interior;
-        exteriorLights.forEach(light => {
-          light.intensity = interior ? 0 : (exteriorIntensities.get(light) ?? light.intensity);
-        });
-        const mobileInterior = matchMedia('(max-width: 700px)').matches;
-        renderer.toneMappingExposure = interior
-          ? (mobileInterior ? 3.15 : 2.90)
-          : exteriorExposure;
         if (interior) {
-          // Single authoritative interior fog value. The direct environment no
-          // longer writes interior fog, preventing the previous iOS race.
-          scene.fog = new THREE.FogExp2(0x0b1824, 0.0038);
-          document.body.dataset.interiorLighting = mobileInterior
-            ? 'high-visibility-scottish-gothic-mobile-v4'
-            : 'high-visibility-scottish-gothic-v4';
-          document.body.dataset.interiorLightingShadows = renderer.shadowMap.enabled
-            ? 'selective-moon-throne'
-            : 'disabled-performance-profile';
-          document.body.dataset.interiorFog = 'single-owner-0.0038-v4';
+          document.body.dataset.interiorLighting = 'base-profile-single-owner-0.82';
+          document.body.dataset.interiorFog = 'base-profile-0.0038';
         } else {
           delete document.body.dataset.interiorLighting;
-          delete document.body.dataset.interiorLightingShadows;
           delete document.body.dataset.interiorFog;
         }
       };
-
-      window.__castleInteriorLightingRig = {group:rig, sync:syncThreeLighting};
+      window.__castleInteriorLightingRig = {group:null, sync:syncThreeLighting};
       syncThreeLighting();
     };
 
