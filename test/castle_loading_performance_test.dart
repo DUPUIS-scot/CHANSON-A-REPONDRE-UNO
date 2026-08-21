@@ -49,6 +49,18 @@ void main() {
       contains('../assets/assets/models/test/ai_bureau_mystical_library.glb'),
     );
     expect(castleSource, contains('function loadBureau()'));
+    expect(
+      castleSource,
+      contains('../assets/assets/videos/bureau_screen_loop.mp4'),
+    );
+    expect(castleSource, contains('function attachBureauVideoScreens'));
+    expect(castleSource, contains('/^VideoScreen_(Left|Right)\$/i'));
+    expect(castleSource, contains('bureauVideo.loop=true'));
+    expect(castleSource, contains('bureauVideo.muted=true'));
+    expect(castleSource, contains("bureauVideo.setAttribute('playsinline','')"));
+    expect(castleSource, contains('new THREE.VideoTexture(bureauVideo)'));
+    expect(castleSource, contains("count===2?'ready':'screen-mismatch'"));
+    expect(castleSource, contains('syncBureauVideo(true)'));
     expect(castleSource, contains('async function ensureBureauReady()'));
     expect(castleSource, contains('function switchToBureau()'));
     expect(castleSource, contains("setSceneLighting('bureau')"));
