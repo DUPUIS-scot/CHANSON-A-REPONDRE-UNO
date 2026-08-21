@@ -48,6 +48,12 @@ void main() {
     );
     expect(webBridge, contains("case 'aiBureauRequested':"));
     expect(webBridge, contains('AppRoutes.cardChat(id)'));
+    expect(castleSource, contains('INTERIOR_EXPOSURE=.82'));
+    expect(castleSource, contains("exteriorLightGroup.name='exterior-lighting'"));
+    expect(castleSource, contains("interiorLightGroup.name='interior-lighting'"));
+    expect(castleSource, contains("setSceneLighting('interior')"));
+    expect(castleSource, contains("setSceneLighting('exterior')"));
+    expect(castleSource, contains("interior?'interior-low':'exterior-cinematic'"));
 
     expect(bootstrap, contains("'card_castle/card_castle_fast.html'"));
     expect(bootstrap, contains('requestIdleCallback'));
