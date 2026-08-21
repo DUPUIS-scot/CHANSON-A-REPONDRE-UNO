@@ -99,7 +99,7 @@
     // by the reference composition, without changing the ground position.
     function applyIOSReferenceExteriorView() {
       if (!isIOS || innerHeight <= innerWidth) return;
-      if (document.body.dataset.sceneMode === 'interior') return;
+      if (document.body.dataset.sceneMode !== 'exterior') return;
       const orbit = runtime.orbit;
       if (!orbit?.target || typeof runtime.updateOrbit !== 'function') return;
       orbit.yaw = 0;
@@ -189,15 +189,13 @@
     );
 
     function syncSceneMode() {
-      const interior = document.body.dataset.sceneMode === 'interior';
-      group.visible = !interior;
-      if (interior) {
+      const exterior = document.body.dataset.sceneMode === 'exterior';
+      group.visible = exterior;
+      if (!exterior) {
         generatedSky.forEach(mesh => { mesh.visible = false; });
-        scene.background = new THREE.Color(0x010307);
-        // Interior fog is intentionally owned by interior_atmosphere_overlay.js.
-        // Do not assign it here: both runtimes observe the same scene-mode
-        // mutation and competing fog writes made iOS interiors unpredictably dark.
-        document.body.dataset.directEnvironmentInteriorFog = 'owned-by-interior-lighting';
+        scene.background = new THREE.Color(0x050506);
+        scene.fog = new THREE.FogExp2(0x050506, 0);
+        document.body.dataset.directEnvironmentInteriorFog = 'disabled-plain-model-preview';
       } else {
         generatedSky.forEach(mesh => { mesh.visible = !atmosphereTexture; });
         scene.background = atmosphereTexture || new THREE.Color(0x02060b);
@@ -217,7 +215,7 @@
 
     const observer = new MutationObserver(() => {
       syncSceneMode();
-      if (document.body.dataset.sceneMode !== 'interior') {
+      if (document.body.dataset.sceneMode === 'exterior') {
         requestAnimationFrame(applyIOSReferenceExteriorView);
       }
     });
