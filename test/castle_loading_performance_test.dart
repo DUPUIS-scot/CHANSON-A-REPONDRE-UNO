@@ -70,6 +70,20 @@ void main() {
       contains('base-profile-single-owner-0.82'),
     );
     expect(interiorAtmosphere, isNot(contains('mobileInterior ? 3.15 : 2.90')));
+    expect(castleSource, contains("timed-450ms"));
+    expect(castleSource, contains("video-ended"));
+    expect(castleSource, contains("video-error"));
+    expect(castleSource, contains("video-stalled"));
+    expect(castleSource, contains("play-rejected"));
+    expect(castleSource, contains("hard-timeout"));
+    expect(
+      castleSource,
+      isNot(
+        contains(
+          "timeupdate',()=>{if(entranceVideo.currentTime>.4)enter()},{once:true}",
+        ),
+      ),
+    );
 
     expect(bootstrap, contains("'card_castle/card_castle_fast.html'"));
     expect(bootstrap, contains('requestIdleCallback'));
