@@ -186,7 +186,10 @@ void main() {
         expect(castle, contains('longPressTimer:0'));
         expect(directCards, contains('cardSelected'));
         expect(directCards, contains('cardLongPressed'));
-        expect(castleHost, contains("'type': 'focusCard'"));
+        expect(
+          castleHost.replaceAll(RegExp(r'\s+'), ''),
+          contains("'type':'focusCard'"),
+        );
         expect(castle, contains('dragging:false'));
         expect(castle, contains('document.body.dataset.cardCount'));
         expect(castle, contains('deriveSurfaceAnchors(84)'));
