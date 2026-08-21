@@ -53,8 +53,6 @@
 
     const scene = runtime.scene;
 
-    // Remove only the generated exterior floor/plaza primitives from the base
-    // renderer. Keep every GLB object untouched.
     const generatedGround = [];
     for (const child of [...scene.children]) {
       if (!child?.isMesh || child === runtime.castleRoot) continue;
@@ -69,9 +67,6 @@
       generatedGround.push(child);
     }
 
-    // The base renderer also creates one opaque BackSide SphereGeometry sky.
-    // Hide only that generated sky so the uploaded atmosphere scene.background
-    // is visible. GLB groups/meshes, cards and the jester are untouched.
     const generatedSky = [];
     for (const child of [...scene.children]) {
       if (!child?.isMesh || child === runtime.castleRoot) continue;
@@ -94,9 +89,6 @@
     let groundReady = false;
     let atmosphereReady = false;
 
-    // The later iOS portrait override moved the bridge back across the curved
-    // CHANSON A REPONDRE title. Restore the authoritative exterior camera used
-    // by the reference composition, without changing the ground position.
     function applyIOSReferenceExteriorView() {
       if (!isIOS || innerHeight <= innerWidth) return;
       if (document.body.dataset.sceneMode === 'interior') return;
@@ -156,9 +148,6 @@
         const width = 58;
         const depth = width / Math.max(0.75, aspect);
 
-        // The uploaded ground artwork has black rectangular corners around its
-        // oval. Clip the mesh itself to an ellipse so those corners can never
-        // mask the full-screen cloud atmosphere behind the Castle.
         const geometry = new THREE.CircleGeometry(width / 2, 96);
         const material = new THREE.MeshBasicMaterial({
           map: texture,
@@ -194,9 +183,6 @@
       if (interior) {
         generatedSky.forEach(mesh => { mesh.visible = false; });
         scene.background = new THREE.Color(0x010307);
-        // Interior fog is intentionally owned by interior_atmosphere_overlay.js.
-        // Do not assign it here: both runtimes observe the same scene-mode
-        // mutation and competing fog writes made iOS interiors unpredictably dark.
         document.body.dataset.directEnvironmentInteriorFog = 'owned-by-interior-lighting';
       } else {
         generatedSky.forEach(mesh => { mesh.visible = !atmosphereTexture; });
@@ -209,8 +195,6 @@
         : (atmosphereTexture ? 'exterior-fullscreen-atmosphere-sky-hidden' : 'exterior-fallback');
     }
 
-    // The base reset button still invokes the old injected iOS portrait view.
-    // Re-apply the reference camera on the next frame after that handler runs.
     document.getElementById('castle-reset')?.addEventListener('click', () => {
       requestAnimationFrame(applyIOSReferenceExteriorView);
     });
@@ -242,6 +226,7 @@
   let interiorMixer = null;
   let animationFrame = 0;
   let lastAnimationTime = performance.now();
+  const INTERIOR_ENLARGE_FACTOR = 56 / 34;
 
   function normalizeName(value) {
     return String(value || '').toLowerCase().replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
@@ -260,6 +245,28 @@
     return exact || loose;
   }
 
+  function enlargeInteriorOnce() {
+    const THREE = window.THREE;
+    const runtime = window.__castleSearchRuntime;
+    const root = runtime?.interiorRoot;
+    if (!THREE || !root || root.userData.castleEnvironmentEnlarged) return;
+
+    root.updateMatrixWorld(true);
+    root.scale.multiplyScalar(INTERIOR_ENLARGE_FACTOR);
+    root.updateMatrixWorld(true);
+
+    const bounds = new THREE.Box3().setFromObject(root);
+    const center = bounds.getCenter(new THREE.Vector3());
+    root.position.x -= center.x;
+    root.position.y -= bounds.min.y;
+    root.position.z -= center.z;
+    root.updateMatrixWorld(true);
+
+    root.userData.castleEnvironmentEnlarged = true;
+    document.body.dataset.interiorEnvironmentScale = '56-normalized-v44';
+    document.body.dataset.interiorEnvironmentScaleFactor = INTERIOR_ENLARGE_FACTOR.toFixed(4);
+  }
+
   function applyInteriorReferenceView() {
     if (document.body.dataset.sceneMode !== 'interior') return;
     const THREE = window.THREE;
@@ -267,6 +274,7 @@
     const root = runtime?.interiorRoot;
     if (!THREE || !runtime?.orbit || !root) return;
 
+    enlargeInteriorOnce();
     root.updateMatrixWorld(true);
     const compressed = findNamed(
       root,
@@ -304,7 +312,7 @@
     runtime.orbit.pitch = Math.asin(THREE.MathUtils.clamp(offset.y / distance, -0.98, 0.98));
     runtime.orbit.yaw = Math.atan2(offset.x, offset.z);
     runtime.updateOrbit();
-    document.body.dataset.interiorStartingView = 'compressed-e-to-throne-world-axis-v43';
+    document.body.dataset.interiorStartingView = 'compressed-e-to-throne-world-axis-enlarged-v44';
     document.body.dataset.interiorCameraAnchor = `${compressed.name || 'compressed'} -> ${throne.name || 'throne'}`;
   }
 
@@ -348,17 +356,18 @@
                 action.setLoop(THREE.LoopRepeat, Infinity);
                 action.reset().play();
               });
-              document.body.dataset.interiorAnimationPlayback = 'loop-repeat-v43';
+              document.body.dataset.interiorAnimationPlayback = 'loop-repeat-v44';
               document.body.dataset.interiorAnimationCount = String(gltf.animations.length);
               startAnimationLoop();
             } else {
               document.body.dataset.interiorAnimationPlayback = 'no-clips';
             }
+            enlargeInteriorOnce();
             if (document.body.dataset.sceneMode === 'interior') applyInteriorReferenceView();
           }));
         }, onProgress, onError);
       };
-      document.body.dataset.interiorRuntimePatch = 'camera-plus-loop-v43';
+      document.body.dataset.interiorRuntimePatch = 'camera-loop-enlarged-v44';
     } catch (error) {
       console.warn('Interior camera/animation patch failed to install.', error);
       document.body.dataset.interiorRuntimePatch = 'failed';
