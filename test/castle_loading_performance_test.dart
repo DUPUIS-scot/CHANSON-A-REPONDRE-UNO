@@ -59,17 +59,22 @@ void main() {
     );
     expect(webBridge, contains("case 'aiBureauRequested':"));
     expect(webBridge, contains('AppRoutes.cardChat(id)'));
-    expect(castleSource, contains('INTERIOR_EXPOSURE=.82'));
+    expect(castleSource, contains('MODEL_PREVIEW_EXPOSURE=1'));
+    expect(castleSource, contains('function makeModelUnlit'));
+    expect(castleSource, contains("plain-unlit-no-effects"));
+    expect(castleSource, contains('scene.fog.density=modelPreview?0:.0062'));
     expect(castleSource, contains("exteriorLightGroup.name='exterior-lighting'"));
     expect(castleSource, contains("interiorLightGroup.name='interior-lighting'"));
     expect(castleSource, contains("setSceneLighting('interior')"));
     expect(castleSource, contains("setSceneLighting('exterior')"));
-    expect(castleSource, contains("mode==='bureau'?'bureau-library-low'"));
+    expect(castleSource, contains("modelPreview?'plain-unlit-no-effects'"));
     expect(
       interiorAtmosphere,
-      contains('base-profile-single-owner-0.82'),
+      contains('disabled-plain-glb-preview'),
     );
-    expect(interiorAtmosphere, isNot(contains('mobileInterior ? 3.15 : 2.90')));
+    expect(interiorAtmosphere, contains("canvas.style.filter = ''"));
+    expect(interiorAtmosphere, isNot(contains('radial-gradient')));
+    expect(interiorAtmosphere, isNot(contains('PointLight')));
     expect(castleSource, contains("timed-450ms"));
     expect(castleSource, contains("video-ended"));
     expect(castleSource, contains("video-error"));
@@ -138,6 +143,9 @@ void main() {
     expect(environment, contains('castle_exterior_atmosphere.png'));
     expect(environment, contains("type || '') !== 'SphereGeometry'"));
     expect(environment, contains("exteriorEnvironment = 'ready'"));
+    expect(environment, contains("const exterior = document.body.dataset.sceneMode === 'exterior'"));
+    expect(environment, contains('group.visible = exterior'));
+    expect(environment, contains("new THREE.FogExp2(0x050506, 0)"));
 
     expect(previewFix, contains('__castleUnoPreviewFixInstalled'));
     expect(previewFix, contains('__castleUnoPreviewPathFixed'));
@@ -167,11 +175,19 @@ void main() {
     expect(directCards, contains('directCardTextureConcurrency'));
     expect(
       directCards,
+      contains("group.visible = document.body.dataset.sceneMode === 'exterior'"),
+    );
+    expect(
+      directCards,
       contains("directCardPreviewMode = 'rampart-textures-v40-staged'"),
     );
     expect(directCards, isNot(contains('const xSamples = isIOS ?')));
 
     expect(jesterOverlay, contains('rotateExistingCardAnchorsWithCastle'));
+    expect(
+      jesterOverlay,
+      contains("gatekeeper.setVisible(document.body.dataset.sceneMode==='exterior')"),
+    );
     expect(jesterOverlay, contains('pivot=castleRoot.getWorldPosition'));
     expect(jesterOverlay, contains('worldPosition=mesh.getWorldPosition'));
     expect(
