@@ -32,6 +32,7 @@
   );
   source=source.replaceAll('new GLTFLoader().load(CASTLE_URL','castleAssetLoader.load(CASTLE_URL');
   source=source.replaceAll('new GLTFLoader().load(INTERIOR_URL','castleAssetLoader.load(INTERIOR_URL');
+  source=source.replaceAll('new GLTFLoader().load(BUREAU_URL','castleAssetLoader.load(BUREAU_URL');
 
   source=source.replaceAll("emit('cardTap'","emit('cardSelected'");
   source=source.replaceAll("emit('cardLongPress'","emit('cardLongPressed'");
@@ -62,10 +63,10 @@
   }
 
   const originalInteriorPreload="    state.interiorLoadPromise=loadInterior().catch(error=>{document.body.dataset.interiorReady='false';document.body.dataset.interiorError=String(error?.message||error);return null});";
-  const deferredInterior=isWindows
-    ? "    state.interiorLoadPromise=null;document.body.dataset.interiorReady='windows-deferred-after-jester';window.__castlePreloadInterior=()=>{if(state.disposed||state.interiorReady||state.interiorLoadPromise)return state.interiorLoadPromise;document.body.dataset.interiorReady='windows-preloading';return ensureInteriorReady()};"
-    : "    state.interiorLoadPromise=null;document.body.dataset.interiorReady='deferred-until-entrance';";
-  source=source.replace(originalInteriorPreload,deferredInterior);
+  source=source.replace(
+    originalInteriorPreload,
+    "    document.body.dataset.interiorLoadStrategy='preload-after-exterior';\n"+originalInteriorPreload
+  );
 
   source=source.replace(
     "interiorRoot.rotation.y=Math.PI*2.5;",
