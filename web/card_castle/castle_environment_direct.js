@@ -202,9 +202,9 @@
         scene.fog = new THREE.FogExp2(0x08131e, 0.0062);
         delete document.body.dataset.directEnvironmentInteriorFog;
       }
-      document.body.dataset.directEnvironmentScene = interior
-        ? 'interior-hidden'
-        : (atmosphereTexture ? 'exterior-fullscreen-atmosphere-sky-hidden' : 'exterior-fallback');
+      document.body.dataset.directEnvironmentScene = exterior
+        ? (atmosphereTexture ? 'exterior-fullscreen-atmosphere-sky-hidden' : 'exterior-fallback')
+        : 'model-preview-exterior-hidden';
     }
 
     // The base reset button still invokes the old injected iOS portrait view.
