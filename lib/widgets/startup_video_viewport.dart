@@ -215,19 +215,17 @@ class _StartupVideoViewportState extends State<StartupVideoViewport>
           ),
           if (!startup.hasStarted)
             Center(
-              child: FilledButton.tonalIcon(
+              child: FilledButton.tonal(
                 autofocus: true,
                 onPressed: startup.play,
-                icon: const Icon(Icons.play_arrow_rounded, size: 42),
-                label: const Text('PLAY'),
+                child: const Text('PLAY'),
               ),
             )
           else if (!controller.value.isPlaying)
             Center(
-              child: FilledButton.tonalIcon(
+              child: FilledButton.tonal(
                 onPressed: startup.play,
-                icon: const Icon(Icons.play_arrow_rounded),
-                label: const Text('Paused'),
+                child: const Text('Paused'),
               ),
             ),
         ],
