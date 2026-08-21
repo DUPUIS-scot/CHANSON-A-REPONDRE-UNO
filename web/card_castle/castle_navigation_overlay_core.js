@@ -9,6 +9,7 @@ if (!window.__castleNavigationOverlayInstalled) {
     '../assets/assets/models/laboratory_interior.glb',
     document.baseURI,
   ).href;
+  const LABORATORY_TARGET_SPAN = 50;
   const touches = new Map();
   const keys = new Set();
   let runtime = null;
@@ -27,9 +28,15 @@ if (!window.__castleNavigationOverlayInstalled) {
     return mode === 'interior' || mode === 'laboratory' ? mode : 'exterior';
   };
 
+  function publishSceneState(mode) {
+    document.body.dataset.sceneMode = mode;
+    document.body.dataset.castleNavigationScene = mode;
+    document.body.dataset.castleSubscene = mode === 'laboratory' ? 'laboratory' : '';
+  }
+
   function limits() {
     if (sceneMode() === 'laboratory') {
-      return { minDistance: 2.5, maxDistance: 110, targetXZ: 40, minY: -4, maxY: 35 };
+      return { minDistance: 3, maxDistance: 82, targetXZ: 32, minY: 0.4, maxY: 24 };
     }
     return sceneMode() === 'interior'
       ? { minDistance: 4.5, maxDistance: 42, targetXZ: 14, minY: 0.5, maxY: 14 }
@@ -39,21 +46,9 @@ if (!window.__castleNavigationOverlayInstalled) {
   function clampTarget() {
     if (!runtime?.orbit?.target) return;
     const bounds = limits();
-    runtime.orbit.target.x = THREE.MathUtils.clamp(
-      runtime.orbit.target.x,
-      -bounds.targetXZ,
-      bounds.targetXZ,
-    );
-    runtime.orbit.target.y = THREE.MathUtils.clamp(
-      runtime.orbit.target.y,
-      bounds.minY,
-      bounds.maxY,
-    );
-    runtime.orbit.target.z = THREE.MathUtils.clamp(
-      runtime.orbit.target.z,
-      -bounds.targetXZ,
-      bounds.targetXZ,
-    );
+    runtime.orbit.target.x = THREE.MathUtils.clamp(runtime.orbit.target.x, -bounds.targetXZ, bounds.targetXZ);
+    runtime.orbit.target.y = THREE.MathUtils.clamp(runtime.orbit.target.y, bounds.minY, bounds.maxY);
+    runtime.orbit.target.z = THREE.MathUtils.clamp(runtime.orbit.target.z, -bounds.targetXZ, bounds.targetXZ);
   }
 
   function refreshCamera() {
@@ -74,24 +69,21 @@ if (!window.__castleNavigationOverlayInstalled) {
   function restoreExterior() {
     if (!runtime) return false;
     setLaboratoryVisible(false);
-    if (typeof runtime.switchToExterior === 'function') {
-      if (runtime.switchToExterior()) {
-        document.body.dataset.castleNavigationScene = 'exterior';
-        syncBureauControl();
-        return true;
-      }
+    if (typeof runtime.switchToExterior === 'function' && runtime.switchToExterior()) {
+      publishSceneState('exterior');
+      syncBureauControl();
+      return true;
     }
     if (runtime.castleRoot) runtime.castleRoot.visible = true;
     if (runtime.interiorRoot) runtime.interiorRoot.visible = false;
     const cardGroup = findCardGroup();
     if (cardGroup) cardGroup.visible = true;
-    document.body.dataset.sceneMode = 'exterior';
+    publishSceneState('exterior');
     runtime.orbit.yaw = 0;
     runtime.orbit.pitch = 0.14;
     runtime.orbit.distance = 58;
     runtime.orbit.target.set(0, 6.2, 5.5);
     refreshCamera();
-    document.body.dataset.castleNavigationScene = 'exterior';
     syncBureauControl();
     return true;
   }
@@ -103,8 +95,7 @@ if (!window.__castleNavigationOverlayInstalled) {
     runtime.interiorRoot.visible = true;
     const cardGroup = findCardGroup();
     if (cardGroup) cardGroup.visible = false;
-    document.body.dataset.sceneMode = 'interior';
-    document.body.dataset.castleNavigationScene = 'interior';
+    publishSceneState('interior');
     if (typeof runtime.setInteriorStartingView === 'function') {
       runtime.setInteriorStartingView();
     } else {
@@ -132,6 +123,35 @@ if (!window.__castleNavigationOverlayInstalled) {
     return loader;
   }
 
+  function normalizeLaboratory(root) {
+    root.updateMatrixWorld(true);
+    let bounds = new THREE.Box3().setFromObject(root);
+    const size = bounds.getSize(new THREE.Vector3());
+    const horizontalSpan = Math.max(size.x, size.z, 0.001);
+    const scale = LABORATORY_TARGET_SPAN / horizontalSpan;
+    root.scale.multiplyScalar(scale);
+    root.updateMatrixWorld(true);
+
+    bounds = new THREE.Box3().setFromObject(root);
+    const center = bounds.getCenter(new THREE.Vector3());
+    root.position.x -= center.x;
+    root.position.y -= bounds.min.y;
+    root.position.z -= center.z;
+    root.updateMatrixWorld(true);
+
+    laboratoryBounds = new THREE.Box3().setFromObject(root);
+    const normalizedSize = laboratoryBounds.getSize(new THREE.Vector3());
+    root.userData.laboratoryNormalized = true;
+    root.userData.laboratoryNormalizationScale = scale;
+    document.body.dataset.laboratoryNormalization = 'center-floor-span-v46';
+    document.body.dataset.laboratoryNormalizationScale = scale.toFixed(5);
+    document.body.dataset.laboratoryNormalizedSize = [
+      normalizedSize.x.toFixed(2),
+      normalizedSize.y.toFixed(2),
+      normalizedSize.z.toFixed(2),
+    ].join('x');
+  }
+
   async function ensureLaboratoryReady() {
     if (laboratoryRoot) return true;
     if (!runtime?.scene) return false;
@@ -151,9 +171,11 @@ if (!window.__castleNavigationOverlayInstalled) {
           laboratoryRoot = root;
           laboratoryRoot.name = 'BureauOfAI';
           laboratoryRoot.visible = false;
+          normalizeLaboratory(laboratoryRoot);
           runtime.scene.add(laboratoryRoot);
           laboratoryBounds = new THREE.Box3().setFromObject(laboratoryRoot);
           document.body.dataset.laboratoryReady = 'true';
+          delete document.body.dataset.laboratoryError;
           return true;
         })
         .catch(error => {
@@ -171,19 +193,20 @@ if (!window.__castleNavigationOverlayInstalled) {
   function setLaboratoryStartingView() {
     if (!runtime?.orbit || !laboratoryRoot) return;
     laboratoryBounds = new THREE.Box3().setFromObject(laboratoryRoot);
-    const sphere = new THREE.Sphere();
-    laboratoryBounds.getBoundingSphere(sphere);
-    const center = sphere.center;
+    const sphere = laboratoryBounds.getBoundingSphere(new THREE.Sphere());
+    const center = sphere.center.clone();
+    const size = laboratoryBounds.getSize(new THREE.Vector3());
+    center.y = THREE.MathUtils.clamp(center.y, 2.2, Math.max(3.5, size.y * 0.56));
     runtime.orbit.target.copy(center);
     runtime.orbit.yaw = 0;
     runtime.orbit.pitch = 0.10;
     runtime.orbit.distance = THREE.MathUtils.clamp(
-      Math.max(8, sphere.radius * 1.45),
-      8,
-      100,
+      Math.max(12, Math.max(size.x, size.z) * 0.68),
+      12,
+      62,
     );
-    runtime.updateOrbit?.();
-    document.body.dataset.laboratoryStartingView = 'auto-fit-bounds-v28';
+    refreshCamera();
+    document.body.dataset.laboratoryStartingView = 'normalized-bounds-v46';
   }
 
   async function switchToLaboratory() {
@@ -195,8 +218,7 @@ if (!window.__castleNavigationOverlayInstalled) {
     const cardGroup = findCardGroup();
     if (cardGroup) cardGroup.visible = false;
     laboratoryRoot.visible = true;
-    document.body.dataset.sceneMode = 'laboratory';
-    document.body.dataset.castleNavigationScene = 'laboratory';
+    publishSceneState('laboratory');
     setLaboratoryStartingView();
     syncBureauControl();
     return true;
@@ -304,11 +326,7 @@ if (!window.__castleNavigationOverlayInstalled) {
         document.body.dataset.castleNavigationGesture = 'pan';
       } else {
         runtime.orbit.yaw = down.yaw - dx * 0.008;
-        runtime.orbit.pitch = THREE.MathUtils.clamp(
-          down.pitch + dy * 0.006,
-          0.04,
-          1.24,
-        );
+        runtime.orbit.pitch = THREE.MathUtils.clamp(down.pitch + dy * 0.006, 0.04, 1.24);
         document.body.dataset.castleNavigationGesture = 'orbit';
       }
       refreshCamera();
@@ -421,10 +439,10 @@ if (!window.__castleNavigationOverlayInstalled) {
     canvas = runtime.renderer.domElement;
     installPointerNavigation(canvas);
     installControls();
-    document.body.dataset.castleNavigation = 'orbit-pan-zoom-wasd-bureau-v28';
+    document.body.dataset.castleNavigation = 'orbit-pan-zoom-wasd-bureau-v46';
     document.body.dataset.exteriorNavigation = 'orbit-pan-zoom-wasd';
     document.body.dataset.interiorNavigation = 'orbit-pan-zoom-wasd-bureau';
-    document.body.dataset.laboratoryNavigation = 'orbit-pan-zoom-wasd';
+    document.body.dataset.laboratoryNavigation = 'orbit-pan-zoom-wasd-normalized';
     return true;
   }
 
