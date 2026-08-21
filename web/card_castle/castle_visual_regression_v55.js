@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
-if (!window.__castleVisualRegressionV57Installed) {
-  window.__castleVisualRegressionV57Installed = true;
+if (!window.__castleVisualRegressionV58Installed) {
+  window.__castleVisualRegressionV58Installed = true;
 
   const isIOS = /iP(?:hone|ad|od)/.test(navigator.userAgent) ||
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -17,9 +17,7 @@ if (!window.__castleVisualRegressionV57Installed) {
     if (direct) direct.visible = mode() === 'exterior';
     for (const child of runtime.scene.children) {
       if (child === direct || !child?.isGroup) continue;
-      if (child.children?.some(item => item?.userData?.card)) {
-        child.visible = mode() === 'exterior';
-      }
+      if (child.children?.some(item => item?.userData?.card)) child.visible = mode() === 'exterior';
     }
     document.body.dataset.browseCardsScene = mode() === 'exterior' ? 'visible' : 'hidden';
   }
@@ -36,10 +34,12 @@ if (!window.__castleVisualRegressionV57Installed) {
     const parentQuat = new THREE.Quaternion();
     jester.parent?.getWorldQuaternion(parentQuat);
     const parentEuler = new THREE.Euler().setFromQuaternion(parentQuat, 'YXZ');
-    jester.rotation.y = desiredWorldYaw - parentEuler.y;
+    // The source jester GLB's visual forward axis is opposite Three.js +Z.
+    // Add PI so his chest/face, not his back, points at the visitor.
+    jester.rotation.y = desiredWorldYaw - parentEuler.y + Math.PI;
     jester.visible = true;
-    jester.userData.castleCameraFacingV57 = true;
-    document.body.dataset.exteriorJesterFacing = 'camera-direct-v57';
+    jester.userData.castleCameraFacingV58 = true;
+    document.body.dataset.exteriorJesterFacing = 'camera-front-v58';
   }
 
   function frameLaboratory() {
@@ -53,8 +53,6 @@ if (!window.__castleVisualRegressionV57Installed) {
     const center = bounds.getCenter(new THREE.Vector3());
     const horizontal = Math.max(size.x, size.z);
     const portrait = innerHeight > innerWidth;
-
-    // Start inside the laboratory shell, looking across the central bureau.
     center.y = THREE.MathUtils.clamp(bounds.min.y + size.y * 0.32, 3.0, 8.0);
     runtime.orbit.target.copy(center);
     runtime.orbit.yaw = 0;
@@ -62,9 +60,7 @@ if (!window.__castleVisualRegressionV57Installed) {
     const insideFactor = portrait ? (isIOS ? 0.42 : 0.40) : 0.34;
     runtime.orbit.distance = THREE.MathUtils.clamp(horizontal * insideFactor, 14, 22);
     runtime.updateOrbit?.();
-    document.body.dataset.laboratoryStartingView = portrait
-      ? 'inside-bureau-portrait-v57'
-      : 'inside-bureau-desktop-v57';
+    document.body.dataset.laboratoryStartingView = portrait ? 'inside-bureau-portrait-v57' : 'inside-bureau-desktop-v57';
     return true;
   }
 
@@ -73,21 +69,15 @@ if (!window.__castleVisualRegressionV57Installed) {
     window.__castleBureauVideoPlay?.();
     document.querySelectorAll('video').forEach(video => {
       if (!/bureau|screen|loop/i.test(`${video.src} ${video.id} ${video.className}`)) return;
-      video.muted = true;
-      video.defaultMuted = true;
-      video.loop = true;
-      video.playsInline = true;
-      video.setAttribute('playsinline', '');
-      video.setAttribute('webkit-playsinline', '');
+      video.muted = true; video.defaultMuted = true; video.loop = true; video.playsInline = true;
+      video.setAttribute('playsinline', ''); video.setAttribute('webkit-playsinline', '');
       video.play().catch(() => {});
     });
   }
 
   function applyLabEntryView(token) {
     if (token !== labEntryToken || mode() !== 'laboratory') return;
-    syncBrowseCards();
-    frameLaboratory();
-    resumeLaboratoryVideos();
+    syncBrowseCards(); frameLaboratory(); resumeLaboratoryVideos();
   }
 
   function schedule() {
@@ -108,22 +98,15 @@ if (!window.__castleVisualRegressionV57Installed) {
 
   function install() {
     runtime = window.__castleSearchRuntime;
-    if (!runtime?.renderer?.domElement || !runtime?.orbit) {
-      if (attempts++ < 240) setTimeout(install, 100);
-      return;
-    }
+    if (!runtime?.renderer?.domElement || !runtime?.orbit) { if (attempts++ < 240) setTimeout(install, 100); return; }
     schedule();
     let previousMode = mode();
     const observer = new MutationObserver(() => {
       const nextMode = mode();
       if (nextMode === 'laboratory' && previousMode !== 'laboratory') labEntryToken++;
-      previousMode = nextMode;
-      schedule();
+      previousMode = nextMode; schedule();
     });
-    observer.observe(document.body, {
-      attributes: true,
-      attributeFilter: ['data-scene-mode', 'data-laboratory-ready'],
-    });
+    observer.observe(document.body, { attributes: true, attributeFilter: ['data-scene-mode', 'data-laboratory-ready'] });
     window.addEventListener('resize', schedule);
     window.addEventListener('orientationchange', schedule);
     window.addEventListener('pointerdown', resumeLaboratoryVideos, { passive: true });
