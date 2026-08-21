@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/app_config.dart';
+import '../core/app_router.dart';
 import '../models/card_image_model.dart';
 import '../providers/dj_who_player_provider.dart';
 
@@ -186,6 +187,13 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView> {
                 _setCardOverlayMode(false);
               }),
             );
+          }
+        case 'aiBureauRequested':
+          final id = decoded['cardId'] as String?;
+          if (id != null) {
+            _setInAppFullscreen(false);
+            widget.onFullscreenChanged(false);
+            AppRouter.router.go(AppRoutes.cardChat(id));
           }
         case 'fullscreenFallbackRequested':
           _setInAppFullscreen(true);
