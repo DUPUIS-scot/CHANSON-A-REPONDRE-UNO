@@ -26,6 +26,8 @@
     .control-copy{display:flex;flex-direction:column;gap:2px;position:relative;z-index:1}
     .control-title{font-size:19px;line-height:1.05;letter-spacing:.02em;color:#f1d39a;text-transform:uppercase}
     .control-subtitle{font:400 12px/1.2 system-ui;color:#d3d7dc;letter-spacing:.01em;text-transform:none}
+    #ai-bureau{display:none}
+    body[data-scene-mode="interior"] #ai-bureau{display:flex}
     #fullscreen-controls{display:none}
     body.fullscreen-castle #fullscreen-controls{display:block}
     body.fullscreen-castle #enter-fullscreen{display:none}
@@ -40,6 +42,7 @@
   <div class="castle-toolbar">
     <div class="castle-toolbar-group"><button id="back-to-categories" class="castle-control" type="button" aria-label="Catégories"><span class="control-medallion">▱</span><span class="control-copy"><span class="control-title">CATÉGORIES</span><span class="control-subtitle">Explorer les thèmes</span></span></button></div>
     <div id="castle-controls" class="castle-toolbar-group">
+      <button id="ai-bureau" class="castle-control" type="button" aria-label="AI Bureau of Affairs"><span class="control-medallion">AI</span><span class="control-copy"><span class="control-title">AI BUREAU</span><span class="control-subtitle">Bureau of Affairs</span></span></button>
       <button id="castle-reset" class="castle-control" type="button" aria-label="Réinitialiser la vue"><span class="control-medallion">↻</span><span class="control-copy"><span class="control-title">RÉINITIALISER</span><span class="control-subtitle">Réinitialiser la vue</span></span></button>
       <button id="enter-fullscreen" class="castle-control" type="button" aria-label="Plein écran"><span class="control-medallion">⛶</span><span class="control-copy"><span class="control-title">PLEIN ÉCRAN</span><span class="control-subtitle">Voir en plein écran</span></span></button>
       <div id="fullscreen-controls"><button id="exit-fullscreen" class="castle-control" type="button" aria-label="Quitter le plein écran"><span class="control-medallion">✕</span><span class="control-copy"><span class="control-title">QUITTER</span><span class="control-subtitle">Quitter le plein écran</span></span></button></div>
@@ -128,7 +131,7 @@
   function setDefaultView(){orbit.yaw=0;orbit.pitch=.14;orbit.distance=58;orbit.target.set(0,6.2,5.5);updateOrbit()}
   function updateOrbit(){const cp=Math.cos(orbit.pitch),sp=Math.sin(orbit.pitch),sy=Math.sin(orbit.yaw),cy=Math.cos(orbit.yaw);camera.position.set(orbit.target.x+orbit.distance*cp*sy,orbit.target.y+orbit.distance*sp,orbit.target.z+orbit.distance*cp*cy);camera.lookAt(orbit.target)}
   function resize(){const w=root.clientWidth||1,h=root.clientHeight||1;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}
-  function installEvents(){listen(window,'resize',resize);listen(window,'castleJesterEnter',beginEntranceSequence);listen(document.getElementById('castle-reset'),'click',()=>{if(state.sceneMode==='interior')setInteriorStartingView();else setDefaultView()});listen(document.getElementById('back-to-categories'),'click',()=>emit('backToCategories'));listen(document.getElementById('enter-fullscreen'),'click',()=>document.documentElement.requestFullscreen?.());listen(document.getElementById('exit-fullscreen'),'click',()=>document.exitFullscreen?.())}
+  function installEvents(){listen(window,'resize',resize);listen(window,'castleJesterEnter',beginEntranceSequence);listen(document.getElementById('castle-reset'),'click',()=>{if(state.sceneMode==='interior')setInteriorStartingView();else setDefaultView()});listen(document.getElementById('back-to-categories'),'click',()=>emit('backToCategories'));listen(document.getElementById('ai-bureau'),'click',()=>{const cardId=state.focusedCardId||state.cards[0]?.id;if(cardId)emit('aiBureauRequested',{cardId})});listen(document.getElementById('enter-fullscreen'),'click',()=>document.documentElement.requestFullscreen?.());listen(document.getElementById('exit-fullscreen'),'click',()=>document.exitFullscreen?.())}
   function resume(){if(state.frame||state.disposed)return;const loop=(time)=>{state.frame=requestAnimationFrame(loop);if(!state.visible||state.disposed)return;const delta=Math.min(.05,Math.max(0,(time-state.lastFrame)/1000));state.lastFrame=time;renderer.render(scene,camera)};state.frame=requestAnimationFrame(loop)}
   function pause(){if(state.frame){cancelAnimationFrame(state.frame);state.frame=0}}
   function dispose(){if(state.disposed)return;state.disposed=true;abort.abort();pause();resizeObserver?.disconnect();intersectionObserver?.disconnect();renderer?.dispose();state.textures.forEach(texture=>texture.dispose());state.textures.clear()}
