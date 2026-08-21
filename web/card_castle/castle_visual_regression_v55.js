@@ -1,19 +1,20 @@
 import * as THREE from 'three';
 
-if (!window.__castleVisualRegressionV55Installed) {
-  window.__castleVisualRegressionV55Installed = true;
+if (!window.__castleVisualRegressionV56Installed) {
+  window.__castleVisualRegressionV56Installed = true;
 
   const isIOS = /iP(?:hone|ad|od)/.test(navigator.userAgent) ||
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   let runtime = null;
   let attempts = 0;
+  let labEntryToken = 0;
 
   const mode = () => document.body.dataset.sceneMode || 'exterior';
 
   function faceExteriorJesterToCamera() {
-    if (!runtime?.scene || mode() !== 'exterior') return;
+    if (!runtime?.scene || mode() !== 'exterior' || !runtime.camera) return;
     const jester = runtime.scene.getObjectByName('castle-jester-gatekeeper');
-    if (!jester || !runtime.camera) return;
+    if (!jester) return;
     const jp = new THREE.Vector3();
     const cp = new THREE.Vector3();
     jester.getWorldPosition(jp);
@@ -22,10 +23,12 @@ if (!window.__castleVisualRegressionV55Installed) {
     const parentQuat = new THREE.Quaternion();
     jester.parent?.getWorldQuaternion(parentQuat);
     const parentEuler = new THREE.Euler().setFromQuaternion(parentQuat, 'YXZ');
-    jester.rotation.y = desiredWorldYaw - parentEuler.y;
+    // The rig's authored forward axis is opposite the previous correction.
+    // Apply the requested 180-degree turn so the face/chest point at the user.
+    jester.rotation.y = desiredWorldYaw - parentEuler.y + Math.PI;
     jester.visible = true;
-    jester.userData.castleCameraFacingV55 = true;
-    document.body.dataset.exteriorJesterFacing = 'camera-v55';
+    jester.userData.castleCameraFacingV56 = true;
+    document.body.dataset.exteriorJesterFacing = 'camera-plus-180-v56';
   }
 
   function frameLaboratory() {
@@ -37,21 +40,21 @@ if (!window.__castleVisualRegressionV55Installed) {
     if (bounds.isEmpty()) return false;
     const size = bounds.getSize(new THREE.Vector3());
     const center = bounds.getCenter(new THREE.Vector3());
-
-    // Target the architectural bureau, not the walking statue. Portrait needs
-    // extra distance so the circular table and surrounding architecture fit.
-    center.y = THREE.MathUtils.clamp(bounds.min.y + size.y * 0.43, 3.0, 12.0);
-    runtime.orbit.target.copy(center);
-    runtime.orbit.yaw = 0;
-    runtime.orbit.pitch = 0.10;
     const horizontal = Math.max(size.x, size.z);
     const portrait = innerHeight > innerWidth;
-    const fitFactor = portrait ? (isIOS ? 1.34 : 1.22) : 0.78;
-    runtime.orbit.distance = THREE.MathUtils.clamp(horizontal * fitFactor, 24, 78);
+
+    // Elevated wide establishing shot: whole circular bureau/fountain below,
+    // stained-glass/architecture above, and camera safely outside geometry.
+    center.y = THREE.MathUtils.clamp(bounds.min.y + size.y * 0.34, 3.2, 10.0);
+    runtime.orbit.target.copy(center);
+    runtime.orbit.yaw = 0;
+    runtime.orbit.pitch = portrait ? 0.34 : 0.42;
+    const fitFactor = portrait ? (isIOS ? 1.48 : 1.38) : 0.94;
+    runtime.orbit.distance = THREE.MathUtils.clamp(horizontal * fitFactor, 38, 80);
     runtime.updateOrbit?.();
     document.body.dataset.laboratoryStartingView = portrait
-      ? 'whole-bureau-portrait-v55'
-      : 'whole-bureau-desktop-v55';
+      ? 'elevated-whole-bureau-portrait-v56'
+      : 'elevated-whole-bureau-desktop-v56';
     return true;
   }
 
@@ -69,21 +72,24 @@ if (!window.__castleVisualRegressionV55Installed) {
     });
   }
 
-  function apply() {
-    runtime = window.__castleSearchRuntime || runtime;
-    if (!runtime?.renderer?.domElement) return;
-    if (mode() === 'exterior') faceExteriorJesterToCamera();
-    if (mode() === 'laboratory') {
-      frameLaboratory();
-      resumeLaboratoryVideos();
-    }
+  function applyLabEntryView(token) {
+    if (token !== labEntryToken || mode() !== 'laboratory') return;
+    frameLaboratory();
+    resumeLaboratoryVideos();
   }
 
   function schedule() {
-    requestAnimationFrame(() => requestAnimationFrame(apply));
-    setTimeout(apply, 180);
-    setTimeout(apply, 550);
-    setTimeout(apply, 1100);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      runtime = window.__castleSearchRuntime || runtime;
+      if (mode() === 'exterior') faceExteriorJesterToCamera();
+      if (mode() === 'laboratory') applyLabEntryView(labEntryToken);
+    }));
+    const token = labEntryToken;
+    [180, 550, 1100].forEach(delay => setTimeout(() => {
+      runtime = window.__castleSearchRuntime || runtime;
+      if (mode() === 'exterior') faceExteriorJesterToCamera();
+      if (mode() === 'laboratory') applyLabEntryView(token);
+    }, delay));
   }
 
   function install() {
@@ -93,14 +99,19 @@ if (!window.__castleVisualRegressionV55Installed) {
       return;
     }
     schedule();
-    const observer = new MutationObserver(schedule);
+    let previousMode = mode();
+    const observer = new MutationObserver(() => {
+      const nextMode = mode();
+      if (nextMode === 'laboratory' && previousMode !== 'laboratory') labEntryToken++;
+      previousMode = nextMode;
+      schedule();
+    });
     observer.observe(document.body, {
       attributes: true,
       attributeFilter: ['data-scene-mode', 'data-laboratory-ready'],
     });
     window.addEventListener('resize', schedule);
     window.addEventListener('orientationchange', schedule);
-    // iOS permits muted inline autoplay; retry on the user's transition gesture too.
     window.addEventListener('pointerdown', resumeLaboratoryVideos, { passive: true });
     window.addEventListener('touchstart', resumeLaboratoryVideos, { passive: true });
     document.getElementById('castle-reset')?.addEventListener('click', schedule);
