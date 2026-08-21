@@ -309,7 +309,7 @@
       if (urls.length) queue.push({ mesh, urls, urlIndex: 0, retries: 0 });
     });
 
-    group.visible = document.body.dataset.sceneMode !== 'interior';
+    group.visible = document.body.dataset.sceneMode === 'exterior';
     document.body.dataset.directCardPreviewCount = String(group.children.length);
     document.body.dataset.directCardPreviewMode = 'rampart-textures-v40-staged';
     document.body.dataset.directCardTextureLoaded = '0';
@@ -317,7 +317,7 @@
     pump();
 
     if (!group.userData.sceneObserver) {
-      const syncVisibility = () => { group.visible = document.body.dataset.sceneMode !== 'interior'; };
+      const syncVisibility = () => { group.visible = document.body.dataset.sceneMode === 'exterior'; };
       group.userData.sceneObserver = new MutationObserver(syncVisibility);
       group.userData.sceneObserver.observe(document.body, { attributes: true, attributeFilter: ['data-scene-mode'] });
     }
