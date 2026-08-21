@@ -13,11 +13,13 @@ if (!window.__castleNavigationOverlayInstalled) {
   let keyboardFrame = 0;
   let previousTime = performance.now();
 
-  const sceneMode = () =>
-    document.body.dataset.sceneMode === 'interior' ? 'interior' : 'exterior';
+  const sceneMode = () => {
+    const mode = document.body.dataset.sceneMode;
+    return mode === 'interior' || mode === 'bureau' ? mode : 'exterior';
+  };
 
   function limits() {
-    return sceneMode() === 'interior'
+    return sceneMode() !== 'exterior'
       ? { minDistance: 4.5, maxDistance: 42, targetXZ: 14, minY: 0.5, maxY: 14 }
       : { minDistance: 20, maxDistance: 95, targetXZ: 32, minY: 0, maxY: 26 };
   }
@@ -230,12 +232,17 @@ if (!window.__castleNavigationOverlayInstalled) {
     document.body.dataset.castleNavigation = 'orbit-pan-zoom-wasd-v27';
     document.body.dataset.exteriorNavigation = 'orbit-pan-zoom-wasd';
     document.body.dataset.interiorNavigation = 'orbit-pan-zoom-wasd';
+    document.body.dataset.bureauNavigation = 'orbit-pan-zoom-wasd';
     return true;
   }
 
   window.addEventListener('keydown', event => {
     const target = event.target;
     if (target?.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target?.tagName || '')) return;
+    if (event.key === 'Escape' && sceneMode() === 'bureau') {
+      if (runtime?.switchToInterior?.()) event.preventDefault();
+      return;
+    }
     if (event.key === 'Escape' && sceneMode() === 'interior') {
       if (restoreExterior()) event.preventDefault();
       return;
