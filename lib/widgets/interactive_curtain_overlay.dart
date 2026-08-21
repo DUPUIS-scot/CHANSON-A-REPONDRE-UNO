@@ -90,12 +90,13 @@ class _InteractiveCurtainOverlayState extends State<InteractiveCurtainOverlay>
         child: LayoutBuilder(
           builder: (context, constraints) {
             if (constraints.maxWidth <= 0) return const SizedBox.shrink();
-            final panelWidth = constraints.maxWidth * .58;
+            final fullWidth = constraints.maxWidth;
+            final panelWidth = fullWidth * .5;
             final panels = Stack(
               fit: StackFit.expand,
               children: [
-                _panel(true, panelWidth, -panelWidth * progress),
-                _panel(false, panelWidth, panelWidth * progress),
+                _panel(true, panelWidth, fullWidth, -panelWidth * progress),
+                _panel(false, panelWidth, fullWidth, panelWidth * progress),
               ],
             );
             return Stack(
@@ -169,18 +170,33 @@ class _InteractiveCurtainOverlayState extends State<InteractiveCurtainOverlay>
     );
   }
 
-  Widget _panel(bool left, double width, double offset) => Transform.translate(
+  Widget _panel(
+    bool left,
+    double width,
+    double fullWidth,
+    double offset,
+  ) => Transform.translate(
     offset: Offset(offset, 0),
     child: Align(
       alignment: left ? Alignment.centerLeft : Alignment.centerRight,
-      child: SizedBox(
-        width: width,
-        height: double.infinity,
-        child: Image.asset(
-          'assets/images/closed_curtains.png',
-          fit: BoxFit.cover,
-          alignment: left ? Alignment.centerLeft : Alignment.centerRight,
-          errorBuilder: (_, _, _) => const ColoredBox(color: Color(0xFF65150F)),
+      child: ClipRect(
+        child: SizedBox(
+          width: width,
+          height: double.infinity,
+          child: OverflowBox(
+            alignment: left ? Alignment.centerLeft : Alignment.centerRight,
+            minWidth: fullWidth,
+            maxWidth: fullWidth,
+            child: Image.asset(
+              'assets/images/closed_curtains.png',
+              width: fullWidth,
+              height: double.infinity,
+              fit: BoxFit.cover,
+              alignment: Alignment.center,
+              errorBuilder: (_, _, _) =>
+                  const ColoredBox(color: Color(0xFF65150F)),
+            ),
+          ),
         ),
       ),
     ),

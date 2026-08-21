@@ -1,10 +1,10 @@
 import './castle_android_stability_v57.js?v=57';
 import './castle_navigation_overlay_core.js';
 import './castle_laboratory_medallion_button.js';
-import './castle_bureau_video_bridge.js';
+import './castle_bureau_video_bridge.js?v=57';
 import './castle_scene_lighting_fix.js';
 import './castle_regression_hotfix.js?v=54';
 import './castle_interior_background_fix.js';
 import './castle_bright_lab_ui_patch.js?v=54';
 import './castle_platform_stability_v54.js?v=54';
-import './castle_visual_regression_v55.js?v=56';
+import './castle_visual_regression_v55.js?v=57';

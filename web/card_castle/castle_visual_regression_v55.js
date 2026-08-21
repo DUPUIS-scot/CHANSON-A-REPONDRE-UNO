@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
-if (!window.__castleVisualRegressionV56Installed) {
-  window.__castleVisualRegressionV56Installed = true;
+if (!window.__castleVisualRegressionV57Installed) {
+  window.__castleVisualRegressionV57Installed = true;
 
   const isIOS = /iP(?:hone|ad|od)/.test(navigator.userAgent) ||
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -10,6 +10,19 @@ if (!window.__castleVisualRegressionV56Installed) {
   let labEntryToken = 0;
 
   const mode = () => document.body.dataset.sceneMode || 'exterior';
+
+  function syncBrowseCards() {
+    if (!runtime?.scene) return;
+    const direct = runtime.scene.getObjectByName('castle-direct-card-previews');
+    if (direct) direct.visible = mode() === 'exterior';
+    for (const child of runtime.scene.children) {
+      if (child === direct || !child?.isGroup) continue;
+      if (child.children?.some(item => item?.userData?.card)) {
+        child.visible = mode() === 'exterior';
+      }
+    }
+    document.body.dataset.browseCardsScene = mode() === 'exterior' ? 'visible' : 'hidden';
+  }
 
   function faceExteriorJesterToCamera() {
     if (!runtime?.scene || mode() !== 'exterior' || !runtime.camera) return;
@@ -23,12 +36,10 @@ if (!window.__castleVisualRegressionV56Installed) {
     const parentQuat = new THREE.Quaternion();
     jester.parent?.getWorldQuaternion(parentQuat);
     const parentEuler = new THREE.Euler().setFromQuaternion(parentQuat, 'YXZ');
-    // The rig's authored forward axis is opposite the previous correction.
-    // Apply the requested 180-degree turn so the face/chest point at the user.
-    jester.rotation.y = desiredWorldYaw - parentEuler.y + Math.PI;
+    jester.rotation.y = desiredWorldYaw - parentEuler.y;
     jester.visible = true;
-    jester.userData.castleCameraFacingV56 = true;
-    document.body.dataset.exteriorJesterFacing = 'camera-plus-180-v56';
+    jester.userData.castleCameraFacingV57 = true;
+    document.body.dataset.exteriorJesterFacing = 'camera-direct-v57';
   }
 
   function frameLaboratory() {
@@ -43,23 +54,23 @@ if (!window.__castleVisualRegressionV56Installed) {
     const horizontal = Math.max(size.x, size.z);
     const portrait = innerHeight > innerWidth;
 
-    // Elevated wide establishing shot: whole circular bureau/fountain below,
-    // stained-glass/architecture above, and camera safely outside geometry.
-    center.y = THREE.MathUtils.clamp(bounds.min.y + size.y * 0.34, 3.2, 10.0);
+    // Start inside the laboratory shell, looking across the central bureau.
+    center.y = THREE.MathUtils.clamp(bounds.min.y + size.y * 0.32, 3.0, 8.0);
     runtime.orbit.target.copy(center);
     runtime.orbit.yaw = 0;
-    runtime.orbit.pitch = portrait ? 0.34 : 0.42;
-    const fitFactor = portrait ? (isIOS ? 1.48 : 1.38) : 0.94;
-    runtime.orbit.distance = THREE.MathUtils.clamp(horizontal * fitFactor, 38, 80);
+    runtime.orbit.pitch = portrait ? 0.24 : 0.30;
+    const insideFactor = portrait ? (isIOS ? 0.42 : 0.40) : 0.34;
+    runtime.orbit.distance = THREE.MathUtils.clamp(horizontal * insideFactor, 14, 22);
     runtime.updateOrbit?.();
     document.body.dataset.laboratoryStartingView = portrait
-      ? 'elevated-whole-bureau-portrait-v56'
-      : 'elevated-whole-bureau-desktop-v56';
+      ? 'inside-bureau-portrait-v57'
+      : 'inside-bureau-desktop-v57';
     return true;
   }
 
   function resumeLaboratoryVideos() {
     if (mode() !== 'laboratory') return;
+    window.__castleBureauVideoPlay?.();
     document.querySelectorAll('video').forEach(video => {
       if (!/bureau|screen|loop/i.test(`${video.src} ${video.id} ${video.className}`)) return;
       video.muted = true;
@@ -74,6 +85,7 @@ if (!window.__castleVisualRegressionV56Installed) {
 
   function applyLabEntryView(token) {
     if (token !== labEntryToken || mode() !== 'laboratory') return;
+    syncBrowseCards();
     frameLaboratory();
     resumeLaboratoryVideos();
   }
@@ -81,12 +93,14 @@ if (!window.__castleVisualRegressionV56Installed) {
   function schedule() {
     requestAnimationFrame(() => requestAnimationFrame(() => {
       runtime = window.__castleSearchRuntime || runtime;
+      syncBrowseCards();
       if (mode() === 'exterior') faceExteriorJesterToCamera();
       if (mode() === 'laboratory') applyLabEntryView(labEntryToken);
     }));
     const token = labEntryToken;
-    [180, 550, 1100].forEach(delay => setTimeout(() => {
+    [120, 320, 700, 1300].forEach(delay => setTimeout(() => {
       runtime = window.__castleSearchRuntime || runtime;
+      syncBrowseCards();
       if (mode() === 'exterior') faceExteriorJesterToCamera();
       if (mode() === 'laboratory') applyLabEntryView(token);
     }, delay));
