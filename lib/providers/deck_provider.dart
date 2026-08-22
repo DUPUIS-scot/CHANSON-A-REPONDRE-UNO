@@ -19,6 +19,7 @@ class DeckProvider extends ChangeNotifier {
   static const _uuid = Uuid();
   static const _decksKey = 'decks';
   static const _activeKey = 'active_deck';
+  static const _searchStateKey = 'search_path_state_v1';
 
   List<Deck> _decks = [];
   String? _activeDeckId;
@@ -208,7 +209,9 @@ class DeckProvider extends ChangeNotifier {
 
   Future<void> select(String id) async {
     if (!_decks.any((deck) => deck.id == id)) return;
+    final deckChanged = _activeDeckId != id;
     _activeDeckId = id;
+    if (deckChanged) await _storage.remove(_searchStateKey);
     await _persist();
   }
 
@@ -228,6 +231,7 @@ class DeckProvider extends ChangeNotifier {
     final deck = await _importer.import(name, files);
     _decks = [..._decks, deck];
     _activeDeckId = deck.id;
+    await _storage.remove(_searchStateKey);
     await _persist();
   }
 
@@ -246,7 +250,10 @@ class DeckProvider extends ChangeNotifier {
     if (deck == null) return;
     await _importer.deleteFiles(deck);
     _decks = _decks.where((item) => item.id != id).toList();
-    if (_activeDeckId == id) _activeDeckId = _decks.firstOrNull?.id;
+    if (_activeDeckId == id) {
+      _activeDeckId = _decks.firstOrNull?.id;
+      await _storage.remove(_searchStateKey);
+    }
     await _persist();
   }
 
