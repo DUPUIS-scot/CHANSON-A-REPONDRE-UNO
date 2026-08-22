@@ -5,7 +5,7 @@ const activeTouches = new Map();
 function assetUrl(path) {
   if (!path) return null;
   const raw = String(path).trim();
-  if (/^data:/i.test(raw)) return raw;
+  if (/^(data:|blob:)/i.test(raw)) return raw;
   try {
     const parsed = new URL(raw, document.baseURI);
     if (/^https?:/i.test(raw)) return parsed.href;
@@ -17,12 +17,21 @@ function assetUrl(path) {
   return new URL(`assets/${normalized}`, document.baseURI).href;
 }
 
-function isHpCard(cardId) {
-  return /^hp-\d+$/i.test(String(cardId || '').trim());
+function puppetCanvas() {
+  return document.querySelector('canvas[data-transcription-puppet="true"]');
 }
 
-function puppetCanvas() {
-  return document.querySelector('[data-transcription-puppet="true"]');
+function browseHref(cardId) {
+  const id = encodeURIComponent(String(cardId || '').trim());
+  return `#/cards?focus=${id}`;
+}
+
+function returnToBrowse(event) {
+  event?.preventDefault?.();
+  event?.stopPropagation?.();
+  event?.stopImmediatePropagation?.();
+  if (!selectedCard?.cardId) return;
+  window.location.hash = browseHref(selectedCard.cardId).slice(1);
 }
 
 function ensurePreview() {
@@ -30,19 +39,31 @@ function ensurePreview() {
   const img = document.createElement('img');
   img.id = 'transcription-jester-mode-card-preview';
   img.dataset.transcriptionJesterCanvas = 'true';
-  img.dataset.transcriptionPuppet = 'true';
-  img.dataset.cardPreview = 'jester-mode';
-  img.setAttribute('aria-hidden', 'true');
+  img.dataset.cardPreview = 'held-card';
+  img.dataset.cardAction = 'return-to-browse';
+  img.setAttribute('role', 'button');
+  img.setAttribute('tabindex', '0');
+  img.setAttribute('aria-label', 'Return to Browse');
+  img.title = 'Return to Browse';
   Object.assign(img.style, {
     position: 'fixed',
     display: 'none',
     objectFit: 'cover',
-    pointerEvents: 'none',
-    zIndex: '3',
+    pointerEvents: 'auto',
+    cursor: 'pointer',
+    touchAction: 'manipulation',
+    zIndex: '4',
     borderRadius: '4px',
     boxShadow: '0 8px 20px rgba(0,0,0,.58)',
     transform: 'perspective(500px) rotateY(-8deg) rotateZ(2deg)',
     transformOrigin: 'center center',
+  });
+  img.addEventListener('click', returnToBrowse);
+  img.addEventListener('pointerdown', (event) => {
+    event.stopPropagation();
+  });
+  img.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' || event.key === ' ') returnToBrowse(event);
   });
   document.body.appendChild(img);
   preview = img;
@@ -52,14 +73,13 @@ function ensurePreview() {
 function layoutPreview() {
   const canvas = puppetCanvas();
   const img = ensurePreview();
-  if (!canvas || canvas.style.visibility === 'hidden' || !selectedCard || isHpCard(selectedCard.cardId)) {
+  if (!canvas || canvas.style.visibility === 'hidden' || !selectedCard) {
     img.style.display = 'none';
-    img.dataset.previewSuppressed = selectedCard && isHpCard(selectedCard.cardId) ? 'hp' : '';
     return;
   }
   const rect = canvas.getBoundingClientRect();
   const mobile = rect.width < 560;
-  const width = Math.max(54, Math.min(mobile ? rect.width * 0.17 : rect.width * 0.14, 116));
+  const width = Math.max(58, Math.min(mobile ? rect.width * 0.18 : rect.width * 0.145, 122));
   const height = width * 1.5;
   Object.assign(img.style, {
     display: 'block',
@@ -69,7 +89,14 @@ function layoutPreview() {
     left: `${rect.left + rect.width * (mobile ? 0.72 : 0.70) - width / 2}px`,
     top: `${rect.top + rect.height * 0.42 - height / 2}px`,
   });
-  img.dataset.previewSuppressed = '';
+}
+
+function fallbackPreviewPath(cardId) {
+  const id = String(cardId || '').trim();
+  if (/^hp-\d+$/i.test(id) || /^brio-\d+$/i.test(id)) {
+    return `share-previews/${id.toUpperCase()}.jpg`;
+  }
+  return '';
 }
 
 function setCard(cardId, imagePath) {
@@ -80,20 +107,21 @@ function setCard(cardId, imagePath) {
 
   const img = ensurePreview();
   img.dataset.selectedCardId = selectedCard.cardId;
-  if (isHpCard(selectedCard.cardId)) {
-    img.removeAttribute('src');
-    img.dataset.cardTexture = 'suppressed-hp';
-    img.style.display = 'none';
-    layoutPreview();
-    return;
-  }
-
+  img.dataset.cardTexture = 'loading';
+  img.dataset.fallbackAttempted = '';
   img.src = assetUrl(selectedCard.imagePath) || '';
   img.onload = () => {
     img.dataset.cardTexture = 'ready';
     layoutPreview();
   };
   img.onerror = () => {
+    const fallback = fallbackPreviewPath(selectedCard.cardId);
+    if (fallback && img.dataset.fallbackAttempted !== 'true') {
+      img.dataset.fallbackAttempted = 'true';
+      img.dataset.cardTexture = 'loading-fallback';
+      img.src = assetUrl(fallback) || '';
+      return;
+    }
     img.dataset.cardTexture = 'failed';
     img.style.display = 'none';
   };
@@ -129,6 +157,7 @@ function pointerIdFor(touch) {
 }
 
 document.addEventListener('touchstart', (event) => {
+  if (event.target?.closest?.('#transcription-jester-mode-card-preview')) return;
   for (const touch of event.changedTouches) {
     if (activeTouches.size >= 2 || !inJesterStage(touch)) continue;
     const pointerId = pointerIdFor(touch);
