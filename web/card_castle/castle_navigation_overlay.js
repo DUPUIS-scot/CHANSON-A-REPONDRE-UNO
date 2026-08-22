@@ -6,6 +6,7 @@ import './castle_laboratory_event_bridge_v69.js?v=69';
 import './castle_laboratory_medallion_button.js?v=66';
 import './castle_bureau_video_bridge.js?v=70';
 import './castle_bureau_video_refresh_v70.js?v=70';
+import './castle_video_surface_invert_v71.js?v=71';
 import './castle_scene_lighting_fix.js';
 import './castle_regression_hotfix.js?v=60';
 import './castle_interior_background_fix.js';
