@@ -2,10 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from './vendor/GLTFLoader.js';
 
 const MODEL_FACING_Y = -Math.PI / 2;
-const JESTER_MODEL = new URL(
-  'assets/assets/models/transcription_jester_rigged.glb',
-  document.baseURI,
-).href;
+const JESTER_MODEL = new URL('assets/assets/models/transcription_jester_rigged.glb', document.baseURI).href;
 const PUPPET_CANVAS_ID = 'transcription-jester-puppet-canvas';
 const HP_CARD_PATHS = Object.freeze({
   'hp-001': 'assets/hp/ChatGPT Image Aug 22, 2026, 10_59_05 AM.png',
@@ -15,31 +12,22 @@ const HP_CARD_PATHS = Object.freeze({
 });
 
 let puppet = null;
-let requestedEnabled = false;
 let pendingCard = null;
 
 function stageRect() {
   const mobile = window.matchMedia('(max-width: 759px)').matches;
   const width = window.innerWidth;
   const height = window.innerHeight;
-  const stageWidth = mobile ? Math.min(width * 0.90, 660) : Math.min(width * 0.66, 860);
-  const stageHeight = mobile ? Math.min(height * 0.52, 560) : Math.min(height * 0.66, 700);
-  return {
-    left: (width - stageWidth) * 0.5,
-    top: mobile ? Math.max(34, height * 0.07) : Math.max(20, height * 0.035),
-    width: stageWidth,
-    height: stageHeight,
-  };
+  const stageWidth = mobile ? Math.min(width * 0.96, 720) : Math.min(width * 0.78, 1040);
+  const stageHeight = mobile ? Math.min(height * 0.72, 760) : Math.min(height * 0.82, 900);
+  return { left: (width - stageWidth) * 0.5, top: mobile ? Math.max(12, height * 0.025) : Math.max(8, height * 0.015), width: stageWidth, height: stageHeight };
 }
 
 function assetUrl(path) {
   if (!path) return null;
   const raw = String(path).trim();
   if (/^data:/i.test(raw)) return raw;
-  try {
-    const parsed = new URL(raw, document.baseURI);
-    if (/^https?:/i.test(raw)) return parsed.href;
-  } catch (_) {}
+  try { if (/^https?:/i.test(raw)) return new URL(raw, document.baseURI).href; } catch (_) {}
   const normalized = raw.replace(/^\/+/, '');
   if (normalized.startsWith('assets/assets/')) return new URL(normalized, document.baseURI).href;
   if (normalized.startsWith('share-previews/')) return new URL(`assets/${normalized}`, document.baseURI).href;
@@ -54,492 +42,121 @@ function cardImagePath(card) {
 }
 
 function originalCanvases() {
-  return [...document.querySelectorAll('[data-transcription-jester-canvas="true"]')]
-    .filter((element) => element.id !== PUPPET_CANVAS_ID);
+  return [...document.querySelectorAll('[data-transcription-jester-canvas="true"]')].filter((e) => e.id !== PUPPET_CANVAS_ID);
 }
-
-function setOriginalVisible(visible) {
-  for (const element of originalCanvases()) {
-    element.style.visibility = visible ? 'visible' : 'hidden';
-  }
-}
-
-function disposeMaterial(material) {
-  if (!material) return;
-  for (const value of Object.values(material)) {
-    if (value?.isTexture) value.dispose();
-  }
-  material.dispose?.();
-}
-
-function disposeObject(root) {
-  root?.traverse((object) => {
-    object.geometry?.dispose?.();
-    if (Array.isArray(object.material)) object.material.forEach(disposeMaterial);
-    else disposeMaterial(object.material);
-  });
-}
-
-function normalizeBoneName(name) {
-  return String(name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-}
-
-function chooseBone(bones, tests) {
-  for (const test of tests) {
-    const found = bones.find((bone) => test(normalizeBoneName(bone.name)));
-    if (found) return found;
-  }
-  return null;
-}
+function setOriginalVisible(visible) { for (const e of originalCanvases()) e.style.visibility = visible ? 'visible' : 'hidden'; }
+function disposeMaterial(m) { if (!m) return; for (const v of Object.values(m)) if (v?.isTexture) v.dispose(); m.dispose?.(); }
+function disposeObject(root) { root?.traverse((o) => { o.geometry?.dispose?.(); if (Array.isArray(o.material)) o.material.forEach(disposeMaterial); else disposeMaterial(o.material); }); }
+function normalizeBoneName(name) { return String(name || '').toLowerCase().replace(/[^a-z0-9]/g, ''); }
+function chooseBone(bones, tests) { for (const test of tests) { const found = bones.find((b) => test(normalizeBoneName(b.name))); if (found) return found; } return null; }
+function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+function interactiveUiTarget(target) { return target instanceof Element && Boolean(target.closest('button, a, input, textarea, select, [role="button"], [role="link"]')); }
 
 function discoverBones(model) {
   const bones = [];
-  model.traverse((object) => {
-    if (object.isBone) bones.push(object);
-  });
-  const all = (...parts) => (name) => parts.every((part) => name.includes(part));
-  const ends = (...parts) => (name) => parts.some((part) => name.endsWith(part));
+  model.traverse((o) => { if (o.isBone) bones.push(o); });
+  const all = (...parts) => (name) => parts.every((p) => name.includes(p));
+  const ends = (...parts) => (name) => parts.some((p) => name.endsWith(p));
   const exact = (...names) => (name) => names.includes(name);
-  const leftHand = chooseBone(bones, [
-    exact('lefthand', 'handl', 'lhand', 'mixamoriglefthand'),
-    all('left', 'hand'),
-    ends('handl', 'lefthand'),
-  ]);
-  const rightHand = chooseBone(bones, [
-    exact('righthand', 'handr', 'rhand', 'mixamorigrighthand'),
-    all('right', 'hand'),
-    ends('handr', 'righthand'),
-  ]);
+  const side = (lr, part, endings = []) => chooseBone(bones, [all(lr, part), ...endings.map((e) => ends(e))]);
   return {
     all: bones,
     head: chooseBone(bones, [ends('head'), all('head')]),
     chest: chooseBone(bones, [all('upperchest'), all('spine2'), all('chest'), all('spine1'), all('spine')]),
-    leftUpperArm: chooseBone(bones, [all('left', 'upperarm'), all('left', 'arm'), ends('upperarml', 'arml')]),
-    rightUpperArm: chooseBone(bones, [all('right', 'upperarm'), all('right', 'arm'), ends('upperarmr', 'armr')]),
-    leftForeArm: chooseBone(bones, [all('left', 'forearm'), all('left', 'lowerarm'), ends('forearml', 'lowerarml')]),
-    rightForeArm: chooseBone(bones, [all('right', 'forearm'), all('right', 'lowerarm'), ends('forearmr', 'lowerarmr')]),
-    leftHand,
-    rightHand,
+    hips: chooseBone(bones, [ends('hips', 'pelvis'), all('hip'), all('pelvis')]),
+    leftUpperArm: chooseBone(bones, [all('left','upperarm'), all('left','arm'), ends('upperarml','arml')]),
+    rightUpperArm: chooseBone(bones, [all('right','upperarm'), all('right','arm'), ends('upperarmr','armr')]),
+    leftForeArm: chooseBone(bones, [all('left','forearm'), all('left','lowerarm'), ends('forearml','lowerarml')]),
+    rightForeArm: chooseBone(bones, [all('right','forearm'), all('right','lowerarm'), ends('forearmr','lowerarmr')]),
+    leftHand: chooseBone(bones, [exact('lefthand','handl','lhand','mixamoriglefthand'), all('left','hand'), ends('handl','lefthand')]),
+    rightHand: chooseBone(bones, [exact('righthand','handr','rhand','mixamorigrighthand'), all('right','hand'), ends('handr','righthand')]),
+    leftUpperLeg: chooseBone(bones, [all('left','upleg'), all('left','upperleg'), all('left','thigh'), ends('uplegl','thighl')]),
+    rightUpperLeg: chooseBone(bones, [all('right','upleg'), all('right','upperleg'), all('right','thigh'), ends('uplegr','thighr')]),
+    leftLowerLeg: chooseBone(bones, [all('left','leg'), all('left','calf'), all('left','shin'), ends('legl','calfl')]),
+    rightLowerLeg: chooseBone(bones, [all('right','leg'), all('right','calf'), all('right','shin'), ends('legr','calfr')]),
+    leftFoot: chooseBone(bones, [all('left','foot'), all('left','ankle'), ends('footl')]),
+    rightFoot: chooseBone(bones, [all('right','foot'), all('right','ankle'), ends('footr')]),
   };
-}
-
-function clamp(value, min, max) {
-  return Math.max(min, Math.min(max, value));
-}
-
-function interactiveUiTarget(target) {
-  return target instanceof Element && Boolean(target.closest(
-    'button, a, input, textarea, select, [role="button"], [role="link"]',
-  ));
 }
 
 class TranscriptionPuppet {
   constructor() {
-    this.disposed = false;
-    this.frame = 0;
-    this.drags = new Map();
-    this.restRotations = new Map();
-    this.cardLoadSerial = 0;
-    this.selectedCard = pendingCard;
-    this.handWorldPosition = new THREE.Vector3();
-    this.handWorldQuaternion = new THREE.Quaternion();
-    this.cameraFacingQuaternion = new THREE.Quaternion();
-
+    this.disposed = false; this.frame = 0; this.drags = new Map(); this.restRotations = new Map(); this.cardLoadSerial = 0; this.selectedCard = pendingCard;
+    this.handWorldPosition = new THREE.Vector3(); this.handWorldQuaternion = new THREE.Quaternion(); this.cameraFacingQuaternion = new THREE.Quaternion();
     this.scene = new THREE.Scene();
-    this.camera = new THREE.PerspectiveCamera(31, 1, 0.01, 200);
+    this.camera = new THREE.PerspectiveCamera(34, 1, 0.01, 200);
     this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'high-performance' });
-    this.renderer.setClearColor(0x000000, 0);
-    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.45;
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.4));
-
-    this.canvas = this.renderer.domElement;
-    this.canvas.id = PUPPET_CANVAS_ID;
-    this.canvas.dataset.transcriptionJesterCanvas = 'true';
-    this.canvas.dataset.transcriptionPuppet = 'true';
-    this.canvas.dataset.puppetInteraction = 'dual-arm-independent';
-    this.canvas.dataset.puppetCardAttachment = 'left-hand';
-    this.canvas.setAttribute('aria-hidden', 'true');
-    Object.assign(this.canvas.style, {
-      display: 'block',
-      position: 'fixed',
-      pointerEvents: 'none',
-      background: 'transparent',
-      zIndex: '2',
-      opacity: '1',
-      filter: 'drop-shadow(0 18px 24px rgba(0,0,0,.78))',
-      transform: 'translateZ(0)',
-    });
+    this.renderer.setClearColor(0x000000, 0); this.renderer.outputColorSpace = THREE.SRGBColorSpace; this.renderer.toneMapping = THREE.ACESFilmicToneMapping; this.renderer.toneMappingExposure = 1.45; this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.4));
+    this.canvas = this.renderer.domElement; this.canvas.id = PUPPET_CANVAS_ID; this.canvas.dataset.transcriptionJesterCanvas = 'true'; this.canvas.dataset.transcriptionPuppet = 'true'; this.canvas.dataset.puppetInteraction = 'full-body-360'; this.canvas.dataset.puppetCardAttachment = 'left-hand'; this.canvas.setAttribute('aria-hidden','true');
+    Object.assign(this.canvas.style, { display:'block', position:'fixed', pointerEvents:'none', background:'transparent', zIndex:'2', opacity:'1', filter:'drop-shadow(0 18px 24px rgba(0,0,0,.78))', transform:'translateZ(0)' });
     document.body.appendChild(this.canvas);
-
-    this.pivot = new THREE.Group();
-    this.pivot.rotation.y = MODEL_FACING_Y;
-    this.scene.add(this.pivot);
-    this.scene.add(new THREE.HemisphereLight(0xffe5bd, 0x160607, 3.8));
-    const key = new THREE.DirectionalLight(0xffb35b, 6.8);
-    key.position.set(-3.2, 5.5, 6.2);
-    this.scene.add(key);
-    const fill = new THREE.DirectionalLight(0xffffff, 2.4);
-    fill.position.set(3.5, 2.2, 5.5);
-    this.scene.add(fill);
-    const rim = new THREE.DirectionalLight(0xc51e16, 3.6);
-    rim.position.set(4.5, 3.5, -2.5);
-    this.scene.add(rim);
-
-    this.onResize = () => this.resize();
-    this.onPointerDown = (event) => this.pointerDown(event);
-    this.onPointerMove = (event) => this.pointerMove(event);
-    this.onPointerUp = (event) => this.pointerUp(event);
-    window.addEventListener('resize', this.onResize);
-    window.addEventListener('orientationchange', this.onResize);
-    window.addEventListener('pointerdown', this.onPointerDown, true);
-    window.addEventListener('pointermove', this.onPointerMove, true);
-    window.addEventListener('pointerup', this.onPointerUp, true);
-    window.addEventListener('pointercancel', this.onPointerUp, true);
-
-    this.resize();
-    this.loadModel();
+    this.pivot = new THREE.Group(); this.pivot.rotation.y = MODEL_FACING_Y; this.scene.add(this.pivot);
+    this.scene.add(new THREE.HemisphereLight(0xffe5bd,0x160607,3.8));
+    const key=new THREE.DirectionalLight(0xffb35b,6.8); key.position.set(-3.2,5.5,6.2); this.scene.add(key);
+    const fill=new THREE.DirectionalLight(0xffffff,2.4); fill.position.set(3.5,2.2,5.5); this.scene.add(fill);
+    const rim=new THREE.DirectionalLight(0xc51e16,3.6); rim.position.set(4.5,3.5,-2.5); this.scene.add(rim);
+    this.onResize=()=>this.resize(); this.onPointerDown=(e)=>this.pointerDown(e); this.onPointerMove=(e)=>this.pointerMove(e); this.onPointerUp=(e)=>this.pointerUp(e);
+    window.addEventListener('resize',this.onResize); window.addEventListener('orientationchange',this.onResize); window.addEventListener('pointerdown',this.onPointerDown,true); window.addEventListener('pointermove',this.onPointerMove,true); window.addEventListener('pointerup',this.onPointerUp,true); window.addEventListener('pointercancel',this.onPointerUp,true);
+    this.resize(); this.loadModel();
   }
 
   loadModel() {
-    new GLTFLoader().load(JESTER_MODEL, (gltf) => {
-      if (this.disposed) return disposeObject(gltf.scene);
-      this.model = gltf.scene;
-      this.model.traverse((object) => {
-        object.visible = true;
-        if (!object.isMesh) return;
-        if (!object.geometry.getAttribute('normal')) object.geometry.computeVertexNormals();
-        const materials = Array.isArray(object.material) ? object.material : [object.material];
-        materials.filter(Boolean).forEach((material) => {
-          material.side = THREE.DoubleSide;
-          material.transparent = false;
-          material.opacity = 1;
-          material.depthWrite = true;
-          material.needsUpdate = true;
-        });
-      });
-
+    new GLTFLoader().load(JESTER_MODEL,(gltf)=>{
+      if(this.disposed) return disposeObject(gltf.scene);
+      this.model=gltf.scene;
+      this.model.traverse((o)=>{ o.visible=true; if(!o.isMesh)return; if(!o.geometry.getAttribute('normal'))o.geometry.computeVertexNormals(); const ms=Array.isArray(o.material)?o.material:[o.material]; ms.filter(Boolean).forEach((m)=>{m.side=THREE.DoubleSide;m.transparent=false;m.opacity=1;m.depthWrite=true;m.needsUpdate=true;}); });
       this.model.updateMatrixWorld(true);
-      const sourceBounds = new THREE.Box3().setFromObject(this.model);
-      const size = sourceBounds.getSize(new THREE.Vector3());
-      const center = sourceBounds.getCenter(new THREE.Vector3());
-      const maxDimension = Math.max(size.x, size.y, size.z, 0.001);
-      this.model.position.sub(center);
-      this.model.scale.setScalar(5.1 / maxDimension);
-      this.model.position.set(-0.16, 0.04, 0);
-      this.pivot.add(this.model);
-      this.pivot.updateMatrixWorld(true);
-
-      if (gltf.animations?.length) {
-        this.mixer = new THREE.AnimationMixer(this.model);
-        const idle = gltf.animations.find((clip) => /idle|breath|stand/i.test(clip.name)) || gltf.animations[0];
-        const action = this.mixer.clipAction(idle);
-        action.reset().play();
-        this.mixer.setTime(Math.min(idle.duration * 0.16, 0.35));
-        action.paused = true;
-      }
-
-      this.bones = discoverBones(this.model);
-      this.heldBone = this.bones.leftHand || this.bones.leftForeArm || this.bones.leftUpperArm || null;
-      for (const bone of this.bones.all) this.restRotations.set(bone, bone.rotation.clone());
-      this.fitCamera();
-      this.attachCardMesh();
-      this.updateHeldCardTransform();
-      this.canvas.dataset.puppetBones = String(this.bones.all.length);
-      this.canvas.dataset.puppetLeftArm = this.bones.leftUpperArm?.name || '';
-      this.canvas.dataset.puppetRightArm = this.bones.rightUpperArm?.name || '';
-      this.canvas.dataset.puppetLeftHand = this.bones.leftHand?.name || '';
-      this.canvas.dataset.puppetHeldBone = this.heldBone?.name || '';
-      this.canvas.dataset.puppetCardMesh = 'ready';
-      this.canvas.dataset.puppetReady = 'true';
-      this.resume();
-    }, undefined, (error) => {
-      this.canvas.dataset.puppetReady = 'failed';
-      this.canvas.dataset.puppetError = String(error?.message || error);
-      setOriginalVisible(true);
-      console.error('Unable to load transcription puppet jester.', error);
-    });
+      const bounds=new THREE.Box3().setFromObject(this.model), size=bounds.getSize(new THREE.Vector3()), center=bounds.getCenter(new THREE.Vector3()), max=Math.max(size.x,size.y,size.z,0.001);
+      this.model.position.sub(center); this.model.scale.setScalar(5.1/max); this.model.position.set(0,0,0); this.pivot.add(this.model); this.pivot.updateMatrixWorld(true);
+      if(gltf.animations?.length){ this.mixer=new THREE.AnimationMixer(this.model); const idle=gltf.animations.find((c)=>/idle|breath|stand/i.test(c.name))||gltf.animations[0]; const action=this.mixer.clipAction(idle); action.reset().play(); this.mixer.setTime(Math.min(idle.duration*.16,.35)); action.paused=true; }
+      this.bones=discoverBones(this.model); this.heldBone=this.bones.leftHand||this.bones.leftForeArm||this.bones.leftUpperArm||null;
+      for(const bone of this.bones.all)this.restRotations.set(bone,bone.rotation.clone());
+      this.fitCamera(); this.attachCardMesh(); this.updateHeldCardTransform();
+      this.canvas.dataset.puppetBones=String(this.bones.all.length); this.canvas.dataset.puppetLeftHand=this.bones.leftHand?.name||''; this.canvas.dataset.puppetRightHand=this.bones.rightHand?.name||''; this.canvas.dataset.puppetLeftLeg=this.bones.leftUpperLeg?.name||''; this.canvas.dataset.puppetRightLeg=this.bones.rightUpperLeg?.name||''; this.canvas.dataset.puppetHeldBone=this.heldBone?.name||''; this.canvas.dataset.puppetCardMesh='ready'; this.canvas.dataset.puppetReady='true'; this.resume();
+    },undefined,(error)=>{this.canvas.dataset.puppetReady='failed';this.canvas.dataset.puppetError=String(error?.message||error);console.error('Unable to load transcription puppet jester.',error);});
   }
 
-  modelBounds() {
-    if (!this.model) return null;
-    this.pivot.updateMatrixWorld(true);
-    return new THREE.Box3().setFromObject(this.pivot);
-  }
+  modelBounds(){if(!this.model)return null;this.pivot.updateMatrixWorld(true);return new THREE.Box3().setFromObject(this.pivot);}
+  fitCamera(){const b=this.modelBounds();if(!b)return;const s=b.getSize(new THREE.Vector3());const target=b.getCenter(new THREE.Vector3());const vf=THREE.MathUtils.degToRad(this.camera.fov);const hf=2*Math.atan(Math.tan(vf/2)*Math.max(this.camera.aspect,.2));const vd=(Math.max(s.y*1.08,.5)*.5)/Math.tan(vf*.5);const hd=(Math.max(s.x*1.18,.5)*.5)/Math.tan(Math.max(hf,.2)*.5);const d=Math.max(vd,hd,4.8)*1.12;this.camera.position.set(target.x,target.y,target.z+d);this.camera.near=Math.max(.01,d/100);this.camera.far=Math.max(100,d*20);this.camera.lookAt(target);this.camera.updateProjectionMatrix();}
 
-  fitCamera() {
-    const bounds = this.modelBounds();
-    if (!bounds) return;
-    const size = bounds.getSize(new THREE.Vector3());
-    const target = new THREE.Vector3(
-      (bounds.min.x + bounds.max.x) * 0.5 + size.x * 0.03,
-      bounds.min.y + size.y * 0.69,
-      (bounds.min.z + bounds.max.z) * 0.5,
-    );
-    const verticalFov = THREE.MathUtils.degToRad(this.camera.fov);
-    const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * Math.max(this.camera.aspect, 0.2));
-    const verticalDistance = (Math.max(size.y * 0.72, 0.5) * 0.5) / Math.tan(verticalFov * 0.5);
-    const horizontalDistance = (Math.max(size.x * 1.12, 0.5) * 0.5) / Math.tan(Math.max(horizontalFov, 0.2) * 0.5);
-    const distance = Math.max(verticalDistance, horizontalDistance, 4.4) * 1.16;
-    this.camera.position.set(target.x, target.y, target.z + distance);
-    this.camera.near = Math.max(0.01, distance / 100);
-    this.camera.far = Math.max(100, distance * 20);
-    this.camera.lookAt(target);
-    this.camera.updateProjectionMatrix();
-  }
+  createCardMesh(){if(this.cardAnchor){this.scene.remove(this.cardAnchor);disposeObject(this.cardAnchor);}const a=new THREE.Group();a.name='JesterHeldCard';a.add(new THREE.Mesh(new THREE.BoxGeometry(.62,.93,.05),new THREE.MeshStandardMaterial({color:0x1c0e08,roughness:.68,metalness:.08})));const face=new THREE.Mesh(new THREE.PlaneGeometry(.58,.87),new THREE.MeshBasicMaterial({color:0x7b241d,side:THREE.DoubleSide,toneMapped:false}));face.position.z=.028;a.add(face);this.cardAnchor=a;this.cardFace=face;this.scene.add(a);}
+  updateHeldCardTransform(){if(!this.cardAnchor||!this.heldBone||!this.model)return;this.pivot.updateMatrixWorld(true);this.heldBone.updateWorldMatrix(true,false);this.heldBone.getWorldPosition(this.handWorldPosition);this.heldBone.getWorldQuaternion(this.handWorldQuaternion);const offset=new THREE.Vector3(.06,-.03,.11).applyQuaternion(this.handWorldQuaternion);this.cardAnchor.position.copy(this.handWorldPosition).add(offset);this.cardAnchor.quaternion.copy(this.handWorldQuaternion);const look=new THREE.Matrix4().lookAt(this.cardAnchor.position,this.camera.position,this.camera.up);this.cameraFacingQuaternion.setFromRotationMatrix(look);this.cardAnchor.quaternion.slerp(this.cameraFacingQuaternion,.72);this.cardAnchor.rotateZ(.05);}
+  attachCardMesh(){if(!this.model)return;this.createCardMesh();this.updateHeldCardTransform();const card=this.selectedCard||pendingCard,path=cardImagePath(card);if(!path){this.canvas.dataset.puppetCardTexture='fallback';return;}const url=assetUrl(path),serial=++this.cardLoadSerial;this.canvas.dataset.puppetCardId=card?.cardId||'';this.canvas.dataset.puppetCardSource=path;this.canvas.dataset.puppetCardTexture='loading';new THREE.TextureLoader().load(url,(texture)=>{if(this.disposed||serial!==this.cardLoadSerial||!this.cardFace){texture.dispose();return;}texture.colorSpace=THREE.SRGBColorSpace;texture.needsUpdate=true;const previous=this.cardFace.material;this.cardFace.material=new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide,toneMapped:false});disposeMaterial(previous);this.canvas.dataset.puppetCardTexture='ready';},undefined,()=>{if(serial===this.cardLoadSerial)this.canvas.dataset.puppetCardTexture='failed-fallback-visible';});}
+  setSelectedCard(cardId,imagePath){this.selectedCard={cardId:String(cardId||''),imagePath:String(imagePath||'')};if(this.model)this.attachCardMesh();}
 
-  createCardMesh() {
-    if (this.cardAnchor) {
-      this.scene.remove(this.cardAnchor);
-      disposeObject(this.cardAnchor);
-    }
-    const anchor = new THREE.Group();
-    anchor.name = 'JesterHeldCard';
-    anchor.add(new THREE.Mesh(
-      new THREE.BoxGeometry(0.62, 0.93, 0.05),
-      new THREE.MeshStandardMaterial({ color: 0x1c0e08, roughness: 0.68, metalness: 0.08 }),
-    ));
-    const face = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.58, 0.87),
-      new THREE.MeshBasicMaterial({ color: 0x7b241d, side: THREE.DoubleSide, toneMapped: false }),
-    );
-    face.position.z = 0.028;
-    anchor.add(face);
-    this.cardAnchor = anchor;
-    this.cardFace = face;
-    this.scene.add(anchor);
-  }
+  resize(){const r=stageRect();Object.assign(this.canvas.style,{left:`${r.left}px`,top:`${r.top}px`,width:`${r.width}px`,height:`${r.height}px`});this.renderer.setSize(Math.max(r.width,1),Math.max(r.height,1),false);this.camera.aspect=r.width/Math.max(r.height,1);this.camera.fov=r.width<560?38:34;this.camera.updateProjectionMatrix();this.fitCamera();this.updateHeldCardTransform();}
+  containsPointer(e){const r=this.canvas.getBoundingClientRect();return e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom;}
 
-  updateHeldCardTransform() {
-    if (!this.cardAnchor || !this.heldBone || !this.model) return;
-    this.pivot.updateMatrixWorld(true);
-    this.heldBone.updateWorldMatrix(true, false);
-    this.heldBone.getWorldPosition(this.handWorldPosition);
-    this.heldBone.getWorldQuaternion(this.handWorldQuaternion);
-    const palmOffset = new THREE.Vector3(0.06, -0.03, 0.11)
-      .applyQuaternion(this.handWorldQuaternion);
-    this.cardAnchor.position.copy(this.handWorldPosition).add(palmOffset);
-    this.cardAnchor.quaternion.copy(this.handWorldQuaternion);
-    const lookMatrix = new THREE.Matrix4().lookAt(
-      this.cardAnchor.position,
-      this.camera.position,
-      this.camera.up,
-    );
-    this.cameraFacingQuaternion.setFromRotationMatrix(lookMatrix);
-    this.cardAnchor.quaternion.slerp(this.cameraFacingQuaternion, 0.78);
-    this.cardAnchor.rotateZ(0.05);
-  }
-
-  attachCardMesh() {
-    if (!this.model) return;
-    this.createCardMesh();
-    this.updateHeldCardTransform();
-    const card = this.selectedCard || pendingCard;
-    const path = cardImagePath(card);
-    if (!path) {
-      this.canvas.dataset.puppetCardTexture = 'fallback';
-      return;
-    }
-    const imageUrl = assetUrl(path);
-    const serial = ++this.cardLoadSerial;
-    this.canvas.dataset.puppetCardId = card?.cardId || '';
-    this.canvas.dataset.puppetCardSource = path;
-    this.canvas.dataset.puppetCardTexture = 'loading';
-    new THREE.TextureLoader().load(imageUrl, (texture) => {
-      if (this.disposed || serial !== this.cardLoadSerial || !this.cardFace) {
-        texture.dispose();
-        return;
-      }
-      texture.colorSpace = THREE.SRGBColorSpace;
-      texture.needsUpdate = true;
-      const previous = this.cardFace.material;
-      this.cardFace.material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide, toneMapped: false });
-      disposeMaterial(previous);
-      this.canvas.dataset.puppetCardTexture = 'ready';
-    }, undefined, () => {
-      if (serial === this.cardLoadSerial) this.canvas.dataset.puppetCardTexture = 'failed-fallback-visible';
-    });
-  }
-
-  setSelectedCard(cardId, imagePath) {
-    this.selectedCard = { cardId: String(cardId || ''), imagePath: String(imagePath || '') };
-    if (this.model) this.attachCardMesh();
-  }
-
-  resize() {
-    const rect = stageRect();
-    Object.assign(this.canvas.style, {
-      left: `${rect.left}px`, top: `${rect.top}px`, width: `${rect.width}px`, height: `${rect.height}px`,
-    });
-    this.renderer.setSize(Math.max(rect.width, 1), Math.max(rect.height, 1), false);
-    this.camera.aspect = rect.width / Math.max(rect.height, 1);
-    this.camera.fov = rect.width < 560 ? 35 : 31;
-    this.camera.updateProjectionMatrix();
-    this.fitCamera();
-    this.updateHeldCardTransform();
-  }
-
-  containsPointer(event) {
-    const rect = this.canvas.getBoundingClientRect();
-    return event.clientX >= rect.left && event.clientX <= rect.right &&
-      event.clientY >= rect.top && event.clientY <= rect.bottom;
-  }
-
-  targetForPointer(event) {
-    if (!this.bones) return { kind: 'body', bone: null, secondaryBone: null };
-    const rect = this.canvas.getBoundingClientRect();
-    const x = clamp((event.clientX - rect.left) / Math.max(rect.width, 1), 0, 1);
-    const y = clamp((event.clientY - rect.top) / Math.max(rect.height, 1), 0, 1);
-    if (y < 0.31 && x > 0.30 && x < 0.70 && this.bones.head) {
-      return { kind: 'head', bone: this.bones.head, secondaryBone: null };
-    }
-    if (x < 0.47 && y < 0.76 && this.bones.leftUpperArm) {
-      return { kind: 'leftArm', bone: this.bones.leftUpperArm, secondaryBone: this.bones.leftForeArm };
-    }
-    if (x > 0.53 && y < 0.76 && this.bones.rightUpperArm) {
-      return { kind: 'rightArm', bone: this.bones.rightUpperArm, secondaryBone: this.bones.rightForeArm };
-    }
-    if (this.bones.chest) return { kind: 'torso', bone: this.bones.chest, secondaryBone: null };
-    return { kind: 'body', bone: null, secondaryBone: null };
-  }
-
-  refreshTargets() {
-    this.canvas.dataset.puppetTargets = [...this.drags.values()].map((drag) => drag.kind).join('|');
-  }
-
-  pointerDown(event) {
-    if (!this.model || event.button > 0 || !this.containsPointer(event)) return;
-    if (interactiveUiTarget(event.target) || event.clientY < 108) return;
-    const target = this.targetForPointer(event);
-    if ((target.kind === 'leftArm' || target.kind === 'rightArm') &&
-        [...this.drags.values()].some((drag) => drag.kind === target.kind)) return;
-    const bone = target.bone;
-    const secondaryBone = target.secondaryBone;
-    this.drags.set(event.pointerId, {
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-      kind: target.kind,
-      bone,
-      secondaryBone,
-      boneRotation: bone?.rotation.clone() || null,
-      secondaryRotation: secondaryBone?.rotation.clone() || null,
-      bodyY: this.pivot.rotation.y,
-      bodyZ: this.pivot.rotation.z,
-    });
-    this.refreshTargets();
-  }
-
-  pointerMove(event) {
-    const drag = this.drags.get(event.pointerId);
-    if (!drag) return;
-    if (event.cancelable) event.preventDefault();
-    const rect = this.canvas.getBoundingClientRect();
-    const dx = (event.clientX - drag.startX) / Math.max(rect.width, 1);
-    const dy = (event.clientY - drag.startY) / Math.max(rect.height, 1);
-    const strength = Math.PI * 1.35;
-    if (drag.kind === 'head' && drag.bone) {
-      drag.bone.rotation.copy(drag.boneRotation);
-      drag.bone.rotation.y += clamp(dx * strength, -0.75, 0.75);
-      drag.bone.rotation.x += clamp(dy * strength, -0.48, 0.48);
-      return;
-    }
-    if ((drag.kind === 'leftArm' || drag.kind === 'rightArm') && drag.bone) {
-      drag.bone.rotation.copy(drag.boneRotation);
-      const side = drag.kind === 'leftArm' ? 1 : -1;
-      drag.bone.rotation.z += side * clamp(-dy * strength, -1.2, 1.2);
-      drag.bone.rotation.x += clamp(dx * strength * 0.76, -0.9, 0.9);
-      drag.bone.rotation.y += side * clamp(dx * strength * 0.28, -0.38, 0.38);
-      if (drag.secondaryBone && drag.secondaryRotation) {
-        drag.secondaryBone.rotation.copy(drag.secondaryRotation);
-        drag.secondaryBone.rotation.x += clamp(-dy * strength * 0.42, -0.7, 0.7);
-        drag.secondaryBone.rotation.z += side * clamp(dx * strength * 0.34, -0.48, 0.48);
-      }
-      return;
-    }
-    if (drag.kind === 'torso' && drag.bone) {
-      drag.bone.rotation.copy(drag.boneRotation);
-      drag.bone.rotation.y += clamp(dx * strength * 0.72, -0.65, 0.65);
-      drag.bone.rotation.z += clamp(-dy * strength * 0.38, -0.38, 0.38);
-      return;
-    }
-    this.pivot.rotation.y = drag.bodyY + clamp(dx * Math.PI, -0.8, 0.8);
-    this.pivot.rotation.z = drag.bodyZ + clamp(-dy * 0.55, -0.25, 0.25);
-  }
-
-  pointerUp(event) {
-    if (!this.drags.has(event.pointerId)) return;
-    this.drags.delete(event.pointerId);
-    this.refreshTargets();
-  }
-
-  resetPose() {
-    this.drags.clear();
-    for (const [bone, rotation] of this.restRotations.entries()) bone.rotation.copy(rotation);
-    this.pivot.rotation.set(0, MODEL_FACING_Y, 0);
-    this.pivot.position.set(0, 0, 0);
-    this.updateHeldCardTransform();
-    this.refreshTargets();
-  }
-
-  tick = () => {
-    if (this.disposed || document.hidden) return;
-    this.updateHeldCardTransform();
-    this.renderer.render(this.scene, this.camera);
-    this.frame = requestAnimationFrame(this.tick);
-  };
-
-  resume() {
-    if (this.disposed || this.frame || document.hidden) return;
-    this.frame = requestAnimationFrame(this.tick);
-  }
-
-  dispose() {
-    this.disposed = true;
-    this.cardLoadSerial += 1;
-    if (this.frame) cancelAnimationFrame(this.frame);
-    window.removeEventListener('resize', this.onResize);
-    window.removeEventListener('orientationchange', this.onResize);
-    window.removeEventListener('pointerdown', this.onPointerDown, true);
-    window.removeEventListener('pointermove', this.onPointerMove, true);
-    window.removeEventListener('pointerup', this.onPointerUp, true);
-    window.removeEventListener('pointercancel', this.onPointerUp, true);
-    this.mixer?.stopAllAction();
-    disposeObject(this.cardAnchor);
-    disposeObject(this.model);
-    this.renderer.dispose();
-    this.canvas.remove();
-  }
+  targetForPointer(e){if(!this.bones)return{kind:'body',bone:null,secondaryBone:null};const r=this.canvas.getBoundingClientRect(),x=clamp((e.clientX-r.left)/Math.max(r.width,1),0,1),y=clamp((e.clientY-r.top)/Math.max(r.height,1),0,1);
+    if(y<.20&&x>.32&&x<.68&&this.bones.head)return{kind:'head',bone:this.bones.head,secondaryBone:null};
+    if(y>=.18&&y<.48&&x<.42&&this.bones.leftUpperArm)return{kind:'leftArm',bone:this.bones.leftUpperArm,secondaryBone:this.bones.leftForeArm};
+    if(y>=.18&&y<.48&&x>.58&&this.bones.rightUpperArm)return{kind:'rightArm',bone:this.bones.rightUpperArm,secondaryBone:this.bones.rightForeArm};
+    if(y>=.34&&y<.56&&x<.46&&this.bones.leftHand)return{kind:'leftHand',bone:this.bones.leftHand,secondaryBone:null};
+    if(y>=.34&&y<.56&&x>.54&&this.bones.rightHand)return{kind:'rightHand',bone:this.bones.rightHand,secondaryBone:null};
+    if(y>=.50&&y<.79&&x<.50&&this.bones.leftUpperLeg)return{kind:'leftLeg',bone:this.bones.leftUpperLeg,secondaryBone:this.bones.leftLowerLeg};
+    if(y>=.50&&y<.79&&x>=.50&&this.bones.rightUpperLeg)return{kind:'rightLeg',bone:this.bones.rightUpperLeg,secondaryBone:this.bones.rightLowerLeg};
+    if(y>=.78&&x<.50&&(this.bones.leftFoot||this.bones.leftLowerLeg))return{kind:'leftFoot',bone:this.bones.leftFoot||this.bones.leftLowerLeg,secondaryBone:null};
+    if(y>=.78&&x>=.50&&(this.bones.rightFoot||this.bones.rightLowerLeg))return{kind:'rightFoot',bone:this.bones.rightFoot||this.bones.rightLowerLeg,secondaryBone:null};
+    if(y>=.20&&y<.55&&this.bones.chest)return{kind:'torso',bone:this.bones.chest,secondaryBone:null};return{kind:'body',bone:null,secondaryBone:null};}
+  refreshTargets(){this.canvas.dataset.puppetTargets=[...this.drags.values()].map((d)=>d.kind).join('|');}
+  pointerDown(e){if(!this.model||e.button>0||!this.containsPointer(e)||interactiveUiTarget(e.target)||e.clientY<92)return;const t=this.targetForPointer(e);if([...this.drags.values()].some((d)=>d.kind===t.kind&&t.kind!=='body'))return;this.drags.set(e.pointerId,{startX:e.clientX,startY:e.clientY,kind:t.kind,bone:t.bone,secondaryBone:t.secondaryBone,boneRotation:t.bone?.rotation.clone()||null,secondaryRotation:t.secondaryBone?.rotation.clone()||null,bodyY:this.pivot.rotation.y,bodyX:this.pivot.rotation.x,bodyZ:this.pivot.rotation.z});this.refreshTargets();}
+  pointerMove(e){const d=this.drags.get(e.pointerId);if(!d)return;if(e.cancelable)e.preventDefault();const r=this.canvas.getBoundingClientRect(),dx=(e.clientX-d.startX)/Math.max(r.width,1),dy=(e.clientY-d.startY)/Math.max(r.height,1),s=Math.PI*1.45;
+    if(d.kind==='body'){this.pivot.rotation.y=d.bodyY+dx*Math.PI*2;this.pivot.rotation.x=d.bodyX+clamp(dy*Math.PI*.55,-.65,.65);return;}
+    if(!d.bone)return;d.bone.rotation.copy(d.boneRotation);
+    if(d.kind==='head'){d.bone.rotation.y+=clamp(dx*s,-.9,.9);d.bone.rotation.x+=clamp(dy*s,-.55,.55);return;}
+    if(d.kind==='torso'){d.bone.rotation.y+=clamp(dx*s*.8,-.8,.8);d.bone.rotation.z+=clamp(-dy*s*.45,-.5,.5);return;}
+    if(d.kind==='leftHand'||d.kind==='rightHand'||d.kind==='leftFoot'||d.kind==='rightFoot'){d.bone.rotation.y+=clamp(dx*s,-1,1);d.bone.rotation.x+=clamp(dy*s,-.8,.8);d.bone.rotation.z+=clamp(dx*s*.35,-.45,.45);return;}
+    const left=d.kind==='leftArm'||d.kind==='leftLeg',side=left?1:-1;d.bone.rotation.z+=side*clamp(-dy*s,-1.25,1.25);d.bone.rotation.x+=clamp(dx*s*.78,-1,1);d.bone.rotation.y+=side*clamp(dx*s*.3,-.45,.45);if(d.secondaryBone&&d.secondaryRotation){d.secondaryBone.rotation.copy(d.secondaryRotation);d.secondaryBone.rotation.x+=clamp(-dy*s*.55,-.9,.9);d.secondaryBone.rotation.z+=side*clamp(dx*s*.38,-.55,.55);}}
+  pointerUp(e){if(!this.drags.has(e.pointerId))return;this.drags.delete(e.pointerId);this.refreshTargets();}
+  resetPose(){this.drags.clear();for(const[bone,rotation]of this.restRotations.entries())bone.rotation.copy(rotation);this.pivot.rotation.set(0,MODEL_FACING_Y,0);this.pivot.position.set(0,0,0);this.updateHeldCardTransform();this.refreshTargets();}
+  tick=()=>{if(this.disposed||document.hidden)return;this.updateHeldCardTransform();this.renderer.render(this.scene,this.camera);this.frame=requestAnimationFrame(this.tick);};
+  resume(){if(this.disposed||this.frame||document.hidden)return;this.frame=requestAnimationFrame(this.tick);}
+  dispose(){this.disposed=true;this.cardLoadSerial+=1;if(this.frame)cancelAnimationFrame(this.frame);window.removeEventListener('resize',this.onResize);window.removeEventListener('orientationchange',this.onResize);window.removeEventListener('pointerdown',this.onPointerDown,true);window.removeEventListener('pointermove',this.onPointerMove,true);window.removeEventListener('pointerup',this.onPointerUp,true);window.removeEventListener('pointercancel',this.onPointerUp,true);this.mixer?.stopAllAction();disposeObject(this.cardAnchor);disposeObject(this.model);this.renderer.dispose();this.canvas.remove();}
 }
 
-function enablePuppet() {
-  if (puppet) return;
-  setOriginalVisible(false);
-  puppet = new TranscriptionPuppet();
-}
-
-function disablePuppet() {
-  puppet?.dispose();
-  puppet = null;
-  setOriginalVisible(true);
-}
-
-window.transcriptionPuppetSetEnabled = function transcriptionPuppetSetEnabled(enabled) {
-  requestedEnabled = Boolean(enabled);
-  if (requestedEnabled) enablePuppet();
-  else disablePuppet();
-};
-
-window.transcriptionPuppetSetCard = function transcriptionPuppetSetCard(cardId, imagePath) {
-  pendingCard = { cardId: String(cardId || ''), imagePath: String(imagePath || '') };
-  puppet?.setSelectedCard(pendingCard.cardId, pendingCard.imagePath);
-};
-
-window.transcriptionPuppetReset = function transcriptionPuppetReset() {
-  puppet?.resetPose();
-};
-
-window.addEventListener('pagehide', () => {
-  if (puppet) disablePuppet();
-});
+function enablePuppet(){if(puppet)return;setOriginalVisible(false);puppet=new TranscriptionPuppet();}
+function disablePuppet(){puppet?.dispose();puppet=null;setOriginalVisible(false);}
+window.transcriptionPuppetSetEnabled=function(enabled){if(Boolean(enabled))enablePuppet();else disablePuppet();};
+window.transcriptionPuppetSetCard=function(cardId,imagePath){pendingCard={cardId:String(cardId||''),imagePath:String(imagePath||'')};puppet?.setSelectedCard(pendingCard.cardId,pendingCard.imagePath);};
+window.transcriptionPuppetReset=function(){puppet?.resetPose();};
+window.addEventListener('pagehide',()=>{if(puppet)disablePuppet();});
