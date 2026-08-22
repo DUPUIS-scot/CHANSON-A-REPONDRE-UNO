@@ -45,6 +45,7 @@ class DeckProvider extends ChangeNotifier {
       }
       await _installProductionDeck();
       await _installBrioDeck();
+      await _installHpDeck();
       _activeDeckId = _decodeStoredId(await _storage.read(_activeKey));
       if (activeDeck == null) {
         _activeDeckId = AppConstants.productionDeckId;
@@ -84,6 +85,7 @@ class DeckProvider extends ChangeNotifier {
         .map(Deck.fromJson)
         .firstWhere((deck) => deck.id == AppConstants.productionDeckId);
     final deck = sourceDeck.copyWith(
+      coverPath: AppConstants.productionDeckCover,
       cards: [
         for (var index = 0; index < sourceDeck.cards.length; index++)
           sourceDeck.cards[index].copyWith(
@@ -157,6 +159,38 @@ class DeckProvider extends ChangeNotifier {
     );
     _decks = [
       ..._decks.where((item) => item.id != AppConstants.brioDeckId),
+      deck,
+    ];
+  }
+
+  Future<void> _installHpDeck() async {
+    const paths = [
+      'assets/hp/ChatGPT Image Aug 22, 2026, 10_59_05 AM.png',
+      'assets/hp/ChatGPT Image Aug 22, 2026, 11_00_51 AM.png',
+      'assets/hp/ChatGPT Image Aug 22, 2026, 11_08_07 AM.png',
+      'assets/hp/ChatGPT Image Aug 22, 2026, 11_12_32 AM.png',
+    ];
+    final cards = <CardImageModel>[
+      for (var index = 0; index < paths.length; index++)
+        CardImageModel(
+          id: 'hp-${(index + 1).toString().padLeft(3, '0')}',
+          deckId: AppConstants.hpDeckId,
+          title: 'HP ${(index + 1).toString().padLeft(3, '0')}',
+          path: paths[index],
+          category: cardCategoryAt(index).label,
+          colour: cardCategoryAt(index).colour,
+          importedAt: DateTime.utc(2026, 8, 22),
+        ),
+    ];
+    final deck = Deck(
+      id: AppConstants.hpDeckId,
+      name: 'CHANSON A REPONDRE HP',
+      coverPath: AppConstants.hpDeckCover,
+      cardBack: AppConstants.hpDeckCover,
+      cards: cards,
+    );
+    _decks = [
+      ..._decks.where((item) => item.id != AppConstants.hpDeckId),
       deck,
     ];
   }
