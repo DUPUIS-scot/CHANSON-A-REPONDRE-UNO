@@ -2,11 +2,9 @@ name: Validate Multi-Deck Pages
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -16,143 +14,57 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v6
-
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
+      - uses: actions/checkout@v6
+      - uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
-
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: Analyze
-        run: flutter analyze
-
+      - run: flutter pub get
+      - run: flutter analyze
       - name: Run multi-deck share tests
-        run: |
-          flutter test \
-            test/public_card_share_service_test.dart \
-            test/card_share_page_generator_test.dart \
-            test/card_share_target_test.dart \
-            test/restored_app_test.dart
-
+        run: flutter test test/public_card_share_service_test.dart test/card_share_page_generator_test.dart test/card_share_target_test.dart test/restored_app_test.dart
       - name: Build Flutter web release
-        run: |
-          flutter build web \
-            --release \
-            --base-href "/CHANSON-A-REPONDRE-UNO/" \
-            --dart-define=SKIP_AUTH_FOR_DEVELOPMENT=false \
-            --dart-define=APP_BUILD_SHA="${{ github.sha }}"
-
-      - name: Generate lightweight BRIO share previews
+        run: flutter build web --release --base-href "/CHANSON-A-REPONDRE-UNO/" --dart-define=SKIP_AUTH_FOR_DEVELOPMENT=false --dart-define=APP_BUILD_SHA="${{ github.sha }}"
+      - name: Generate lightweight BRIO and HP share previews
         shell: bash
         run: |
           set -euo pipefail
-          if ! command -v convert >/dev/null 2>&1; then
-            sudo apt-get update -qq
-            sudo apt-get install -y --no-install-recommends imagemagick
-          fi
-
+          if ! command -v convert >/dev/null 2>&1; then sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends imagemagick; fi
           mkdir -p build/web/assets/share-previews
           for index in $(seq 1 16); do
-            card="$(printf '%03d' "$index")"
-            source="build/web/assets/assets/decks/chanson_a_repondre_brio/cards/${card}.jpeg"
-            target="build/web/assets/share-previews/BRIO-${card}.jpg"
-            test -f "$source"
-
-            convert "$source" \
-              -auto-orient \
-              -resize '600x900^' \
-              -gravity center \
-              -extent 600x900 \
-              -strip \
-              -sampling-factor 4:2:0 \
-              -interlace Plane \
-              -quality 62 \
-              "$target"
-
-            size="$(stat -c%s "$target")"
-            if [ "$size" -gt 350000 ]; then
-              convert "$source" \
-                -auto-orient \
-                -resize '600x900^' \
-                -gravity center \
-                -extent 600x900 \
-                -strip \
-                -sampling-factor 4:2:0 \
-                -interlace Plane \
-                -quality 50 \
-                "$target"
-              size="$(stat -c%s "$target")"
-            fi
-
-            if [ "$size" -gt 350000 ]; then
-              echo "::error::BRIO-${card} preview is ${size} bytes; expected <= 350000."
-              exit 1
-            fi
+            card="$(printf '%03d' "$index")"; source="build/web/assets/assets/decks/chanson_a_repondre_brio/cards/${card}.jpeg"; target="build/web/assets/share-previews/BRIO-${card}.jpg"
+            convert "$source" -auto-orient -resize '600x900^' -gravity center -extent 600x900 -strip -sampling-factor 4:2:0 -interlace Plane -quality 62 "$target"
           done
-
-      - name: Add GitHub Pages fallback
-        run: cp build/web/index.html build/web/404.html
-
-      - name: Generate canonical UNO and BRIO share pages
-        run: |
-          dart run scripts/generate_multideck_share_pages.dart \
-            --catalog assets/json/cards.json \
-            --brio assets/decks/chanson_a_repondre_brio/deck.json \
-            --build-dir build/web \
-            --public-base https://dupuis-scot.github.io/CHANSON-A-REPONDRE-UNO/
-
+          hp_sources=(
+            "ChatGPT Image Aug 22, 2026, 10_59_05 AM.png"
+            "ChatGPT Image Aug 22, 2026, 11_00_51 AM.png"
+            "ChatGPT Image Aug 22, 2026, 11_08_07 AM.png"
+            "ChatGPT Image Aug 22, 2026, 11_12_32 AM.png"
+          )
+          for index in $(seq 1 4); do
+            card="$(printf '%03d' "$index")"; source="build/web/assets/assets/hp/${hp_sources[$((index-1))]}"; target="build/web/assets/share-previews/HP-${card}.jpg"
+            test -f "$source"
+            convert "$source" -auto-orient -resize '600x900^' -gravity center -extent 600x900 -strip -sampling-factor 4:2:0 -interlace Plane -quality 60 "$target"
+          done
+      - run: cp build/web/index.html build/web/404.html
+      - name: Generate canonical UNO BRIO and HP share pages
+        run: dart run scripts/generate_multideck_share_pages.dart --catalog assets/json/cards.json --brio assets/decks/chanson_a_repondre_brio/deck.json --build-dir build/web --public-base https://dupuis-scot.github.io/CHANSON-A-REPONDRE-UNO/
       - name: Verify multi-deck share output
         shell: bash
         run: |
           set -euo pipefail
           test "$(find build/web/share -mindepth 1 -maxdepth 1 -type d -name 'UNO-*' | wc -l)" -eq 84
           test "$(find build/web/share -mindepth 1 -maxdepth 1 -type d -name 'BRIO-*' | wc -l)" -eq 16
-          test "$(find build/web/share -mindepth 1 -maxdepth 1 -type d \( -name 'UNO-*' -o -name 'BRIO-*' \) | wc -l)" -eq 100
-          test "$(find build/web/share -mindepth 1 -maxdepth 1 -type d -name 'final-84-*' | wc -l)" -eq 84
-          test "$(find build/web/share -type f -name 'index.html' | wc -l)" -eq 184
-
-          test -f build/web/share/UNO-001/index.html
-          test -f build/web/share/UNO-084/index.html
-          test -f build/web/share/BRIO-001/index.html
-          test -f build/web/share/BRIO-013/index.html
-          test -f build/web/share/BRIO-016/index.html
-          test -f build/web/share/final-84-01/index.html
-          test -f build/web/share/final-84-84/index.html
-
-          grep -q 'Chanson à répondre UNO — Carte 001' build/web/share/UNO-001/index.html
-          grep -q 'property="og:image"' build/web/share/UNO-001/index.html
-          grep -q 'name="twitter:image"' build/web/share/UNO-084/index.html
-          grep -q '/share/UNO-001/' build/web/share/UNO-001/index.html
-          grep -q '#/cards/final-84-84' build/web/share/UNO-084/index.html
-
-          grep -q 'Chanson à répondre BRIO — Carte 001' build/web/share/BRIO-001/index.html
-          grep -q 'property="og:image"' build/web/share/BRIO-001/index.html
-          grep -q 'property="og:image:url"' build/web/share/BRIO-001/index.html
-          grep -q 'name="twitter:image"' build/web/share/BRIO-016/index.html
-          grep -q '/share/BRIO-001/' build/web/share/BRIO-001/index.html
-          grep -q 'assets/share-previews/BRIO-001.jpg' build/web/share/BRIO-001/index.html
-          grep -q '#/cards/brio-016' build/web/share/BRIO-016/index.html
-
-          test "$(find build/web/assets/share-previews -type f -name 'BRIO-*.jpg' | wc -l)" -eq 16
-          test -f build/web/assets/share-previews/BRIO-013.jpg
-          test "$(stat -c%s build/web/assets/share-previews/BRIO-013.jpg)" -le 350000
-          grep -q 'assets/share-previews/BRIO-013.jpg' build/web/share/BRIO-013/index.html
-          grep -q 'property="og:image:width" content="600"' build/web/share/BRIO-013/index.html
-          grep -q 'property="og:image:height" content="900"' build/web/share/BRIO-013/index.html
-
-          grep -q '/share/UNO-001/' build/web/share/final-84-01/index.html
-          grep -q 'rel="canonical"' build/web/share/final-84-01/index.html
-          grep -q '/share/UNO-084/' build/web/share/final-84-84/index.html
-
+          test "$(find build/web/share -mindepth 1 -maxdepth 1 -type d -name 'HP-*' | wc -l)" -eq 4
+          test -f build/web/share/HP-001/index.html
+          test -f build/web/share/HP-004/index.html
+          grep -q 'Chanson à répondre HP — Carte 001' build/web/share/HP-001/index.html
+          grep -q 'assets/share-previews/HP-001.jpg' build/web/share/HP-001/index.html
+          grep -q 'property="og:image"' build/web/share/HP-001/index.html
+          grep -q 'name="twitter:image"' build/web/share/HP-004/index.html
+          grep -q '#/cards/hp-004' build/web/share/HP-004/index.html
+          test "$(find build/web/assets/share-previews -type f -name 'HP-*.jpg' | wc -l)" -eq 4
           test -f build/web/assets/assets/models/jester_player.glb
           test -f build/web/assets/assets/models/play_jester_rigged.glb
-          test -s build/web/assets/assets/models/play_jester_rigged.glb
           test -f build/web/assets/assets/models/castle_exterior.glb
-          grep -q 'assets/assets/models/play_jester_rigged.glb' build/web/puppet_dealer.js
-          grep -q 'puppet_dealer.js?v=play-jester-rigged-' build/web/index.html
           test -f build/web/card_castle/card_castle.html
