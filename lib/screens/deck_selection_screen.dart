@@ -7,6 +7,7 @@ import '../widgets/deck_tile.dart';
 import '../widgets/home_navigation_button.dart';
 import '../widgets/utility_page_background.dart';
 
+// Card artwork is managed as project assets; the web deck screen does not use FilePicker.
 class DeckSelectionScreen extends StatelessWidget {
   const DeckSelectionScreen({super.key});
 
