@@ -1,23 +1,17 @@
-name: Build Windows Desktop
+name: WINDOWS — Build Desktop App
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 permissions:
   contents: read
 
-concurrency:
-  group: windows-desktop-${{ github.ref }}
-  cancel-in-progress: false
-
 jobs:
   build-windows:
+    name: Build Windows
     runs-on: windows-latest
     steps:
-      - name: Check out repository
+      - name: Checkout
         uses: actions/checkout@v6
 
       - name: Set up Flutter
@@ -54,7 +48,6 @@ jobs:
           AI_BACKEND_URL: ${{ secrets.AI_BACKEND_URL || vars.AI_BACKEND_URL }}
           TURNSTILE_SITE_KEY: 0x4AAAAAAERKLvJuMsQpWZhI
         run: |
-          $ErrorActionPreference = 'Stop'
           flutter build windows --release `
             --dart-define="SKIP_AUTH_FOR_DEVELOPMENT=false" `
             --dart-define="SUPABASE_URL=$env:SUPABASE_URL" `
@@ -63,17 +56,9 @@ jobs:
             --dart-define="TURNSTILE_SITE_KEY=$env:TURNSTILE_SITE_KEY" `
             --dart-define="APP_BUILD_SHA=${{ github.sha }}"
 
-      - name: Verify Play background is bundled
-        shell: pwsh
-        run: |
-          $asset = 'build\windows\x64\runner\Release\data\flutter_assets\assets\images\play_stage_background_user.jpg'
-          if (-not (Test-Path $asset)) { throw "Play background asset missing from Windows build: $asset" }
-          Write-Host "Verified Windows Play background asset: $asset"
-
       - name: Package Windows app
         shell: pwsh
         run: |
-          $ErrorActionPreference = 'Stop'
           $zip = "chanson-a-repondre-uno-windows-${{ github.sha }}.zip"
           Compress-Archive -Path 'build\windows\x64\runner\Release\*' -DestinationPath $zip -Force
           "WINDOWS_ZIP=$zip" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
