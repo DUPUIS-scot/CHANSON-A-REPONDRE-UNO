@@ -41,6 +41,17 @@ void main() {
     );
   });
 
+  test('HP public URL uses uppercase HP-XXX', () {
+    expect(
+      PublicCardShareService.shareUrlFor(
+        cardId: 'hp-001',
+        deckId: AppConstants.hpDeckId,
+        applicationUri: deployed,
+      ).toString(),
+      'https://dupuis-scot.github.io/CHANSON-A-REPONDRE-UNO/share/HP-001/',
+    );
+  });
+
   test('direct public BRIO image URL uses the real JPEG asset without duplicate assets segment', () {
     final card = _card(
       id: 'brio-005',
@@ -95,7 +106,7 @@ void main() {
     }
   });
 
-  test('UNO share title is normalized and filename metadata is ignored', () async {
+  test('UNO share exposes one canonical link and keeps image attachment', () async {
     final card = _card(
       id: 'final-84-01',
       deckId: AppConstants.productionDeckId,
@@ -127,13 +138,14 @@ void main() {
     );
     expect(result, CardShareResult.shared);
     expect(receivedTitle, 'Chanson à répondre UNO — Carte 001');
+    expect(receivedText, 'Chanson à répondre UNO — Carte 001');
     expect(receivedUrl, endsWith('/share/UNO-001/'));
+    expect(receivedText, isNot(contains('/assets/')));
+    expect(receivedText, isNot(contains('https://')));
     expect(receivedImage, 'assets/cards/final_import/example.png');
-    expect(receivedText, contains('/share/UNO-001/'));
-    expect(receivedText, contains('/assets/cards/final_import/example.png'));
   });
 
-  test('BRIO shares canonical uppercase link and direct JPEG URL with image attachment', () async {
+  test('BRIO share exposes one canonical link and keeps image attachment', () async {
     final card = _card(
       id: 'brio-001',
       deckId: AppConstants.brioDeckId,
@@ -165,19 +177,50 @@ void main() {
     );
     expect(result, CardShareResult.shared);
     expect(receivedTitle, 'Chanson à répondre BRIO — Carte 001');
+    expect(receivedText, 'Chanson à répondre BRIO — Carte 001');
     expect(receivedUrl, endsWith('/share/BRIO-001/'));
-    expect(receivedText, contains('/share/BRIO-001/'));
-    expect(
-      receivedText,
-      contains('/assets/decks/chanson_a_repondre_brio/cards/001.jpeg'),
-    );
+    expect(receivedText, isNot(contains('/assets/')));
+    expect(receivedText, isNot(contains('https://')));
     expect(
       receivedImage,
       'assets/decks/chanson_a_repondre_brio/cards/001.jpeg',
     );
   });
 
-  test('share fallback copies title, canonical link, and direct image URL', () async {
+  test('HP share exposes one canonical link and keeps image attachment', () async {
+    final card = _card(
+      id: 'hp-001',
+      deckId: AppConstants.hpDeckId,
+      title: 'HP 001',
+      path: 'assets/hp/card.png',
+    );
+    final deck = Deck(
+      id: AppConstants.hpDeckId,
+      name: 'Chanson à répondre HP',
+      cards: [card],
+    );
+    String? receivedText;
+    String? receivedUrl;
+    final result = await MultiDeckCardShareService.share(
+      card: card,
+      deck: deck,
+      applicationUri: deployed,
+      nativeShare:
+          ({required title, required text, required url, imagePath}) async {
+            receivedText = text;
+            receivedUrl = url;
+            return NativeShareResult.shared;
+          },
+      copyLink: (_) async {},
+    );
+    expect(result, CardShareResult.shared);
+    expect(receivedText, 'Chanson à répondre HP — Carte 001');
+    expect(receivedUrl, endsWith('/share/HP-001/'));
+    expect(receivedText, isNot(contains('/assets/')));
+    expect(receivedText, isNot(contains('https://')));
+  });
+
+  test('share fallback copies title and only the canonical link', () async {
     final card = _card(
       id: 'brio-011',
       deckId: AppConstants.brioDeckId,
@@ -202,13 +245,10 @@ void main() {
     expect(result, CardShareResult.copied);
     expect(copied, contains('Chanson à répondre BRIO — Carte 011'));
     expect(copied, contains('/share/BRIO-011/'));
-    expect(
-      copied,
-      contains('/assets/decks/chanson_a_repondre_brio/cards/011.jpeg'),
-    );
+    expect(copied, isNot(contains('/assets/')));
   });
 
-  test('any deck share includes canonical page, exact public asset URL, and image attachment', () async {
+  test('any deck share keeps raw asset out of public message text', () async {
     final card = _card(
       id: 'guest-042',
       deckId: 'guest-deck',
@@ -238,8 +278,8 @@ void main() {
     );
     expect(result, CardShareResult.shared);
     expect(receivedUrl, contains('/share/'));
-    expect(receivedText, contains(receivedUrl));
-    expect(receivedText, contains('/assets/decks/guest/cards/42.jpg'));
+    expect(receivedText, isNot(contains('/assets/')));
+    expect(receivedText, isNot(contains('https://')));
     expect(receivedImage, card.imagePath);
   });
 }
