@@ -39,6 +39,7 @@ function ensurePreview() {
   const img = document.createElement('img');
   img.id = 'transcription-jester-mode-card-preview';
   img.dataset.transcriptionJesterCanvas = 'true';
+  img.dataset.transcriptionPuppet = 'true';
   img.dataset.cardPreview = 'held-card';
   img.dataset.cardAction = 'return-to-browse';
   img.setAttribute('role', 'button');
