@@ -10,6 +10,7 @@ const PUPPET_CANVAS_ID = 'transcription-jester-puppet-canvas';
 
 let puppet = null;
 let requestedEnabled = false;
+let pendingCard = null;
 
 function stageRect() {
   const mobile = window.matchMedia('(max-width: 759px)').matches;
@@ -29,6 +30,27 @@ function stageRect() {
     width: stageWidth,
     height: stageHeight,
   };
+}
+
+function assetUrl(path) {
+  if (!path) return null;
+  const raw = String(path).trim();
+  if (/^data:/i.test(raw)) return raw;
+  try {
+    const parsed = new URL(raw, document.baseURI);
+    if (/^https?:/i.test(raw)) return parsed.href;
+  } catch (_) {}
+  const normalized = raw.replace(/^\/+/, '');
+  if (normalized.startsWith('assets/assets/')) {
+    return new URL(normalized, document.baseURI).href;
+  }
+  if (normalized.startsWith('share-previews/')) {
+    return new URL(`assets/${normalized}`, document.baseURI).href;
+  }
+  if (normalized.startsWith('assets/')) {
+    return new URL(`assets/${normalized}`, document.baseURI).href;
+  }
+  return new URL(`assets/${normalized}`, document.baseURI).href;
 }
 
 function originalCanvases() {
@@ -85,46 +107,36 @@ function discoverBones(model) {
   const endsWith = (...parts) =>
     (name) => parts.some((part) => name.endsWith(part));
 
-  const head = chooseBone(bones, [
-    endsWith('head'),
-    containsAll('head'),
-  ]);
-  const chest = chooseBone(bones, [
-    containsAll('upperchest'),
-    containsAll('spine2'),
-    containsAll('chest'),
-    containsAll('spine1'),
-    containsAll('spine'),
-  ]);
-  const leftUpperArm = chooseBone(bones, [
-    containsAll('left', 'upperarm'),
-    containsAll('left', 'arm'),
-    endsWith('upperarml', 'arml'),
-  ]);
-  const rightUpperArm = chooseBone(bones, [
-    containsAll('right', 'upperarm'),
-    containsAll('right', 'arm'),
-    endsWith('upperarmr', 'armr'),
-  ]);
-  const leftForeArm = chooseBone(bones, [
-    containsAll('left', 'forearm'),
-    containsAll('left', 'lowerarm'),
-    endsWith('forearml', 'lowerarml'),
-  ]);
-  const rightForeArm = chooseBone(bones, [
-    containsAll('right', 'forearm'),
-    containsAll('right', 'lowerarm'),
-    endsWith('forearmr', 'lowerarmr'),
-  ]);
-
   return {
     all: bones,
-    head,
-    chest,
-    leftUpperArm,
-    rightUpperArm,
-    leftForeArm,
-    rightForeArm,
+    head: chooseBone(bones, [endsWith('head'), containsAll('head')]),
+    chest: chooseBone(bones, [
+      containsAll('upperchest'),
+      containsAll('spine2'),
+      containsAll('chest'),
+      containsAll('spine1'),
+      containsAll('spine'),
+    ]),
+    leftUpperArm: chooseBone(bones, [
+      containsAll('left', 'upperarm'),
+      containsAll('left', 'arm'),
+      endsWith('upperarml', 'arml'),
+    ]),
+    rightUpperArm: chooseBone(bones, [
+      containsAll('right', 'upperarm'),
+      containsAll('right', 'arm'),
+      endsWith('upperarmr', 'armr'),
+    ]),
+    leftForeArm: chooseBone(bones, [
+      containsAll('left', 'forearm'),
+      containsAll('left', 'lowerarm'),
+      endsWith('forearml', 'lowerarml'),
+    ]),
+    rightForeArm: chooseBone(bones, [
+      containsAll('right', 'forearm'),
+      containsAll('right', 'lowerarm'),
+      endsWith('forearmr', 'lowerarmr'),
+    ]),
   };
 }
 
@@ -143,9 +155,11 @@ class TranscriptionPuppet {
   constructor() {
     this.disposed = false;
     this.frame = 0;
-    this.drag = null;
+    this.drags = new Map();
     this.bones = null;
     this.restRotations = new Map();
+    this.cardLoadSerial = 0;
+    this.selectedCard = pendingCard;
 
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(31, 1, 0.01, 200);
@@ -167,6 +181,7 @@ class TranscriptionPuppet {
     canvas.id = PUPPET_CANVAS_ID;
     canvas.dataset.transcriptionJesterCanvas = 'true';
     canvas.dataset.transcriptionPuppet = 'true';
+    canvas.dataset.puppetInteraction = 'dual-arm-independent';
     canvas.setAttribute('aria-hidden', 'true');
     Object.assign(canvas.style, {
       display: 'block',
@@ -266,18 +281,20 @@ class TranscriptionPuppet {
         }
 
         this.fitCamera();
-        this.renderer.domElement.dataset.puppetBones = String(this.bones.all.length);
-        this.renderer.domElement.dataset.puppetHead = this.bones.head?.name || '';
-        this.renderer.domElement.dataset.puppetChest = this.bones.chest?.name || '';
-        this.renderer.domElement.dataset.puppetLeftArm = this.bones.leftUpperArm?.name || '';
-        this.renderer.domElement.dataset.puppetRightArm = this.bones.rightUpperArm?.name || '';
-        this.renderer.domElement.dataset.puppetReady = 'true';
+        this.attachCardMesh();
+        canvas.dataset.puppetBones = String(this.bones.all.length);
+        canvas.dataset.puppetHead = this.bones.head?.name || '';
+        canvas.dataset.puppetChest = this.bones.chest?.name || '';
+        canvas.dataset.puppetLeftArm = this.bones.leftUpperArm?.name || '';
+        canvas.dataset.puppetRightArm = this.bones.rightUpperArm?.name || '';
+        canvas.dataset.puppetCardMesh = 'ready';
+        canvas.dataset.puppetReady = 'true';
         this.resume();
       },
       undefined,
       (error) => {
-        this.renderer.domElement.dataset.puppetReady = 'failed';
-        this.renderer.domElement.dataset.puppetError = String(error?.message || error);
+        canvas.dataset.puppetReady = 'failed';
+        canvas.dataset.puppetError = String(error?.message || error);
         setOriginalVisible(true);
         console.error('Unable to load transcription puppet jester.', error);
       },
@@ -317,9 +334,101 @@ class TranscriptionPuppet {
     this.camera.updateProjectionMatrix();
   }
 
+  createCardMesh() {
+    if (this.cardAnchor) {
+      this.scene.remove(this.cardAnchor);
+      disposeObject(this.cardAnchor);
+    }
+    const anchor = new THREE.Group();
+    const backing = new THREE.Mesh(
+      new THREE.BoxGeometry(0.62, 0.93, 0.05),
+      new THREE.MeshStandardMaterial({
+        color: 0x1c0e08,
+        roughness: 0.68,
+        metalness: 0.08,
+      }),
+    );
+    anchor.add(backing);
+    const face = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.58, 0.87),
+      new THREE.MeshBasicMaterial({
+        color: 0x7b241d,
+        side: THREE.DoubleSide,
+        toneMapped: false,
+      }),
+    );
+    face.position.z = 0.028;
+    anchor.add(face);
+    this.cardAnchor = anchor;
+    this.cardFace = face;
+    this.scene.add(anchor);
+    this.positionCardMesh();
+  }
+
+  positionCardMesh() {
+    if (!this.cardAnchor) return;
+    const bounds = this.modelBounds();
+    if (!bounds) return;
+    const size = bounds.getSize(new THREE.Vector3());
+    const center = bounds.getCenter(new THREE.Vector3());
+    this.cardAnchor.position.set(
+      center.x + size.x * 0.24,
+      bounds.min.y + size.y * 0.68,
+      bounds.max.z + Math.max(size.z * 0.06, 0.14),
+    );
+    this.cardAnchor.lookAt(this.camera.position);
+    this.cardAnchor.rotation.z = 0.045;
+  }
+
+  attachCardMesh() {
+    if (!this.model) return;
+    this.createCardMesh();
+    const card = this.selectedCard || pendingCard;
+    if (!card?.imagePath) {
+      canvas.dataset.puppetCardTexture = 'fallback';
+      return;
+    }
+    const imageUrl = assetUrl(card.imagePath);
+    const serial = ++this.cardLoadSerial;
+    canvas.dataset.puppetCardId = card.cardId || '';
+    canvas.dataset.puppetCardTexture = 'loading';
+    new THREE.TextureLoader().load(
+      imageUrl,
+      (texture) => {
+        if (this.disposed || serial !== this.cardLoadSerial || !this.cardFace) {
+          texture.dispose();
+          return;
+        }
+        texture.colorSpace = THREE.SRGBColorSpace;
+        texture.needsUpdate = true;
+        const previous = this.cardFace.material;
+        this.cardFace.material = new THREE.MeshBasicMaterial({
+          map: texture,
+          side: THREE.DoubleSide,
+          toneMapped: false,
+        });
+        disposeMaterial(previous);
+        canvas.dataset.puppetCardTexture = 'ready';
+      },
+      undefined,
+      () => {
+        if (serial !== this.cardLoadSerial) return;
+        canvas.dataset.puppetCardTexture = 'failed-fallback-visible';
+      },
+    );
+  }
+
+  setSelectedCard(cardId, imagePath) {
+    this.selectedCard = {
+      cardId: String(cardId || ''),
+      imagePath: String(imagePath || ''),
+    };
+    if (this.model) this.attachCardMesh();
+  }
+
   resize() {
     const rect = stageRect();
-    Object.assign(this.renderer.domElement.style, {
+    Object.assign(canvas.style, {
       left: `${rect.left}px`,
       top: `${rect.top}px`,
       width: `${rect.width}px`,
@@ -330,10 +439,11 @@ class TranscriptionPuppet {
     this.camera.fov = rect.width < 560 ? 35 : 31;
     this.camera.updateProjectionMatrix();
     this.fitCamera();
+    this.positionCardMesh();
   }
 
   containsPointer(event) {
-    const rect = this.renderer.domElement.getBoundingClientRect();
+    const rect = canvas.getBoundingClientRect();
     return event.clientX >= rect.left &&
       event.clientX <= rect.right &&
       event.clientY >= rect.top &&
@@ -341,91 +451,126 @@ class TranscriptionPuppet {
   }
 
   targetForPointer(event) {
-    if (!this.bones) return { kind: 'body', bone: null };
-    const rect = this.renderer.domElement.getBoundingClientRect();
+    if (!this.bones) return { kind: 'body', bone: null, secondaryBone: null };
+    const rect = canvas.getBoundingClientRect();
     const x = clamp((event.clientX - rect.left) / Math.max(rect.width, 1), 0, 1);
     const y = clamp((event.clientY - rect.top) / Math.max(rect.height, 1), 0, 1);
 
     if (y < 0.31 && x > 0.30 && x < 0.70 && this.bones.head) {
-      return { kind: 'head', bone: this.bones.head };
+      return { kind: 'head', bone: this.bones.head, secondaryBone: null };
     }
-    if (x < 0.42 && y < 0.72 && this.bones.leftUpperArm) {
-      return { kind: 'leftArm', bone: this.bones.leftUpperArm };
+    if (x < 0.47 && y < 0.76 && this.bones.leftUpperArm) {
+      return {
+        kind: 'leftArm',
+        bone: this.bones.leftUpperArm,
+        secondaryBone: this.bones.leftForeArm,
+      };
     }
-    if (x > 0.58 && y < 0.72 && this.bones.rightUpperArm) {
-      return { kind: 'rightArm', bone: this.bones.rightUpperArm };
+    if (x > 0.53 && y < 0.76 && this.bones.rightUpperArm) {
+      return {
+        kind: 'rightArm',
+        bone: this.bones.rightUpperArm,
+        secondaryBone: this.bones.rightForeArm,
+      };
     }
     if (this.bones.chest) {
-      return { kind: 'torso', bone: this.bones.chest };
+      return { kind: 'torso', bone: this.bones.chest, secondaryBone: null };
     }
-    return { kind: 'body', bone: null };
+    return { kind: 'body', bone: null, secondaryBone: null };
+  }
+
+  refreshTargetDataset() {
+    canvas.dataset.puppetTargets = [...this.drags.values()]
+      .map((drag) => drag.kind)
+      .join('|');
   }
 
   pointerDown(event) {
     if (!this.model || event.button > 0 || !this.containsPointer(event)) return;
     if (isInteractiveUiTarget(event.target)) return;
-    // Keep the top navigation/puppet controls clickable even when Flutter's
-    // renderer reports the glass pane rather than a semantic button target.
     if (event.clientY < 108) return;
 
     const target = this.targetForPointer(event);
+    if (
+      (target.kind === 'leftArm' || target.kind === 'rightArm') &&
+      [...this.drags.values()].some((drag) => drag.kind === target.kind)
+    ) {
+      return;
+    }
+
     const bone = target.bone;
-    this.drag = {
+    const secondaryBone = target.secondaryBone;
+    this.drags.set(event.pointerId, {
       pointerId: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
       kind: target.kind,
       bone,
+      secondaryBone,
       boneRotation: bone?.rotation.clone() || null,
+      secondaryRotation: secondaryBone?.rotation.clone() || null,
       bodyY: this.pivot.rotation.y,
       bodyZ: this.pivot.rotation.z,
-    };
-    this.renderer.domElement.dataset.puppetTarget = target.kind;
+    });
+    this.refreshTargetDataset();
   }
 
   pointerMove(event) {
-    if (!this.drag || event.pointerId !== this.drag.pointerId) return;
+    const drag = this.drags.get(event.pointerId);
+    if (!drag) return;
     if (event.cancelable) event.preventDefault();
-    const rect = this.renderer.domElement.getBoundingClientRect();
-    const dx = (event.clientX - this.drag.startX) / Math.max(rect.width, 1);
-    const dy = (event.clientY - this.drag.startY) / Math.max(rect.height, 1);
+    const rect = canvas.getBoundingClientRect();
+    const dx = (event.clientX - drag.startX) / Math.max(rect.width, 1);
+    const dy = (event.clientY - drag.startY) / Math.max(rect.height, 1);
     const strength = Math.PI * 1.35;
 
-    if (this.drag.kind === 'head' && this.drag.bone) {
-      this.drag.bone.rotation.copy(this.drag.boneRotation);
-      this.drag.bone.rotation.y += clamp(dx * strength, -0.75, 0.75);
-      this.drag.bone.rotation.x += clamp(dy * strength, -0.48, 0.48);
-    } else if (
-      (this.drag.kind === 'leftArm' || this.drag.kind === 'rightArm') &&
-      this.drag.bone
-    ) {
-      this.drag.bone.rotation.copy(this.drag.boneRotation);
-      const side = this.drag.kind === 'leftArm' ? 1 : -1;
-      this.drag.bone.rotation.z += side * clamp(-dy * strength, -1.15, 1.15);
-      this.drag.bone.rotation.x += clamp(dx * strength * 0.72, -0.85, 0.85);
-      this.drag.bone.rotation.y += side * clamp(dx * strength * 0.25, -0.35, 0.35);
-    } else if (this.drag.kind === 'torso' && this.drag.bone) {
-      this.drag.bone.rotation.copy(this.drag.boneRotation);
-      this.drag.bone.rotation.y += clamp(dx * strength * 0.72, -0.65, 0.65);
-      this.drag.bone.rotation.z += clamp(-dy * strength * 0.38, -0.38, 0.38);
-    } else {
-      this.pivot.rotation.y = this.drag.bodyY + clamp(dx * Math.PI, -0.8, 0.8);
-      this.pivot.rotation.z = this.drag.bodyZ + clamp(-dy * 0.55, -0.25, 0.25);
+    if (drag.kind === 'head' && drag.bone) {
+      drag.bone.rotation.copy(drag.boneRotation);
+      drag.bone.rotation.y += clamp(dx * strength, -0.75, 0.75);
+      drag.bone.rotation.x += clamp(dy * strength, -0.48, 0.48);
+      return;
     }
+
+    if ((drag.kind === 'leftArm' || drag.kind === 'rightArm') && drag.bone) {
+      drag.bone.rotation.copy(drag.boneRotation);
+      const side = drag.kind === 'leftArm' ? 1 : -1;
+      drag.bone.rotation.z += side * clamp(-dy * strength, -1.2, 1.2);
+      drag.bone.rotation.x += clamp(dx * strength * 0.76, -0.9, 0.9);
+      drag.bone.rotation.y += side * clamp(dx * strength * 0.28, -0.38, 0.38);
+      if (drag.secondaryBone && drag.secondaryRotation) {
+        drag.secondaryBone.rotation.copy(drag.secondaryRotation);
+        drag.secondaryBone.rotation.x += clamp(-dy * strength * 0.42, -0.7, 0.7);
+        drag.secondaryBone.rotation.z += side * clamp(dx * strength * 0.34, -0.48, 0.48);
+      }
+      return;
+    }
+
+    if (drag.kind === 'torso' && drag.bone) {
+      drag.bone.rotation.copy(drag.boneRotation);
+      drag.bone.rotation.y += clamp(dx * strength * 0.72, -0.65, 0.65);
+      drag.bone.rotation.z += clamp(-dy * strength * 0.38, -0.38, 0.38);
+      return;
+    }
+
+    this.pivot.rotation.y = drag.bodyY + clamp(dx * Math.PI, -0.8, 0.8);
+    this.pivot.rotation.z = drag.bodyZ + clamp(-dy * 0.55, -0.25, 0.25);
   }
 
   pointerUp(event) {
-    if (!this.drag || event.pointerId !== this.drag.pointerId) return;
-    this.drag = null;
-    this.renderer.domElement.dataset.puppetTarget = '';
+    if (!this.drags.has(event.pointerId)) return;
+    this.drags.delete(event.pointerId);
+    this.refreshTargetDataset();
   }
 
   resetPose() {
+    this.drags.clear();
     for (const [bone, rotation] of this.restRotations.entries()) {
       bone.rotation.copy(rotation);
     }
     this.pivot.rotation.set(0, MODEL_FACING_Y, 0);
     this.pivot.position.set(0, 0, 0);
+    this.positionCardMesh();
+    this.refreshTargetDataset();
   }
 
   tick = () => {
@@ -441,6 +586,7 @@ class TranscriptionPuppet {
 
   dispose() {
     this.disposed = true;
+    this.cardLoadSerial += 1;
     if (this.frame) cancelAnimationFrame(this.frame);
     window.removeEventListener('resize', this.onResize);
     window.removeEventListener('orientationchange', this.onResize);
@@ -449,9 +595,10 @@ class TranscriptionPuppet {
     window.removeEventListener('pointerup', this.onPointerUp, true);
     window.removeEventListener('pointercancel', this.onPointerUp, true);
     this.mixer?.stopAllAction();
+    disposeObject(this.cardAnchor);
     disposeObject(this.model);
     this.renderer.dispose();
-    this.renderer.domElement.remove();
+    canvas.remove();
   }
 }
 
@@ -471,6 +618,14 @@ window.transcriptionPuppetSetEnabled = function transcriptionPuppetSetEnabled(en
   requestedEnabled = Boolean(enabled);
   if (requestedEnabled) enablePuppet();
   else disablePuppet();
+};
+
+window.transcriptionPuppetSetCard = function transcriptionPuppetSetCard(cardId, imagePath) {
+  pendingCard = {
+    cardId: String(cardId || ''),
+    imagePath: String(imagePath || ''),
+  };
+  puppet?.setSelectedCard(pendingCard.cardId, pendingCard.imagePath);
 };
 
 window.transcriptionPuppetReset = function transcriptionPuppetReset() {
