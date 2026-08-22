@@ -5,7 +5,7 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('laboratory GLB exposes the two canonical video screen nodes', () {
+  test('laboratory GLB exposes two canonical video screen mesh nodes', () {
     final bytes = File('assets/models/laboratory_interior.glb').readAsBytesSync();
     expect(bytes.length, greaterThan(20));
 
@@ -26,12 +26,20 @@ void main() {
     final nodes = (document['nodes'] as List<dynamic>? ?? const <dynamic>[])
         .whereType<Map<String, dynamic>>()
         .toList();
-    final names = nodes
-        .map((node) => node['name'])
-        .whereType<String>()
-        .toSet();
 
-    expect(names, contains('VideoScreen_Left'));
-    expect(names, contains('VideoScreen_Right'));
+    Map<String, dynamic> node(String name) => nodes.firstWhere(
+          (candidate) => candidate['name'] == name,
+          orElse: () => <String, dynamic>{},
+        );
+
+    final left = node('VideoScreen_Left');
+    final right = node('VideoScreen_Right');
+
+    expect(left, isNotEmpty);
+    expect(right, isNotEmpty);
+    expect(left['mesh'], isA<int>());
+    expect(right['mesh'], isA<int>());
+    expect(left['mesh'], lessThan((document['meshes'] as List<dynamic>).length));
+    expect(right['mesh'], lessThan((document['meshes'] as List<dynamic>).length));
   });
 }
