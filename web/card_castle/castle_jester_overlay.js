@@ -133,7 +133,6 @@ function requestEntrance() {
   if (!isExterior()) return;
   document.body.dataset.castleJesterState = 'opening-gate';
   gatekeeper?.setVisible(false);
-  armInteriorEntryFocus(activeRuntime);
   window.dispatchEvent(new CustomEvent('castleJesterEnter'));
 }
 
@@ -184,7 +183,7 @@ function faceCamera() {
   if (!gatekeeper?.root || !activeRuntime?.camera) return;
   const p = gatekeeper.root.position;
   const c = activeRuntime.camera.position;
-  // This is the only runtime writer of the exterior gatekeeper's Y rotation.
+  // This is the only idle-frame writer of the exterior gatekeeper's Y rotation.
   // The source rig's visible forward axis is opposite Three.js +Z.
   gatekeeper.root.rotation.y = Math.atan2(c.x - p.x, c.z - p.z) + Math.PI;
   document.body.dataset.castleJesterFacing = 'camera-single-owner-v60';
@@ -299,8 +298,6 @@ function animate(now) {
     if (exterior && !gatekeeper.clicked) {
       placeAtGate(activeRuntime?.castleRoot);
       gatekeeper.update(delta);
-      // Gatekeeper pose animation may touch root rotation internally. Reassert
-      // the single stable camera-facing orientation once, at frame end.
       faceCamera();
     } else if (exterior) {
       gatekeeper.update(delta);
