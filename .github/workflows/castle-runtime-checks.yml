@@ -3,6 +3,7 @@ name: Castle runtime checks
 on:
   pull_request:
     paths:
+      - 'web/flutter_bootstrap.js'
       - 'web/card_castle/**'
       - 'assets/models/laboratory_interior.glb'
       - 'assets/videos/bureau_screen_loop.mp4'
