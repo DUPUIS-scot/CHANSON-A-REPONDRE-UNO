@@ -7,8 +7,9 @@ if (!window.__castleBureauVideoBridgeInstalled) {
     '../assets/assets/videos/bureau_screen_loop.mp4',
     document.baseURI,
   ).href;
+  const EXACT_SCREEN_NAME = /^VideoScreen_(Left|Right)$/i;
   const MAX_VIDEO_SURFACES = 3;
-  const PRIME_WINDOW_MS = 30000;
+  const PRIME_WINDOW_MS = 60000;
 
   let video = null;
   let texture = null;
@@ -18,9 +19,11 @@ if (!window.__castleBureauVideoBridgeInstalled) {
   let observer = null;
   let entryPrimed = false;
   let entryPrimedAt = 0;
+  let playPromise = null;
+  let textureFrame = 0;
 
-  document.body.dataset.bureauVideoOwner = 'castle-bureau-video-bridge-v61';
-  document.body.dataset.bureauVideoLegacyOwner = 'disabled-v61';
+  document.body.dataset.bureauVideoOwner = 'castle-bureau-video-bridge-v62';
+  document.body.dataset.bureauVideoLegacyOwner = 'disabled-v62';
 
   const mode = () => document.body.dataset.sceneMode || 'exterior';
   const isLaboratoryActive = () => mode() === 'laboratory' || mode() === 'bureau';
@@ -46,21 +49,34 @@ if (!window.__castleBureauVideoBridgeInstalled) {
   }
 
   function discoverVideoMeshes(root) {
+    const exact = [];
     const scored = [];
     root.updateMatrixWorld(true);
+
     root.traverse(object => {
+      if (!object?.isMesh) return;
+      if (EXACT_SCREEN_NAME.test(object.name || '')) {
+        exact.push(object);
+        return;
+      }
       const score = scoreVideoMesh(object);
-      if (score > 0) scored.push({ object, score });
+      if (score > 0) scored.push({object, score});
     });
+
+    exact.sort((a, b) => String(a.name).localeCompare(String(b.name)));
     scored.sort((a, b) => b.score - a.score);
 
     const targets = [];
+    for (const object of exact) {
+      if (targets.length >= 2) break;
+      if (!targets.includes(object)) targets.push(object);
+    }
     for (const item of scored) {
       if (targets.length >= MAX_VIDEO_SURFACES) break;
       if (!targets.includes(item.object)) targets.push(item.object);
     }
 
-    if (targets.length < MAX_VIDEO_SURFACES) {
+    if (targets.length < 2) {
       const rootBox = new THREE.Box3().setFromObject(root);
       const rootCenter = rootBox.getCenter(new THREE.Vector3());
       const geometric = [];
@@ -77,16 +93,45 @@ if (!window.__castleBureauVideoBridgeInstalled) {
         if (thin >= 0.45 || mid <= 0.35 || long >= 8) return;
         const central = Math.hypot(center.x - rootCenter.x, center.z - rootCenter.z);
         const vertical = Math.abs(center.y - rootCenter.y) * 0.35;
-        geometric.push({ object, score: central + vertical });
+        geometric.push({object, score: central + vertical});
       });
       geometric.sort((a, b) => a.score - b.score);
       for (const item of geometric) {
-        if (targets.length >= MAX_VIDEO_SURFACES) break;
+        if (targets.length >= 2) break;
         if (!targets.includes(item.object)) targets.push(item.object);
       }
     }
 
+    document.body.dataset.bureauVideoExactScreenCount = String(exact.length);
+    document.body.dataset.bureauVideoBoundNames = targets
+      .map(object => object.name || '(unnamed)')
+      .join('|');
     return targets;
+  }
+
+  function installVideoDiagnostics() {
+    if (!video || video.dataset.bureauDiagnosticsInstalled === 'true') return;
+    video.dataset.bureauDiagnosticsInstalled = 'true';
+
+    const state = name => {
+      document.body.dataset.bureauVideoMediaState = `${name}-v62`;
+      document.body.dataset.bureauVideoReadyState = String(video.readyState);
+      document.body.dataset.bureauVideoNetworkState = String(video.networkState);
+    };
+
+    video.addEventListener('loadedmetadata', () => state('loadedmetadata'));
+    video.addEventListener('loadeddata', () => state('loadeddata'));
+    video.addEventListener('canplay', () => state('canplay'));
+    video.addEventListener('playing', () => state('playing'));
+    video.addEventListener('waiting', () => state('waiting'));
+    video.addEventListener('stalled', () => state('stalled'));
+    video.addEventListener('error', () => {
+      state('error');
+      const mediaError = video.error;
+      document.body.dataset.bureauVideoMediaError = mediaError
+        ? `${mediaError.code}:${mediaError.message || 'media-error'}`
+        : 'unknown-media-error';
+    });
   }
 
   function ensureVideoTexture() {
@@ -94,30 +139,34 @@ if (!window.__castleBureauVideoBridgeInstalled) {
 
     video = document.createElement('video');
     video.id = 'bureau-screen-loop-video';
-    Object.assign(video, {
-      src: VIDEO_URL,
-      loop: true,
-      muted: true,
-      defaultMuted: true,
-      playsInline: true,
-      preload: 'auto',
-      crossOrigin: 'anonymous',
-      autoplay: false,
-    });
+    video.loop = true;
+    video.muted = true;
+    video.defaultMuted = true;
+    video.playsInline = true;
+    video.autoplay = true;
+    video.preload = 'auto';
+    video.controls = false;
+    video.volume = 0;
+    if ('disablePictureInPicture' in video) video.disablePictureInPicture = true;
     video.setAttribute('playsinline', '');
     video.setAttribute('webkit-playsinline', '');
     video.setAttribute('muted', '');
+    video.setAttribute('autoplay', '');
     video.setAttribute('aria-hidden', 'true');
     Object.assign(video.style, {
       position: 'fixed',
-      width: '1px',
-      height: '1px',
-      left: '-4px',
-      top: '-4px',
-      opacity: '0',
+      width: '2px',
+      height: '2px',
+      left: '0',
+      top: '0',
+      opacity: '0.01',
       pointerEvents: 'none',
+      zIndex: '-1',
     });
+
+    video.src = VIDEO_URL;
     document.body.appendChild(video);
+    installVideoDiagnostics();
     video.load();
 
     texture = new THREE.VideoTexture(video);
@@ -128,12 +177,25 @@ if (!window.__castleBureauVideoBridgeInstalled) {
     texture.flipY = false;
 
     material = new THREE.MeshBasicMaterial({
-      name: 'bureau-live-video-material-v61',
+      name: 'bureau-live-video-material-v62',
       map: texture,
       color: 0xffffff,
       side: THREE.DoubleSide,
       toneMapped: false,
     });
+
+    if (!textureFrame) {
+      const pump = () => {
+        textureFrame = requestAnimationFrame(pump);
+        if (!texture || !video || !isLaboratoryActive()) return;
+        if (!video.paused && video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+          texture.needsUpdate = true;
+          document.body.dataset.bureauVideoTextureFrames = 'pumping-v62';
+        }
+      };
+      textureFrame = requestAnimationFrame(pump);
+    }
+
     return texture;
   }
 
@@ -160,13 +222,13 @@ if (!window.__castleBureauVideoBridgeInstalled) {
 
     document.body.dataset.bureauVideoAsset = VIDEO_URL;
     document.body.dataset.bureauVideoScreenCount = String(targets.length);
-    document.body.dataset.bureauVideoState = targets.length > 0
-      ? 'single-owner-ready-v61'
-      : 'screen-mismatch-v61';
-    document.body.dataset.bureauVideoDiscovery = targets.length >= 3
-      ? 'named-plus-fallback-v61'
-      : 'named-or-geometric-v61';
-    return targets.length > 0;
+    document.body.dataset.bureauVideoState = targets.length >= 2
+      ? 'exact-or-fallback-ready-v62'
+      : 'screen-mismatch-v62';
+    document.body.dataset.bureauVideoDiscovery = document.body.dataset.bureauVideoExactScreenCount === '2'
+      ? 'exact-video-screens-first-v62'
+      : 'named-or-geometric-fallback-v62';
+    return targets.length >= 2;
   }
 
   function configurePlayback() {
@@ -175,39 +237,52 @@ if (!window.__castleBureauVideoBridgeInstalled) {
     video.defaultMuted = true;
     video.loop = true;
     video.playsInline = true;
+    video.autoplay = true;
+    video.volume = 0;
     video.setAttribute('playsinline', '');
     video.setAttribute('webkit-playsinline', '');
+    video.setAttribute('muted', '');
+    video.setAttribute('autoplay', '');
   }
 
   function attemptPlay(reason) {
     ensureVideoTexture();
     configurePlayback();
+
     if (!video.paused && !video.ended) {
-      document.body.dataset.bureauVideoPlayback = 'playing-loop-v61';
+      document.body.dataset.bureauVideoPlayback = 'playing-loop-v62';
       delete document.body.dataset.bureauVideoError;
       return Promise.resolve(true);
     }
-    document.body.dataset.bureauVideoPlayback = `${reason}-attempt-v61`;
-    return video.play().then(() => {
-      document.body.dataset.bureauVideoPlayback = 'playing-loop-v61';
-      delete document.body.dataset.bureauVideoError;
-      return true;
-    }).catch(error => {
-      document.body.dataset.bureauVideoPlayback = 'waiting-user-gesture-v61';
-      document.body.dataset.bureauVideoError = String(error?.message || error);
-      return false;
-    });
+    if (playPromise) return playPromise;
+
+    document.body.dataset.bureauVideoPlayback = `${reason}-attempt-v62`;
+    playPromise = Promise.resolve(video.play())
+      .then(() => {
+        document.body.dataset.bureauVideoPlayback = 'playing-loop-v62';
+        delete document.body.dataset.bureauVideoError;
+        return true;
+      })
+      .catch(error => {
+        document.body.dataset.bureauVideoPlayback = 'waiting-user-gesture-v62';
+        document.body.dataset.bureauVideoError = String(error?.message || error);
+        return false;
+      })
+      .finally(() => {
+        playPromise = null;
+      });
+    return playPromise;
   }
 
-  function primeFromGesture() {
+  function primeFromGesture(reason = 'gesture-prime') {
     entryPrimed = true;
     entryPrimedAt = performance.now();
     ensureVideoTexture();
     if (video.ended) {
       try { video.currentTime = 0; } catch (_) {}
     }
-    document.body.dataset.bureauVideoGesturePrime = 'armed-v61';
-    return attemptPlay('gesture-prime');
+    document.body.dataset.bureauVideoGesturePrime = 'armed-v62';
+    return attemptPlay(reason);
   }
 
   function keepPrimedDuringEntry() {
@@ -222,20 +297,20 @@ if (!window.__castleBureauVideoBridgeInstalled) {
       if (root) bindScreens(root);
       if (!video) ensureVideoTexture();
       if (video.paused) attemptPlay('laboratory-entry');
-      else document.body.dataset.bureauVideoPlayback = 'playing-loop-v61';
+      else document.body.dataset.bureauVideoPlayback = 'playing-loop-v62';
       return;
     }
 
     if (keepPrimedDuringEntry()) {
       document.body.dataset.bureauVideoPlayback = video?.paused
-        ? 'gesture-primed-pending-v61'
-        : 'gesture-primed-playing-v61';
+        ? 'gesture-primed-pending-v62'
+        : 'gesture-primed-playing-v62';
       return;
     }
 
     entryPrimed = false;
     if (video && !video.paused) video.pause();
-    document.body.dataset.bureauVideoPlayback = 'paused-v61';
+    document.body.dataset.bureauVideoPlayback = 'paused-v62';
   }
 
   function hydrate() {
@@ -244,18 +319,16 @@ if (!window.__castleBureauVideoBridgeInstalled) {
     syncPlayback();
   }
 
-  function isBureauEntryTarget(event) {
-    if (mode() !== 'interior') return false;
-    const target = event?.target;
-    return Boolean(target?.closest?.('#bureau-of-ai, #laboratory-medallion-button'));
-  }
-
   function gestureResume(event) {
-    if (isBureauEntryTarget(event)) {
-      document.body.dataset.bureauVideoGestureSource = event?.target?.closest?.('#laboratory-medallion-button')
-        ? 'laboratory-medallion-v61'
-        : 'bureau-control-v61';
-      primeFromGesture();
+    if (mode() === 'interior' && event?.isTrusted !== false) {
+      const target = event?.target;
+      const source = target?.closest?.('#laboratory-medallion-button')
+        ? 'laboratory-medallion-v62'
+        : target?.closest?.('#bureau-of-ai')
+          ? 'bureau-control-v62'
+          : 'interior-trusted-gesture-v62';
+      document.body.dataset.bureauVideoGestureSource = source;
+      primeFromGesture('interior-gesture-prime');
       return;
     }
     if (isLaboratoryActive()) attemptPlay('gesture-resume');
@@ -263,11 +336,20 @@ if (!window.__castleBureauVideoBridgeInstalled) {
 
   window.__castleBureauVideoPrime = primeFromGesture;
   window.__castleBureauVideoPlay = hydrate;
+  window.__castleBureauVideoDiagnostics = () => ({
+    mode: mode(),
+    src: video?.currentSrc || video?.src || VIDEO_URL,
+    paused: video?.paused,
+    readyState: video?.readyState,
+    networkState: video?.networkState,
+    currentTime: video?.currentTime,
+    boundNames: [...boundMeshes].map(object => object.name || '(unnamed)'),
+  });
 
   window.addEventListener('castleRuntimeReady', hydrate);
-  window.addEventListener('pointerdown', gestureResume, { capture: true, passive: true });
-  window.addEventListener('touchstart', gestureResume, { capture: true, passive: true });
-  window.addEventListener('click', gestureResume, { capture: true, passive: true });
+  window.addEventListener('pointerdown', gestureResume, {capture: true, passive: true});
+  window.addEventListener('touchstart', gestureResume, {capture: true, passive: true});
+  window.addEventListener('click', gestureResume, {capture: true, passive: true});
 
   observer = new MutationObserver(() => {
     hydrate();
@@ -286,7 +368,7 @@ if (!window.__castleBureauVideoBridgeInstalled) {
   let attempts = 0;
   const timer = setInterval(() => {
     hydrate();
-    if ((boundRoot && boundMeshes.size > 0 && video?.readyState >= 2) || attempts++ > 300) {
+    if ((boundRoot && boundMeshes.size >= 2 && video?.readyState >= 2) || attempts++ > 450) {
       clearInterval(timer);
     }
   }, 200);
@@ -294,13 +376,15 @@ if (!window.__castleBureauVideoBridgeInstalled) {
   window.addEventListener('beforeunload', () => {
     clearInterval(timer);
     observer?.disconnect();
+    if (textureFrame) cancelAnimationFrame(textureFrame);
     video?.pause();
     material?.dispose();
     texture?.dispose();
     video?.remove();
     delete window.__castleBureauVideoPrime;
     delete window.__castleBureauVideoPlay;
-  }, { once: true });
+    delete window.__castleBureauVideoDiagnostics;
+  }, {once: true});
 
   hydrate();
 }
