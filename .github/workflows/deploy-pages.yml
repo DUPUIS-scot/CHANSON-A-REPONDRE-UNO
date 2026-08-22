@@ -37,7 +37,9 @@ jobs:
         run: |
           flutter test \
             test/castle_jester_gatekeeper_integration_test.dart \
-            test/castle_laboratory_video_ownership_test.dart
+            test/castle_laboratory_video_ownership_test.dart \
+            test/castle_laboratory_asset_contract_test.dart \
+            test/castle_ios_laboratory_resilience_test.dart
 
       - name: Validate production configuration
         shell: bash
@@ -69,6 +71,39 @@ jobs:
             --dart-define=AI_BACKEND_URL="$AI_BACKEND_URL" \
             --dart-define=TURNSTILE_SITE_KEY="$TURNSTILE_SITE_KEY" \
             --dart-define=APP_BUILD_SHA="${{ github.sha }}"
+
+      - name: Prepare Safari-compatible laboratory video
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y ffmpeg
+          fi
+          src="assets/videos/bureau_screen_loop.mp4"
+          out="build/web/assets/assets/videos/bureau_screen_loop.mp4"
+          tmp="build/web/assets/assets/videos/bureau_screen_loop.safari.tmp.mp4"
+          test -s "$src"
+          mkdir -p "$(dirname "$out")"
+          ffmpeg -hide_banner -loglevel error -y \
+            -i "$src" \
+            -map 0:v:0 -an \
+            -vf "scale='min(1280,iw)':'min(720,ih)':force_original_aspect_ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2" \
+            -r 30 \
+            -c:v libx264 -preset fast -crf 23 \
+            -profile:v main -level 4.0 \
+            -pix_fmt yuv420p \
+            -movflags +faststart \
+            "$tmp"
+          mv "$tmp" "$out"
+          test -s "$out"
+          codec="$(ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of default=nw=1:nk=1 "$out")"
+          pix_fmt="$(ffprobe -v error -select_streams v:0 -show_entries stream=pix_fmt -of default=nw=1:nk=1 "$out")"
+          test "$codec" = "h264"
+          test "$pix_fmt" = "yuv420p"
+          ffprobe -v error -select_streams v:0 \
+            -show_entries stream=codec_name,profile,pix_fmt,width,height,r_frame_rate \
+            -of default=nw=1 "$out"
 
       - name: Generate share previews and pages
         timeout-minutes: 12
@@ -123,6 +158,7 @@ jobs:
           test -f build/web/404.html
           test -f build/web/main.dart.js
           test -f build/web/assets/assets/models/transcription_jester_rigged.glb
+          test -s build/web/assets/assets/videos/bureau_screen_loop.mp4
           test -f build/web/assets/assets/hp/work_in_progress_ribbon.webp
           test "$(find build/web/share -mindepth 1 -maxdepth 1 -type d -name 'UNO-*' | wc -l)" -eq 84
           test "$(find build/web/share -mindepth 1 -maxdepth 1 -type d -name 'BRIO-*' | wc -l)" -eq 16
