@@ -80,8 +80,10 @@ function discoverBones(model) {
     if (object.isBone) bones.push(object);
   });
 
-  const containsAll = (...parts) => (name) => parts.every((part) => name.includes(part));
-  const endsWith = (...parts) => (name) => parts.some((part) => name.endsWith(part));
+  const containsAll = (...parts) =>
+    (name) => parts.every((part) => name.includes(part));
+  const endsWith = (...parts) =>
+    (name) => parts.some((part) => name.endsWith(part));
 
   const head = chooseBone(bones, [
     endsWith('head'),
@@ -130,11 +132,17 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
+function isInteractiveUiTarget(target) {
+  if (!(target instanceof Element)) return false;
+  return Boolean(target.closest(
+    'button, a, input, textarea, select, [role="button"], [role="link"]',
+  ));
+}
+
 class TranscriptionPuppet {
   constructor() {
     this.disposed = false;
     this.frame = 0;
-    this.clock = new THREE.Clock();
     this.drag = null;
     this.bones = null;
     this.restRotations = new Map();
@@ -159,14 +167,11 @@ class TranscriptionPuppet {
     canvas.id = PUPPET_CANVAS_ID;
     canvas.dataset.transcriptionJesterCanvas = 'true';
     canvas.dataset.transcriptionPuppet = 'true';
-    canvas.setAttribute('aria-label', 'Interactive jester puppet');
+    canvas.setAttribute('aria-hidden', 'true');
     Object.assign(canvas.style, {
       display: 'block',
       position: 'fixed',
-      pointerEvents: 'auto',
-      touchAction: 'none',
-      userSelect: 'none',
-      cursor: 'grab',
+      pointerEvents: 'none',
       background: 'transparent',
       zIndex: '2',
       opacity: '1',
@@ -194,15 +199,13 @@ class TranscriptionPuppet {
     this.onPointerDown = (event) => this.pointerDown(event);
     this.onPointerMove = (event) => this.pointerMove(event);
     this.onPointerUp = (event) => this.pointerUp(event);
-    this.onLostPointerCapture = () => this.endDrag();
 
     window.addEventListener('resize', this.onResize);
     window.addEventListener('orientationchange', this.onResize);
-    canvas.addEventListener('pointerdown', this.onPointerDown);
-    canvas.addEventListener('pointermove', this.onPointerMove);
-    canvas.addEventListener('pointerup', this.onPointerUp);
-    canvas.addEventListener('pointercancel', this.onPointerUp);
-    canvas.addEventListener('lostpointercapture', this.onLostPointerCapture);
+    window.addEventListener('pointerdown', this.onPointerDown, true);
+    window.addEventListener('pointermove', this.onPointerMove, true);
+    window.addEventListener('pointerup', this.onPointerUp, true);
+    window.addEventListener('pointercancel', this.onPointerUp, true);
 
     this.resize();
     this.loadModel();
@@ -246,13 +249,24 @@ class TranscriptionPuppet {
         this.pivot.add(this.model);
         this.pivot.updateMatrixWorld(true);
 
+        if (gltf.animations?.length) {
+          this.mixer = new THREE.AnimationMixer(this.model);
+          const idle = gltf.animations.find(
+            (clip) => /idle|breath|stand/i.test(clip.name),
+          ) || gltf.animations[0];
+          const action = this.mixer.clipAction(idle);
+          action.reset().play();
+          this.mixer.setTime(Math.min(idle.duration * 0.16, 0.35));
+          action.paused = true;
+        }
+
         this.bones = discoverBones(this.model);
         for (const bone of this.bones.all) {
           this.restRotations.set(bone, bone.rotation.clone());
         }
 
         this.fitCamera();
-        this.renderer.domElement.dataset.puppetBones = this.bones.all.length;
+        this.renderer.domElement.dataset.puppetBones = String(this.bones.all.length);
         this.renderer.domElement.dataset.puppetHead = this.bones.head?.name || '';
         this.renderer.domElement.dataset.puppetChest = this.bones.chest?.name || '';
         this.renderer.domElement.dataset.puppetLeftArm = this.bones.leftUpperArm?.name || '';
@@ -264,6 +278,7 @@ class TranscriptionPuppet {
       (error) => {
         this.renderer.domElement.dataset.puppetReady = 'failed';
         this.renderer.domElement.dataset.puppetError = String(error?.message || error);
+        setOriginalVisible(true);
         console.error('Unable to load transcription puppet jester.', error);
       },
     );
@@ -317,6 +332,14 @@ class TranscriptionPuppet {
     this.fitCamera();
   }
 
+  containsPointer(event) {
+    const rect = this.renderer.domElement.getBoundingClientRect();
+    return event.clientX >= rect.left &&
+      event.clientX <= rect.right &&
+      event.clientY >= rect.top &&
+      event.clientY <= rect.bottom;
+  }
+
   targetForPointer(event) {
     if (!this.bones) return { kind: 'body', bone: null };
     const rect = this.renderer.domElement.getBoundingClientRect();
@@ -339,8 +362,12 @@ class TranscriptionPuppet {
   }
 
   pointerDown(event) {
-    if (!this.model || event.button > 0) return;
-    event.preventDefault();
+    if (!this.model || event.button > 0 || !this.containsPointer(event)) return;
+    if (isInteractiveUiTarget(event.target)) return;
+    // Keep the top navigation/puppet controls clickable even when Flutter's
+    // renderer reports the glass pane rather than a semantic button target.
+    if (event.clientY < 108) return;
+
     const target = this.targetForPointer(event);
     const bone = target.bone;
     this.drag = {
@@ -353,14 +380,12 @@ class TranscriptionPuppet {
       bodyY: this.pivot.rotation.y,
       bodyZ: this.pivot.rotation.z,
     };
-    this.renderer.domElement.setPointerCapture?.(event.pointerId);
-    this.renderer.domElement.style.cursor = 'grabbing';
     this.renderer.domElement.dataset.puppetTarget = target.kind;
   }
 
   pointerMove(event) {
     if (!this.drag || event.pointerId !== this.drag.pointerId) return;
-    event.preventDefault();
+    if (event.cancelable) event.preventDefault();
     const rect = this.renderer.domElement.getBoundingClientRect();
     const dx = (event.clientX - this.drag.startX) / Math.max(rect.width, 1);
     const dy = (event.clientY - this.drag.startY) / Math.max(rect.height, 1);
@@ -391,17 +416,7 @@ class TranscriptionPuppet {
 
   pointerUp(event) {
     if (!this.drag || event.pointerId !== this.drag.pointerId) return;
-    try {
-      this.renderer.domElement.releasePointerCapture?.(event.pointerId);
-    } catch (_) {
-      // Pointer capture may already have been released by the browser.
-    }
-    this.endDrag();
-  }
-
-  endDrag() {
     this.drag = null;
-    this.renderer.domElement.style.cursor = 'grab';
     this.renderer.domElement.dataset.puppetTarget = '';
   }
 
@@ -429,15 +444,14 @@ class TranscriptionPuppet {
     if (this.frame) cancelAnimationFrame(this.frame);
     window.removeEventListener('resize', this.onResize);
     window.removeEventListener('orientationchange', this.onResize);
-    const canvas = this.renderer.domElement;
-    canvas.removeEventListener('pointerdown', this.onPointerDown);
-    canvas.removeEventListener('pointermove', this.onPointerMove);
-    canvas.removeEventListener('pointerup', this.onPointerUp);
-    canvas.removeEventListener('pointercancel', this.onPointerUp);
-    canvas.removeEventListener('lostpointercapture', this.onLostPointerCapture);
+    window.removeEventListener('pointerdown', this.onPointerDown, true);
+    window.removeEventListener('pointermove', this.onPointerMove, true);
+    window.removeEventListener('pointerup', this.onPointerUp, true);
+    window.removeEventListener('pointercancel', this.onPointerUp, true);
+    this.mixer?.stopAllAction();
     disposeObject(this.model);
     this.renderer.dispose();
-    canvas.remove();
+    this.renderer.domElement.remove();
   }
 }
 
@@ -466,5 +480,3 @@ window.transcriptionPuppetReset = function transcriptionPuppetReset() {
 window.addEventListener('pagehide', () => {
   if (puppet) disablePuppet();
 });
-
-if (requestedEnabled) enablePuppet();
