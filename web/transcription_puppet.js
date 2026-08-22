@@ -30,8 +30,8 @@ function assetUrl(path) {
   try { if (/^https?:/i.test(raw)) return new URL(raw, document.baseURI).href; } catch (_) {}
   const normalized = raw.replace(/^\/+/, '');
   if (normalized.startsWith('assets/assets/')) return new URL(normalized, document.baseURI).href;
-  if (normalized.startsWith('assets/')) return new URL(normalized, document.baseURI).href;
   if (normalized.startsWith('share-previews/')) return new URL(`assets/${normalized}`, document.baseURI).href;
+  if (normalized.startsWith('assets/')) return new URL(`assets/${normalized}`, document.baseURI).href;
   return new URL(`assets/${normalized}`, document.baseURI).href;
 }
 
