@@ -63,10 +63,11 @@ function layoutPreview() {
   const height = width * 1.5;
   Object.assign(img.style, {
     display: 'block',
+    visibility: 'visible',
     width: `${width}px`,
     height: `${height}px`,
     left: `${rect.left + rect.width * (mobile ? 0.72 : 0.70) - width / 2}px`,
-    top: `${rect.top + rect.height * (mobile ? 0.42 : 0.42) - height / 2}px`,
+    top: `${rect.top + rect.height * 0.42 - height / 2}px`,
   });
   img.dataset.previewSuppressed = '';
 }
