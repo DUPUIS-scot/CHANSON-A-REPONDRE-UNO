@@ -7,6 +7,12 @@ const JESTER_MODEL = new URL(
   document.baseURI,
 ).href;
 const PUPPET_CANVAS_ID = 'transcription-jester-puppet-canvas';
+const HP_CARD_PATHS = Object.freeze({
+  'hp-001': 'assets/hp/ChatGPT Image Aug 22, 2026, 10_59_05 AM.png',
+  'hp-002': 'assets/hp/ChatGPT Image Aug 22, 2026, 11_00_51 AM.png',
+  'hp-003': 'assets/hp/ChatGPT Image Aug 22, 2026, 11_08_07 AM.png',
+  'hp-004': 'assets/hp/ChatGPT Image Aug 22, 2026, 11_12_32 AM.png',
+});
 
 let puppet = null;
 let requestedEnabled = false;
@@ -41,6 +47,12 @@ function assetUrl(path) {
   return new URL(`assets/${normalized}`, document.baseURI).href;
 }
 
+function cardImagePath(card) {
+  if (!card) return '';
+  const id = String(card.cardId || '').trim().toLowerCase();
+  return HP_CARD_PATHS[id] || String(card.imagePath || '').trim();
+}
+
 function originalCanvases() {
   return [...document.querySelectorAll('[data-transcription-jester-canvas="true"]')]
     .filter((element) => element.id !== PUPPET_CANVAS_ID);
@@ -54,7 +66,9 @@ function setOriginalVisible(visible) {
 
 function disposeMaterial(material) {
   if (!material) return;
-  for (const value of Object.values(material)) if (value?.isTexture) value.dispose();
+  for (const value of Object.values(material)) {
+    if (value?.isTexture) value.dispose();
+  }
   material.dispose?.();
 }
 
@@ -85,6 +99,17 @@ function discoverBones(model) {
   });
   const all = (...parts) => (name) => parts.every((part) => name.includes(part));
   const ends = (...parts) => (name) => parts.some((part) => name.endsWith(part));
+  const exact = (...names) => (name) => names.includes(name);
+  const leftHand = chooseBone(bones, [
+    exact('lefthand', 'handl', 'lhand', 'mixamoriglefthand'),
+    all('left', 'hand'),
+    ends('handl', 'lefthand'),
+  ]);
+  const rightHand = chooseBone(bones, [
+    exact('righthand', 'handr', 'rhand', 'mixamorigrighthand'),
+    all('right', 'hand'),
+    ends('handr', 'righthand'),
+  ]);
   return {
     all: bones,
     head: chooseBone(bones, [ends('head'), all('head')]),
@@ -93,6 +118,8 @@ function discoverBones(model) {
     rightUpperArm: chooseBone(bones, [all('right', 'upperarm'), all('right', 'arm'), ends('upperarmr', 'armr')]),
     leftForeArm: chooseBone(bones, [all('left', 'forearm'), all('left', 'lowerarm'), ends('forearml', 'lowerarml')]),
     rightForeArm: chooseBone(bones, [all('right', 'forearm'), all('right', 'lowerarm'), ends('forearmr', 'lowerarmr')]),
+    leftHand,
+    rightHand,
   };
 }
 
@@ -114,6 +141,9 @@ class TranscriptionPuppet {
     this.restRotations = new Map();
     this.cardLoadSerial = 0;
     this.selectedCard = pendingCard;
+    this.handWorldPosition = new THREE.Vector3();
+    this.handWorldQuaternion = new THREE.Quaternion();
+    this.cameraFacingQuaternion = new THREE.Quaternion();
 
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(31, 1, 0.01, 200);
@@ -129,6 +159,7 @@ class TranscriptionPuppet {
     this.canvas.dataset.transcriptionJesterCanvas = 'true';
     this.canvas.dataset.transcriptionPuppet = 'true';
     this.canvas.dataset.puppetInteraction = 'dual-arm-independent';
+    this.canvas.dataset.puppetCardAttachment = 'left-hand';
     this.canvas.setAttribute('aria-hidden', 'true');
     Object.assign(this.canvas.style, {
       display: 'block',
@@ -210,12 +241,16 @@ class TranscriptionPuppet {
       }
 
       this.bones = discoverBones(this.model);
+      this.heldBone = this.bones.leftHand || this.bones.leftForeArm || this.bones.leftUpperArm || null;
       for (const bone of this.bones.all) this.restRotations.set(bone, bone.rotation.clone());
       this.fitCamera();
       this.attachCardMesh();
+      this.updateHeldCardTransform();
       this.canvas.dataset.puppetBones = String(this.bones.all.length);
       this.canvas.dataset.puppetLeftArm = this.bones.leftUpperArm?.name || '';
       this.canvas.dataset.puppetRightArm = this.bones.rightUpperArm?.name || '';
+      this.canvas.dataset.puppetLeftHand = this.bones.leftHand?.name || '';
+      this.canvas.dataset.puppetHeldBone = this.heldBone?.name || '';
       this.canvas.dataset.puppetCardMesh = 'ready';
       this.canvas.dataset.puppetReady = 'true';
       this.resume();
@@ -260,6 +295,7 @@ class TranscriptionPuppet {
       disposeObject(this.cardAnchor);
     }
     const anchor = new THREE.Group();
+    anchor.name = 'JesterHeldCard';
     anchor.add(new THREE.Mesh(
       new THREE.BoxGeometry(0.62, 0.93, 0.05),
       new THREE.MeshStandardMaterial({ color: 0x1c0e08, roughness: 0.68, metalness: 0.08 }),
@@ -273,35 +309,42 @@ class TranscriptionPuppet {
     this.cardAnchor = anchor;
     this.cardFace = face;
     this.scene.add(anchor);
-    this.positionCardMesh();
   }
 
-  positionCardMesh() {
-    if (!this.cardAnchor) return;
-    const bounds = this.modelBounds();
-    if (!bounds) return;
-    const size = bounds.getSize(new THREE.Vector3());
-    const center = bounds.getCenter(new THREE.Vector3());
-    this.cardAnchor.position.set(
-      center.x + size.x * 0.24,
-      bounds.min.y + size.y * 0.68,
-      bounds.max.z + Math.max(size.z * 0.06, 0.14),
+  updateHeldCardTransform() {
+    if (!this.cardAnchor || !this.heldBone || !this.model) return;
+    this.pivot.updateMatrixWorld(true);
+    this.heldBone.updateWorldMatrix(true, false);
+    this.heldBone.getWorldPosition(this.handWorldPosition);
+    this.heldBone.getWorldQuaternion(this.handWorldQuaternion);
+    const palmOffset = new THREE.Vector3(0.06, -0.03, 0.11)
+      .applyQuaternion(this.handWorldQuaternion);
+    this.cardAnchor.position.copy(this.handWorldPosition).add(palmOffset);
+    this.cardAnchor.quaternion.copy(this.handWorldQuaternion);
+    const lookMatrix = new THREE.Matrix4().lookAt(
+      this.cardAnchor.position,
+      this.camera.position,
+      this.camera.up,
     );
-    this.cardAnchor.lookAt(this.camera.position);
-    this.cardAnchor.rotation.z = 0.045;
+    this.cameraFacingQuaternion.setFromRotationMatrix(lookMatrix);
+    this.cardAnchor.quaternion.slerp(this.cameraFacingQuaternion, 0.78);
+    this.cardAnchor.rotateZ(0.05);
   }
 
   attachCardMesh() {
     if (!this.model) return;
     this.createCardMesh();
+    this.updateHeldCardTransform();
     const card = this.selectedCard || pendingCard;
-    if (!card?.imagePath) {
+    const path = cardImagePath(card);
+    if (!path) {
       this.canvas.dataset.puppetCardTexture = 'fallback';
       return;
     }
-    const imageUrl = assetUrl(card.imagePath);
+    const imageUrl = assetUrl(path);
     const serial = ++this.cardLoadSerial;
-    this.canvas.dataset.puppetCardId = card.cardId || '';
+    this.canvas.dataset.puppetCardId = card?.cardId || '';
+    this.canvas.dataset.puppetCardSource = path;
     this.canvas.dataset.puppetCardTexture = 'loading';
     new THREE.TextureLoader().load(imageUrl, (texture) => {
       if (this.disposed || serial !== this.cardLoadSerial || !this.cardFace) {
@@ -334,7 +377,7 @@ class TranscriptionPuppet {
     this.camera.fov = rect.width < 560 ? 35 : 31;
     this.camera.updateProjectionMatrix();
     this.fitCamera();
-    this.positionCardMesh();
+    this.updateHeldCardTransform();
   }
 
   containsPointer(event) {
@@ -396,7 +439,6 @@ class TranscriptionPuppet {
     const dx = (event.clientX - drag.startX) / Math.max(rect.width, 1);
     const dy = (event.clientY - drag.startY) / Math.max(rect.height, 1);
     const strength = Math.PI * 1.35;
-
     if (drag.kind === 'head' && drag.bone) {
       drag.bone.rotation.copy(drag.boneRotation);
       drag.bone.rotation.y += clamp(dx * strength, -0.75, 0.75);
@@ -437,12 +479,13 @@ class TranscriptionPuppet {
     for (const [bone, rotation] of this.restRotations.entries()) bone.rotation.copy(rotation);
     this.pivot.rotation.set(0, MODEL_FACING_Y, 0);
     this.pivot.position.set(0, 0, 0);
-    this.positionCardMesh();
+    this.updateHeldCardTransform();
     this.refreshTargets();
   }
 
   tick = () => {
     if (this.disposed || document.hidden) return;
+    this.updateHeldCardTransform();
     this.renderer.render(this.scene, this.camera);
     this.frame = requestAnimationFrame(this.tick);
   };
