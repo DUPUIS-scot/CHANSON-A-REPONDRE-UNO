@@ -8,16 +8,16 @@ import 'package:flutter/material.dart';
 
 @JS('transcriptionJesterCreate')
 external void _createTranscriptionJester(String id);
-
 @JS('transcriptionJesterDestroy')
 external void _destroyTranscriptionJester(String id);
-
 @JS('transcriptionJesterSetSelectedCard')
 external void _setTranscriptionJesterSelectedCard(String cardId, String imagePath);
-
 @JS('transcriptionPuppetSetEnabled')
 external void _setTranscriptionPuppetEnabled(bool enabled);
-
+@JS('transcriptionJesterModePatchSetCard')
+external void _setJesterModeCard(String cardId, String imagePath);
+@JS('transcriptionJesterModePatchLayout')
+external void _layoutJesterModeCard();
 @JS('transcriptionPuppetReset')
 external void _resetTranscriptionPuppet();
 
@@ -28,14 +28,13 @@ class TranscriptionJesterScene extends StatefulWidget {
   static String? _pendingImagePath;
   static bool _pendingPuppetEnabled = false;
   static bool _puppetScriptRequested = false;
+  static bool _patchScriptRequested = false;
 
-  static void setSelectedCard({
-    required String cardId,
-    required String imagePath,
-  }) {
+  static void setSelectedCard({required String cardId, required String imagePath}) {
     _pendingCardId = cardId;
     _pendingImagePath = imagePath;
     _pushPendingCardToJs();
+    _pushPendingJesterModeCardToJs();
   }
 
   static void setOverlayVisible(bool visible) {
@@ -51,27 +50,27 @@ class TranscriptionJesterScene extends StatefulWidget {
           ? (isPuppet ? 'visible' : 'hidden')
           : (isPuppet ? 'hidden' : 'visible');
     }
+    if (visible && _pendingPuppetEnabled) {
+      try { _layoutJesterModeCard(); } catch (_) {}
+    }
   }
 
   static void setPuppetMode(bool enabled) {
     _pendingPuppetEnabled = enabled;
     _ensurePuppetScript();
+    _ensurePatchScript();
     _pushPendingPuppetToJs();
+    _pushPendingJesterModeCardToJs();
   }
 
   static void resetPuppetPose() {
     _ensurePuppetScript();
-    try {
-      _resetTranscriptionPuppet();
-    } catch (_) {
-      // The module may still be loading. Reset is intentionally best-effort.
-    }
+    try { _resetTranscriptionPuppet(); } catch (_) {}
   }
 
   static void _ensurePuppetScript() {
     if (_puppetScriptRequested) return;
     _puppetScriptRequested = true;
-
     final existing = html.document.querySelector(
       'script[data-transcription-puppet-module="true"]',
     );
@@ -79,12 +78,29 @@ class TranscriptionJesterScene extends StatefulWidget {
       Timer(Duration.zero, _pushPendingPuppetToJs);
       return;
     }
-
     final script = html.ScriptElement()
       ..type = 'module'
-      ..src = 'transcription_puppet.js?v=20260822a'
+      ..src = 'transcription_puppet.js?v=20260822b'
       ..dataset['transcriptionPuppetModule'] = 'true';
     script.onLoad.listen((_) => _pushPendingPuppetToJs());
+    html.document.head?.append(script);
+  }
+
+  static void _ensurePatchScript() {
+    if (_patchScriptRequested) return;
+    _patchScriptRequested = true;
+    final existing = html.document.querySelector(
+      'script[data-transcription-jester-mode-patch="true"]',
+    );
+    if (existing != null) {
+      Timer(Duration.zero, _pushPendingJesterModeCardToJs);
+      return;
+    }
+    final script = html.ScriptElement()
+      ..type = 'module'
+      ..src = 'transcription_jester_mode_patch.js?v=20260822b'
+      ..dataset['transcriptionJesterModePatch'] = 'true';
+    script.onLoad.listen((_) => _pushPendingJesterModeCardToJs());
     html.document.head?.append(script);
   }
 
@@ -92,25 +108,23 @@ class TranscriptionJesterScene extends StatefulWidget {
     final cardId = _pendingCardId;
     final imagePath = _pendingImagePath;
     if (cardId == null || imagePath == null) return;
-    try {
-      _setTranscriptionJesterSelectedCard(cardId, imagePath);
-    } catch (_) {
-      // The JS module may not have finished loading yet. The scene retries
-      // this handoff every time scene creation is attempted/succeeds.
-    }
+    try { _setTranscriptionJesterSelectedCard(cardId, imagePath); } catch (_) {}
+  }
+
+  static void _pushPendingJesterModeCardToJs() {
+    final cardId = _pendingCardId;
+    final imagePath = _pendingImagePath;
+    if (cardId == null || imagePath == null) return;
+    _ensurePatchScript();
+    try { _setJesterModeCard(cardId, imagePath); } catch (_) {}
   }
 
   static void _pushPendingPuppetToJs() {
-    try {
-      _setTranscriptionPuppetEnabled(_pendingPuppetEnabled);
-    } catch (_) {
-      // The optional puppet module may still be loading.
-    }
+    try { _setTranscriptionPuppetEnabled(_pendingPuppetEnabled); } catch (_) {}
   }
 
   @override
-  State<TranscriptionJesterScene> createState() =>
-      _TranscriptionJesterSceneState();
+  State<TranscriptionJesterScene> createState() => _TranscriptionJesterSceneState();
 }
 
 class _TranscriptionJesterSceneState extends State<TranscriptionJesterScene> {
@@ -121,9 +135,7 @@ class _TranscriptionJesterSceneState extends State<TranscriptionJesterScene> {
   @override
   void initState() {
     super.initState();
-    _elementId =
-        'transcription-jester-${DateTime.now().microsecondsSinceEpoch}';
-
+    _elementId = 'transcription-jester-${DateTime.now().microsecondsSinceEpoch}';
     for (final delay in const [
       Duration.zero,
       Duration(milliseconds: 250),
@@ -141,32 +153,21 @@ class _TranscriptionJesterSceneState extends State<TranscriptionJesterScene> {
       _createTranscriptionJester(_elementId);
       TranscriptionJesterScene._pushPendingCardToJs();
       TranscriptionJesterScene._pushPendingPuppetToJs();
+      TranscriptionJesterScene._pushPendingJesterModeCardToJs();
       _mountedScene = true;
-      for (final timer in _retryTimers) {
-        timer.cancel();
-      }
-    } catch (_) {
-      // A later retry will run after transcription_jester.js is available.
-    }
+      for (final timer in _retryTimers) timer.cancel();
+    } catch (_) {}
   }
 
   @override
   void dispose() {
-    for (final timer in _retryTimers) {
-      timer.cancel();
-    }
+    for (final timer in _retryTimers) timer.cancel();
     if (_mountedScene) {
-      try {
-        _destroyTranscriptionJester(_elementId);
-      } catch (_) {
-        // The page may already be tearing down the JS module.
-      }
+      try { _destroyTranscriptionJester(_elementId); } catch (_) {}
     }
     super.dispose();
   }
 
   @override
-  Widget build(BuildContext context) => const IgnorePointer(
-        child: SizedBox.expand(),
-      );
+  Widget build(BuildContext context) => const IgnorePointer(child: SizedBox.expand());
 }
