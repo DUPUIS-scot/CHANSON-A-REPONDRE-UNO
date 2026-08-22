@@ -1,4 +1,3 @@
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -61,41 +60,6 @@ class DeckSelectionScreen extends StatelessWidget {
     await context.read<DeckProvider>().create(name);
   }
 
-  Future<void> _importDeck(BuildContext context) async {
-    final files = await FilePicker.platform.pickFiles(
-      allowMultiple: true,
-      type: FileType.custom,
-      allowedExtensions: const ['png', 'jpg', 'jpeg', 'webp'],
-    );
-    if (files == null || files.files.isEmpty || !context.mounted) return;
-
-    final name = await _askForName(
-      context,
-      title: 'Import a deck',
-      confirmLabel: 'Import',
-    );
-    if (name == null || !context.mounted) return;
-
-    try {
-      await context.read<DeckProvider>().import(name, files.files);
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Imported ${files.files.length} ${files.files.length == 1 ? 'card' : 'cards'} into “$name”.',
-            ),
-          ),
-        );
-      }
-    } on Object catch (error) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Deck import failed: $error')),
-        );
-      }
-    }
-  }
-
   Future<void> _renameDeck(
     BuildContext context,
     String id,
@@ -120,7 +84,7 @@ class DeckSelectionScreen extends StatelessWidget {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Delete deck?'),
-        content: Text('Delete “$name” and its imported cards from this device?'),
+        content: Text('Delete “$name”?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
@@ -170,18 +134,13 @@ class DeckSelectionScreen extends StatelessWidget {
                         icon: const Icon(Icons.add_rounded),
                         label: const Text('New deck'),
                       ),
-                      OutlinedButton.icon(
-                        onPressed: () => _importDeck(context),
-                        icon: const Icon(Icons.upload_file_rounded),
-                        label: const Text('Import cards as deck'),
-                      ),
                     ],
                   ),
                 ),
                 const Padding(
                   padding: EdgeInsets.fromLTRB(24, 14, 24, 0),
                   child: Text(
-                    'Create an empty deck, or import PNG/JPG/WebP card images as a new deck. Built-in decks remain permanent.',
+                    'Create a new deck here. Card artwork is added to the project separately.',
                   ),
                 ),
                 Expanded(
