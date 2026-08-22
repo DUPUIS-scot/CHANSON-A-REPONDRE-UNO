@@ -65,7 +65,6 @@ class DeckProvider extends ChangeNotifier {
       final decoded = jsonDecode(source);
       return decoded is String ? decoded : source;
     } on FormatException {
-      // Compatibility with versions that persisted the raw ID.
       return source;
     }
   }
@@ -152,7 +151,7 @@ class DeckProvider extends ChangeNotifier {
     final deck = Deck(
       id: AppConstants.brioDeckId,
       name: name,
-      coverPath: cards.first.path,
+      coverPath: cardBack,
       cardBack: cardBack,
       cards: cards,
     );
