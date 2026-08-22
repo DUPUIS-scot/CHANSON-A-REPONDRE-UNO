@@ -94,10 +94,11 @@ jobs:
           from PIL import Image, ImageOps
 
           out = Path('build/web/assets/share-previews')
-          src_dir = Path('build/web/assets/assets/decks/chanson_a_repondre_brio/cards')
+
+          brio_dir = Path('build/web/assets/assets/decks/chanson_a_repondre_brio/cards')
           for index in range(1, 17):
               card = f'{index:03d}'
-              source = src_dir / f'{card}.jpeg'
+              source = brio_dir / f'{card}.jpeg'
               target = out / f'BRIO-{card}.jpg'
               if not source.exists():
                   raise SystemExit(f'Missing source {source}')
@@ -113,6 +114,32 @@ jobs:
               if target.stat().st_size > 350000:
                   raise SystemExit(f'Preview too large: {target}')
               print(f'Generated BRIO-{card} preview')
+
+          hp_dir = Path('build/web/assets/assets/hp')
+          hp_sources = [
+              'ChatGPT Image Aug 22, 2026, 10_59_05 AM.png',
+              'ChatGPT Image Aug 22, 2026, 11_00_51 AM.png',
+              'ChatGPT Image Aug 22, 2026, 11_08_07 AM.png',
+              'ChatGPT Image Aug 22, 2026, 11_12_32 AM.png',
+          ]
+          for index, filename in enumerate(hp_sources, start=1):
+              card = f'{index:03d}'
+              source = hp_dir / filename
+              target = out / f'HP-{card}.jpg'
+              if not source.exists():
+                  raise SystemExit(f'Missing source {source}')
+              with Image.open(source) as image:
+                  image = ImageOps.exif_transpose(image).convert('RGB')
+                  fitted = ImageOps.fit(image, (600, 900), method=Image.Resampling.LANCZOS)
+                  fitted.save(target, 'JPEG', quality=60, optimize=True, progressive=True, subsampling=2)
+              if target.stat().st_size > 350000:
+                  with Image.open(source) as image:
+                      image = ImageOps.exif_transpose(image).convert('RGB')
+                      fitted = ImageOps.fit(image, (600, 900), method=Image.Resampling.LANCZOS)
+                      fitted.save(target, 'JPEG', quality=48, optimize=True, progressive=True, subsampling=2)
+              if target.stat().st_size > 350000:
+                  raise SystemExit(f'Preview too large: {target}')
+              print(f'Generated HP-{card} preview')
           PY
           echo "Generating UNO texture previews"
           timeout 420s python3 scripts/generate_uno_texture_previews.py
@@ -182,16 +209,27 @@ jobs:
           grep -q 'challenges.cloudflare.com/turnstile' build/web/index.html
           test "$(find build/web/share -mindepth 1 -maxdepth 1 -type d -name 'UNO-*' | wc -l)" -eq 84
           test "$(find build/web/share -mindepth 1 -maxdepth 1 -type d -name 'BRIO-*' | wc -l)" -eq 16
+          test "$(find build/web/share -mindepth 1 -maxdepth 1 -type d -name 'HP-*' | wc -l)" -eq 4
           test "$(find build/web/share -mindepth 1 -maxdepth 1 -type d -name 'final-84-*' | wc -l)" -eq 84
-          test "$(find build/web/share -type f -name 'index.html' | wc -l)" -eq 184
+          test "$(find build/web/share -type f -name 'index.html' | wc -l)" -eq 188
           test -f build/web/share/BRIO-008/index.html
+          test -f build/web/share/HP-001/index.html
+          test -f build/web/share/HP-004/index.html
           grep -q 'id="card-image"' build/web/share/BRIO-008/index.html
           grep -q 'id="card-transcription"' build/web/share/BRIO-008/index.html
           grep -q '/share/BRIO-008/' build/web/share/BRIO-008/index.html
+          grep -q '/share/HP-001/' build/web/share/HP-001/index.html
           test "$(find build/web/assets/share-previews -type f -name 'BRIO-*.jpg' | wc -l)" -eq 16
           for index in $(seq 1 16); do
             card="$(printf '%03d' "$index")"
             preview="build/web/assets/share-previews/BRIO-${card}.jpg"
+            test -f "$preview"
+            test "$(stat -c%s "$preview")" -le 350000
+          done
+          test "$(find build/web/assets/share-previews -type f -name 'HP-*.jpg' | wc -l)" -eq 4
+          for index in $(seq 1 4); do
+            card="$(printf '%03d' "$index")"
+            preview="build/web/assets/share-previews/HP-${card}.jpg"
             test -f "$preview"
             test "$(stat -c%s "$preview")" -le 350000
           done
@@ -201,6 +239,8 @@ jobs:
           test "$(stat -c%s build/web/assets/share-previews/UNO-001.jpg)" -le 350000
           grep -Fq 'https://www.chanson-a-repondre-uno.scot/assets/share-previews/UNO-049.jpg' build/web/share/UNO-049/index.html
           grep -Fq 'https://www.chanson-a-repondre-uno.scot/assets/share-previews/BRIO-012.jpg' build/web/share/BRIO-012/index.html
+          grep -Fq 'https://www.chanson-a-repondre-uno.scot/assets/share-previews/HP-001.jpg' build/web/share/HP-001/index.html
+          grep -Fq 'https://www.chanson-a-repondre-uno.scot/assets/share-previews/HP-004.jpg' build/web/share/HP-004/index.html
           if grep -Rqi 'http-equiv="refresh"' build/web/share; then
             echo "::error::Generated share pages must not use meta refresh."
             exit 1
