@@ -33,6 +33,12 @@ jobs:
           flutter pub get
           flutter analyze
 
+      - name: Test castle runtime ownership
+        run: |
+          flutter test \
+            test/castle_jester_gatekeeper_integration_test.dart \
+            test/castle_laboratory_video_ownership_test.dart
+
       - name: Validate production configuration
         shell: bash
         env:
