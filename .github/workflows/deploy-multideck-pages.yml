@@ -42,7 +42,7 @@ jobs:
             "ChatGPT Image Aug 22, 2026, 11_12_32 AM.png"
           )
           for index in $(seq 1 4); do
-            card="$(printf '%03d' "$index")"; source="build/web/assets/assets/hp/${hp_sources[$((index-1))]}"; target="build/web/assets/share-previews/HP-${card}.jpg"
+            card="$(printf '%03d' "$index")"; source="assets/hp/${hp_sources[$((index-1))]}"; target="build/web/assets/share-previews/HP-${card}.jpg"
             test -f "$source"
             convert "$source" -auto-orient -resize '600x900^' -gravity center -extent 600x900 -strip -sampling-factor 4:2:0 -interlace Plane -quality 60 "$target"
           done
