@@ -1,10 +1,7 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/app_constants.dart';
-import '../generated/hp_work_in_progress_overlay.dart';
 import '../providers/deck_provider.dart';
 import '../widgets/deck_tile.dart';
 import '../widgets/home_navigation_button.dart';
@@ -78,14 +75,15 @@ class DeckSelectionScreen extends StatelessWidget {
                         tile,
                         IgnorePointer(
                           child: Align(
-                            alignment: const Alignment(0, -0.12),
+                            alignment: const Alignment(0, -0.08),
                             child: FractionallySizedBox(
-                              widthFactor: 0.96,
-                              child: Image.memory(
-                                base64Decode(hpWorkInProgressOverlayBase64),
+                              widthFactor: 0.94,
+                              child: Image.asset(
+                                'assets/hp/work_in_progress_ribbon.webp',
                                 fit: BoxFit.contain,
-                                gaplessPlayback: true,
                                 filterQuality: FilterQuality.high,
+                                errorBuilder: (_, _, _) =>
+                                    const SizedBox.shrink(),
                               ),
                             ),
                           ),
