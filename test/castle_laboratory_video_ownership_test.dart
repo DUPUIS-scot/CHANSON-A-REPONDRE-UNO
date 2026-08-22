@@ -10,11 +10,11 @@ void main() {
     final visual = File('web/card_castle/castle_visual_regression_v55.js').readAsStringSync();
     final overlay = File('web/card_castle/castle_navigation_overlay.js').readAsStringSync();
 
-    expect(bridge, contains("bureauVideoOwner='castle-bureau-video-bridge-v61'"));
-    expect(bridge, contains('window.__castleBureauVideoPrime=primeFromGesture'));
+    expect(bridge, contains("bureauVideoOwner = 'castle-bureau-video-bridge-v61'"));
+    expect(bridge, contains('window.__castleBureauVideoPrime = primeFromGesture'));
     expect(bridge, contains("#bureau-of-ai, #laboratory-medallion-button"));
     expect(bridge, contains('document.body.appendChild(video)'));
-    expect(bridge, contains("bureauVideoPlayback='playing-loop-v61'"));
+    expect(bridge, contains("bureauVideoPlayback = 'playing-loop-v61'"));
     expect(medallion, contains("host.addEventListener('pointerdown',primeVideo"));
     expect(medallion, contains('window.__castleBureauVideoPrime?.()'));
     expect(medallion, contains("bureauVideoGestureSource='laboratory-medallion-v61'"));
