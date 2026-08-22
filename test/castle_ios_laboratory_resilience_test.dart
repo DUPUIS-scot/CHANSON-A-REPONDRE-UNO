@@ -10,12 +10,12 @@ void main() {
     final sharedLoader = File('web/card_castle/castle_shared_transition_loader_v64.js').readAsStringSync();
     final bridge = File('web/card_castle/castle_bureau_video_bridge.js').readAsStringSync();
 
-    expect(bootstrap, contains("const castleRuntimeRevision = '62';"));
+    expect(bootstrap, contains("const castleRuntimeRevision = '68';"));
     expect(bootstrap, contains("url.searchParams.set('v', buildId || castleRuntimeRevision)"));
     expect(bootstrap, contains('card_castle/card_castle_fast.html'));
     expect(bootstrap, contains('optimized = url.href'));
 
-    final sharedImport = overlay.indexOf('castle_shared_transition_loader_v64.js?v=65');
+    final sharedImport = overlay.indexOf('castle_shared_transition_loader_v64.js?v=68');
     final resilienceImport = overlay.indexOf('castle_ios_laboratory_resilience_v62.js?v=65');
     final coreImport = overlay.indexOf('castle_navigation_overlay_core.js?v=62');
     expect(sharedImport, greaterThanOrEqualTo(0));
@@ -37,6 +37,10 @@ void main() {
     expect(sharedLoader, contains("show('INTERIOR LOADING')"));
     expect(sharedLoader, contains('scene-loader-fill'));
     expect(sharedLoader, contains('scene-loader-percent'));
+    expect(sharedLoader, contains("runtime.switchToInterior()"));
+    expect(sharedLoader, contains("interior-ready-direct-v68"));
+    expect(sharedLoader, contains("laboratory-visible-v68"));
+    expect(sharedLoader, contains("35000"));
 
     expect(bridge, contains(r'EXACT_SCREEN_NAME = /^VideoScreen_(Left|Right)$/i'));
     expect(bridge, contains('interior-trusted-gesture-v62'));
