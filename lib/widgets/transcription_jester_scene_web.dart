@@ -28,14 +28,18 @@ class TranscriptionJesterScene extends StatefulWidget {
 
   static String? _pendingCardId;
   static String? _pendingImagePath;
-  static bool _pendingPuppetEnabled = false;
+  static bool _pendingPuppetEnabled = true;
   static bool _puppetScriptRequested = false;
   static bool _patchScriptRequested = false;
 
   static void setSelectedCard({required String cardId, required String imagePath}) {
     _pendingCardId = cardId;
     _pendingImagePath = imagePath;
+    _pendingPuppetEnabled = true;
+    _ensurePuppetScript();
+    _ensurePatchScript();
     _pushPendingCardToJs();
+    _pushPendingPuppetToJs();
     _pushPendingPuppetCardToJs();
     _pushPendingJesterModeCardToJs();
   }
@@ -91,7 +95,7 @@ class TranscriptionJesterScene extends StatefulWidget {
     }
     final script = html.ScriptElement()
       ..type = 'module'
-      ..src = 'transcription_puppet.js?v=20260822d'
+      ..src = 'transcription_puppet.js?v=20260822e'
       ..dataset['transcriptionPuppetModule'] = 'true';
     script.onLoad.listen((_) {
       _pushPendingPuppetToJs();
@@ -112,7 +116,7 @@ class TranscriptionJesterScene extends StatefulWidget {
     }
     final script = html.ScriptElement()
       ..type = 'module'
-      ..src = 'transcription_jester_mode_patch.js?v=20260822c'
+      ..src = 'transcription_jester_mode_patch.js?v=20260822d'
       ..dataset['transcriptionJesterModePatch'] = 'true';
     script.onLoad.listen((_) => _pushPendingJesterModeCardToJs());
     html.document.head?.append(script);
@@ -165,6 +169,8 @@ class _TranscriptionJesterSceneState extends State<TranscriptionJesterScene> {
   void initState() {
     super.initState();
     _elementId = 'transcription-jester-${DateTime.now().microsecondsSinceEpoch}';
+    TranscriptionJesterScene._ensurePuppetScript();
+    TranscriptionJesterScene._ensurePatchScript();
     for (final delay in const [
       Duration.zero,
       Duration(milliseconds: 250),
