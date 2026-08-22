@@ -155,13 +155,17 @@ class _TranscriptionJesterSceneState extends State<TranscriptionJesterScene> {
       TranscriptionJesterScene._pushPendingPuppetToJs();
       TranscriptionJesterScene._pushPendingJesterModeCardToJs();
       _mountedScene = true;
-      for (final timer in _retryTimers) timer.cancel();
+      for (final timer in _retryTimers) {
+        timer.cancel();
+      }
     } catch (_) {}
   }
 
   @override
   void dispose() {
-    for (final timer in _retryTimers) timer.cancel();
+    for (final timer in _retryTimers) {
+      timer.cancel();
+    }
     if (_mountedScene) {
       try { _destroyTranscriptionJester(_elementId); } catch (_) {}
     }
