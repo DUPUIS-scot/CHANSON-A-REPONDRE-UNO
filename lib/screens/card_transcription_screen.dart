@@ -12,9 +12,28 @@ const _ink = Color(0xFF090604);
 const _transcriptionStageBackgroundAsset =
     'assets/images/play_stage_background_user.jpg';
 
-class CardTranscriptionScreen extends StatelessWidget {
+class CardTranscriptionScreen extends StatefulWidget {
   const CardTranscriptionScreen({required this.cardId, super.key});
   final String cardId;
+
+  @override
+  State<CardTranscriptionScreen> createState() => _CardTranscriptionScreenState();
+}
+
+class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) TranscriptionJesterScene.setPuppetMode(true);
+    });
+  }
+
+  @override
+  void dispose() {
+    TranscriptionJesterScene.setPuppetMode(false);
+    super.dispose();
+  }
 
   String _jesterTexturePath(String cardId, String imagePath) {
     final match = RegExp(r'^final-84-(\d{2})$').firstMatch(cardId);
@@ -48,16 +67,17 @@ class CardTranscriptionScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final decks = context.watch<DeckProvider>();
-    final card = decks.cardById(cardId);
-    final deck = decks.deckForCard(cardId);
+    final card = decks.cardById(widget.cardId);
+    final deck = decks.deckForCard(widget.cardId);
     if (card == null) {
       return const Scaffold(body: Center(child: Text('This card no longer exists.')));
     }
 
     final jesterTexturePath = _jesterTexturePath(card.id, card.imagePath);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!context.mounted) return;
+      if (!mounted) return;
       TranscriptionJesterScene.setSelectedCard(cardId: card.id, imagePath: jesterTexturePath);
+      TranscriptionJesterScene.setPuppetMode(true);
     });
 
     final canHandoff = deck != null;
@@ -70,7 +90,7 @@ class CardTranscriptionScreen extends StatelessWidget {
         await service.copyPrompt(prompt);
         await service.openProviderWithoutCopy(provider: ExternalAiProvider.chatgpt);
       } on Object {
-        if (!context.mounted) return;
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Card context copied. Open ChatGPT and paste it into the conversation.')),
         );
@@ -117,12 +137,6 @@ class CardTranscriptionScreen extends StatelessWidget {
               ),
             ),
           ),
-          const SafeArea(
-            child: Align(
-              alignment: Alignment.topLeft,
-              child: Padding(padding: EdgeInsets.fromLTRB(12, 12, 96, 0), child: _JesterModeControl()),
-            ),
-          ),
           SafeArea(
             child: LayoutBuilder(
               builder: (context, box) {
@@ -160,45 +174,6 @@ class CardTranscriptionScreen extends StatelessWidget {
       ),
     );
   }
-}
-
-class _JesterModeControl extends StatefulWidget {
-  const _JesterModeControl();
-  @override
-  State<_JesterModeControl> createState() => _JesterModeControlState();
-}
-
-class _JesterModeControlState extends State<_JesterModeControl> {
-  bool _enabled = false;
-  void _toggle() {
-    final next = !_enabled;
-    setState(() => _enabled = next);
-    TranscriptionJesterScene.setPuppetMode(next);
-  }
-  @override
-  void dispose() {
-    if (_enabled) TranscriptionJesterScene.setPuppetMode(false);
-    super.dispose();
-  }
-  @override
-  Widget build(BuildContext context) => DecoratedBox(
-        decoration: BoxDecoration(color: const Color(0xB30A0806), border: Border.all(color: _gold.withValues(alpha: .72)), borderRadius: BorderRadius.circular(16)),
-        child: Padding(
-          padding: const EdgeInsets.all(8),
-          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(mainAxisSize: MainAxisSize.min, children: [
-              OutlinedButton.icon(
-                onPressed: _toggle,
-                style: OutlinedButton.styleFrom(foregroundColor: _enabled ? _ink : _brightGold, backgroundColor: _enabled ? _brightGold : const Color(0xCC090604), side: const BorderSide(color: _brightGold, width: 1.2), minimumSize: const Size(0, 44), padding: const EdgeInsets.symmetric(horizontal: 14)),
-                icon: Icon(_enabled ? Icons.pan_tool_alt : Icons.accessibility_new_rounded, size: 20),
-                label: Text(_enabled ? 'EXIT JESTER' : 'JESTER MODE', style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: .5)),
-              ),
-              if (_enabled) ...[const SizedBox(width: 8), IconButton.outlined(onPressed: TranscriptionJesterScene.resetPuppetPose, tooltip: 'Reset jester pose', color: _brightGold, icon: const Icon(Icons.restart_alt_rounded))],
-            ]),
-            if (_enabled) ...[const SizedBox(height: 6), const Padding(padding: EdgeInsets.symmetric(horizontal: 4), child: Text('Drag head, arms or torso', style: TextStyle(color: _brightGold, fontSize: 12, fontWeight: FontWeight.w600)))],
-          ]),
-        ),
-      );
 }
 
 class _TranscribeButton extends StatelessWidget {
