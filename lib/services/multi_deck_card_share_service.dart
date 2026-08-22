@@ -82,21 +82,20 @@ abstract final class MultiDeckCardShareService {
       deckId: deck.id,
       applicationUri: applicationUri,
     ).toString();
-    final imageUrl = publicImageUrlFor(
-      card: card,
-      applicationUri: applicationUri,
-    ).toString();
-    final shareText = '$title\n$url\n$imageUrl';
+
+    // Keep the raw card asset available for the native image attachment, but do
+    // not put that asset URL in the message. The canonical share URL is the
+    // single public link and carries the social preview metadata for every deck.
     final result = await nativeShare(
       title: title,
-      text: shareText,
+      text: title,
       url: url,
       imagePath: card.imagePath,
     );
     if (result == NativeShareResult.shared) return CardShareResult.shared;
     if (result == NativeShareResult.cancelled) return CardShareResult.cancelled;
     try {
-      await copyLink(shareText);
+      await copyLink('$title\n$url');
       return CardShareResult.copied;
     } on Object {
       return CardShareResult.failed;
