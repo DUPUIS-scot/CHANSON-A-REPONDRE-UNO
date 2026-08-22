@@ -32,31 +32,40 @@ class DeckSelectionScreen extends StatelessWidget {
           : decks.isEmpty
           ? const Center(child: Text('The built-in decks are unavailable.'))
           : LayoutBuilder(
-              builder: (context, constraints) => GridView.builder(
-                padding: const EdgeInsets.all(24),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: constraints.maxWidth >= 1080
-                      ? 3
-                      : constraints.maxWidth >= 720
-                      ? 2
-                      : 1,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  childAspectRatio: constraints.maxWidth >= 720 ? 0.72 : 1.45,
-                ),
-                itemCount: decks.length,
-                itemBuilder: (_, index) {
-                  final deck = decks[index];
-                  return DeckTile(
-                    deck: deck,
-                    selected: deck.id == provider.activeDeckId,
-                    editable: false,
-                    onSelect: () => provider.select(deck.id),
-                    onRename: () {},
-                    onDelete: () {},
-                  );
-                },
-              ),
+              builder: (context, constraints) {
+                final width = constraints.maxWidth;
+                final columns = width >= 1080
+                    ? 3
+                    : width >= 720
+                    ? 2
+                    : width >= 340
+                    ? 2
+                    : 1;
+                return GridView.builder(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: width < 720 ? 14 : 24,
+                    vertical: 18,
+                  ),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: columns,
+                    crossAxisSpacing: width < 720 ? 12 : 16,
+                    mainAxisSpacing: width < 720 ? 12 : 16,
+                    childAspectRatio: width < 720 ? 0.64 : 0.72,
+                  ),
+                  itemCount: decks.length,
+                  itemBuilder: (_, index) {
+                    final deck = decks[index];
+                    return DeckTile(
+                      deck: deck,
+                      selected: deck.id == provider.activeDeckId,
+                      editable: false,
+                      onSelect: () => provider.select(deck.id),
+                      onRename: () {},
+                      onDelete: () {},
+                    );
+                  },
+                );
+              },
             ),
     );
   }
