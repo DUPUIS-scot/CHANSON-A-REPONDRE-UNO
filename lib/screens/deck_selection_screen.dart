@@ -1,7 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/app_constants.dart';
+import '../generated/hp_work_in_progress_overlay.dart';
 import '../providers/deck_provider.dart';
 import '../widgets/deck_tile.dart';
 import '../widgets/home_navigation_button.dart';
@@ -70,58 +73,20 @@ class DeckSelectionScreen extends StatelessWidget {
 
                     return Stack(
                       fit: StackFit.expand,
+                      clipBehavior: Clip.none,
                       children: [
                         tile,
                         IgnorePointer(
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(8, 18, 8, 58),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Expanded(
-                                  child: Image.asset(
-                                    'assets/images/castle_jester_loading_bar.png',
-                                    fit: BoxFit.contain,
-                                    errorBuilder: (_, _, _) =>
-                                        const SizedBox.shrink(),
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                DecoratedBox(
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xE61A120C),
-                                    borderRadius: BorderRadius.circular(18),
-                                    border: Border.all(
-                                      color: const Color(0xFFFFC64A),
-                                      width: 2,
-                                    ),
-                                    boxShadow: const [
-                                      BoxShadow(
-                                        blurRadius: 10,
-                                        color: Color(0x99000000),
-                                      ),
-                                    ],
-                                  ),
-                                  child: const Padding(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                      vertical: 8,
-                                    ),
-                                    child: Text(
-                                      'WORK IN PROGRESS',
-                                      textAlign: TextAlign.center,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        color: Color(0xFFFFC64A),
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w900,
-                                        letterSpacing: 0.8,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
+                          child: Align(
+                            alignment: const Alignment(0, -0.12),
+                            child: FractionallySizedBox(
+                              widthFactor: 0.96,
+                              child: Image.memory(
+                                base64Decode(hpWorkInProgressOverlayBase64),
+                                fit: BoxFit.contain,
+                                gaplessPlayback: true,
+                                filterQuality: FilterQuality.high,
+                              ),
                             ),
                           ),
                         ),
