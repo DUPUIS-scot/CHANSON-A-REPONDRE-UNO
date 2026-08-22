@@ -28,14 +28,15 @@ void main() {
     expect(visual, contains('window.__castleBureauVideoPlay?.()'));
     expect(visual, isNot(contains("document.querySelectorAll('video')")));
 
-    expect(overlay, contains("castle_shared_transition_loader_v64.js?v=64"));
-    expect(overlay, contains("castle_ios_laboratory_resilience_v62.js?v=64"));
+    expect(overlay, contains("castle_shared_transition_loader_v64.js?v=65"));
+    expect(overlay, contains("castle_ios_laboratory_resilience_v62.js?v=65"));
     expect(overlay, contains("castle_navigation_overlay_core.js?v=62"));
     expect(overlay, contains("castle_laboratory_medallion_button.js?v=62"));
     expect(overlay, contains("castle_bureau_video_bridge.js?v=62"));
     expect(overlay, contains("castle_platform_stability_v54.js?v=62"));
     expect(sharedLoader, contains('castle_jester_loading_bar.png'));
     expect(sharedLoader, contains('INTERIOR LOADING'));
-    expect(sharedLoader, contains('LABORATORY LOADING'));
+    expect(sharedLoader, contains('scene-loader-fill'));
+    expect(sharedLoader, contains('scene-loader-percent'));
   });
 }
