@@ -42,7 +42,14 @@ class TranscriptionJesterScene extends StatefulWidget {
     for (final element in html.document.querySelectorAll(
       '[data-transcription-jester-canvas="true"]',
     )) {
-      element.style.visibility = visible ? 'visible' : 'hidden';
+      if (!visible) {
+        element.style.visibility = 'hidden';
+        continue;
+      }
+      final isPuppet = element.dataset['transcriptionPuppet'] == 'true';
+      element.style.visibility = _pendingPuppetEnabled
+          ? (isPuppet ? 'visible' : 'hidden')
+          : (isPuppet ? 'hidden' : 'visible');
     }
   }
 
