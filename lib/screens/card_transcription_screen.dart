@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../providers/deck_provider.dart';
 import '../services/external_ai_handoff_service.dart';
 import '../widgets/home_navigation_button.dart';
-import '../widgets/transcription_ai_provider_sheet.dart';
 import '../widgets/transcription_jester_scene.dart';
 
 const _gold = Color(0xFFE7A62C);
