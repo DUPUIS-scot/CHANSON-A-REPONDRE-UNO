@@ -24,14 +24,14 @@ void main() {
     expect(controller, contains("dataset.castleJesterState='looping'"));
     expect(controller, contains('onEnterRequested?.()'));
 
-    // Exterior idle Y rotation has exactly one runtime owner. The controller
-    // may rotate only during the intentional click/step-aside transition.
     expect(
       overlay,
-      contains("castleJesterRotationOwner='castle-jester-overlay-v60'"),
+      contains("castleJesterRotationOwner='castle-jester-overlay-v70'"),
     );
     expect(overlay, contains("castle_jester_gatekeeper.js?v=60"));
-    expect(overlay, contains('gatekeeper.root.rotation.y='));
+    expect(overlay, contains("castleJesterFacing='camera-front-v70'"));
+    expect(overlay, contains('Math.atan2(c.x-p.x,c.z-p.z)'));
+    expect(overlay, isNot(contains('Math.atan2(c.x-p.x,c.z-p.z)+Math.PI')));
     expect(
       controller,
       isNot(contains('this.root.rotation.y=BASE_ROTATION+.42*present')),
