@@ -1,22 +1,24 @@
 let selectedCard = null;
 let preview = null;
-let activeTouch = null;
+const activeTouches = new Map();
 
 function assetUrl(path) {
   if (!path) return null;
   const raw = String(path).trim();
+  if (/^data:/i.test(raw)) return raw;
   try {
     const parsed = new URL(raw, document.baseURI);
-    if (/^https?:/i.test(raw) || /^data:/i.test(raw)) return parsed.href;
+    if (/^https?:/i.test(raw)) return parsed.href;
   } catch (_) {}
   const normalized = raw.replace(/^\/+/, '');
-  if (normalized.startsWith('assets/assets/') || normalized.startsWith('share-previews/')) {
-    return new URL(normalized, document.baseURI).href;
-  }
-  if (normalized.startsWith('assets/')) {
-    return new URL(`assets/${normalized}`, document.baseURI).href;
-  }
+  if (normalized.startsWith('assets/assets/')) return new URL(normalized, document.baseURI).href;
+  if (normalized.startsWith('share-previews/')) return new URL(`assets/${normalized}`, document.baseURI).href;
+  if (normalized.startsWith('assets/')) return new URL(`assets/${normalized}`, document.baseURI).href;
   return new URL(`assets/${normalized}`, document.baseURI).href;
+}
+
+function isHpCard(cardId) {
+  return /^hp-\d+$/i.test(String(cardId || '').trim());
 }
 
 function puppetCanvas() {
@@ -29,6 +31,7 @@ function ensurePreview() {
   img.id = 'transcription-jester-mode-card-preview';
   img.dataset.transcriptionJesterCanvas = 'true';
   img.dataset.transcriptionPuppet = 'true';
+  img.dataset.cardPreview = 'jester-mode';
   img.setAttribute('aria-hidden', 'true');
   Object.assign(img.style, {
     position: 'fixed',
@@ -49,8 +52,9 @@ function ensurePreview() {
 function layoutPreview() {
   const canvas = puppetCanvas();
   const img = ensurePreview();
-  if (!canvas || canvas.style.visibility === 'hidden' || !selectedCard) {
+  if (!canvas || canvas.style.visibility === 'hidden' || !selectedCard || isHpCard(selectedCard.cardId)) {
     img.style.display = 'none';
+    img.dataset.previewSuppressed = selectedCard && isHpCard(selectedCard.cardId) ? 'hp' : '';
     return;
   }
   const rect = canvas.getBoundingClientRect();
@@ -61,16 +65,29 @@ function layoutPreview() {
     display: 'block',
     width: `${width}px`,
     height: `${height}px`,
-    left: `${rect.left + rect.width * (mobile ? 0.62 : 0.64) - width / 2}px`,
-    top: `${rect.top + rect.height * (mobile ? 0.38 : 0.40) - height / 2}px`,
+    left: `${rect.left + rect.width * (mobile ? 0.72 : 0.70) - width / 2}px`,
+    top: `${rect.top + rect.height * (mobile ? 0.42 : 0.42) - height / 2}px`,
   });
+  img.dataset.previewSuppressed = '';
 }
 
 function setCard(cardId, imagePath) {
-  selectedCard = { cardId, imagePath };
+  selectedCard = { cardId: String(cardId || ''), imagePath: String(imagePath || '') };
+  try {
+    window.transcriptionPuppetSetCard?.(selectedCard.cardId, selectedCard.imagePath);
+  } catch (_) {}
+
   const img = ensurePreview();
-  img.dataset.selectedCardId = cardId || '';
-  img.src = assetUrl(imagePath) || '';
+  img.dataset.selectedCardId = selectedCard.cardId;
+  if (isHpCard(selectedCard.cardId)) {
+    img.removeAttribute('src');
+    img.dataset.cardTexture = 'suppressed-hp';
+    img.style.display = 'none';
+    layoutPreview();
+    return;
+  }
+
+  img.src = assetUrl(selectedCard.imagePath) || '';
   img.onload = () => {
     img.dataset.cardTexture = 'ready';
     layoutPreview();
@@ -82,14 +99,12 @@ function setCard(cardId, imagePath) {
   layoutPreview();
 }
 
-// iOS Safari/Flutter can retain the gesture on the Flutter glass pane. Bridge
-// single-finger touch gestures into the PointerEvent path used by Jester Mode.
 function dispatchPointer(type, touch, pointerId) {
   if (!touch || typeof PointerEvent === 'undefined') return;
   window.dispatchEvent(new PointerEvent(type, {
     pointerId,
     pointerType: 'touch',
-    isPrimary: true,
+    isPrimary: activeTouches.size <= 1,
     clientX: touch.clientX,
     clientY: touch.clientY,
     button: 0,
@@ -102,39 +117,51 @@ function dispatchPointer(type, touch, pointerId) {
 function inJesterStage(touch) {
   const canvas = puppetCanvas();
   if (!canvas || canvas.style.visibility === 'hidden') return false;
-  const r = canvas.getBoundingClientRect();
-  return touch.clientX >= r.left && touch.clientX <= r.right &&
-    touch.clientY >= Math.max(r.top, 108) && touch.clientY <= r.bottom;
+  const rect = canvas.getBoundingClientRect();
+  return touch.clientX >= rect.left && touch.clientX <= rect.right &&
+    touch.clientY >= Math.max(rect.top, 108) && touch.clientY <= rect.bottom;
+}
+
+function pointerIdFor(touch) {
+  const value = Number(touch.identifier);
+  return 2000 + (Number.isFinite(value) ? Math.abs(value % 100000) : activeTouches.size + 1);
 }
 
 document.addEventListener('touchstart', (event) => {
-  if (event.touches.length !== 1) return;
-  const touch = event.touches[0];
-  if (!inJesterStage(touch)) return;
-  activeTouch = { identifier: touch.identifier, pointerId: 1001 };
-  dispatchPointer('pointerdown', touch, activeTouch.pointerId);
+  for (const touch of event.changedTouches) {
+    if (activeTouches.size >= 2 || !inJesterStage(touch)) continue;
+    const pointerId = pointerIdFor(touch);
+    activeTouches.set(touch.identifier, pointerId);
+    dispatchPointer('pointerdown', touch, pointerId);
+  }
 }, { capture: true, passive: true });
 
 document.addEventListener('touchmove', (event) => {
-  if (!activeTouch) return;
-  const touch = [...event.touches].find((item) => item.identifier === activeTouch.identifier);
-  if (!touch) return;
-  if (event.cancelable) event.preventDefault();
-  dispatchPointer('pointermove', touch, activeTouch.pointerId);
+  let handled = false;
+  for (const touch of event.touches) {
+    const pointerId = activeTouches.get(touch.identifier);
+    if (pointerId == null) continue;
+    handled = true;
+    dispatchPointer('pointermove', touch, pointerId);
+  }
+  if (handled && event.cancelable) event.preventDefault();
 }, { capture: true, passive: false });
 
+function finishTouches(event, type) {
+  for (const touch of event.changedTouches) {
+    const pointerId = activeTouches.get(touch.identifier);
+    if (pointerId == null) continue;
+    dispatchPointer(type, touch, pointerId);
+    activeTouches.delete(touch.identifier);
+  }
+}
+
 document.addEventListener('touchend', (event) => {
-  if (!activeTouch) return;
-  const touch = [...event.changedTouches].find((item) => item.identifier === activeTouch.identifier);
-  dispatchPointer('pointerup', touch, activeTouch.pointerId);
-  activeTouch = null;
+  finishTouches(event, 'pointerup');
 }, { capture: true, passive: true });
 
 document.addEventListener('touchcancel', (event) => {
-  if (!activeTouch) return;
-  const touch = [...event.changedTouches].find((item) => item.identifier === activeTouch.identifier);
-  dispatchPointer('pointercancel', touch, activeTouch.pointerId);
-  activeTouch = null;
+  finishTouches(event, 'pointercancel');
 }, { capture: true, passive: true });
 
 window.addEventListener('resize', layoutPreview);
