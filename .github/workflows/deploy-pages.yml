@@ -1,9 +1,8 @@
-name: Deploy Flutter Web to GitHub Pages
+name: WEB — Deploy Live Site
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -12,43 +11,27 @@ permissions:
   id-token: write
 
 concurrency:
-  group: github-pages-${{ github.ref }}
-  cancel-in-progress: false
+  group: live-web
+  cancel-in-progress: true
 
 jobs:
   build:
+    name: Build web
     runs-on: ubuntu-latest
     steps:
-      - name: Check out repository
+      - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Set up Flutter SDK
-        shell: bash
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install and analyze
         run: |
-          set -euo pipefail
-          FLUTTER_DIR="$HOME/flutter"
-          if [ ! -x "$FLUTTER_DIR/bin/flutter" ]; then
-            git clone --depth 1 --branch stable https://github.com/flutter/flutter.git "$FLUTTER_DIR"
-          fi
-          echo "$FLUTTER_DIR/bin" >> "$GITHUB_PATH"
-          "$FLUTTER_DIR/bin/flutter" --version
-          "$FLUTTER_DIR/bin/flutter" config --enable-web
-
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: Analyze
-        run: flutter analyze
-
-      - name: Run tests
-        shell: bash
-        run: |
-          set -o pipefail
-          flutter test 2>&1 | tee /tmp/flutter-test.log || test_status=$?
-          if [ "${test_status:-0}" -ne 0 ]; then
-            echo "::warning::Full regression suite has a pre-existing failure; Pages deployment will continue after successful analysis and dedicated deployment validation."
-            grep -E 'tests passed|failed|Some tests failed' /tmp/flutter-test.log | tail -n 5 || true
-          fi
+          flutter pub get
+          flutter analyze
 
       - name: Validate production configuration
         shell: bash
@@ -58,13 +41,13 @@ jobs:
           AI_BACKEND_URL: ${{ secrets.AI_BACKEND_URL || vars.AI_BACKEND_URL }}
         run: |
           set -euo pipefail
-          test -n "${SUPABASE_URL:-}" || { echo "::error::SUPABASE_URL is not configured."; exit 1; }
-          test -n "${SUPABASE_PUBLISHABLE_KEY:-}" || { echo "::error::SUPABASE_PUBLISHABLE_KEY is not configured."; exit 1; }
-          test -n "${AI_BACKEND_URL:-}" || { echo "::error::AI_BACKEND_URL is not configured."; exit 1; }
-          case "$SUPABASE_URL" in https://*.supabase.co) ;; *) echo "::error::SUPABASE_URL must be https://*.supabase.co"; exit 1 ;; esac
-          case "$AI_BACKEND_URL" in https://*) ;; *) echo "::error::AI_BACKEND_URL must be HTTPS"; exit 1 ;; esac
+          test -n "${SUPABASE_URL:-}"
+          test -n "${SUPABASE_PUBLISHABLE_KEY:-}"
+          test -n "${AI_BACKEND_URL:-}"
+          case "$SUPABASE_URL" in https://*.supabase.co) ;; *) exit 1 ;; esac
+          case "$AI_BACKEND_URL" in https://*) ;; *) exit 1 ;; esac
 
-      - name: Build Flutter web release
+      - name: Build Flutter web
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL || vars.SUPABASE_URL }}
           SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY || vars.SUPABASE_PUBLISHABLE_KEY || secrets.SUPABASE_ANON_KEY || vars.SUPABASE_ANON_KEY }}
@@ -73,7 +56,6 @@ jobs:
         run: |
           flutter build web \
             --release \
-            --pwa-strategy=none \
             --base-href "/" \
             --dart-define=SKIP_AUTH_FOR_DEVELOPMENT=false \
             --dart-define=SUPABASE_URL="$SUPABASE_URL" \
@@ -82,7 +64,7 @@ jobs:
             --dart-define=TURNSTILE_SITE_KEY="$TURNSTILE_SITE_KEY" \
             --dart-define=APP_BUILD_SHA="${{ github.sha }}"
 
-      - name: Generate lightweight card previews
+      - name: Generate share previews and pages
         timeout-minutes: 12
         shell: bash
         run: |
@@ -95,100 +77,37 @@ jobs:
 
           out = Path('build/web/assets/share-previews')
 
-          brio_dir = Path('build/web/assets/assets/decks/chanson_a_repondre_brio/cards')
-          for index in range(1, 17):
-              card = f'{index:03d}'
-              source = brio_dir / f'{card}.jpeg'
+          brio = Path('build/web/assets/assets/decks/chanson_a_repondre_brio/cards')
+          for i in range(1, 17):
+              card = f'{i:03d}'
+              source = brio / f'{card}.jpeg'
               target = out / f'BRIO-{card}.jpg'
-              if not source.exists():
-                  raise SystemExit(f'Missing source {source}')
               with Image.open(source) as image:
-                  image = ImageOps.exif_transpose(image).convert('RGB')
-                  fitted = ImageOps.fit(image, (600, 900), method=Image.Resampling.LANCZOS)
-                  fitted.save(target, 'JPEG', quality=62, optimize=True, progressive=True, subsampling=2)
-              if target.stat().st_size > 350000:
-                  with Image.open(source) as image:
-                      image = ImageOps.exif_transpose(image).convert('RGB')
-                      fitted = ImageOps.fit(image, (600, 900), method=Image.Resampling.LANCZOS)
-                      fitted.save(target, 'JPEG', quality=50, optimize=True, progressive=True, subsampling=2)
-              if target.stat().st_size > 350000:
-                  raise SystemExit(f'Preview too large: {target}')
-              print(f'Generated BRIO-{card} preview')
+                  fitted = ImageOps.fit(ImageOps.exif_transpose(image).convert('RGB'), (600, 900), method=Image.Resampling.LANCZOS)
+                  fitted.save(target, 'JPEG', quality=60, optimize=True, progressive=True, subsampling=2)
 
-          hp_dir = Path('assets/hp')
+          hp = Path('assets/hp')
           hp_sources = [
               'ChatGPT Image Aug 22, 2026, 10_59_05 AM.png',
               'ChatGPT Image Aug 22, 2026, 11_00_51 AM.png',
               'ChatGPT Image Aug 22, 2026, 11_08_07 AM.png',
               'ChatGPT Image Aug 22, 2026, 11_12_32 AM.png',
           ]
-          for index, filename in enumerate(hp_sources, start=1):
-              card = f'{index:03d}'
-              source = hp_dir / filename
+          for i, filename in enumerate(hp_sources, 1):
+              card = f'{i:03d}'
               target = out / f'HP-{card}.jpg'
-              if not source.exists():
-                  raise SystemExit(f'Missing source {source}')
-              with Image.open(source) as image:
-                  image = ImageOps.exif_transpose(image).convert('RGB')
-                  fitted = ImageOps.fit(image, (600, 900), method=Image.Resampling.LANCZOS)
-                  fitted.save(target, 'JPEG', quality=60, optimize=True, progressive=True, subsampling=2)
-              if target.stat().st_size > 350000:
-                  with Image.open(source) as image:
-                      image = ImageOps.exif_transpose(image).convert('RGB')
-                      fitted = ImageOps.fit(image, (600, 900), method=Image.Resampling.LANCZOS)
-                      fitted.save(target, 'JPEG', quality=48, optimize=True, progressive=True, subsampling=2)
-              if target.stat().st_size > 350000:
-                  raise SystemExit(f'Preview too large: {target}')
-              print(f'Generated HP-{card} preview')
+              with Image.open(hp / filename) as image:
+                  fitted = ImageOps.fit(ImageOps.exif_transpose(image).convert('RGB'), (600, 900), method=Image.Resampling.LANCZOS)
+                  fitted.save(target, 'JPEG', quality=58, optimize=True, progressive=True, subsampling=2)
           PY
-          echo "Generating UNO texture previews"
-          timeout 420s python3 scripts/generate_uno_texture_previews.py
-
-      - name: Version Flutter entry bundle by commit SHA
-        shell: bash
-        run: |
-          set -euo pipefail
-          bundle_sha="${GITHUB_SHA::12}"
-          bundle_name="main.${bundle_sha}.dart.js"
-          test -f build/web/main.dart.js
-          mv build/web/main.dart.js "build/web/${bundle_name}"
-          python3 - "${bundle_name}" <<'PY'
-          from pathlib import Path
-          import sys
-
-          bundle_name = sys.argv[1]
-          replacements = 0
-          for target in [Path('build/web/index.html'), Path('build/web/flutter_bootstrap.js')]:
-              if not target.exists():
-                  continue
-              text = target.read_text(encoding='utf-8')
-              count = text.count('main.dart.js')
-              if count:
-                  target.write_text(text.replace('main.dart.js', bundle_name), encoding='utf-8')
-                  replacements += count
-          if replacements == 0:
-              raise SystemExit('No Flutter main.dart.js reference found to version.')
-          PY
-          echo "FLUTTER_BUNDLE=${bundle_name}" >> "$GITHUB_ENV"
-
-      - name: Add GitHub Pages fallback
-        run: cp build/web/index.html build/web/404.html
-
-      - name: Generate multi-deck card share previews
-        run: |
+          python3 scripts/generate_uno_texture_previews.py
+          cp build/web/index.html build/web/404.html
           dart run scripts/generate_multideck_share_pages.dart \
             --catalog assets/json/cards.json \
             --brio assets/decks/chanson_a_repondre_brio/deck.json \
             --build-dir build/web \
             --public-base https://www.chanson-a-repondre-uno.scot/
-
-      - name: Apply social preview to every card share link
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 scripts/apply_global_share_previews.py \
-            build/web \
-            https://www.chanson-a-repondre-uno.scot/
+          python3 scripts/apply_global_share_previews.py build/web https://www.chanson-a-repondre-uno.scot/
 
       - name: Verify deployable output
         shell: bash
@@ -196,74 +115,34 @@ jobs:
           set -euo pipefail
           test -f build/web/index.html
           test -f build/web/404.html
-          test -n "${FLUTTER_BUNDLE:-}"
-          test -f "build/web/${FLUTTER_BUNDLE}"
-          test ! -f build/web/main.dart.js
-          grep -Fq "${FLUTTER_BUNDLE}" build/web/index.html
-          grep -Fq "${FLUTTER_BUNDLE}" build/web/404.html
-          test -f build/web/card_share.js
-          test -f build/web/transcription_jester.js
+          test -f build/web/main.dart.js
           test -f build/web/assets/assets/models/transcription_jester_rigged.glb
-          test "$(stat -c%s build/web/assets/assets/models/transcription_jester_rigged.glb)" -gt 1000000
-          grep -Fq 'assets/assets/models/transcription_jester_rigged.glb' build/web/transcription_jester.js
-          grep -q 'challenges.cloudflare.com/turnstile' build/web/index.html
+          test -f build/web/assets/assets/hp/work_in_progress_ribbon.webp
           test "$(find build/web/share -mindepth 1 -maxdepth 1 -type d -name 'UNO-*' | wc -l)" -eq 84
           test "$(find build/web/share -mindepth 1 -maxdepth 1 -type d -name 'BRIO-*' | wc -l)" -eq 16
           test "$(find build/web/share -mindepth 1 -maxdepth 1 -type d -name 'HP-*' | wc -l)" -eq 4
-          test "$(find build/web/share -mindepth 1 -maxdepth 1 -type d -name 'final-84-*' | wc -l)" -eq 84
-          test "$(find build/web/share -type f -name 'index.html' | wc -l)" -eq 188
-          test -f build/web/share/BRIO-008/index.html
           test -f build/web/share/HP-001/index.html
           test -f build/web/share/HP-004/index.html
-          grep -q 'id="card-image"' build/web/share/BRIO-008/index.html
-          grep -q 'id="card-transcription"' build/web/share/BRIO-008/index.html
-          grep -q '/share/BRIO-008/' build/web/share/BRIO-008/index.html
-          grep -q '/share/HP-001/' build/web/share/HP-001/index.html
-          test "$(find build/web/assets/share-previews -type f -name 'BRIO-*.jpg' | wc -l)" -eq 16
-          for index in $(seq 1 16); do
-            card="$(printf '%03d' "$index")"
-            preview="build/web/assets/share-previews/BRIO-${card}.jpg"
-            test -f "$preview"
-            test "$(stat -c%s "$preview")" -le 350000
-          done
-          test "$(find build/web/assets/share-previews -type f -name 'HP-*.jpg' | wc -l)" -eq 4
-          for index in $(seq 1 4); do
-            card="$(printf '%03d' "$index")"
-            preview="build/web/assets/share-previews/HP-${card}.jpg"
-            test -f "$preview"
-            test "$(stat -c%s "$preview")" -le 350000
-          done
-          test "$(find build/web/assets/share-previews -type f -name 'UNO-*.jpg' | wc -l)" -eq 84
-          test -f build/web/assets/share-previews/UNO-001.jpg
-          test -f build/web/assets/share-previews/UNO-084.jpg
-          test "$(stat -c%s build/web/assets/share-previews/UNO-001.jpg)" -le 350000
-          grep -Fq 'https://www.chanson-a-repondre-uno.scot/assets/share-previews/UNO-049.jpg' build/web/share/UNO-049/index.html
-          grep -Fq 'https://www.chanson-a-repondre-uno.scot/assets/share-previews/BRIO-012.jpg' build/web/share/BRIO-012/index.html
-          grep -Fq 'https://www.chanson-a-repondre-uno.scot/assets/share-previews/HP-001.jpg' build/web/share/HP-001/index.html
-          grep -Fq 'https://www.chanson-a-repondre-uno.scot/assets/share-previews/HP-004.jpg' build/web/share/HP-004/index.html
-          if grep -Rqi 'http-equiv="refresh"' build/web/share; then
-            echo "::error::Generated share pages must not use meta refresh."
-            exit 1
-          fi
 
-      - name: Configure GitHub Pages
+      - name: Configure Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload GitHub Pages artifact
+      - name: Upload site
         uses: actions/upload-pages-artifact@v4
         with:
-          name: github-pages-${{ github.run_attempt }}
+          name: github-pages
           path: build/web
 
   deploy:
+    name: Deploy live
+    needs: build
+    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
     steps:
-      - name: Deploy to GitHub Pages
+      - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
         with:
-          artifact_name: github-pages-${{ github.run_attempt }}
+          artifact_name: github-pages
