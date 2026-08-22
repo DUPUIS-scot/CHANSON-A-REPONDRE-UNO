@@ -67,7 +67,10 @@ if (!window.__castleLaboratoryMedallionButtonInstalled) {
   render();
 
   function sync(){const interior=document.body.dataset.sceneMode==='interior';host.disabled=!interior||document.body.dataset.laboratoryReady==='loading';host.setAttribute('aria-busy',document.body.dataset.laboratoryReady==='loading'?'true':'false')}
-  host.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();if(document.body.dataset.sceneMode!=='interior')return;const bureauButton=document.getElementById('bureau-of-ai');if(bureauButton&&!bureauButton.disabled){bureauButton.click();return}window.dispatchEvent(new CustomEvent('castle-open-laboratory'))});
+  function primeVideo(){if(document.body.dataset.sceneMode!=='interior')return;document.body.dataset.bureauVideoGestureSource='laboratory-medallion-v61';window.__castleBureauVideoPrime?.()}
+  host.addEventListener('pointerdown',primeVideo,{passive:true});
+  host.addEventListener('touchstart',primeVideo,{passive:true});
+  host.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();if(document.body.dataset.sceneMode!=='interior')return;primeVideo();const bureauButton=document.getElementById('bureau-of-ai');if(bureauButton&&!bureauButton.disabled){bureauButton.click();return}window.dispatchEvent(new CustomEvent('castle-open-laboratory'))});
   const observer=new MutationObserver(sync); observer.observe(document.body,{attributes:true,attributeFilter:['data-scene-mode','data-laboratory-ready']}); sync();
   window.addEventListener('pagehide',()=>{if(frame)cancelAnimationFrame(frame);renderer?.dispose?.();observer.disconnect()},{once:true});
 }

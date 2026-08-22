@@ -19,8 +19,8 @@ if (!window.__castleBureauVideoBridgeInstalled) {
   let entryPrimed = false;
   let entryPrimedAt = 0;
 
-  document.body.dataset.bureauVideoOwner = 'castle-bureau-video-bridge-v60';
-  document.body.dataset.bureauVideoLegacyOwner = 'disabled-v60';
+  document.body.dataset.bureauVideoOwner = 'castle-bureau-video-bridge-v61';
+  document.body.dataset.bureauVideoLegacyOwner = 'disabled-v61';
 
   const mode = () => document.body.dataset.sceneMode || 'exterior';
   const isLaboratoryActive = () => mode() === 'laboratory' || mode() === 'bureau';
@@ -128,7 +128,7 @@ if (!window.__castleBureauVideoBridgeInstalled) {
     texture.flipY = false;
 
     material = new THREE.MeshBasicMaterial({
-      name: 'bureau-live-video-material-v60',
+      name: 'bureau-live-video-material-v61',
       map: texture,
       color: 0xffffff,
       side: THREE.DoubleSide,
@@ -161,11 +161,11 @@ if (!window.__castleBureauVideoBridgeInstalled) {
     document.body.dataset.bureauVideoAsset = VIDEO_URL;
     document.body.dataset.bureauVideoScreenCount = String(targets.length);
     document.body.dataset.bureauVideoState = targets.length > 0
-      ? 'single-owner-ready-v60'
-      : 'screen-mismatch-v60';
+      ? 'single-owner-ready-v61'
+      : 'screen-mismatch-v61';
     document.body.dataset.bureauVideoDiscovery = targets.length >= 3
-      ? 'named-plus-fallback-v60'
-      : 'named-or-geometric-v60';
+      ? 'named-plus-fallback-v61'
+      : 'named-or-geometric-v61';
     return targets.length > 0;
   }
 
@@ -182,13 +182,18 @@ if (!window.__castleBureauVideoBridgeInstalled) {
   function attemptPlay(reason) {
     ensureVideoTexture();
     configurePlayback();
-    document.body.dataset.bureauVideoPlayback = `${reason}-attempt-v60`;
+    if (!video.paused && !video.ended) {
+      document.body.dataset.bureauVideoPlayback = 'playing-loop-v61';
+      delete document.body.dataset.bureauVideoError;
+      return Promise.resolve(true);
+    }
+    document.body.dataset.bureauVideoPlayback = `${reason}-attempt-v61`;
     return video.play().then(() => {
-      document.body.dataset.bureauVideoPlayback = 'playing-loop-v60';
+      document.body.dataset.bureauVideoPlayback = 'playing-loop-v61';
       delete document.body.dataset.bureauVideoError;
       return true;
     }).catch(error => {
-      document.body.dataset.bureauVideoPlayback = 'waiting-user-gesture-v60';
+      document.body.dataset.bureauVideoPlayback = 'waiting-user-gesture-v61';
       document.body.dataset.bureauVideoError = String(error?.message || error);
       return false;
     });
@@ -201,7 +206,7 @@ if (!window.__castleBureauVideoBridgeInstalled) {
     if (video.ended) {
       try { video.currentTime = 0; } catch (_) {}
     }
-    document.body.dataset.bureauVideoGesturePrime = 'armed-v60';
+    document.body.dataset.bureauVideoGesturePrime = 'armed-v61';
     return attemptPlay('gesture-prime');
   }
 
@@ -217,20 +222,20 @@ if (!window.__castleBureauVideoBridgeInstalled) {
       if (root) bindScreens(root);
       if (!video) ensureVideoTexture();
       if (video.paused) attemptPlay('laboratory-entry');
-      else document.body.dataset.bureauVideoPlayback = 'playing-loop-v60';
+      else document.body.dataset.bureauVideoPlayback = 'playing-loop-v61';
       return;
     }
 
     if (keepPrimedDuringEntry()) {
       document.body.dataset.bureauVideoPlayback = video?.paused
-        ? 'gesture-primed-pending-v60'
-        : 'gesture-primed-playing-v60';
+        ? 'gesture-primed-pending-v61'
+        : 'gesture-primed-playing-v61';
       return;
     }
 
     entryPrimed = false;
     if (video && !video.paused) video.pause();
-    document.body.dataset.bureauVideoPlayback = 'paused-v60';
+    document.body.dataset.bureauVideoPlayback = 'paused-v61';
   }
 
   function hydrate() {
@@ -242,11 +247,14 @@ if (!window.__castleBureauVideoBridgeInstalled) {
   function isBureauEntryTarget(event) {
     if (mode() !== 'interior') return false;
     const target = event?.target;
-    return Boolean(target?.closest?.('#bureau-of-ai'));
+    return Boolean(target?.closest?.('#bureau-of-ai, #laboratory-medallion-button'));
   }
 
   function gestureResume(event) {
     if (isBureauEntryTarget(event)) {
+      document.body.dataset.bureauVideoGestureSource = event?.target?.closest?.('#laboratory-medallion-button')
+        ? 'laboratory-medallion-v61'
+        : 'bureau-control-v61';
       primeFromGesture();
       return;
     }
