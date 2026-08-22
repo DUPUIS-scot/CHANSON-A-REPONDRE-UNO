@@ -63,13 +63,14 @@ void main() {
     );
   });
 
-  test('both built-in decks expose only category buttons they contain', () async {
+  test('built-in decks expose only category buttons they contain', () async {
     final decks = await loadDecks();
     addTearDown(decks.dispose);
 
     for (final deckId in const [
       AppConstants.productionDeckId,
       AppConstants.brioDeckId,
+      AppConstants.hpDeckId,
     ]) {
       await decks.select(deckId);
       final activeDeck = decks.activeDeck!;
@@ -87,18 +88,33 @@ void main() {
     }
   });
 
-  test('BRIO Search category artwork resolves to the BRIO card verso', () async {
+  test('BRIO Search uses category-specific verso artwork', () async {
     final decks = await loadDecks();
     addTearDown(decks.dispose);
     await decks.select(AppConstants.brioDeckId);
 
     final activeDeck = decks.activeDeck!;
     expect(activeDeck.id, AppConstants.brioDeckId);
-    expect(activeDeck.hasExplicitCategories, isFalse);
+    expect(activeDeck.hasExplicitCategories, isTrue);
     expect(
       activeDeck.cardBack,
       'assets/decks/chanson_a_repondre_brio/card_back.jpeg',
     );
+
+    expectSearchArtworkResolver(
+      File('lib/screens/search_screen.dart').readAsStringSync(),
+    );
+  });
+
+  test('HP Search uses category-specific verso artwork', () async {
+    final decks = await loadDecks();
+    addTearDown(decks.dispose);
+    await decks.select(AppConstants.hpDeckId);
+
+    final activeDeck = decks.activeDeck!;
+    expect(activeDeck.id, AppConstants.hpDeckId);
+    expect(activeDeck.hasExplicitCategories, isTrue);
+    expect(activeDeck.cardBack, AppConstants.hpDeckCover);
 
     expectSearchArtworkResolver(
       File('lib/screens/search_screen.dart').readAsStringSync(),
