@@ -10,6 +10,10 @@ class TranscriptionJesterScene extends StatelessWidget {
 
   static void setOverlayVisible(bool visible) {}
 
+  static void setPuppetMode(bool enabled) {}
+
+  static void resetPuppetPose() {}
+
   @override
   Widget build(BuildContext context) => const SizedBox.expand();
 }

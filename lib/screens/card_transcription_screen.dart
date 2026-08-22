@@ -141,6 +141,15 @@ class CardTranscriptionScreen extends StatelessWidget {
               ),
             ),
           ),
+          const SafeArea(
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(12, 12, 96, 0),
+                child: _PuppetModeControl(),
+              ),
+            ),
+          ),
           SafeArea(
             child: LayoutBuilder(
               builder: (context, box) {
@@ -204,6 +213,103 @@ class CardTranscriptionScreen extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _PuppetModeControl extends StatefulWidget {
+  const _PuppetModeControl();
+
+  @override
+  State<_PuppetModeControl> createState() => _PuppetModeControlState();
+}
+
+class _PuppetModeControlState extends State<_PuppetModeControl> {
+  bool _enabled = false;
+
+  void _toggle() {
+    final next = !_enabled;
+    setState(() => _enabled = next);
+    TranscriptionJesterScene.setPuppetMode(next);
+  }
+
+  @override
+  void dispose() {
+    if (_enabled) {
+      TranscriptionJesterScene.setPuppetMode(false);
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: const Color(0xB30A0806),
+        border: Border.all(color: _gold.withValues(alpha: .72)),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: _toggle,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: _enabled ? _ink : _brightGold,
+                    backgroundColor:
+                        _enabled ? _brightGold : const Color(0xCC090604),
+                    side: const BorderSide(color: _brightGold, width: 1.2),
+                    minimumSize: const Size(0, 44),
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                  ),
+                  icon: Icon(
+                    _enabled
+                        ? Icons.pan_tool_alt
+                        : Icons.accessibility_new_rounded,
+                    size: 20,
+                  ),
+                  label: Text(
+                    _enabled ? 'EXIT PUPPET' : 'PUPPET MODE',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: .5,
+                    ),
+                  ),
+                ),
+                if (_enabled) ...[
+                  const SizedBox(width: 8),
+                  IconButton.outlined(
+                    onPressed: TranscriptionJesterScene.resetPuppetPose,
+                    tooltip: 'Reset puppet pose',
+                    color: _brightGold,
+                    icon: const Icon(Icons.restart_alt_rounded),
+                  ),
+                ],
+              ],
+            ),
+            if (_enabled) ...[
+              const SizedBox(height: 6),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 4),
+                child: Text(
+                  'Drag head, arms or torso',
+                  style: TextStyle(
+                    color: _brightGold,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
