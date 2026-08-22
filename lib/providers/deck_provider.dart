@@ -178,8 +178,8 @@ class DeckProvider extends ChangeNotifier {
           deckId: AppConstants.hpDeckId,
           title: 'HP ${(index + 1).toString().padLeft(3, '0')}',
           path: paths[index],
-          category: cardCategoryAt(index).label,
-          colour: cardCategoryAt(index).colour,
+          category: '',
+          colour: 'gold',
           importedAt: DateTime.utc(2026, 8, 22),
         ),
     ];
@@ -189,7 +189,7 @@ class DeckProvider extends ChangeNotifier {
       coverPath: AppConstants.hpDeckCover,
       cardBack: AppConstants.hpDeckCover,
       cards: cards,
-      hasExplicitCategories: true,
+      hasExplicitCategories: false,
     );
     _decks = [
       ..._decks.where((item) => item.id != AppConstants.hpDeckId),
