@@ -1,7 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/app_constants.dart';
+import '../generated/hp_work_in_progress_overlay.dart';
 import '../providers/deck_provider.dart';
 import '../widgets/deck_tile.dart';
 import '../widgets/home_navigation_button.dart';
@@ -55,13 +58,38 @@ class DeckSelectionScreen extends StatelessWidget {
                   itemCount: decks.length,
                   itemBuilder: (_, index) {
                     final deck = decks[index];
-                    return DeckTile(
+                    final tile = DeckTile(
                       deck: deck,
                       selected: deck.id == provider.activeDeckId,
                       editable: false,
                       onSelect: () => provider.select(deck.id),
                       onRename: () {},
                       onDelete: () {},
+                    );
+
+                    if (deck.id != AppConstants.hpDeckId) {
+                      return tile;
+                    }
+
+                    return Stack(
+                      fit: StackFit.expand,
+                      clipBehavior: Clip.none,
+                      children: [
+                        tile,
+                        IgnorePointer(
+                          child: Align(
+                            alignment: const Alignment(0, -0.05),
+                            child: FractionallySizedBox(
+                              widthFactor: 0.98,
+                              child: Image.memory(
+                                base64Decode(hpWorkInProgressOverlayBase64),
+                                fit: BoxFit.contain,
+                                gaplessPlayback: true,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     );
                   },
                 );
