@@ -14,9 +14,9 @@ void main() {
     expect(overlay, contains('castle_jester_rigged.glb'));
     expect(
       overlay,
-      contains("castleEntranceTrigger = 'rigged-jester-single-click'"),
+      contains("castleEntranceTrigger='rigged-jester-single-click'"),
     );
-    expect(overlay, contains("dataset.castleJesterGesture = 'single-click'"));
+    expect(overlay, contains("dataset.castleJesterGesture='single-click'"));
     expect(
       overlay,
       contains("window.dispatchEvent(new CustomEvent('castleJesterEnter'))"),
@@ -28,9 +28,10 @@ void main() {
     // may rotate only during the intentional click/step-aside transition.
     expect(
       overlay,
-      contains("castleJesterRotationOwner = 'castle-jester-overlay-v60'"),
+      contains("castleJesterRotationOwner='castle-jester-overlay-v60'"),
     );
-    expect(overlay, contains('gatekeeper.root.rotation.y ='));
+    expect(overlay, contains("castle_jester_gatekeeper.js?v=60"));
+    expect(overlay, contains('gatekeeper.root.rotation.y='));
     expect(
       controller,
       isNot(contains('this.root.rotation.y=BASE_ROTATION+.42*present')),
