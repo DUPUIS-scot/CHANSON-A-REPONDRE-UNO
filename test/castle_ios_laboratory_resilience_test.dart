@@ -10,8 +10,10 @@ void main() {
     final eventBridge = File('web/card_castle/castle_laboratory_event_bridge_v69.js').readAsStringSync();
     final sharedLoader = File('web/card_castle/castle_shared_transition_loader_v64.js').readAsStringSync();
     final bridge = File('web/card_castle/castle_bureau_video_bridge.js').readAsStringSync();
+    final resetView = File('web/card_castle/castle_laboratory_entry_reset_v70.js').readAsStringSync();
+    final videoRefresh = File('web/card_castle/castle_bureau_video_refresh_v70.js').readAsStringSync();
 
-    expect(bootstrap, contains("const castleRuntimeRevision = '69';"));
+    expect(bootstrap, contains("const castleRuntimeRevision = '70';"));
     expect(bootstrap, contains("url.searchParams.set('v', buildId || castleRuntimeRevision)"));
     expect(bootstrap, contains('card_castle/card_castle_fast.html'));
     expect(bootstrap, contains('optimized = url.href'));
@@ -51,10 +53,20 @@ void main() {
     expect(sharedLoader, contains("laboratory-visible-v68"));
     expect(sharedLoader, contains("35000"));
 
+    expect(resetView, contains("laboratoryStartingView = 'reset-identical-v70'"));
+    expect(resetView, contains("laboratory-entry-v70"));
+    expect(resetView, contains("reset-button-v70"));
+
     expect(bridge, contains(r'EXACT_SCREEN_NAME = /^VideoScreen_(Left|Right)$/i'));
     expect(bridge, contains('interior-trusted-gesture-v62'));
     expect(bridge, contains('texture.needsUpdate = true'));
     expect(bridge, contains("bureauVideoPlayback = 'playing-loop-v62'"));
+    expect(overlay, contains("castle_bureau_video_bridge.js?v=70"));
+    expect(overlay, contains("castle_bureau_video_refresh_v70.js?v=70"));
+    expect(overlay, contains("castle_visual_regression_v55.js?v=70"));
+    expect(videoRefresh, contains("url.searchParams.set('v', '70')"));
+    expect(videoRefresh, contains('video.load()'));
+    expect(videoRefresh, contains('video.play()'));
 
     final mutedBeforeSrc = bridge.indexOf('video.muted = true;');
     final srcAssignment = bridge.indexOf('video.src = VIDEO_URL;');

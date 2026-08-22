@@ -23,6 +23,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Restore uploaded laboratory video
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s web/card_castle/video_payload_v70/part0.b64
+          test -s web/card_castle/video_payload_v70/part1.b64
+          test -s web/card_castle/video_payload_v70/part2.b64
+          cat web/card_castle/video_payload_v70/part*.b64 | base64 --decode > assets/videos/bureau_screen_loop.mp4
+          test -s assets/videos/bureau_screen_loop.mp4
+          echo "Restored uploaded laboratory video: $(stat -c%s assets/videos/bureau_screen_loop.mp4) bytes"
+
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
