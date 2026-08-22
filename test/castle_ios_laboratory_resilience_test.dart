@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test('iPhone laboratory loading is bounded and owns entry before core', () {
+    final bootstrap = File('web/flutter_bootstrap.js').readAsStringSync();
     final overlay = File('web/card_castle/castle_navigation_overlay.js').readAsStringSync();
     final resilience = File(
       'web/card_castle/castle_ios_laboratory_resilience_v62.js',
@@ -11,6 +12,11 @@ void main() {
     final bridge = File(
       'web/card_castle/castle_bureau_video_bridge.js',
     ).readAsStringSync();
+
+    expect(bootstrap, contains("const castleRuntimeRevision = '62';"));
+    expect(bootstrap, contains("url.searchParams.set('v', buildId || castleRuntimeRevision)"));
+    expect(bootstrap, contains('card_castle/card_castle_fast.html'));
+    expect(bootstrap, contains('optimized = url.href'));
 
     final resilienceImport = overlay.indexOf('castle_ios_laboratory_resilience_v62.js?v=62');
     final coreImport = overlay.indexOf('castle_navigation_overlay_core.js?v=62');
