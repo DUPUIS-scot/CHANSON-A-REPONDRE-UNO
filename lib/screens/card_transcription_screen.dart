@@ -90,7 +90,7 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
         await service.copyPrompt(prompt);
         await service.openProviderWithoutCopy(provider: ExternalAiProvider.chatgpt);
       } on Object {
-        if (!mounted) return;
+        if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Card context copied. Open ChatGPT and paste it into the conversation.')),
         );
