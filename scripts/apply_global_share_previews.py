@@ -2,10 +2,11 @@
 from __future__ import annotations
 
 import re
-import subprocess
 import sys
 from pathlib import Path
 from urllib.parse import unquote, urlparse
+
+from PIL import Image, ImageDraw, ImageOps
 
 BUILD = Path(sys.argv[1] if len(sys.argv) > 1 else 'build/web')
 PUBLIC_BASE = (sys.argv[2] if len(sys.argv) > 2 else 'https://www.chanson-a-repondre-uno.scot/').rstrip('/') + '/'
@@ -42,24 +43,73 @@ def canonical_slug(html: str, page_dir: Path) -> str:
     return page_dir.name
 
 
-def convert(source: Path, target: Path) -> None:
+def save_jpeg(image: Image.Image, target: Path) -> None:
     target.parent.mkdir(parents=True, exist_ok=True)
-    for quality in (62, 50, 42):
-        subprocess.run([
-            'convert', str(source),
-            '-auto-orient',
-            '-resize', '600x900^',
-            '-gravity', 'center',
-            '-extent', '600x900',
-            '-strip',
-            '-sampling-factor', '4:2:0',
-            '-interlace', 'Plane',
-            '-quality', str(quality),
-            str(target),
-        ], check=True)
+    for quality in (62, 50, 42, 35):
+        image.save(
+            target,
+            'JPEG',
+            quality=quality,
+            optimize=True,
+            progressive=True,
+            subsampling=2,
+        )
         if target.stat().st_size <= MAX_BYTES:
             return
     raise SystemExit(f'{target} exceeds {MAX_BYTES} bytes')
+
+
+def convert(source: Path, target: Path) -> None:
+    with Image.open(source) as image:
+        image = ImageOps.exif_transpose(image).convert('RGB')
+        fitted = ImageOps.fit(
+            image,
+            (600, 900),
+            method=Image.Resampling.LANCZOS,
+        )
+        save_jpeg(fitted, target)
+
+
+def find_logo() -> Path:
+    candidates = [
+        Path('assets/images/app_logo.png'),
+        BUILD / 'assets' / 'assets' / 'images' / 'app_logo.png',
+    ]
+    for candidate in candidates:
+        if candidate.is_file():
+            return candidate
+    raise SystemExit('Missing Chanson à Répondre UNO logo: assets/images/app_logo.png')
+
+
+def brand_preview(target: Path, logo_path: Path) -> None:
+    with Image.open(target) as source:
+        card = ImageOps.exif_transpose(source).convert('RGBA')
+    with Image.open(logo_path) as source_logo:
+        logo = ImageOps.exif_transpose(source_logo).convert('RGBA')
+
+    logo.thumbnail((460, 118), Image.Resampling.LANCZOS)
+    if logo.width < 1 or logo.height < 1:
+        raise SystemExit(f'Invalid logo dimensions in {logo_path}')
+
+    x = (card.width - logo.width) // 2
+    y = 18
+    padding_x = 16
+    padding_y = 10
+    overlay = Image.new('RGBA', card.size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
+    draw.rounded_rectangle(
+        (
+            max(0, x - padding_x),
+            max(0, y - padding_y),
+            min(card.width, x + logo.width + padding_x),
+            min(card.height, y + logo.height + padding_y),
+        ),
+        radius=18,
+        fill=(3, 7, 12, 205),
+    )
+    card = Image.alpha_composite(card, overlay)
+    card.alpha_composite(logo, (x, y))
+    save_jpeg(card.convert('RGB'), target)
 
 
 def replace_social_image(html: str, old_url: str, new_url: str) -> str:
@@ -79,6 +129,7 @@ if not pages:
 updated = 0
 generated = 0
 skipped = 0
+preview_targets: set[Path] = set()
 for page in pages:
     html = page.read_text(encoding='utf-8')
     image_match = OG_IMAGE_RE.search(html)
@@ -98,10 +149,23 @@ for page in pages:
         convert(source, target)
         generated += 1
 
+    preview_targets.add(target)
     preview_url = f'{PUBLIC_BASE}assets/share-previews/{slug}.jpg'
     rewritten = replace_social_image(html, old_url, preview_url)
     if rewritten != html:
         page.write_text(rewritten, encoding='utf-8')
         updated += 1
 
-print(f'Global share previews: {updated} pages updated, {generated} previews generated, {skipped} skipped.')
+logo_path = find_logo()
+branded = 0
+for target in sorted(preview_targets):
+    if not target.is_file():
+        raise SystemExit(f'Missing social preview before branding: {target}')
+    brand_preview(target, logo_path)
+    branded += 1
+
+print(
+    'Global share previews: '
+    f'{updated} pages updated, {generated} previews generated, '
+    f'{branded} branded with the UNO logo, {skipped} skipped.'
+)
