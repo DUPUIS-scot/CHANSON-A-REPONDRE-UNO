@@ -7,9 +7,11 @@ import 'dart:ui_web' as ui_web;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../core/app_config.dart';
+import '../core/app_router.dart';
 import '../models/card_image_model.dart';
 import '../providers/dj_who_player_provider.dart';
 
@@ -25,7 +27,7 @@ class _WebGlCardCastleViewState extends State<WebGlCardCastleView>{
   @override void didUpdateWidget(covariant WebGlCardCastleView oldWidget){super.didUpdateWidget(oldWidget);if(!rendererReady)return;final cc=_cardFingerprint(oldWidget.cards)!=_cardFingerprint(widget.cards);final mc=!setEquals(oldWidget.matchingCardIds,widget.matchingCardIds);if(cc||mc||oldWidget.activeCategory!=widget.activeCategory||oldWidget.shuffleSeed!=widget.shuffleSeed){_sendState();}else if(oldWidget.focusedCardId!=widget.focusedCardId){_sendFocus();}if(oldWidget.fullscreenRequestId!=widget.fullscreenRequestId)_requestFullscreen();}
   @override void dispose(){_post({'type':'dispose'});frameLoads?.cancel();messages?.cancel();cardOverlayReleaseTimer?.cancel();_resumeDjWhoAfterCastleLoad();_setInAppFullscreen(false);super.dispose();}
   void _resumeDjWhoAfterCastleLoad(){if(!djWhoSuspensionStarted||castleLoadingComplete)return;castleLoadingComplete=true;final p=djWhoPlayer;if(p!=null)unawaited(p.resumeAfterCastleLoad());}
-  void _openCardOverlay(String id){if(cardOverlayActive)return;cardOverlayActive=true;iframe.dataset['lastOpenedCardId']=id;_setInAppFullscreen(false);_setCardOverlayMode(true);unawaited(Future<void>.sync(()=>widget.onCardOpened(id)).whenComplete((){if(!mounted)return;cardOverlayActive=false;_setCardOverlayMode(false);}));}
+  void _openCardOverlay(String id){if(cardOverlayActive||!mounted)return;cardOverlayActive=true;iframe.dataset['lastOpenedCardId']=id;_setInAppFullscreen(false);_setCardOverlayMode(true);unawaited(context.push(AppRoutes.cardAlias(id)).whenComplete((){if(!mounted)return;cardOverlayActive=false;_setCardOverlayMode(false);}));}
   void _handleMessage(html.MessageEvent event){if(event.origin!=html.window.location.origin||event.data is! String)return;try{final d=jsonDecode(event.data! as String);if(d is! Map<String,dynamic>)return;iframe.dataset['lastBridgeMessage']=d['type']?.toString()??'';switch(d['type']){case 'rendererReady':rendererReady=true;_sendState();if(widget.fullscreenRequestId>0)_requestFullscreen();case 'castleLoadingComplete':_resumeDjWhoAfterCastleLoad();case 'rendererError':_resumeDjWhoAfterCastleLoad();if(mounted)setState(()=>rendererFailed=true);case 'cardSelected':final id=d['cardId'] as String?;if(id!=null){widget.onCardSelected(id);_openCardOverlay(id);}case 'cardLongPressed':break;case 'fullscreenFallbackRequested':_setInAppFullscreen(true);_post({'type':'setInAppFullscreen','active':true});case 'fullscreenFallbackExit':_setInAppFullscreen(false);_post({'type':'setInAppFullscreen','active':false});case 'fullscreenChanged':final a=d['active']==true;if(!a)_setInAppFullscreen(false);widget.onFullscreenChanged(a);case 'categoriesRequested':if(_suppressCategoriesAfterCardClose()){iframe.dataset['suppressedCategoryRequest']='ios-post-card-overlay';return;}_resumeDjWhoAfterCastleLoad();_setInAppFullscreen(false);widget.onFullscreenChanged(false);widget.onCategoriesRequested();}}on FormatException{/* Ignore malformed bridge messages. */}}
   void _sendState()=>_post({'type':'setCards','focusedCardId':widget.focusedCardId,'animateFocus':widget.focusedCardId!=null,'activeCategory':widget.activeCategory,'shuffleSeed':widget.shuffleSeed,'cards':widget.cards.map((c)=>{'id':c.id,'category':c.category,'question':c.question,'text':[c.question,c.answer].where((v)=>v.isNotEmpty).join(' '),'tags':c.tags,'metadata':{'author':c.author,'theme':c.theme,'emotion':c.emotion,'year':c.year},'isMatch':widget.matchingCardIds.contains(c.id),'rectoUrl':_castlePreviewUrl(c),'imagePath':_assetUrl(c.imagePath),'aspectRatio':c.aspectRatio}).toList()});
   void _sendFocus()=>_post({'type':'focusCard','cardId':widget.focusedCardId,'animate':true}); void _requestFullscreen(){if(rendererReady)_post({'type':'enterFullscreen'});}
