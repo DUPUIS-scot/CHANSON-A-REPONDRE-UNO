@@ -4,6 +4,7 @@
 // Forward the page cache-busting build ID to the compiled Flutter entrypoint.
 const searchParams = new URLSearchParams(window.location.search);
 const buildId = searchParams.get('v');
+const castleRuntimeRevision = '62';
 const isWindows = /Windows/i.test(navigator.userAgent);
 if (buildId && globalThis._flutter?.buildConfig?.builds) {
   for (const build of globalThis._flutter.buildConfig.builds) {
@@ -44,9 +45,11 @@ const iframeSrcDescriptor = Object.getOwnPropertyDescriptor(
 
 function versionedCastleUrl(path) {
   const url = new URL(path, document.baseURI);
-  if (buildId) url.searchParams.set('v', buildId);
+  url.searchParams.set('v', buildId || castleRuntimeRevision);
   return url.href;
 }
+
+document.documentElement.dataset.castleRuntimeRevision = castleRuntimeRevision;
 
 function appendCastleScript(frameDocument, {id, path, module = false}) {
   if (!frameDocument?.body || frameDocument.getElementById(id)) return;
@@ -70,12 +73,17 @@ document.createElement = function(tagName, options) {
       },
       set(value) {
         const source = String(value || '');
-        const optimized = source.includes('card_castle/card_castle.html')
+        let optimized = source.includes('card_castle/card_castle.html')
           ? source.replace(
               'card_castle/card_castle.html',
               'card_castle/card_castle_fast.html',
             )
           : source;
+        if (optimized.includes('card_castle/card_castle_fast.html')) {
+          const url = new URL(optimized, document.baseURI);
+          url.searchParams.set('v', buildId || castleRuntimeRevision);
+          optimized = url.href;
+        }
         iframeSrcDescriptor.set.call(this, optimized);
       },
     });
