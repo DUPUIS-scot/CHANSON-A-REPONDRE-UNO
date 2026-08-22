@@ -82,9 +82,7 @@ class TranscriptionJesterScene extends StatefulWidget {
 
     final script = html.ScriptElement()
       ..type = 'module'
-      ..src = Uri.base
-          .resolve('transcription_puppet.js?v=20260822a')
-          .toString()
+      ..src = 'transcription_puppet.js?v=20260822a'
       ..dataset['transcriptionPuppetModule'] = 'true';
     script.onLoad.listen((_) => _pushPendingPuppetToJs());
     html.document.head?.append(script);
