@@ -1,0 +1,57 @@
+name: Castle runtime checks
+
+on:
+  pull_request:
+    paths:
+      - 'web/card_castle/**'
+      - 'assets/models/laboratory_interior.glb'
+      - 'assets/videos/bureau_screen_loop.mp4'
+      - 'test/castle_*'
+      - '.github/workflows/castle-runtime-checks.yml'
+      - '.github/workflows/deploy-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  castle:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: JavaScript syntax
+        run: |
+          node --check web/card_castle/castle_navigation_overlay.js
+          node --check web/card_castle/castle_bureau_video_bridge.js
+          node --check web/card_castle/castle_ios_laboratory_resilience_v62.js
+
+      - name: Inspect source laboratory video
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v ffprobe >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y ffmpeg
+          fi
+          ffprobe -v error -select_streams v:0 \
+            -show_entries stream=codec_name,profile,pix_fmt,width,height,r_frame_rate \
+            -of default=nw=1 assets/videos/bureau_screen_loop.mp4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install
+        run: flutter pub get
+
+      - name: Castle regression tests
+        run: |
+          flutter test \
+            test/castle_jester_gatekeeper_integration_test.dart \
+            test/castle_laboratory_video_ownership_test.dart \
+            test/castle_laboratory_asset_contract_test.dart \
+            test/castle_ios_laboratory_resilience_test.dart
