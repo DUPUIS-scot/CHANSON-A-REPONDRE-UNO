@@ -26,7 +26,7 @@ void main() {
     expect(resilience, contains("window.addEventListener('keydown', interceptEscape, true)"));
     expect(resilience, contains("iosLaboratoryStage = 'retry-available-v62'"));
 
-    expect(bridge, contains("EXACT_SCREEN_NAME = /^VideoScreen_(Left|Right)\\$/i"));
+    expect(bridge, contains(r'EXACT_SCREEN_NAME = /^VideoScreen_(Left|Right)$/i'));
     expect(bridge, contains("interior-trusted-gesture-v62"));
     expect(bridge, contains("texture.needsUpdate = true"));
     expect(bridge, contains("bureauVideoPlayback = 'playing-loop-v62'"));
