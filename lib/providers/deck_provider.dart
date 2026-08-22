@@ -156,6 +156,7 @@ class DeckProvider extends ChangeNotifier {
       coverPath: cardBack,
       cardBack: cardBack,
       cards: cards,
+      hasExplicitCategories: true,
     );
     _decks = [
       ..._decks.where((item) => item.id != AppConstants.brioDeckId),
@@ -188,6 +189,7 @@ class DeckProvider extends ChangeNotifier {
       coverPath: AppConstants.hpDeckCover,
       cardBack: AppConstants.hpDeckCover,
       cards: cards,
+      hasExplicitCategories: true,
     );
     _decks = [
       ..._decks.where((item) => item.id != AppConstants.hpDeckId),
