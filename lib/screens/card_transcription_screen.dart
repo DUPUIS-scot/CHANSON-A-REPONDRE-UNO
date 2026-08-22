@@ -61,9 +61,6 @@ class CardTranscriptionScreen extends StatelessWidget {
       );
     }
 
-    // Keep the WebGL texture small on mobile Safari. Permanent UNO source PNGs
-    // are several megabytes each, so the Pages build produces a 600x900 JPEG
-    // preview for the jester while Browse/share keep using the original image.
     final jesterTexturePath = _jesterTexturePath(card.id, card.imagePath);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!context.mounted) return;
@@ -146,7 +143,7 @@ class CardTranscriptionScreen extends StatelessWidget {
               alignment: Alignment.topLeft,
               child: Padding(
                 padding: EdgeInsets.fromLTRB(12, 12, 96, 0),
-                child: _PuppetModeControl(),
+                child: _JesterModeControl(),
               ),
             ),
           ),
@@ -218,14 +215,14 @@ class CardTranscriptionScreen extends StatelessWidget {
   }
 }
 
-class _PuppetModeControl extends StatefulWidget {
-  const _PuppetModeControl();
+class _JesterModeControl extends StatefulWidget {
+  const _JesterModeControl();
 
   @override
-  State<_PuppetModeControl> createState() => _PuppetModeControlState();
+  State<_JesterModeControl> createState() => _JesterModeControlState();
 }
 
-class _PuppetModeControlState extends State<_PuppetModeControl> {
+class _JesterModeControlState extends State<_JesterModeControl> {
   bool _enabled = false;
 
   void _toggle() {
@@ -236,9 +233,7 @@ class _PuppetModeControlState extends State<_PuppetModeControl> {
 
   @override
   void dispose() {
-    if (_enabled) {
-      TranscriptionJesterScene.setPuppetMode(false);
-    }
+    if (_enabled) TranscriptionJesterScene.setPuppetMode(false);
     super.dispose();
   }
 
@@ -276,7 +271,7 @@ class _PuppetModeControlState extends State<_PuppetModeControl> {
                     size: 20,
                   ),
                   label: Text(
-                    _enabled ? 'EXIT PUPPET' : 'PUPPET MODE',
+                    _enabled ? 'EXIT JESTER' : 'JESTER MODE',
                     style: const TextStyle(
                       fontWeight: FontWeight.w900,
                       letterSpacing: .5,
@@ -287,7 +282,7 @@ class _PuppetModeControlState extends State<_PuppetModeControl> {
                   const SizedBox(width: 8),
                   IconButton.outlined(
                     onPressed: TranscriptionJesterScene.resetPuppetPose,
-                    tooltip: 'Reset puppet pose',
+                    tooltip: 'Reset jester pose',
                     color: _brightGold,
                     icon: const Icon(Icons.restart_alt_rounded),
                   ),
@@ -328,27 +323,17 @@ class _TranscribeButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => FilledButton.icon(
-        style: style,
         onPressed: enabled ? onPressed : null,
-        icon: const Icon(Icons.document_scanner_outlined, size: 30),
-        label: const Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'TRANSCRIBE CARD',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w900,
-                letterSpacing: .7,
-              ),
-            ),
-            SizedBox(height: 4),
-            Text(
-              'Choose an external AI to read the card image',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
-            ),
-          ],
+        style: style,
+        icon: const Icon(Icons.mic_rounded, size: 28),
+        label: const Text(
+          'TRANSCRIBE CARD',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w900,
+            letterSpacing: .6,
+          ),
         ),
       );
 }
@@ -366,27 +351,17 @@ class _DiscussButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => OutlinedButton.icon(
-        style: style,
         onPressed: enabled ? onPressed : null,
-        icon: const Icon(Icons.forum_outlined, size: 30),
-        label: const Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'DISCUSS WITH AI',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w900,
-                letterSpacing: .7,
-              ),
-            ),
-            SizedBox(height: 4),
-            Text(
-              'ChatGPT · Gemini · Claude · Copilot · Copy Prompt',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
-            ),
-          ],
+        style: style,
+        icon: const Icon(Icons.forum_rounded, size: 28),
+        label: const Text(
+          'DISCUSS WITH AI',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w900,
+            letterSpacing: .6,
+          ),
         ),
       );
 }
