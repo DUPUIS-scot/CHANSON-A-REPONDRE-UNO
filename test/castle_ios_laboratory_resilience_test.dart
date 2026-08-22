@@ -15,8 +15,8 @@ void main() {
     expect(bootstrap, contains('card_castle/card_castle_fast.html'));
     expect(bootstrap, contains('optimized = url.href'));
 
-    final sharedImport = overlay.indexOf('castle_shared_transition_loader_v64.js?v=64');
-    final resilienceImport = overlay.indexOf('castle_ios_laboratory_resilience_v62.js?v=64');
+    final sharedImport = overlay.indexOf('castle_shared_transition_loader_v64.js?v=65');
+    final resilienceImport = overlay.indexOf('castle_ios_laboratory_resilience_v62.js?v=65');
     final coreImport = overlay.indexOf('castle_navigation_overlay_core.js?v=62');
     expect(sharedImport, greaterThanOrEqualTo(0));
     expect(resilienceImport, greaterThan(sharedImport));
@@ -25,17 +25,18 @@ void main() {
     expect(resilience, contains('FETCH_TIMEOUT_MS = 16000'));
     expect(resilience, contains('PARSE_TIMEOUT_MS = 14000'));
     expect(resilience, contains('new AbortController()'));
-    expect(resilience, contains('loader.parseAsync(buffer, basePath)'));
-    expect(resilience, contains('window.__castleOpenLaboratory = openLaboratory'));
-    expect(resilience, contains("document.addEventListener('click', interceptClick, true)"));
-    expect(resilience, contains("window.addEventListener('keydown', interceptEscape, true)"));
-    expect(resilience, contains("iosLaboratoryStage = 'retry-available-v62'"));
+    expect(resilience, contains('loader.parseAsync(buffer,basePath)'));
+    expect(resilience, contains('window.__castleOpenLaboratory=openLaboratory'));
+    expect(resilience, contains("document.addEventListener('click',interceptClick,true)"));
+    expect(resilience, contains("iosLaboratoryStage='retry-available-v62'"));
+    expect(resilience, contains("window.__castleShowSceneLoader?.('LABORATORY LOADING')"));
+    expect(resilience, contains('window.__castleSetSceneLoaderProgress?.(100)'));
+    expect(resilience, contains('window.__castleHideSceneLoader?.()'));
 
     expect(sharedLoader, contains('castle_jester_loading_bar.png'));
     expect(sharedLoader, contains("show('INTERIOR LOADING')"));
-    expect(sharedLoader, contains("show('LABORATORY LOADING')"));
-    expect(sharedLoader, contains("window.addEventListener('castleJesterEnter'"));
-    expect(sharedLoader, contains("window.addEventListener('castle-open-laboratory'"));
+    expect(sharedLoader, contains('scene-loader-fill'));
+    expect(sharedLoader, contains('scene-loader-percent'));
 
     expect(bridge, contains(r'EXACT_SCREEN_NAME = /^VideoScreen_(Left|Right)$/i'));
     expect(bridge, contains('interior-trusted-gesture-v62'));
