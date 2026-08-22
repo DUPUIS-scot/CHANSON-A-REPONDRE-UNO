@@ -38,7 +38,6 @@ class TranscriptionJesterScene extends StatefulWidget {
     _pendingPuppetEnabled = true;
     _ensurePuppetScript();
     _ensurePatchScript();
-    _pushPendingCardToJs();
     _pushPendingPuppetToJs();
     _pushPendingPuppetCardToJs();
     _pushPendingJesterModeCardToJs();
@@ -68,6 +67,15 @@ class TranscriptionJesterScene extends StatefulWidget {
     _pendingPuppetEnabled = enabled;
     _ensurePuppetScript();
     _ensurePatchScript();
+    if (enabled) {
+      for (final element in html.document.querySelectorAll(
+        '[data-transcription-jester-canvas="true"]',
+      )) {
+        if (element.dataset['transcriptionPuppet'] != 'true') {
+          element.style.visibility = 'hidden';
+        }
+      }
+    }
     _pushPendingPuppetToJs();
     _pushPendingPuppetCardToJs();
     _pushPendingJesterModeCardToJs();
@@ -95,7 +103,7 @@ class TranscriptionJesterScene extends StatefulWidget {
     }
     final script = html.ScriptElement()
       ..type = 'module'
-      ..src = 'transcription_puppet.js?v=20260822e'
+      ..src = 'transcription_puppet.js?v=20260822f'
       ..dataset['transcriptionPuppetModule'] = 'true';
     script.onLoad.listen((_) {
       _pushPendingPuppetToJs();
@@ -116,7 +124,7 @@ class TranscriptionJesterScene extends StatefulWidget {
     }
     final script = html.ScriptElement()
       ..type = 'module'
-      ..src = 'transcription_jester_mode_patch.js?v=20260822d'
+      ..src = 'transcription_jester_mode_patch.js?v=20260822e'
       ..dataset['transcriptionJesterModePatch'] = 'true';
     script.onLoad.listen((_) => _pushPendingJesterModeCardToJs());
     html.document.head?.append(script);
@@ -164,6 +172,7 @@ class _TranscriptionJesterSceneState extends State<TranscriptionJesterScene> {
   late final String _elementId;
   final List<Timer> _retryTimers = [];
   bool _mountedScene = false;
+  bool _legacySceneMounted = false;
 
   @override
   void initState() {
@@ -185,12 +194,17 @@ class _TranscriptionJesterSceneState extends State<TranscriptionJesterScene> {
   void _tryMountScene() {
     if (!mounted || _mountedScene) return;
     try {
-      _createTranscriptionJester(_elementId);
-      TranscriptionJesterScene._pushPendingCardToJs();
-      TranscriptionJesterScene._pushPendingPuppetToJs();
-      TranscriptionJesterScene._pushPendingPuppetCardToJs();
-      TranscriptionJesterScene._pushPendingJesterModeCardToJs();
-      _mountedScene = true;
+      if (TranscriptionJesterScene._pendingPuppetEnabled) {
+        TranscriptionJesterScene._pushPendingPuppetToJs();
+        TranscriptionJesterScene._pushPendingPuppetCardToJs();
+        TranscriptionJesterScene._pushPendingJesterModeCardToJs();
+        _mountedScene = true;
+      } else {
+        _createTranscriptionJester(_elementId);
+        _legacySceneMounted = true;
+        TranscriptionJesterScene._pushPendingCardToJs();
+        _mountedScene = true;
+      }
       for (final timer in _retryTimers) {
         timer.cancel();
       }
@@ -202,7 +216,7 @@ class _TranscriptionJesterSceneState extends State<TranscriptionJesterScene> {
     for (final timer in _retryTimers) {
       timer.cancel();
     }
-    if (_mountedScene) {
+    if (_legacySceneMounted) {
       try {
         _destroyTranscriptionJester(_elementId);
       } catch (_) {}
