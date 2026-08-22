@@ -27,10 +27,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test -s web/card_castle/video_payload_v70/part0.b64
-          test -s web/card_castle/video_payload_v70/part1.b64
-          test -s web/card_castle/video_payload_v70/part2.b64
-          cat web/card_castle/video_payload_v70/part*.b64 | base64 --decode > assets/videos/bureau_screen_loop.mp4
+          parts=(web/card_castle/video_payload_v70/part*.b64)
+          test "${#parts[@]}" -eq 3
+          : > assets/videos/bureau_screen_loop.mp4
+          for part in "${parts[@]}"; do
+            test -s "$part"
+            base64 --decode "$part" >> assets/videos/bureau_screen_loop.mp4
+          done
           test -s assets/videos/bureau_screen_loop.mp4
           echo "Restored uploaded laboratory video: $(stat -c%s assets/videos/bureau_screen_loop.mp4) bytes"
 
