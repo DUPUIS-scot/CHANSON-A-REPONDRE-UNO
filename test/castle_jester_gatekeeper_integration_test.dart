@@ -24,13 +24,17 @@ void main() {
     expect(controller, contains("dataset.castleJesterState='looping'"));
     expect(controller, contains('onEnterRequested?.()'));
 
-    // Exterior Y rotation has exactly one runtime owner. Regression helpers may
-    // schedule framing/card visibility, but must never overwrite the jester.
+    // Exterior idle Y rotation has exactly one runtime owner. The controller
+    // may rotate only during the intentional click/step-aside transition.
     expect(
       overlay,
       contains("castleJesterRotationOwner = 'castle-jester-overlay-v60'"),
     );
     expect(overlay, contains('gatekeeper.root.rotation.y ='));
+    expect(
+      controller,
+      isNot(contains('this.root.rotation.y=BASE_ROTATION+.42*present')),
+    );
     expect(visualRegression, isNot(contains('jester.rotation.y')));
     expect(visualRegression, isNot(contains('faceExteriorJesterToCamera')));
   });
