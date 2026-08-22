@@ -115,7 +115,7 @@ jobs:
                   raise SystemExit(f'Preview too large: {target}')
               print(f'Generated BRIO-{card} preview')
 
-          hp_dir = Path('build/web/assets/assets/hp')
+          hp_dir = Path('assets/hp')
           hp_sources = [
               'ChatGPT Image Aug 22, 2026, 10_59_05 AM.png',
               'ChatGPT Image Aug 22, 2026, 11_00_51 AM.png',
