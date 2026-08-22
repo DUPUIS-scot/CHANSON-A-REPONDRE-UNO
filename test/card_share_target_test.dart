@@ -106,24 +106,26 @@ void main() {
     expect(find.text('Ask AI a question'), findsNothing);
   });
 
-  testWidgets('fullscreen keeps only bottom Share and targets visible card', (tester) async {
+  testWidgets('fullscreen is clean and has no action controls', (tester) async {
     await tester.binding.setSurfaceSize(const Size(1440, 1000));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     final decks = (await tester.runAsync(_decks))!;
     addTearDown(decks.dispose);
     final cards = decks.cards;
-    CardImageModel? shared;
-    await tester.pumpWidget(ChangeNotifierProvider.value(value: decks, child: MaterialApp(home: CardFullscreenScreen(cardId: cards.first.id, shareCard: (card) async { shared = card; return CardShareResult.shared; }))));
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: decks,
+        child: MaterialApp(home: CardFullscreenScreen(cardId: cards.first.id)),
+      ),
+    );
     await tester.pumpAndSettle();
-    expect(find.byTooltip('Share card'), findsNothing);
-    expect(find.widgetWithText(FilledButton, 'Share'), findsOneWidget);
-    final pageView = tester.widget<PageView>(find.byType(PageView));
-    pageView.controller!.jumpToPage(1);
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, 'Share'));
-    await tester.pump();
-    expect(shared?.id, cards[1].id);
-    expect(shared?.imagePath, cards[1].imagePath);
+
+    expect(find.text('Share'), findsNothing);
+    expect(find.byType(FilledButton), findsNothing);
+    expect(find.byType(PageView), findsNothing);
+    expect(find.text('TRANSCRIBE CARD'), findsNothing);
+    expect(find.text('DISCUSS WITH AI'), findsNothing);
   });
 }
 
