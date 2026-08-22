@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
-if (!window.__castleVisualRegressionV60Installed) {
-  window.__castleVisualRegressionV60Installed = true;
+if (!window.__castleVisualRegressionV70Installed) {
+  window.__castleVisualRegressionV70Installed = true;
 
   const isIOS = /iP(?:hone|ad|od)/.test(navigator.userAgent) ||
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -10,8 +10,8 @@ if (!window.__castleVisualRegressionV60Installed) {
   let labEntryToken = 0;
 
   const mode = () => document.body.dataset.sceneMode || 'exterior';
-  document.body.dataset.castleJesterRegressionOwnership = 'delegated-to-overlay-v60';
-  document.body.dataset.bureauVideoRegressionOwnership = 'delegated-to-bridge-v60';
+  document.body.dataset.castleJesterRegressionOwnership = 'delegated-to-overlay-v70';
+  document.body.dataset.bureauVideoRegressionOwnership = 'delegated-to-bridge-v70';
 
   function syncBrowseCards() {
     if (!runtime?.scene) return;
@@ -19,9 +19,7 @@ if (!window.__castleVisualRegressionV60Installed) {
     if (direct) direct.visible = mode() === 'exterior';
     for (const child of runtime.scene.children) {
       if (child === direct || !child?.isGroup) continue;
-      if (child.children?.some(item => item?.userData?.card)) {
-        child.visible = mode() === 'exterior';
-      }
+      if (child.children?.some(item => item?.userData?.card)) child.visible = mode() === 'exterior';
     }
     document.body.dataset.browseCardsScene = mode() === 'exterior' ? 'visible' : 'hidden';
   }
@@ -45,18 +43,17 @@ if (!window.__castleVisualRegressionV60Installed) {
     runtime.orbit.distance = THREE.MathUtils.clamp(horizontal * insideFactor, 14, 22);
     runtime.updateOrbit?.();
     document.body.dataset.laboratoryStartingView = portrait
-      ? 'inside-bureau-portrait-v60'
-      : 'inside-bureau-desktop-v60';
+      ? 'reset-identical-portrait-v70'
+      : 'reset-identical-desktop-v70';
     return true;
   }
 
   function resumeLaboratoryVideo() {
     if (mode() !== 'laboratory') return;
-    // The dedicated bridge owns the sole media element and VideoTexture.
     window.__castleBureauVideoPlay?.();
   }
 
-  function applyLabEntryView(token) {
+  function applyLaboratoryView(token) {
     if (token !== labEntryToken || mode() !== 'laboratory') return;
     syncBrowseCards();
     frameLaboratory();
@@ -67,13 +64,13 @@ if (!window.__castleVisualRegressionV60Installed) {
     requestAnimationFrame(() => requestAnimationFrame(() => {
       runtime = window.__castleSearchRuntime || runtime;
       syncBrowseCards();
-      if (mode() === 'laboratory') applyLabEntryView(labEntryToken);
+      if (mode() === 'laboratory') applyLaboratoryView(labEntryToken);
     }));
     const token = labEntryToken;
     [120, 320, 700, 1300].forEach(delay => setTimeout(() => {
       runtime = window.__castleSearchRuntime || runtime;
       syncBrowseCards();
-      if (mode() === 'laboratory') applyLabEntryView(token);
+      if (mode() === 'laboratory') applyLaboratoryView(token);
     }, delay));
   }
 
@@ -91,17 +88,21 @@ if (!window.__castleVisualRegressionV60Installed) {
       previousMode = nextMode;
       schedule();
     });
-    observer.observe(document.body, {
-      attributes: true,
-      attributeFilter: ['data-scene-mode', 'data-laboratory-ready'],
-    });
+    observer.observe(document.body, {attributes: true, attributeFilter: ['data-scene-mode', 'data-laboratory-ready']});
     window.addEventListener('resize', schedule);
     window.addEventListener('orientationchange', schedule);
-    window.addEventListener('pointerdown', resumeLaboratoryVideo, { passive: true });
-    window.addEventListener('touchstart', resumeLaboratoryVideo, { passive: true });
-    document.getElementById('castle-reset')?.addEventListener('click', schedule);
+    window.addEventListener('pointerdown', resumeLaboratoryVideo, {passive: true});
+    window.addEventListener('touchstart', resumeLaboratoryVideo, {passive: true});
+    document.getElementById('castle-reset')?.addEventListener('click', () => {
+      requestAnimationFrame(() => {
+        runtime = window.__castleSearchRuntime || runtime;
+        if (mode() === 'laboratory') frameLaboratory();
+        else schedule();
+      });
+    });
+    window.__castleFrameLaboratoryLikeReset = frameLaboratory;
   }
 
-  window.addEventListener('castleRuntimeReady', install, { once: true });
+  window.addEventListener('castleRuntimeReady', install, {once: true});
   install();
 }
