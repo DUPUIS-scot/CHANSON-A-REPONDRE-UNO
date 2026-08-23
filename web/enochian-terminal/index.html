@@ -12,6 +12,17 @@ frame.addEventListener('load',()=>{
  .disc{background:#020403!important;display:grid!important;place-items:center!important}
  .platter-wrap{cursor:grab!important;touch-action:none!important}
  .platter-wrap.spinning{cursor:grabbing!important}
+ .pad-panel.instant-layout{grid-template-columns:minmax(0,1fr) 292px!important;align-items:stretch!important}
+ .pad-panel.instant-layout>.pad-top{grid-column:1/-1!important}
+ .instant-fx{border-left:1px solid #17332e;padding-left:10px;display:grid;grid-template-rows:auto 1fr;gap:7px;min-width:0}
+ .instant-fx-title{text-align:center;color:#9dece0;letter-spacing:.18em;font-size:9px}
+ .instant-fx-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+ .instant-fx-btn{min-height:68px;border:1px solid #315b56;border-radius:6px;background:linear-gradient(180deg,#07120f,#020706);color:#d7fff8;padding:8px 6px;cursor:pointer;touch-action:none;user-select:none;text-align:left;box-shadow:inset 0 0 0 1px #0008}
+ .instant-fx-btn span{display:block;color:#d7fff8;font-size:12px;font-weight:800;line-height:1.05}
+ .instant-fx-btn small{display:block;margin-top:8px;color:#d5aa63;font-size:9px;font-weight:700}
+ .instant-fx-btn.active{background:#0b3027;border-color:#68d8bd;box-shadow:0 0 18px #40e6b455,inset 0 0 0 1px #68d8bd66;color:#fff}
+ @media(max-width:1000px){.pad-panel.instant-layout{grid-template-columns:1fr!important}.instant-fx{border-left:0;border-top:1px solid #17332e;padding-left:0;padding-top:10px}.instant-fx-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.instant-fx-btn{min-height:60px}}
+ @media(max-width:620px){.instant-fx-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
  `;d.head.appendChild(css);
  const title=d.querySelector('.title');if(title)title.textContent='ENOCHIAN TERMINAL · EQ / FX / MOD / GLIDE';
  const home=d.querySelector('.home-link');if(home){home.textContent='⌂';home.setAttribute('aria-label','Home');home.setAttribute('title','Home');home.href='/';}
@@ -55,9 +66,24 @@ frame.addEventListener('load',()=>{
   function clearLiveText(){stream='';lastTextAt=0;const glyphBox=q('modGlyphs')||document.querySelector('.mod-glyphs');if(glyphBox)glyphBox.textContent=''}
   function restorePadCenter(){try{if(typeof setPad==='function')setPad(.5,.5,false);if(typeof padRateFactor!=='undefined')padRateFactor=1;if(typeof applyPlaybackRate==='function')applyPlaybackRate();if(typeof applyFxMacro==='function'&&typeof fxMacro!=='undefined')applyFxMacro(fxMacro);const r=q('padReadout');if(r)r.textContent='X 50 · Y 50'}catch(_){}}
   const pad=q('xyPad');if(pad){pad.addEventListener('pointerup',e=>{try{if(pad.hasPointerCapture(e.pointerId))pad.releasePointerCapture(e.pointerId)}catch(_){}restorePadCenter()});pad.addEventListener('pointercancel',restorePadCenter);pad.addEventListener('lostpointercapture',restorePadCenter)}
-  const kill=q('killfx'),oldKill=kill&&kill.onclick;if(kill)kill.onclick=async()=>{try{if(oldKill)await oldKill.call(kill)}catch(_){};const pitch=q('pitch');if(pitch){pitch.value=0;pitch.dispatchEvent(new Event('input',{bubbles:true}))}localMod=.5;if(modWheel){modWheel.setAttribute('aria-valuenow','50');modWheel.style.setProperty('--angle','0deg');modWheel.classList.remove('active')}const mv=q('modWheelV');if(mv)mv.textContent='50%';restorePadCenter();clearLiveText();try{log('KILL FX · PAD CENTER · MOD + LIVE SIGNAL RESET')}catch(_){}};
+  const instantPresets={
+   Landing:{label:'Landing',beat:'1',filter:260,drive:58,delay:.23,fb:.68,wet:.78,pitch:-5},
+   Echo:{label:'Echo',beat:'1',filter:760,drive:16,delay:.36,fb:.64,wet:.72,pitch:0},
+   Reverb:{label:'Reverb',beat:'1',filter:1350,drive:8,delay:.12,fb:.82,wet:.86,pitch:0},
+   Gate:{label:'Gate',beat:'1/4',filter:180,drive:76,delay:.03,fb:.12,wet:.26,pitch:0},
+   Flanger:{label:'Flanger',beat:'4',filter:980,drive:28,delay:.018,fb:.76,wet:.68,pitch:0},
+   Alarm:{label:'Alarm',beat:'1/2',filter:3200,drive:84,delay:.11,fb:.48,wet:.74,pitch:7},
+   Hydrant:{label:'Hydrant',beat:'1',filter:420,drive:92,delay:.07,fb:.34,wet:.82,pitch:-12},
+   Rocket:{label:'Rocket',beat:'1/4',filter:5400,drive:88,delay:.16,fb:.72,wet:.88,pitch:12}
+  };
+  const instantControls=['filter','drive','delay','fb','wet','pitch'];let instantSnapshot=null,instantOwner=null;
+  function setInstantControl(id,value){const el=q(id);if(!el||value===undefined)return;el.value=value;el.dispatchEvent(new Event('input',{bubbles:true}))}
+  function beginInstant(name,button,e){const p=instantPresets[name];if(!p)return;if(!instantSnapshot){instantSnapshot={};instantControls.forEach(id=>{const el=q(id);if(el)instantSnapshot[id]=el.value})}instantOwner=button;document.querySelectorAll('.instant-fx-btn.active').forEach(b=>b.classList.remove('active'));button.classList.add('active');instantControls.forEach(id=>setInstantControl(id,p[id]));try{button.setPointerCapture(e.pointerId)}catch(_){};try{log('INSTANT FX · '+name.toUpperCase()+' · '+p.beat)}catch(_){}}
+  function endInstant(button,e){if(instantOwner!==button)return;button.classList.remove('active');if(instantSnapshot){Object.entries(instantSnapshot).forEach(([id,value])=>setInstantControl(id,value));instantSnapshot=null}instantOwner=null;try{if(e&&button.hasPointerCapture(e.pointerId))button.releasePointerCapture(e.pointerId)}catch(_){};try{log('INSTANT FX · RELEASE')}catch(_){}}
+  const padPanel=pad&&pad.closest('.pad-panel');if(padPanel&&!padPanel.querySelector('.instant-fx')){padPanel.classList.add('instant-layout');const bank=document.createElement('div');bank.className='instant-fx';bank.innerHTML='<div class="instant-fx-title">INSTANT FX · HOLD</div><div class="instant-fx-grid"></div>';const grid=bank.querySelector('.instant-fx-grid');Object.entries(instantPresets).forEach(([name,p])=>{const b=document.createElement('button');b.type='button';b.className='instant-fx-btn';b.setAttribute('aria-label','Instant FX '+p.label);b.innerHTML='<span>'+p.label+'</span><small>'+p.beat+'</small>';b.addEventListener('pointerdown',e=>{e.preventDefault();beginInstant(name,b,e)},{passive:false});b.addEventListener('pointerup',e=>endInstant(b,e));b.addEventListener('pointercancel',e=>endInstant(b,e));b.addEventListener('lostpointercapture',e=>endInstant(b,e));grid.appendChild(b)});padPanel.appendChild(bank)}
+  const kill=q('killfx'),oldKill=kill&&kill.onclick;if(kill)kill.onclick=async()=>{try{if(oldKill)await oldKill.call(kill)}catch(_){};const pitch=q('pitch');if(pitch){pitch.value=0;pitch.dispatchEvent(new Event('input',{bubbles:true}))}localMod=.5;if(modWheel){modWheel.setAttribute('aria-valuenow','50');modWheel.style.setProperty('--angle','0deg');modWheel.classList.remove('active')}const mv=q('modWheelV');if(mv)mv.textContent='50%';restorePadCenter();clearLiveText();instantSnapshot=null;instantOwner=null;document.querySelectorAll('.instant-fx-btn.active').forEach(b=>b.classList.remove('active'));try{log('KILL FX · PAD CENTER · MOD + LIVE SIGNAL + INSTANT FX RESET')}catch(_){}};
   function frameTick(now){try{if(a&&!a.paused&&!a.ended)updateLiveText(readBaseSignal(),now)}catch(_){}requestAnimationFrame(frameTick)}requestAnimationFrame(frameTick);
-  try{log('BASE ENOCHIAN SIGNAL → LIVE OUTPUT/MOD → LOG · PAD SPRING ACTIVE · PLATTER SCRATCH READY')}catch(_){}
+  try{log('BASE ENOCHIAN SIGNAL → LIVE OUTPUT/MOD → LOG · PAD SPRING ACTIVE · PLATTER SCRATCH READY · INSTANT FX READY')}catch(_){}
  })();`;
  d.body.appendChild(patch);
 });
