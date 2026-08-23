@@ -10,6 +10,7 @@ import '../screens/card_fullscreen_screen.dart';
 import '../screens/card_transcription_screen.dart';
 import '../screens/deck_selection_screen.dart';
 import '../screens/dj_who_videos_screen.dart';
+import '../screens/enochian_terminal_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/journal_screen.dart';
 import '../screens/not_found_screen.dart';
@@ -35,6 +36,7 @@ abstract final class AppRoutes {
   static const settings = '/settings';
   static const profile = '/profile';
   static const djWhoVideos = '/djwho';
+  static const enochianTerminal = '/enochian-terminal';
   static const login = '/login';
   static const register = '/register';
   static const forgotPassword = '/forgot-password';
@@ -77,6 +79,7 @@ abstract final class AppRouter {
       GoRoute(path: AppRoutes.rules, builder: (_, _) => const RulesScreen()),
       GoRoute(path: AppRoutes.settings, builder: (_, _) => const SettingsScreen()),
       GoRoute(path: AppRoutes.djWhoVideos, builder: (_, _) => const DjWhoVideosScreen()),
+      GoRoute(path: AppRoutes.enochianTerminal, builder: (_, _) => const EnochianTerminalScreen()),
       GoRoute(path: AppRoutes.profile, builder: (_, state) => AccountScreen(arguments: state.extra is ProfileRouteArguments ? state.extra! as ProfileRouteArguments : null)),
       GoRoute(path: '/deck/:deckId', builder: (_, state) => _DeckRouteScreen(deckId: state.pathParameters['deckId']!)),
       GoRoute(
