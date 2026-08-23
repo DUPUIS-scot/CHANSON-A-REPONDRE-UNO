@@ -1,0 +1,37 @@
+name: PATCH — Enochian Terminal Share Metadata
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/patch-enochian-terminal-share.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Brand Enochian Terminal share preview
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('web/enochian-terminal/index.html')
+          html = path.read_text(encoding='utf-8')
+          old = '<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>DJ WHO · ENOCHIAN TERMINAL</title>'
+          new = '''<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Chanson à Répondre UNO!</title><meta name="description" content="Chanson à Répondre UNO! — official web application."><link rel="canonical" href="https://www.chanson-a-repondre-uno.scot/enochian-terminal/"><meta property="og:type" content="website"><meta property="og:site_name" content="Chanson à Répondre UNO!"><meta property="og:title" content="Chanson à Répondre UNO!"><meta property="og:description" content="Chanson à Répondre UNO! — official web application."><meta property="og:url" content="https://www.chanson-a-repondre-uno.scot/enochian-terminal/"><meta property="og:image" content="https://www.chanson-a-repondre-uno.scot/social/chanson-a-repondre-uno-share.png"><meta property="og:image:secure_url" content="https://www.chanson-a-repondre-uno.scot/social/chanson-a-repondre-uno-share.png"><meta property="og:image:type" content="image/png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="Chanson à Répondre UNO!"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Chanson à Répondre UNO!"><meta name="twitter:description" content="Chanson à Répondre UNO! — official web application."><meta name="twitter:image" content="https://www.chanson-a-repondre-uno.scot/social/chanson-a-repondre-uno-share.png"><meta name="twitter:image:alt" content="Chanson à Répondre UNO!">'''
+          if old not in html:
+              raise SystemExit('Expected Enochian Terminal head signature not found')
+          html = html.replace(old, new, 1)
+          path.write_text(html, encoding='utf-8')
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add web/enochian-terminal/index.html
+          git diff --cached --check
+          git commit -m "Brand Enochian Terminal share preview as Chanson UNO"
+          git push origin HEAD:main
