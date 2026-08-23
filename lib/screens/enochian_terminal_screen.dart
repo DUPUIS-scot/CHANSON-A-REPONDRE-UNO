@@ -314,7 +314,9 @@ class _EnochianTerminalScreenState extends State<EnochianTerminalScreen>
           output: _enochian.text,
           readOnly: true,
         );
-        if (!wide) return Column(children: [english, const SizedBox(height: 12), enochian]);
+        if (!wide) {
+          return Column(children: [english, const SizedBox(height: 12), enochian]);
+        }
         return Row(children: [Expanded(child: english), const SizedBox(width: 12), Expanded(child: enochian)]);
       },
     ),
@@ -342,7 +344,15 @@ class _EnochianTerminalScreenState extends State<EnochianTerminalScreen>
       Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          TextButton(onPressed: () { controller.clear(); if (!readOnly) setState(() => _enochian.clear()); }, child: const Text('CLEAR')),
+          TextButton(
+            onPressed: () {
+              controller.clear();
+              if (!readOnly) {
+                setState(() => _enochian.clear());
+              }
+            },
+            child: const Text('CLEAR'),
+          ),
           const SizedBox(width: 8),
           TextButton.icon(onPressed: () => Clipboard.setData(ClipboardData(text: output)), icon: const Icon(Icons.copy_rounded, size: 16), label: const Text('COPY')),
         ],
@@ -401,7 +411,11 @@ class _WavePainter extends CustomPainter {
       final n = math.sin((x * .065) + t * 3.1) * 14 + math.sin((x * .19) - t * 5.2) * 7;
       final spike = ((x + t * 50) % 137 < 7) ? math.sin(x) * 30 : 0;
       final y = size.height * .58 + n + spike;
-      if (x == 0) path.moveTo(x, y); else path.lineTo(x, y);
+      if (x == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
     }
     canvas.drawPath(path, paint);
   }
@@ -441,7 +455,11 @@ class _PlatterPainter extends CustomPainter {
       final angle = -math.pi / 2 + i * math.pi / 7;
       final rr = i.isEven ? r * .20 : r * .09;
       final p = Offset(c.dx + math.cos(angle) * rr, c.dy + math.sin(angle) * rr);
-      if (i == 0) star.moveTo(p.dx, p.dy); else star.lineTo(p.dx, p.dy);
+      if (i == 0) {
+        star.moveTo(p.dx, p.dy);
+      } else {
+        star.lineTo(p.dx, p.dy);
+      }
     }
     star.close();
     canvas.drawPath(star, cyan);
@@ -458,13 +476,15 @@ class _MeterPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = const Color(0xFF4DE5C6);
-    final count = 14;
-    final w = size.width / count;
-    for (var i = 0; i < count; i++) {
-      final amp = .2 + .8 * ((math.sin(t * 2.8 + i * .7) + 1) / 2);
-      final h = size.height * amp;
-      canvas.drawRect(Rect.fromLTWH(i * w + 1, size.height - h, math.max(2.0, w - 3).toDouble(), h), paint);
+    final bars = 12;
+    for (var i = 0; i < bars; i++) {
+      final v = (.2 + .8 * ((math.sin(t * 2.4 + i * .83) + 1) / 2));
+      final h = size.height * v;
+      final w = size.width / bars - 3;
+      canvas.drawRect(
+        Rect.fromLTWH(i * size.width / bars, size.height - h, w, h),
+        Paint()..color = const Color(0xFF55E6CD),
+      );
     }
   }
 
