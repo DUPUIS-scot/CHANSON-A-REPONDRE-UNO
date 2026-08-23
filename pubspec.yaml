@@ -56,6 +56,7 @@ flutter:
     - assets/decks/chanson_a_repondre_brio/cards/
     - assets/hp/
     - assets/videos/
+    - assets/audio/
     - assets/json/cards.json
     - assets/json/ai_comptroller_enochian.json
     - assets/json/caesar_spitter_enochian_compact.json
