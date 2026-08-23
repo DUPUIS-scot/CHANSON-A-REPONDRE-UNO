@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>DJ WHO · ENOCHIAN TERMINAL</title><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000}iframe{display:block;width:100%;height:100%;border:0;background:#000}</style></head><body><iframe id="deck" src="/enochian-test/base.html?v=20260823-terminal-kill-reset" title="ENOCHIAN TERMINAL"></iframe><script>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>DJ WHO · ENOCHIAN TERMINAL</title><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000}iframe{display:block;width:100%;height:100%;border:0;background:#000}</style></head><body><iframe id="deck" src="/enochian-test/base.html?v=20260823-terminal-mixer-pad" title="ENOCHIAN TERMINAL"></iframe><script>
 const frame=document.getElementById('deck');
 frame.addEventListener('load',()=>{
  const d=frame.contentDocument;
@@ -16,22 +16,27 @@ frame.addEventListener('load',()=>{
  .wave canvas{top:28px!important;bottom:50px!important;height:auto!important}
  .signals{z-index:2!important}
  .mod-glyphs{display:none!important;min-height:0!important}
- .pad-panel.instant-layout{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;align-items:stretch!important}
- .pad-panel.instant-layout>.pad-top{grid-column:1/-1!important}
- .pad-panel.instant-layout>.xy-pad{grid-column:1!important;height:100%!important;min-height:180px!important}
- .instant-fx{grid-column:2!important;border-left:1px solid #17332e;padding-left:10px;display:grid;grid-template-rows:auto 1fr;gap:7px;min-width:0}
- .instant-fx-title{text-align:center;color:#9dece0;letter-spacing:.18em;font-size:9px}
- .instant-fx-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+ .pad-panel.instant-layout{grid-template-columns:minmax(0,1fr) 64px minmax(0,1fr)!important;grid-template-rows:auto minmax(180px,1fr)!important;align-items:stretch!important}
+ .pad-panel.instant-layout>.pad-top{grid-column:1!important;grid-row:1!important}
+ .pad-panel.instant-layout>.xy-pad{grid-column:1!important;grid-row:2!important;height:100%!important;min-height:180px!important}
+ .pad-readout-overlay{position:absolute!important;right:10px!important;top:8px!important;z-index:4!important;padding:3px 6px!important;border:1px solid #315b56!important;border-radius:4px!important;background:#020706dd!important;box-shadow:0 0 10px #0008!important;pointer-events:none!important}
+ .mixer-level{grid-column:2!important;grid-row:1/3!important;display:grid;grid-template-rows:auto 1fr auto;justify-items:center;align-items:center;gap:8px;padding:7px 5px;border-left:1px solid #17332e;border-right:1px solid #17332e;background:#020706;min-width:0}
+ .mixer-level-title{font-size:8px;letter-spacing:.16em;color:#9dece0;writing-mode:vertical-rl;transform:rotate(180deg)}
+ .mixer-level-range{appearance:slider-vertical;-webkit-appearance:slider-vertical;writing-mode:vertical-lr;direction:rtl;width:32px;height:100%;min-height:150px;accent-color:#d5aa63;cursor:ns-resize}
+ .mixer-level-value{font-size:9px;color:#d5aa63;font-weight:800;white-space:nowrap}
+ .instant-fx{grid-column:3!important;grid-row:1/3!important;border-left:0;padding-left:10px;display:grid;grid-template-rows:auto 1fr;gap:7px;min-width:0;align-self:stretch}
+ .instant-fx-title{text-align:center;color:#9dece0;letter-spacing:.18em;font-size:9px;align-self:start;padding-top:2px}
+ .instant-fx-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;align-content:stretch}
  .instant-fx-btn{min-height:68px;border:1px solid #315b56;border-radius:6px;background:linear-gradient(180deg,#07120f,#020706);color:#d7fff8;padding:8px 6px;cursor:pointer;touch-action:none;user-select:none;text-align:left;box-shadow:inset 0 0 0 1px #0008}
  .instant-fx-btn span{display:block;color:#d7fff8;font-size:12px;font-weight:800;line-height:1.05}
  .instant-fx-btn small{display:block;margin-top:8px;color:#d5aa63;font-size:9px;font-weight:700}
  .instant-fx-btn.active{background:#0b3027;border-color:#68d8bd;box-shadow:0 0 18px #40e6b455,inset 0 0 0 1px #68d8bd66;color:#fff}
- @media(max-width:1000px){.stage{grid-template-rows:200px auto auto auto auto!important}.pad-panel.instant-layout{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important}.instant-fx-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.instant-fx-btn{min-height:60px}}
- @media(max-width:620px){.pad-panel.instant-layout{grid-template-columns:1fr!important}.pad-panel.instant-layout>.xy-pad{grid-column:1!important;height:220px!important}.instant-fx{grid-column:1!important;border-left:0;border-top:1px solid #17332e;padding-left:0;padding-top:10px}.instant-fx-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+ @media(max-width:1000px){.stage{grid-template-rows:200px auto auto auto auto!important}.pad-panel.instant-layout{grid-template-columns:minmax(0,1fr) 58px minmax(0,1fr)!important}.instant-fx-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.instant-fx-btn{min-height:60px}}
+ @media(max-width:620px){.pad-panel.instant-layout{grid-template-columns:1fr!important;grid-template-rows:auto 220px 130px auto!important}.pad-panel.instant-layout>.pad-top{grid-column:1!important;grid-row:1!important}.pad-panel.instant-layout>.xy-pad{grid-column:1!important;grid-row:2!important;height:220px!important}.mixer-level{grid-column:1!important;grid-row:3!important;grid-template-columns:auto 1fr auto;grid-template-rows:1fr;padding:8px;border:1px solid #17332e}.mixer-level-title{writing-mode:horizontal-tb;transform:none}.mixer-level-range{writing-mode:horizontal-tb;direction:ltr;appearance:auto;-webkit-appearance:auto;width:100%;height:34px;min-height:0;cursor:ew-resize}.instant-fx{grid-column:1!important;grid-row:4!important;border-top:1px solid #17332e;padding-left:0;padding-top:10px}.instant-fx-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
  `;d.head.appendChild(css);
  const title=d.querySelector('.title');if(title)title.textContent='ENOCHIAN TERMINAL · EQ / FX / MOD / GLIDE';
  const home=d.querySelector('.home-link');if(home){home.textContent='⌂';home.setAttribute('aria-label','Home');home.setAttribute('title','Home');home.href='/';}
- const art=d.getElementById('platterArt');if(art){art.src='/assets/assets/images/uno_jester_headphones.webp?v=20260823-terminal-kill-reset';art.alt='UNO jester';}
+ const art=d.getElementById('platterArt');if(art){art.src='/assets/assets/images/uno_jester_headphones.webp?v=20260823-terminal-mixer-pad';art.alt='UNO jester';}
  const patch=d.createElement('script');patch.textContent=`
  (function(){
   const q=id=>document.getElementById(id);
@@ -78,7 +83,9 @@ frame.addEventListener('load',()=>{
    platter.addEventListener('keydown',e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();stopInertia();addRotation(e.key==='ArrowLeft'?-15:15)}});
   }
   function restorePadCenter(){try{if(typeof setPad==='function')setPad(.5,.5,false);if(typeof padRateFactor!=='undefined')padRateFactor=1;if(typeof applyPlaybackRate==='function')applyPlaybackRate();if(typeof applyFxMacro==='function'&&typeof fxMacro!=='undefined')applyFxMacro(fxMacro);const r=q('padReadout');if(r)r.textContent='X 50 · Y 50'}catch(_){}}
-  const pad=q('xyPad');if(pad){pad.addEventListener('pointerup',e=>{try{if(pad.hasPointerCapture(e.pointerId))pad.releasePointerCapture(e.pointerId)}catch(_){}restorePadCenter()});pad.addEventListener('pointercancel',restorePadCenter);pad.addEventListener('lostpointercapture',restorePadCenter)}
+  const pad=q('xyPad');
+  const padReadout=q('padReadout');if(pad&&padReadout){pad.appendChild(padReadout);padReadout.classList.add('pad-readout-overlay')}
+  if(pad){pad.addEventListener('pointerup',e=>{try{if(pad.hasPointerCapture(e.pointerId))pad.releasePointerCapture(e.pointerId)}catch(_){}restorePadCenter()});pad.addEventListener('pointercancel',restorePadCenter);pad.addEventListener('lostpointercapture',restorePadCenter)}
   const instantPresets={
    Landing:{label:'Landing',beat:'1',filter:260,drive:58,delay:.23,fb:.68,wet:.78,pitch:-5},
    Echo:{label:'Echo',beat:'1',filter:760,drive:16,delay:.36,fb:.64,wet:.72,pitch:0},
@@ -93,7 +100,19 @@ frame.addEventListener('load',()=>{
   function setInstantControl(id,value){const el=q(id);if(!el||value===undefined)return;el.value=value;el.dispatchEvent(new Event('input',{bubbles:true}))}
   function beginInstant(name,button,e){const p=instantPresets[name];if(!p)return;if(!instantSnapshot){instantSnapshot={};instantControls.forEach(id=>{const el=q(id);if(el)instantSnapshot[id]=el.value})}instantOwner=button;document.querySelectorAll('.instant-fx-btn.active').forEach(b=>b.classList.remove('active'));button.classList.add('active');instantControls.forEach(id=>setInstantControl(id,p[id]));try{button.setPointerCapture(e.pointerId)}catch(_){};try{log('INSTANT FX · '+name.toUpperCase()+' · '+p.beat)}catch(_){}}
   function endInstant(button,e){if(instantOwner!==button)return;button.classList.remove('active');if(instantSnapshot){Object.entries(instantSnapshot).forEach(([id,value])=>setInstantControl(id,value));instantSnapshot=null}instantOwner=null;try{if(e&&button.hasPointerCapture(e.pointerId))button.releasePointerCapture(e.pointerId)}catch(_){};try{log('INSTANT FX · RELEASE')}catch(_){}}
-  const padPanel=pad&&pad.closest('.pad-panel');if(padPanel&&!padPanel.querySelector('.instant-fx')){padPanel.classList.add('instant-layout');const bank=document.createElement('div');bank.className='instant-fx';bank.innerHTML='<div class="instant-fx-title">INSTANT FX · HOLD</div><div class="instant-fx-grid"></div>';const grid=bank.querySelector('.instant-fx-grid');Object.entries(instantPresets).forEach(([name,p])=>{const b=document.createElement('button');b.type='button';b.className='instant-fx-btn';b.setAttribute('aria-label','Instant FX '+p.label);b.innerHTML='<span>'+p.label+'</span><small>'+p.beat+'</small>';b.addEventListener('pointerdown',e=>{e.preventDefault();beginInstant(name,b,e)},{passive:false});b.addEventListener('pointerup',e=>endInstant(b,e));b.addEventListener('pointercancel',e=>endInstant(b,e));b.addEventListener('lostpointercapture',e=>endInstant(b,e));grid.appendChild(b)});padPanel.appendChild(bank)}
+  const padPanel=pad&&pad.closest('.pad-panel');
+  if(padPanel&&!padPanel.querySelector('.instant-fx')){
+   padPanel.classList.add('instant-layout');
+   const mixer=document.createElement('div');mixer.className='mixer-level';mixer.innerHTML='<div class="mixer-level-title">MIX LEVEL</div><input id="mixerLevel" class="mixer-level-range" type="range" min="0" max="100" step="1" value="82" aria-label="Mixer level"><output id="mixerLevelV" class="mixer-level-value">82%</output>';
+   const masterRange=q('vol'),mixRange=mixer.querySelector('#mixerLevel'),mixValue=mixer.querySelector('#mixerLevelV');
+   if(masterRange){mixRange.value=Math.round((parseFloat(masterRange.value)||0)*100);mixValue.textContent=mixRange.value+'%'}
+   const applyMixer=()=>{const pct=Math.max(0,Math.min(100,parseFloat(mixRange.value)||0));mixValue.textContent=Math.round(pct)+'%';if(masterRange){masterRange.value=(pct/100).toFixed(2);masterRange.dispatchEvent(new Event('input',{bubbles:true}))}};
+   mixRange.addEventListener('input',applyMixer);
+   mixRange.addEventListener('wheel',e=>{e.preventDefault();mixRange.value=Math.max(0,Math.min(100,(parseFloat(mixRange.value)||0)+(e.deltaY<0?2:-2)));applyMixer()},{passive:false});
+   if(masterRange)masterRange.addEventListener('input',()=>{const pct=Math.round((parseFloat(masterRange.value)||0)*100);if(Math.round(parseFloat(mixRange.value)||0)!==pct){mixRange.value=pct;mixValue.textContent=pct+'%'}});
+   const bank=document.createElement('div');bank.className='instant-fx';bank.innerHTML='<div class="instant-fx-title">INSTANT FX · HOLD</div><div class="instant-fx-grid"></div>';const grid=bank.querySelector('.instant-fx-grid');Object.entries(instantPresets).forEach(([name,p])=>{const b=document.createElement('button');b.type='button';b.className='instant-fx-btn';b.setAttribute('aria-label','Instant FX '+p.label);b.innerHTML='<span>'+p.label+'</span><small>'+p.beat+'</small>';b.addEventListener('pointerdown',e=>{e.preventDefault();beginInstant(name,b,e)},{passive:false});b.addEventListener('pointerup',e=>endInstant(b,e));b.addEventListener('pointercancel',e=>endInstant(b,e));b.addEventListener('lostpointercapture',e=>endInstant(b,e));grid.appendChild(b)});
+   padPanel.appendChild(mixer);padPanel.appendChild(bank)
+  }
   const kill=q('killfx'),oldKill=kill&&kill.onclick;
   if(kill)kill.onclick=async()=>{
    try{if(oldKill)await oldKill.call(kill)}catch(_){}
@@ -109,7 +128,7 @@ frame.addEventListener('load',()=>{
    instantSnapshot=null;instantOwner=null;document.querySelectorAll('.instant-fx-btn.active').forEach(b=>b.classList.remove('active'));
    try{log('KILL FX · TEXT CLEARED · MOD OFF · MOD DEPTH 0 · PAD CENTER · INSTANT FX RESET')}catch(_){}
   };
-  try{log('ENOCHIAN SIGNAL ANALYSER · TEXT INPUT MANUAL · PAD SPRING ACTIVE · PLATTER SCRATCH READY · INSTANT FX READY')}catch(_){}
+  try{log('ENOCHIAN SIGNAL ANALYSER · TEXT INPUT MANUAL · PAD XY READOUT · MIXER LEVEL · INSTANT FX HIGH LAYOUT · PAD SPRING ACTIVE · PLATTER SCRATCH READY')}catch(_){}
  })();`;
  d.body.appendChild(patch);
 });
