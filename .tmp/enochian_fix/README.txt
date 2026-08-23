@@ -1,0 +1,1 @@
+staging music transcription, stationary platter art, spring-return pad, and home icon
