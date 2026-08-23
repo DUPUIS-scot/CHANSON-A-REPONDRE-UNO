@@ -26,7 +26,12 @@ String buildCanonicalShareHtml({
   final deepLink = publicBase.replace(fragment: '/cards/$cardId');
   final socialImagePath = previewImagePath ?? imagePath;
   final imageUrl = publicBase.replace(
-    pathSegments: [...root, 'assets', ...socialImagePath.split('/')],
+    pathSegments: [
+      ...root,
+      'assets',
+      if (previewImagePath == null) 'assets',
+      ...socialImagePath.split('/'),
+    ],
   );
   final mime = _imageMimeType(socialImagePath);
   final dimensions = StringBuffer();
@@ -64,7 +69,7 @@ String buildLegacyRedirectHtml({
     pathSegments: [...root, 'share', canonicalSlug, ''],
   );
   final image = publicBase.replace(
-    pathSegments: [...root, 'assets', ...imagePath.split('/')],
+    pathSegments: [...root, 'assets', 'assets', ...imagePath.split('/')],
   );
   final c = _html(canonical.toString());
   final i = _html(image.toString());
