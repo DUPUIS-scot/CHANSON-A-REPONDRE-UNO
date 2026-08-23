@@ -20,19 +20,19 @@ class EnochianTerminalScreen extends StatefulWidget {
 
 class _EnochianTerminalScreenState extends State<EnochianTerminalScreen>
     with SingleTickerProviderStateMixin {
+  static const _names = <String>[
+    'UN', 'PA', 'VEH', 'GAL', 'GRAPH', 'OR', 'NA', 'GON', 'UR', 'TAL',
+    'GISA', 'FAM', 'GED', 'DON', 'MED', 'MALS', 'GER', 'DRUX', 'PAL',
+    'CEPH', 'VAN',
+  ];
+
   late final AnimationController _rotation;
   Timer? _clock;
+  bool _bootstrapped = false;
   double _seconds = 0;
-  double _pitch = 0;
   double _speed = 1;
-  bool _sync = true;
-  bool _scratch = true;
   final _english = TextEditingController(text: 'HELLO WORLD');
   final _enochian = TextEditingController();
-
-  static const _glyphs = <String>[
-    'ᚠ','ᚢ','ᚦ','ᚨ','ᚱ','ᚲ','ᚷ','ᚹ','ᚺ','ᚾ','ᛁ','ᛃ','ᛇ','ᛈ','ᛉ','ᛋ','ᛏ','ᛒ','ᛖ','ᛗ','ᛚ','ᛜ','ᛞ','ᛟ','ᚪ','ᚫ',
-  ];
 
   @override
   void initState() {
@@ -42,7 +42,15 @@ class _EnochianTerminalScreenState extends State<EnochianTerminalScreen>
       duration: const Duration(seconds: 12),
     )..repeat();
     _enochian.text = _encode(_english.text);
-    _clock = Timer.periodic(const Duration(milliseconds: 250), (_) => _tick());
+    _clock = Timer.periodic(const Duration(milliseconds: 200), (_) => _tick());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_bootstrapped) return;
+    _bootstrapped = true;
+    unawaited(context.read<DjWhoPlayerProvider>().ensureAudioController());
   }
 
   Future<void> _tick() async {
@@ -50,28 +58,42 @@ class _EnochianTerminalScreenState extends State<EnochianTerminalScreen>
     final player = context.read<DjWhoPlayerProvider>();
     final controller = player.controller;
     double? next;
-    if (_sync && controller != null && player.isPlaying) {
+    if (controller != null) {
       try {
         next = await controller.currentTime;
       } catch (_) {}
     }
     if (!mounted) return;
     setState(() {
-      _seconds = next ?? (_seconds + .25 * _speed);
+      _seconds = next ?? (_seconds + .2 * _speed);
     });
   }
 
   String _encode(String input) {
-    final buffer = StringBuffer();
+    final words = <String>[];
     for (final rune in input.toUpperCase().runes) {
       final c = String.fromCharCode(rune);
-      if (c.codeUnitAt(0) >= 65 && c.codeUnitAt(0) <= 90) {
-        buffer.write(_glyphs[c.codeUnitAt(0) - 65]);
-      } else {
-        buffer.write(c);
+      final code = c.codeUnitAt(0);
+      if (code >= 65 && code <= 90) {
+        words.add(_names[(code - 65) % _names.length]);
+      } else if (c == ' ') {
+        words.add('/');
       }
     }
-    return buffer.toString();
+    return words.join(' ');
+  }
+
+  String _backgroundLog(DjWhoPlayerProvider player) {
+    final seed = (_seconds * 8).floor() + player.selectedIndex * 17;
+    final entries = <String>[];
+    for (var row = 0; row < 18; row++) {
+      final a = _names[(seed + row * 3) % _names.length];
+      final b = _names[(seed + row * 5 + 7) % _names.length];
+      final c = _names[(seed + row * 7 + 11) % _names.length];
+      final d = _names[(seed + row * 11 + 13) % _names.length];
+      entries.add('$a  $b  $c  $d');
+    }
+    return entries.join('\n');
   }
 
   String _time(double seconds) {
@@ -93,70 +115,128 @@ class _EnochianTerminalScreenState extends State<EnochianTerminalScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF050807),
+      backgroundColor: const Color(0xFF030605),
       body: SafeArea(
         child: Consumer<DjWhoPlayerProvider>(
           builder: (context, player, _) {
-            final video = player.selectedVideo;
-            return SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(14, 10, 14, 32),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1180),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _topBar(context),
-                      const SizedBox(height: 14),
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          final desktop = constraints.maxWidth >= 900;
-                          if (desktop) {
-                            return Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                SizedBox(width: 235, child: _leftDeck(player)),
-                                const SizedBox(width: 14),
-                                Expanded(child: _centerDeck(player)),
-                                const SizedBox(width: 14),
-                                SizedBox(width: 170, child: _rightDeck()),
-                              ],
-                            );
-                          }
-                          return Column(
-                            children: [
-                              _leftDeck(player),
-                              const SizedBox(height: 14),
-                              _centerDeck(player),
-                              const SizedBox(height: 14),
-                              _rightDeck(),
-                            ],
-                          );
-                        },
+            return LayoutBuilder(
+              builder: (context, constraints) {
+                final compact = constraints.maxWidth < 760 || constraints.maxHeight < 690;
+                final platterSize = compact
+                    ? math.min(constraints.maxWidth * .48, constraints.maxHeight * .34)
+                    : math.min(constraints.maxWidth * .36, constraints.maxHeight * .46);
+
+                return Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Positioned.fill(
+                      child: CustomPaint(
+                        painter: _SignalBackdropPainter(_seconds),
                       ),
-                      const SizedBox(height: 16),
-                      _trackSelector(player),
-                      const SizedBox(height: 16),
-                      _translationPanel(),
-                      const SizedBox(height: 16),
-                      DjWhoEnochianTerminal(player: player),
-                      const SizedBox(height: 14),
-                      Text(
-                        video == null
-                            ? 'THE LANGUAGE IS NOT DEAD. IT WAITS FOR INTERPRETERS.'
-                            : '${video.title.toUpperCase()} · THE LANGUAGE IS NOT DEAD. IT WAITS FOR INTERPRETERS.',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Color(0xFF6ED9C8),
-                          fontFamily: 'monospace',
-                          fontSize: 10,
-                          letterSpacing: 2.2,
+                    ),
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: Opacity(
+                          opacity: .10,
+                          child: Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: FittedBox(
+                              fit: BoxFit.cover,
+                              alignment: Alignment.center,
+                              child: SizedBox(
+                                width: 780,
+                                child: DjWhoEnochianTerminal(player: player),
+                              ),
+                            ),
+                          ),
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              ),
+                    ),
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: _ScrollingEnochianBackground(
+                          text: _backgroundLog(player),
+                          phase: _seconds,
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      left: 8,
+                      top: 6,
+                      child: IconButton(
+                        tooltip: 'Home',
+                        onPressed: () => context.go(AppRoutes.home),
+                        icon: const Icon(
+                          Icons.home_rounded,
+                          color: AppTheme.brightGold,
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      left: 60,
+                      right: 60,
+                      top: 14,
+                      child: const Text(
+                        'ENOCHIAN TERMINAL',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Color(0xFF9CE9DD),
+                          fontFamily: 'monospace',
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 4,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      left: 12,
+                      right: 12,
+                      top: 54,
+                      child: _trackBar(player),
+                    ),
+                    Align(
+                      alignment: compact ? const Alignment(0, -.07) : const Alignment(0, -.02),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            player.selectedVideo?.title.toUpperCase() ?? 'DJ WHO',
+                            style: const TextStyle(
+                              color: AppTheme.brightGold,
+                              fontFamily: 'monospace',
+                              letterSpacing: 2.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            width: platterSize,
+                            height: platterSize,
+                            child: AnimatedBuilder(
+                              animation: _rotation,
+                              builder: (context, child) => Transform.rotate(
+                                angle: _rotation.value * math.pi * 2 * _speed,
+                                child: child,
+                              ),
+                              child: CustomPaint(
+                                painter: const _EnochianPlatterPainter(),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          _transport(player),
+                        ],
+                      ),
+                    ),
+                    Positioned(
+                      left: 12,
+                      right: 12,
+                      bottom: 12,
+                      child: _translationPanel(compact),
+                    ),
+                  ],
+                );
+              },
             );
           },
         ),
@@ -164,297 +244,327 @@ class _EnochianTerminalScreenState extends State<EnochianTerminalScreen>
     );
   }
 
-  Widget _topBar(BuildContext context) => Row(
-    children: [
-      IconButton(
-        tooltip: 'Home',
-        onPressed: () => context.go(AppRoutes.home),
-        icon: const Icon(Icons.home_rounded, color: AppTheme.brightGold),
-      ),
-      const SizedBox(width: 4),
-      const Expanded(
-        child: Text(
-          'ENOCHIAN TERMINAL · DJ WHO LABORATORY',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: Color(0xFF9CE9DD),
-            fontFamily: 'monospace',
-            fontWeight: FontWeight.w700,
-            letterSpacing: 3,
-          ),
-        ),
-      ),
-      _toggleChip('SYNC', _sync, () => setState(() => _sync = !_sync)),
-    ],
-  );
-
-  Widget _leftDeck(DjWhoPlayerProvider player) => _panel(
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const Text('DJ WHO', style: TextStyle(color: Color(0xFF9CE9DD), fontSize: 28, fontWeight: FontWeight.w900)),
-        const SizedBox(height: 14),
-        const Text('NOW PLAYING', style: _micro),
-        const SizedBox(height: 5),
-        Text(player.selectedVideo?.title ?? 'No track', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
-        const SizedBox(height: 12),
-        Text('${_time(_seconds)}  /  LIVE', style: const TextStyle(color: Colors.white70, fontFamily: 'monospace')),
-        const SizedBox(height: 8),
-        LinearProgressIndicator(value: ((_seconds % 180) / 180).clamp(0.0, 1.0).toDouble(), minHeight: 3),
-        const SizedBox(height: 16),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _squareButton(Icons.skip_previous_rounded, () => unawaited(player.previous())),
-            _squareButton(player.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded, () => unawaited(player.togglePlayback())),
-            _squareButton(Icons.skip_next_rounded, () => unawaited(player.next())),
-          ],
-        ),
-        const SizedBox(height: 18),
-        const Text('PITCH', style: _micro),
-        Slider(value: _pitch, min: -8, max: 8, onChanged: (v) => setState(() => _pitch = v)),
-        Text('${_pitch.toStringAsFixed(2)}%', textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70, fontFamily: 'monospace')),
-        const SizedBox(height: 12),
-        const Text('SPEED', style: _micro),
-        Wrap(
-          spacing: 6,
-          children: [.5, 1.0, 2.0].map((value) => ChoiceChip(
-            label: Text('${value}x'),
-            selected: _speed == value,
-            onSelected: (_) => setState(() => _speed = value),
-          )).toList(),
-        ),
-      ],
-    ),
-  );
-
-  Widget _centerDeck(DjWhoPlayerProvider player) => _panel(
-    child: Column(
-      children: [
-        const Text('ENOCHIAN CODING WAVE', style: TextStyle(color: Color(0xFF9CE9DD), fontFamily: 'monospace', letterSpacing: 4)),
-        const SizedBox(height: 10),
-        SizedBox(height: 170, child: CustomPaint(painter: _WavePainter(_seconds))),
-        const SizedBox(height: 8),
-        AspectRatio(
-          aspectRatio: 1,
-          child: AnimatedBuilder(
-            animation: _rotation,
-            builder: (context, child) => Transform.rotate(
-              angle: _rotation.value * math.pi * 2 * _speed,
-              child: child,
-            ),
-            child: CustomPaint(painter: _PlatterPainter()),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(player.selectedVideo?.title.toUpperCase() ?? 'DJ WHO', style: const TextStyle(color: AppTheme.brightGold, letterSpacing: 2)),
-      ],
-    ),
-  );
-
-  Widget _rightDeck() => _panel(
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const Text('TIME', style: _micro),
-        Text(_time(_seconds), style: const TextStyle(color: Colors.white, fontFamily: 'monospace', fontSize: 20)),
-        const SizedBox(height: 16),
-        const Text('MODE', style: _micro),
-        const Text('VISUAL SYNC', style: TextStyle(color: Colors.white70, fontFamily: 'monospace')),
-        const SizedBox(height: 16),
-        const Text('SIGNAL', style: _micro),
-        SizedBox(height: 70, child: CustomPaint(painter: _MeterPainter(_seconds))),
-        const SizedBox(height: 18),
-        _toggleChip('SCRATCH', _scratch, () => setState(() => _scratch = !_scratch)),
-        const SizedBox(height: 10),
-        OutlinedButton(
-          onPressed: () => setState(() { _pitch = 0; _speed = 1; }),
-          child: const Text('RESET DECK'),
-        ),
-      ],
-    ),
-  );
-
-  Widget _trackSelector(DjWhoPlayerProvider player) => _panel(
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('DJ WHO SIGNAL SOURCE', style: _micro),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: List.generate(player.videos.length, (index) {
-            final selected = index == player.selectedIndex;
-            return ChoiceChip(
-              label: Text(player.videos[index].title),
-              selected: selected,
-              onSelected: (_) => unawaited(player.selectVideo(index)),
-            );
-          }),
-        ),
-      ],
-    ),
-  );
-
-  Widget _translationPanel() => _panel(
-    child: LayoutBuilder(
-      builder: (context, constraints) {
-        final wide = constraints.maxWidth >= 760;
-        final english = _translatorBox(
-          title: 'ENGLISH → ENOCHIAN',
-          controller: _english,
-          onChanged: (value) => setState(() => _enochian.text = _encode(value)),
-          output: _enochian.text,
-        );
-        final enochian = _translatorBox(
-          title: 'ENOCHIAN OUTPUT',
-          controller: _enochian,
-          onChanged: (_) {},
-          output: _enochian.text,
-          readOnly: true,
-        );
-        if (!wide) {
-          return Column(children: [english, const SizedBox(height: 12), enochian]);
-        }
-        return Row(children: [Expanded(child: english), const SizedBox(width: 12), Expanded(child: enochian)]);
-      },
-    ),
-  );
-
-  Widget _translatorBox({
-    required String title,
-    required TextEditingController controller,
-    required ValueChanged<String> onChanged,
-    required String output,
-    bool readOnly = false,
-  }) => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      Text(title, style: _micro),
-      const SizedBox(height: 8),
-      TextField(
-        controller: controller,
-        readOnly: readOnly,
-        onChanged: onChanged,
-        style: TextStyle(color: readOnly ? const Color(0xFF89E6D8) : Colors.white, fontFamily: 'monospace', fontSize: readOnly ? 24 : 16, letterSpacing: readOnly ? 3 : 1),
-        decoration: const InputDecoration(border: OutlineInputBorder()),
-      ),
-      const SizedBox(height: 8),
-      Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          TextButton(
-            onPressed: () {
-              controller.clear();
-              if (!readOnly) {
-                setState(() => _enochian.clear());
-              }
-            },
-            child: const Text('CLEAR'),
-          ),
-          const SizedBox(width: 8),
-          TextButton.icon(onPressed: () => Clipboard.setData(ClipboardData(text: output)), icon: const Icon(Icons.copy_rounded, size: 16), label: const Text('COPY')),
-        ],
-      ),
-    ],
-  );
-
-  Widget _panel({required Widget child}) => Container(
-    padding: const EdgeInsets.all(14),
+  Widget _trackBar(DjWhoPlayerProvider player) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
     decoration: BoxDecoration(
-      color: const Color(0xFF080C0B),
+      color: Colors.black.withValues(alpha: .62),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: const Color(0xFF315C55)),
+    ),
+    child: Row(
+      children: [
+        const Text('SOURCE', style: _micro),
+        const SizedBox(width: 10),
+        Expanded(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: List.generate(player.videos.length, (index) {
+                final selected = index == player.selectedIndex;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 7),
+                  child: ChoiceChip(
+                    label: Text(player.videos[index].title),
+                    selected: selected,
+                    visualDensity: VisualDensity.compact,
+                    onSelected: (_) => unawaited(player.selectVideo(index)),
+                  ),
+                );
+              }),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(_time(_seconds), style: _micro),
+      ],
+    ),
+  );
+
+  Widget _transport(DjWhoPlayerProvider player) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+    decoration: BoxDecoration(
+      color: Colors.black.withValues(alpha: .76),
+      borderRadius: BorderRadius.circular(28),
+      border: Border.all(color: const Color(0xFF315C55)),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          tooltip: 'Previous',
+          onPressed: () => unawaited(player.previous()),
+          icon: const Icon(Icons.skip_previous_rounded),
+        ),
+        IconButton.filled(
+          tooltip: player.isPlaying ? 'Pause' : 'Play audio',
+          onPressed: () => unawaited(player.togglePlayback()),
+          icon: Icon(
+            player.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+          ),
+        ),
+        IconButton(
+          tooltip: 'Next',
+          onPressed: () => unawaited(player.next()),
+          icon: const Icon(Icons.skip_next_rounded),
+        ),
+        const SizedBox(width: 6),
+        PopupMenuButton<double>(
+          tooltip: 'Visual speed',
+          initialValue: _speed,
+          onSelected: (value) => setState(() => _speed = value),
+          itemBuilder: (_) => const [
+            PopupMenuItem(value: .5, child: Text('0.5×')),
+            PopupMenuItem(value: 1, child: Text('1×')),
+            PopupMenuItem(value: 2, child: Text('2×')),
+          ],
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Text('${_speed}×', style: _micro),
+          ),
+        ),
+      ],
+    ),
+  );
+
+  Widget _translationPanel(bool compact) => Container(
+    padding: const EdgeInsets.all(10),
+    decoration: BoxDecoration(
+      color: Colors.black.withValues(alpha: .82),
       borderRadius: BorderRadius.circular(14),
       border: Border.all(color: const Color(0xFF315C55)),
-      boxShadow: const [BoxShadow(color: Colors.black54, blurRadius: 18)],
+      boxShadow: const [BoxShadow(color: Colors.black54, blurRadius: 20)],
     ),
-    child: child,
+    child: compact
+        ? Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _translatorField(),
+              const SizedBox(height: 6),
+              _translatorOutput(),
+            ],
+          )
+        : Row(
+            children: [
+              Expanded(child: _translatorField()),
+              const SizedBox(width: 10),
+              Expanded(child: _translatorOutput()),
+            ],
+          ),
   );
 
-  Widget _toggleChip(String label, bool value, VoidCallback onTap) => InkWell(
-    onTap: onTap,
+  Widget _translatorField() => TextField(
+    controller: _english,
+    onChanged: (value) {
+      setState(() {
+        _enochian.text = _encode(value);
+      });
+    },
+    style: const TextStyle(
+      color: Colors.white,
+      fontFamily: 'monospace',
+      fontSize: 13,
+    ),
+    decoration: InputDecoration(
+      isDense: true,
+      labelText: 'TRANSLATE TO ENOCHIAN',
+      suffixIcon: IconButton(
+        tooltip: 'Clear',
+        onPressed: () {
+          setState(() {
+            _english.clear();
+            _enochian.clear();
+          });
+        },
+        icon: const Icon(Icons.clear_rounded),
+      ),
+      border: const OutlineInputBorder(),
+    ),
+  );
+
+  Widget _translatorOutput() => InkWell(
+    onTap: () => Clipboard.setData(ClipboardData(text: _enochian.text)),
     borderRadius: BorderRadius.circular(8),
     child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      constraints: const BoxConstraints(minHeight: 48),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: value ? const Color(0xFF082B24) : Colors.black,
-        border: Border.all(color: value ? const Color(0xFF33D8B8) : Colors.white24),
+        color: const Color(0xFF06110F),
         borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFF1E665A)),
       ),
-      child: Text('$label ${value ? 'ON' : 'OFF'}', style: TextStyle(color: value ? const Color(0xFF63F0D5) : Colors.white54, fontFamily: 'monospace', fontWeight: FontWeight.w700)),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              _enochian.text.isEmpty ? 'ENOCHIAN OUTPUT' : _enochian.text,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Color(0xFF89E6D8),
+                fontFamily: 'monospace',
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.4,
+                fontSize: 12,
+              ),
+            ),
+          ),
+          const Icon(Icons.copy_rounded, size: 16, color: Color(0xFF89E6D8)),
+        ],
+      ),
     ),
   );
 
-  Widget _squareButton(IconData icon, VoidCallback onTap) => IconButton.filledTonal(onPressed: onTap, icon: Icon(icon));
-
-  static const _micro = TextStyle(color: Color(0xFF7EB8AE), fontFamily: 'monospace', fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.5);
+  static const _micro = TextStyle(
+    color: Color(0xFF7EB8AE),
+    fontFamily: 'monospace',
+    fontSize: 10,
+    fontWeight: FontWeight.w700,
+    letterSpacing: 1.5,
+  );
 }
 
-class _WavePainter extends CustomPainter {
-  _WavePainter(this.t);
+class _ScrollingEnochianBackground extends StatelessWidget {
+  const _ScrollingEnochianBackground({
+    required this.text,
+    required this.phase,
+  });
+
+  final String text;
+  final double phase;
+
+  @override
+  Widget build(BuildContext context) {
+    final offset = (phase * 18) % 240;
+    return ClipRect(
+      child: Transform.translate(
+        offset: Offset(0, offset - 120),
+        child: Center(
+          child: Text(
+            '$text\n$text',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: const Color(0xFF6CE0CE).withValues(alpha: .13),
+              fontFamily: 'monospace',
+              fontSize: 22,
+              height: 1.7,
+              letterSpacing: 5,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SignalBackdropPainter extends CustomPainter {
+  const _SignalBackdropPainter(this.t);
+
   final double t;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final grid = Paint()..color = const Color(0xFF12352F)..strokeWidth = 1;
-    for (var i = 1; i < 10; i++) {
-      final x = size.width * i / 10;
+    final grid = Paint()
+      ..color = const Color(0xFF0C2A25)
+      ..strokeWidth = 1;
+    for (var i = 1; i < 12; i++) {
+      final x = size.width * i / 12;
       canvas.drawLine(Offset(x, 0), Offset(x, size.height), grid);
     }
-    for (var i = 1; i < 5; i++) {
-      final y = size.height * i / 5;
+    for (var i = 1; i < 8; i++) {
+      final y = size.height * i / 8;
       canvas.drawLine(Offset(0, y), Offset(size.width, y), grid);
     }
-    final paint = Paint()..color = const Color(0xFF4DE5C6)..strokeWidth = 2..style = PaintingStyle.stroke;
-    final path = Path();
-    for (var x = 0.0; x <= size.width; x += 3) {
-      final n = math.sin((x * .065) + t * 3.1) * 14 + math.sin((x * .19) - t * 5.2) * 7;
-      final spike = ((x + t * 50) % 137 < 7) ? math.sin(x) * 30 : 0;
-      final y = size.height * .58 + n + spike;
-      if (x == 0) {
-        path.moveTo(x, y);
-      } else {
-        path.lineTo(x, y);
+
+    final paint = Paint()
+      ..color = const Color(0xFF3BD7BE).withValues(alpha: .42)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+    for (var band = 0; band < 4; band++) {
+      final path = Path();
+      for (var x = 0.0; x <= size.width; x += 4) {
+        final wave = math.sin(x * (.018 + band * .006) + t * (2 + band)) *
+            (18 + band * 6);
+        final beat = ((x + t * 80 + band * 27) % 180 < 8)
+            ? math.sin(x) * 30
+            : 0.0;
+        final y = size.height * (.25 + band * .16) + wave + beat;
+        if (x == 0) {
+          path.moveTo(x, y);
+        } else {
+          path.lineTo(x, y);
+        }
       }
+      canvas.drawPath(path, paint);
     }
-    canvas.drawPath(path, paint);
   }
 
   @override
-  bool shouldRepaint(covariant _WavePainter oldDelegate) => oldDelegate.t != t;
+  bool shouldRepaint(covariant _SignalBackdropPainter oldDelegate) =>
+      oldDelegate.t != t;
 }
 
-class _PlatterPainter extends CustomPainter {
-  static const glyphs = 'ᚠᚢᚦᚨᚱᚲᚷᚹᚺᚾᛁᛃᛇᛈᛉᛋᛏᛒᛖᛗᛚᛜᛞᛟ';
+class _EnochianPlatterPainter extends CustomPainter {
+  const _EnochianPlatterPainter();
+
+  static const _ring = <String>[
+    'UN', 'PA', 'VEH', 'GAL', 'GRAPH', 'OR', 'NA', 'GON', 'UR', 'TAL',
+    'GISA', 'FAM', 'GED', 'DON', 'MED', 'MALS', 'GER', 'DRUX', 'PAL',
+    'CEPH', 'VAN',
+  ];
 
   @override
   void paint(Canvas canvas, Size size) {
     final c = Offset(size.width / 2, size.height / 2);
-    final r = math.min(size.width, size.height) / 2 - 8;
-    canvas.drawCircle(c, r, Paint()..color = const Color(0xFF050707));
-    for (final factor in [.96, .84, .72, .60, .48, .34]) {
-      canvas.drawCircle(c, r * factor, Paint()..color = const Color(0xFF315C55)..style = PaintingStyle.stroke..strokeWidth = factor == .96 ? 3 : 1);
+    final r = math.min(size.width, size.height) / 2 - 6;
+    canvas.drawCircle(c, r, Paint()..color = const Color(0xFF030706));
+    for (final factor in [.98, .88, .72, .54, .34]) {
+      canvas.drawCircle(
+        c,
+        r * factor,
+        Paint()
+          ..color = const Color(0xFF32665C)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = factor == .98 ? 3 : 1,
+      );
     }
-    final gold = Paint()..color = const Color(0xFFD5A94B)..style = PaintingStyle.stroke..strokeWidth = 2;
-    canvas.drawCircle(c, r * .78, gold);
-    final textPainter = TextPainter(textDirection: TextDirection.ltr);
-    for (var i = 0; i < glyphs.length; i++) {
-      final angle = (math.pi * 2 * i / glyphs.length) - math.pi / 2;
-      final pos = Offset(c.dx + math.cos(angle) * r * .72, c.dy + math.sin(angle) * r * .72);
-      textPainter.text = TextSpan(text: glyphs[i], style: const TextStyle(color: Color(0xFFD7B15B), fontSize: 18));
-      textPainter.layout();
+
+    final tp = TextPainter(textDirection: TextDirection.ltr);
+    for (var i = 0; i < _ring.length; i++) {
+      final angle = math.pi * 2 * i / _ring.length - math.pi / 2;
+      final p = Offset(
+        c.dx + math.cos(angle) * r * .79,
+        c.dy + math.sin(angle) * r * .79,
+      );
+      tp.text = TextSpan(
+        text: _ring[i],
+        style: const TextStyle(
+          color: Color(0xFFD7B15B),
+          fontFamily: 'monospace',
+          fontSize: 7,
+          fontWeight: FontWeight.w700,
+        ),
+      );
+      tp.layout();
       canvas.save();
-      canvas.translate(pos.dx, pos.dy);
+      canvas.translate(p.dx, p.dy);
       canvas.rotate(angle + math.pi / 2);
-      textPainter.paint(canvas, Offset(-textPainter.width / 2, -textPainter.height / 2));
+      tp.paint(canvas, Offset(-tp.width / 2, -tp.height / 2));
       canvas.restore();
     }
-    final cyan = Paint()..color = const Color(0xFF55E6CD)..style = PaintingStyle.stroke..strokeWidth = 2;
+
+    final starPaint = Paint()
+      ..color = const Color(0xFF55E6CD)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
     final star = Path();
     for (var i = 0; i < 14; i++) {
       final angle = -math.pi / 2 + i * math.pi / 7;
-      final rr = i.isEven ? r * .20 : r * .09;
-      final p = Offset(c.dx + math.cos(angle) * rr, c.dy + math.sin(angle) * rr);
+      final rr = i.isEven ? r * .23 : r * .10;
+      final p = Offset(
+        c.dx + math.cos(angle) * rr,
+        c.dy + math.sin(angle) * rr,
+      );
       if (i == 0) {
         star.moveTo(p.dx, p.dy);
       } else {
@@ -462,32 +572,10 @@ class _PlatterPainter extends CustomPainter {
       }
     }
     star.close();
-    canvas.drawPath(star, cyan);
-    canvas.drawCircle(c, 4, Paint()..color = const Color(0xFF55E6CD));
+    canvas.drawPath(star, starPaint);
+    canvas.drawCircle(c, 4, Paint()..color = const Color(0xFFD7B15B));
   }
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class _MeterPainter extends CustomPainter {
-  _MeterPainter(this.t);
-  final double t;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final bars = 12;
-    for (var i = 0; i < bars; i++) {
-      final v = (.2 + .8 * ((math.sin(t * 2.4 + i * .83) + 1) / 2));
-      final h = size.height * v;
-      final w = size.width / bars - 3;
-      canvas.drawRect(
-        Rect.fromLTWH(i * size.width / bars, size.height - h, w, h),
-        Paint()..color = const Color(0xFF55E6CD),
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _MeterPainter oldDelegate) => oldDelegate.t != t;
 }
