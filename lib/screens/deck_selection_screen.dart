@@ -34,63 +34,90 @@ class DeckSelectionScreen extends StatelessWidget {
           : LayoutBuilder(
               builder: (context, constraints) {
                 final width = constraints.maxWidth;
-                final columns = width >= 1080
+                final height = constraints.maxHeight;
+                final compactLandscape = width > height && height < 520;
+
+                final columns = compactLandscape
+                    ? (width >= 600 ? 3 : 2)
+                    : width >= 1080
                     ? 3
                     : width >= 720
                     ? 2
                     : width >= 340
                     ? 2
                     : 1;
-                return GridView.builder(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: width < 720 ? 14 : 24,
-                    vertical: 18,
-                  ),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: columns,
-                    crossAxisSpacing: width < 720 ? 12 : 16,
-                    mainAxisSpacing: width < 720 ? 12 : 16,
-                    childAspectRatio: width < 720 ? 0.64 : 0.72,
-                  ),
-                  itemCount: decks.length,
-                  itemBuilder: (_, index) {
-                    final deck = decks[index];
-                    final tile = DeckTile(
-                      deck: deck,
-                      selected: deck.id == provider.activeDeckId,
-                      editable: false,
-                      onSelect: () => provider.select(deck.id),
-                      onRename: () {},
-                      onDelete: () {},
-                    );
 
-                    if (deck.id != AppConstants.hpDeckId) {
-                      return tile;
-                    }
+                final horizontalPadding = compactLandscape
+                    ? 10.0
+                    : width < 720
+                    ? 14.0
+                    : 24.0;
+                final verticalPadding = compactLandscape ? 8.0 : 18.0;
+                final spacing = compactLandscape
+                    ? 10.0
+                    : width < 720
+                    ? 12.0
+                    : 16.0;
+                final childAspectRatio = compactLandscape
+                    ? 0.90
+                    : width < 720
+                    ? 0.64
+                    : 0.72;
 
-                    return Stack(
-                      fit: StackFit.expand,
-                      clipBehavior: Clip.none,
-                      children: [
-                        tile,
-                        IgnorePointer(
-                          child: Align(
-                            alignment: const Alignment(0, -0.08),
-                            child: FractionallySizedBox(
-                              widthFactor: 0.94,
-                              child: Image.asset(
-                                'assets/hp/work_in_progress_ribbon.webp',
-                                fit: BoxFit.contain,
-                                filterQuality: FilterQuality.high,
-                                errorBuilder: (_, _, _) =>
-                                    const SizedBox.shrink(),
+                return SafeArea(
+                  top: false,
+                  child: GridView.builder(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: horizontalPadding,
+                      vertical: verticalPadding,
+                    ),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: columns,
+                      crossAxisSpacing: spacing,
+                      mainAxisSpacing: spacing,
+                      childAspectRatio: childAspectRatio,
+                    ),
+                    itemCount: decks.length,
+                    itemBuilder: (_, index) {
+                      final deck = decks[index];
+                      final tile = DeckTile(
+                        deck: deck,
+                        selected: deck.id == provider.activeDeckId,
+                        editable: false,
+                        compact: compactLandscape,
+                        onSelect: () => provider.select(deck.id),
+                        onRename: () {},
+                        onDelete: () {},
+                      );
+
+                      if (deck.id != AppConstants.hpDeckId) {
+                        return tile;
+                      }
+
+                      return Stack(
+                        fit: StackFit.expand,
+                        clipBehavior: Clip.none,
+                        children: [
+                          tile,
+                          IgnorePointer(
+                            child: Align(
+                              alignment: const Alignment(0, -0.08),
+                              child: FractionallySizedBox(
+                                widthFactor: compactLandscape ? 0.86 : 0.94,
+                                child: Image.asset(
+                                  'assets/hp/work_in_progress_ribbon.webp',
+                                  fit: BoxFit.contain,
+                                  filterQuality: FilterQuality.high,
+                                  errorBuilder: (_, _, _) =>
+                                      const SizedBox.shrink(),
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ],
-                    );
-                  },
+                        ],
+                      );
+                    },
+                  ),
                 );
               },
             ),
