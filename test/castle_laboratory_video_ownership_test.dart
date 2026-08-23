@@ -11,10 +11,10 @@ void main() {
     final overlay = File('web/card_castle/castle_navigation_overlay.js').readAsStringSync();
     final sharedLoader = File('web/card_castle/castle_shared_transition_loader_v64.js').readAsStringSync();
     final resetView = File('web/card_castle/castle_laboratory_entry_reset_v70.js').readAsStringSync();
-    expect(bridge, contains("bureauVideoOwner = 'castle-bureau-video-bridge-v62'"));
-    expect(bridge, contains('window.__castleBureauVideoPrime = primeFromGesture'));
-    expect(bridge, contains('VideoScreen_(Left|Right)'));
+    expect(bridge, contains("bureauVideoOwner = 'castle-bureau-video-bridge-v63'"));
+    expect(bridge, contains(r'const SCREEN_NAME = /^VideoScreen_(Left|Right)$/i'));
     expect(bridge, contains('texture.needsUpdate = true'));
+    expect(bridge, contains("bureauVideoPlayback = 'playing-loop-v63'"));
     expect(medallion, contains("host.addEventListener('pointerdown',primeVideo"));
     expect(medallion, contains("typeof window.__castleOpenLaboratory==='function'"));
     expect(medallion, contains('window.__castleOpenLaboratory()'));
