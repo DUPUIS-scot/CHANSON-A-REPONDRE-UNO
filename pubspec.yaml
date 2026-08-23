@@ -58,3 +58,7 @@ flutter:
     - assets/videos/
     - assets/json/cards.json
     - assets/json/ai_comptroller_enochian.json
+    - assets/json/caesar_spitter_enochian_compact.json
+    - assets/json/the_kraken_enochian_compact.json
+    - assets/json/heliogabal_design_enochian_compact.json
+    - assets/json/vivid_void_enochian_compact.json
