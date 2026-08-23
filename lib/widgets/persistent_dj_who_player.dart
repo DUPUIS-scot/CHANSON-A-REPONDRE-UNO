@@ -8,7 +8,6 @@ import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 import '../core/app_router.dart';
 import '../providers/dj_who_player_provider.dart';
 import 'dj_who_avatar.dart';
-import 'dj_who_enochian_terminal.dart';
 
 class PersistentDjWhoPlayer extends StatefulWidget {
   const PersistentDjWhoPlayer({super.key});
@@ -77,7 +76,6 @@ class _PersistentDjWhoPlayerState extends State<PersistentDjWhoPlayer> {
 
           return LayoutBuilder(
             builder: (context, constraints) {
-              final desktop = constraints.maxWidth >= 850;
               final iosWeb =
                   kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
               final hiddenPlayerWidth = iosWeb ? 356.0 : 160.0;
@@ -89,10 +87,14 @@ class _PersistentDjWhoPlayerState extends State<PersistentDjWhoPlayer> {
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
                     child: player.hasMountedPlayer
-                        ? _ExpandedPlayerWorkspace(
-                            player: player,
-                            youtubePlayerKey: _youtubePlayerKey,
-                            desktop: desktop,
+                        ? Center(
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 980),
+                              child: _ExpandedPlayerCard(
+                                player: player,
+                                youtubePlayerKey: _youtubePlayerKey,
+                              ),
+                            ),
                           )
                         : const _PlayerLoadingCard(),
                   ),
@@ -127,7 +129,7 @@ class _PersistentDjWhoPlayerState extends State<PersistentDjWhoPlayer> {
                         ),
                       ),
                     ),
-                  if (desktop)
+                  if (constraints.maxWidth >= 850)
                     Positioned(
                       right: 16,
                       bottom: 16,
@@ -155,57 +157,21 @@ class _PlayerLoadingCard extends StatelessWidget {
   const _PlayerLoadingCard();
 
   @override
-  Widget build(BuildContext context) => Material(
-    elevation: 6,
-    color: Theme.of(context).colorScheme.surface,
-    borderRadius: BorderRadius.circular(12),
-    clipBehavior: Clip.antiAlias,
-    child: const AspectRatio(
-      aspectRatio: 16 / 9,
-      child: Center(child: CircularProgressIndicator()),
+  Widget build(BuildContext context) => Center(
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 980),
+      child: Material(
+        elevation: 6,
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        clipBehavior: Clip.antiAlias,
+        child: const AspectRatio(
+          aspectRatio: 16 / 9,
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      ),
     ),
   );
-}
-
-class _ExpandedPlayerWorkspace extends StatelessWidget {
-  const _ExpandedPlayerWorkspace({
-    required this.player,
-    required this.youtubePlayerKey,
-    required this.desktop,
-  });
-
-  final DjWhoPlayerProvider player;
-  final Key youtubePlayerKey;
-  final bool desktop;
-
-  @override
-  Widget build(BuildContext context) {
-    final terminal = DjWhoEnochianTerminal(player: player);
-    final playerCard = _ExpandedPlayerCard(
-      player: player,
-      youtubePlayerKey: youtubePlayerKey,
-    );
-
-    if (!desktop) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          playerCard,
-          const SizedBox(height: 16),
-          terminal,
-        ],
-      );
-    }
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(flex: 7, child: playerCard),
-        const SizedBox(width: 16),
-        Expanded(flex: 5, child: terminal),
-      ],
-    );
-  }
 }
 
 class _ExpandedPlayerCard extends StatelessWidget {
