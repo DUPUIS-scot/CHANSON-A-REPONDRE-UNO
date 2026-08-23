@@ -10,8 +10,8 @@ void main() {
     final eventBridge = File('web/card_castle/castle_laboratory_event_bridge_v69.js').readAsStringSync();
     final sharedLoader = File('web/card_castle/castle_shared_transition_loader_v64.js').readAsStringSync();
     final bridge = File('web/card_castle/castle_bureau_video_bridge.js').readAsStringSync();
+    final medallion = File('web/card_castle/castle_laboratory_medallion_button.js').readAsStringSync();
     final resetView = File('web/card_castle/castle_laboratory_entry_reset_v70.js').readAsStringSync();
-    final videoRefresh = File('web/card_castle/castle_bureau_video_refresh_v70.js').readAsStringSync();
 
     expect(bootstrap, contains("const castleRuntimeRevision = '70';"));
     expect(bootstrap, contains("url.searchParams.set('v', buildId || castleRuntimeRevision)"));
@@ -58,14 +58,15 @@ void main() {
     expect(resetView, contains("reset-button-v70"));
 
     expect(bridge, contains(r'const SCREEN_NAME = /^VideoScreen_(Left|Right)$/i'));
+    expect(bridge, contains('window.__castleBureauVideoPrime = primeFromGesture'));
+    expect(bridge, contains('PRIME_WINDOW_MS = 60000'));
+    expect(bridge, contains('keepPrimedDuringEntry()'));
     expect(bridge, contains('texture.needsUpdate = true'));
-    expect(bridge, contains("bureauVideoPlayback = 'playing-loop-v63'"));
-    expect(overlay, contains("castle_bureau_video_bridge.js?v=70"));
-    expect(overlay, contains("castle_bureau_video_refresh_v70.js?v=70"));
+    expect(bridge, contains("bureauVideoPlayback = 'playing-loop-v72'"));
+    expect(medallion, contains('window.__castleBureauVideoPrime?.()'));
+    expect(overlay, contains("castle_bureau_video_bridge.js?v=72"));
+    expect(overlay, isNot(contains('castle_bureau_video_refresh_v70.js')));
     expect(overlay, contains("castle_visual_regression_v55.js?v=70"));
-    expect(videoRefresh, contains("url.searchParams.set('v', '70')"));
-    expect(videoRefresh, contains('video.load()'));
-    expect(videoRefresh, contains('video.play()'));
 
     final mutedBeforeSrc = bridge.indexOf('video.muted = true;');
     final srcAssignment = bridge.indexOf('video.src = VIDEO_URL;');
