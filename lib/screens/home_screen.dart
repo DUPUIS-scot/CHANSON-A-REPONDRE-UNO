@@ -162,6 +162,11 @@ class _ArtisticHome extends StatelessWidget {
                       label: 'DJ WHO',
                       onTap: () => onNavigate(AppRoutes.djWhoVideos),
                     ),
+                    _PrimaryEntrance(
+                      icon: Icons.terminal_rounded,
+                      label: 'ENOCHIAN TERMINAL',
+                      onTap: () => onNavigate(AppRoutes.enochianTerminal),
+                    ),
                   ],
                 ),
                 SizedBox(height: compact ? 34 : 58),
@@ -240,6 +245,7 @@ class _PrimaryEntrance extends StatelessWidget {
             const SizedBox(height: 5),
             Text(
               label,
+              textAlign: TextAlign.center,
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w900,
