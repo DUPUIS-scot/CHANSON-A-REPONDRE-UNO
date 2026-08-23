@@ -83,62 +83,64 @@ class _PersistentDjWhoPlayerState extends State<PersistentDjWhoPlayer> {
               final hiddenPlayerWidth = iosWeb ? 356.0 : 160.0;
               final hiddenPlayerHeight = iosWeb ? 200.0 : 90.0;
 
+              if (onDjWhoRoute) {
+                return Positioned.fill(
+                  top: 132,
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+                    child: player.hasMountedPlayer
+                        ? _ExpandedPlayerWorkspace(
+                            player: player,
+                            youtubePlayerKey: _youtubePlayerKey,
+                            desktop: desktop,
+                          )
+                        : const _PlayerLoadingCard(),
+                  ),
+                );
+              }
+
               return Stack(
                 fit: StackFit.expand,
                 clipBehavior: Clip.hardEdge,
                 children: [
-                  if (onDjWhoRoute)
+                  if (player.hasMountedPlayer)
                     Positioned(
-                      top: 146,
-                      left: 16,
-                      right: desktop ? 422 : 16,
-                      child: player.hasMountedPlayer
-                          ? _ExpandedPlayerCard(
-                              player: player,
-                              youtubePlayerKey: _youtubePlayerKey,
-                            )
-                          : const _PlayerLoadingCard(),
-                    )
-                  else ...[
-                    if (player.hasMountedPlayer)
-                      Positioned(
-                        left: 0,
-                        bottom: 0,
-                        width: hiddenPlayerWidth,
-                        height: hiddenPlayerHeight,
-                        child: IgnorePointer(
-                          child: ClipRect(
-                            child: Opacity(
-                              opacity: 0.01,
-                              child: SizedBox(
-                                width: hiddenPlayerWidth,
-                                height: hiddenPlayerHeight,
-                                child: YoutubePlayer(
-                                  key: _youtubePlayerKey,
-                                  controller: player.controller!,
-                                  aspectRatio: 16 / 9,
-                                  keepAlive: true,
-                                ),
+                      left: 0,
+                      bottom: 0,
+                      width: hiddenPlayerWidth,
+                      height: hiddenPlayerHeight,
+                      child: IgnorePointer(
+                        child: ClipRect(
+                          child: Opacity(
+                            opacity: 0.01,
+                            child: SizedBox(
+                              width: hiddenPlayerWidth,
+                              height: hiddenPlayerHeight,
+                              child: YoutubePlayer(
+                                key: _youtubePlayerKey,
+                                controller: player.controller!,
+                                aspectRatio: 16 / 9,
+                                keepAlive: true,
                               ),
                             ),
                           ),
                         ),
                       ),
-                    if (desktop)
-                      Positioned(
-                        right: 16,
-                        bottom: 16,
-                        width: 460,
-                        child: _MiniPlayerBar(player: player),
-                      )
-                    else
-                      Positioned(
-                        left: 8,
-                        right: 8,
-                        bottom: 8,
-                        child: _MiniPlayerBar(player: player),
-                      ),
-                  ],
+                    ),
+                  if (desktop)
+                    Positioned(
+                      right: 16,
+                      bottom: 16,
+                      width: 460,
+                      child: _MiniPlayerBar(player: player),
+                    )
+                  else
+                    Positioned(
+                      left: 8,
+                      right: 8,
+                      bottom: 8,
+                      child: _MiniPlayerBar(player: player),
+                    ),
                 ],
               );
             },
@@ -163,6 +165,47 @@ class _PlayerLoadingCard extends StatelessWidget {
       child: Center(child: CircularProgressIndicator()),
     ),
   );
+}
+
+class _ExpandedPlayerWorkspace extends StatelessWidget {
+  const _ExpandedPlayerWorkspace({
+    required this.player,
+    required this.youtubePlayerKey,
+    required this.desktop,
+  });
+
+  final DjWhoPlayerProvider player;
+  final Key youtubePlayerKey;
+  final bool desktop;
+
+  @override
+  Widget build(BuildContext context) {
+    final terminal = DjWhoEnochianTerminal(player: player);
+    final playerCard = _ExpandedPlayerCard(
+      player: player,
+      youtubePlayerKey: youtubePlayerKey,
+    );
+
+    if (!desktop) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          playerCard,
+          const SizedBox(height: 16),
+          terminal,
+        ],
+      );
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(flex: 7, child: playerCard),
+        const SizedBox(width: 16),
+        Expanded(flex: 5, child: terminal),
+      ],
+    );
+  }
 }
 
 class _ExpandedPlayerCard extends StatelessWidget {
@@ -194,10 +237,6 @@ class _ExpandedPlayerCard extends StatelessWidget {
             controller: player.controller!,
             aspectRatio: 16 / 9,
             keepAlive: true,
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
-            child: DjWhoEnochianTerminal(player: player),
           ),
           Padding(
             padding: const EdgeInsets.all(14),
