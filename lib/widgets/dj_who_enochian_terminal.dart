@@ -35,6 +35,7 @@ class _DjWhoEnochianTerminalState extends State<DjWhoEnochianTerminal> {
   Timer? _timer;
   final Map<String,_SignalTrack> _signals = {};
   double _seconds = 0;
+  double _independentSeconds = 0;
   bool _real = false;
   List<int> _raw = const [0,0,0,0];
   final _log = <String>[];
@@ -74,18 +75,35 @@ class _DjWhoEnochianTerminalState extends State<DjWhoEnochianTerminal> {
   }
 
   Future<void> _sample() async {
-    final c = widget.player.controller;
     final v = widget.player.selectedVideo;
-    if (!mounted || c == null || v == null) return;
-    double s;
-    try { s = await c.currentTime; } catch (_) { return; }
-    if (!mounted) return;
+    if (!mounted || v == null) return;
 
     if (_lastVideoId != v.videoId) {
       _lastVideoId = v.videoId;
       _lastFrame = -1;
       _log.clear();
+      _independentSeconds = 0;
     }
+
+    double s;
+    final c = widget.player.controller;
+    if (c != null && widget.player.isPlaying) {
+      try {
+        s = await c.currentTime;
+        _independentSeconds = s;
+      } catch (_) {
+        _independentSeconds += .16;
+        s = _independentSeconds;
+      }
+    } else {
+      // The Enochian Terminal is an independent route. When DJ WHO has not
+      // been opened (or is paused), advance through the pre-analysed MP3
+      // signal locally so the terminal remains live without embedding or
+      // starting the YouTube player.
+      _independentSeconds += .16;
+      s = _independentSeconds;
+    }
+    if (!mounted) return;
 
     final signal = _signals[v.videoId];
     late final int index;
@@ -93,6 +111,13 @@ class _DjWhoEnochianTerminalState extends State<DjWhoEnochianTerminal> {
     final bool real;
     if (signal != null && signal.frames.isNotEmpty && signal.sampleHz > 0) {
       real = true;
+      final duration = signal.frames.length / signal.sampleHz;
+      if (duration > 0 && s >= duration) {
+        s %= duration;
+        _independentSeconds = s;
+        _lastFrame = -1;
+        _log.clear();
+      }
       index = (s * signal.sampleHz).floor().clamp(0, signal.frames.length - 1);
       values = signal.frames[index];
     } else {
