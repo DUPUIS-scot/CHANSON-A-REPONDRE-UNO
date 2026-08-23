@@ -8,6 +8,7 @@ import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 import '../core/app_router.dart';
 import '../providers/dj_who_player_provider.dart';
 import 'dj_who_avatar.dart';
+import 'dj_who_enochian_terminal.dart';
 
 class PersistentDjWhoPlayer extends StatefulWidget {
   const PersistentDjWhoPlayer({super.key});
@@ -193,6 +194,10 @@ class _ExpandedPlayerCard extends StatelessWidget {
             controller: player.controller!,
             aspectRatio: 16 / 9,
             keepAlive: true,
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
+            child: DjWhoEnochianTerminal(player: player),
           ),
           Padding(
             padding: const EdgeInsets.all(14),
