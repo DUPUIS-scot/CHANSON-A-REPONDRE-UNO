@@ -35,10 +35,13 @@ class DeckSelectionScreen extends StatelessWidget {
               builder: (context, constraints) {
                 final width = constraints.maxWidth;
                 final height = constraints.maxHeight;
+
+                // Keep portrait/tablet behaviour unchanged. The compact mode is
+                // deliberately offered only to short landscape phone viewports.
                 final compactLandscape = width > height && height < 520;
 
                 final columns = compactLandscape
-                    ? (width >= 600 ? 3 : 2)
+                    ? 3
                     : width >= 1080
                     ? 3
                     : width >= 720
@@ -58,11 +61,11 @@ class DeckSelectionScreen extends StatelessWidget {
                     : width < 720
                     ? 12.0
                     : 16.0;
-                final childAspectRatio = compactLandscape
-                    ? 0.90
-                    : width < 720
-                    ? 0.64
-                    : 0.72;
+
+                final portraitAspectRatio = width < 720 ? 0.64 : 0.72;
+                final landscapeTileHeight = compactLandscape
+                    ? (height - (verticalPadding * 2)).clamp(210.0, 360.0)
+                    : null;
 
                 return SafeArea(
                   top: false,
@@ -75,7 +78,8 @@ class DeckSelectionScreen extends StatelessWidget {
                       crossAxisCount: columns,
                       crossAxisSpacing: spacing,
                       mainAxisSpacing: spacing,
-                      childAspectRatio: childAspectRatio,
+                      mainAxisExtent: landscapeTileHeight,
+                      childAspectRatio: portraitAspectRatio,
                     ),
                     itemCount: decks.length,
                     itemBuilder: (_, index) {
