@@ -11,6 +11,7 @@ class DeckTile extends StatelessWidget {
     required this.onRename,
     required this.onDelete,
     this.editable = true,
+    this.compact = false,
     super.key,
   });
   final Deck deck;
@@ -19,6 +20,8 @@ class DeckTile extends StatelessWidget {
   final VoidCallback onRename;
   final VoidCallback onDelete;
   final bool editable;
+  final bool compact;
+
   @override
   Widget build(BuildContext context) => Card(
     clipBehavior: Clip.antiAlias,
@@ -29,29 +32,33 @@ class DeckTile extends StatelessWidget {
         children: [
           Expanded(
             child: deck.coverPath.isEmpty
-                ? const Icon(
+                ? Icon(
                     Icons.style_rounded,
-                    size: 52,
+                    size: compact ? 40 : 52,
                     color: AppTheme.gold,
                   )
                 : StoredImage(
                     source: deck.coverPath,
                     fit: BoxFit.contain,
-                    errorBuilder: (_, _, _) =>
-                        const Icon(Icons.broken_image_outlined, size: 48),
+                    errorBuilder: (_, _, _) => Icon(
+                      Icons.broken_image_outlined,
+                      size: compact ? 38 : 48,
+                    ),
                   ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(12, 10, 4, 6),
+            padding: compact
+                ? const EdgeInsets.fromLTRB(9, 6, 2, 3)
+                : const EdgeInsets.fromLTRB(12, 10, 4, 6),
             child: Row(
               children: [
                 if (selected)
-                  const Icon(
+                  Icon(
                     Icons.check_circle,
                     color: AppTheme.brightGold,
-                    size: 18,
+                    size: compact ? 16 : 18,
                   ),
-                if (selected) const SizedBox(width: 6),
+                if (selected) SizedBox(width: compact ? 4 : 6),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -60,9 +67,18 @@ class DeckTile extends StatelessWidget {
                         deck.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleMedium,
+                        style: compact
+                            ? Theme.of(context).textTheme.titleSmall
+                            : Theme.of(context).textTheme.titleMedium,
                       ),
-                      Text('${deck.cards.length} cards'),
+                      Text(
+                        '${deck.cards.length} cards',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: compact
+                            ? Theme.of(context).textTheme.bodySmall
+                            : null,
+                      ),
                     ],
                   ),
                 ),
@@ -76,11 +92,14 @@ class DeckTile extends StatelessWidget {
                     ],
                   )
                 else
-                  const Padding(
-                    padding: EdgeInsets.all(12),
+                  Padding(
+                    padding: EdgeInsets.all(compact ? 8 : 12),
                     child: Tooltip(
                       message: 'Permanent deck',
-                      child: Icon(Icons.lock_outline, size: 20),
+                      child: Icon(
+                        Icons.lock_outline,
+                        size: compact ? 17 : 20,
+                      ),
                     ),
                   ),
               ],
