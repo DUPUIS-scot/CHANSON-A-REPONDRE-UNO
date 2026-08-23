@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>DJ WHO · ENOCHIAN TERMINAL</title><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000}iframe{display:block;width:100%;height:100%;border:0;background:#000}</style></head><body><iframe id="deck" src="/enochian-test/base.html?v=20260823-terminal-signal-order" title="ENOCHIAN TERMINAL"></iframe><script>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>DJ WHO · ENOCHIAN TERMINAL</title><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000}iframe{display:block;width:100%;height:100%;border:0;background:#000}</style></head><body><iframe id="deck" src="/enochian-test/base.html?v=20260823-terminal-analyser-sync" title="ENOCHIAN TERMINAL"></iframe><script>
 const frame=document.getElementById('deck');
 frame.addEventListener('load',()=>{
  const d=frame.contentDocument;
@@ -12,6 +12,9 @@ frame.addEventListener('load',()=>{
  .disc{background:#020403!important;display:grid!important;place-items:center!important}
  .platter-wrap{cursor:grab!important;touch-action:none!important}
  .platter-wrap.spinning{cursor:grabbing!important}
+ .stage{grid-template-rows:180px minmax(390px,1fr) auto auto auto!important}
+ .wave canvas{top:28px!important;bottom:50px!important;height:auto!important}
+ .signals{z-index:2!important}
  .pad-panel.instant-layout{grid-template-columns:minmax(0,1fr) 292px!important;align-items:stretch!important}
  .pad-panel.instant-layout>.pad-top{grid-column:1/-1!important}
  .instant-fx{border-left:1px solid #17332e;padding-left:10px;display:grid;grid-template-rows:auto 1fr;gap:7px;min-width:0}
@@ -21,17 +24,30 @@ frame.addEventListener('load',()=>{
  .instant-fx-btn span{display:block;color:#d7fff8;font-size:12px;font-weight:800;line-height:1.05}
  .instant-fx-btn small{display:block;margin-top:8px;color:#d5aa63;font-size:9px;font-weight:700}
  .instant-fx-btn.active{background:#0b3027;border-color:#68d8bd;box-shadow:0 0 18px #40e6b455,inset 0 0 0 1px #68d8bd66;color:#fff}
- @media(max-width:1000px){.pad-panel.instant-layout{grid-template-columns:1fr!important}.instant-fx{border-left:0;border-top:1px solid #17332e;padding-left:0;padding-top:10px}.instant-fx-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.instant-fx-btn{min-height:60px}}
+ @media(max-width:1000px){.stage{grid-template-rows:200px auto auto auto auto!important}.pad-panel.instant-layout{grid-template-columns:1fr!important}.instant-fx{border-left:0;border-top:1px solid #17332e;padding-left:0;padding-top:10px}.instant-fx-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.instant-fx-btn{min-height:60px}}
  @media(max-width:620px){.instant-fx-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
  `;d.head.appendChild(css);
  const title=d.querySelector('.title');if(title)title.textContent='ENOCHIAN TERMINAL · EQ / FX / MOD / GLIDE';
  const home=d.querySelector('.home-link');if(home){home.textContent='⌂';home.setAttribute('aria-label','Home');home.setAttribute('title','Home');home.href='/';}
- const art=d.getElementById('platterArt');if(art){art.src='/assets/assets/images/uno_jester_headphones.webp?v=20260823-terminal-signal-order';art.alt='UNO jester';}
+ const art=d.getElementById('platterArt');if(art){art.src='/assets/assets/images/uno_jester_headphones.webp?v=20260823-terminal-analyser-sync';art.alt='UNO jester';}
  const patch=d.createElement('script');patch.textContent=`
  (function(){
   const q=id=>document.getElementById(id);
   let stream='',lastTextAt=0,localMod=.5;
   function clamp01(v){return Math.max(0,Math.min(1,v))}
+  try{
+   const srcDesc=Object.getOwnPropertyDescriptor(HTMLImageElement.prototype,'src');
+   const cache=[];
+   if(typeof names!=='undefined'&&typeof glyphUrl==='function'){
+    for(let i=0;i<names.length;i++){const im=new Image();im.decoding='async';im.loading='eager';im.src=glyphUrl(i);cache.push(im)}
+    window.__enochGlyphCache=cache;
+   }
+   ['g0','g1','g2','g3'].forEach(id=>{const im=q(id);if(!im||!srcDesc)return;im.decoding='async';im.loading='eager';try{im.fetchPriority='high'}catch(_){}let lastSrc='';Object.defineProperty(im,'src',{configurable:true,get(){return srcDesc.get.call(this)},set(v){if(v===lastSrc)return;lastSrc=v;srcDesc.set.call(this,v)}})});
+  }catch(_){ }
+  try{
+   let peakHold=56;
+   draw=function(canvas,arr){const r=canvas.getBoundingClientRect(),dpr=devicePixelRatio||1,w=Math.max(1,Math.floor(r.width*dpr)),h=Math.max(1,Math.floor(r.height*dpr));if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h}const c=canvas.getContext('2d');c.clearRect(0,0,w,h);let framePeak=0;for(let i=0;i<arr.length;i++)if(arr[i]>framePeak)framePeak=arr[i];peakHold=Math.max(30,framePeak,peakHold*.94);const floor=Math.min(16,peakHold*.14),span=Math.max(12,peakHold-floor);c.strokeStyle='#79eadb';c.lineWidth=Math.max(1,dpr*1.35);c.beginPath();arr.forEach((v,i)=>{const x=arr.length>1?i/(arr.length-1)*w:0;const n=clamp01((v-floor)/span);const shaped=Math.pow(n,.72);const y=h-(shaped*(h-2*dpr)+dpr);i?c.lineTo(x,y):c.moveTo(x,y)});c.stroke()};
+  }catch(_){ }
   function readBaseSignal(){return[0,1,2,3].map(i=>{const raw=(q('b'+i)?.textContent||'00000000').match(/[01]{8}$/);return raw?parseInt(raw[0],2):0})}
   function readModDepth(){const wheel=q('modWheel')||document.querySelector('.mod .wheel');if(wheel){const aria=parseFloat(wheel.getAttribute('aria-valuenow'));if(Number.isFinite(aria))return clamp01(aria>1?aria/100:aria);const angle=parseFloat(wheel.style.getPropertyValue('--angle')||getComputedStyle(wheel).getPropertyValue('--angle'));if(Number.isFinite(angle))return clamp01((angle+135)/270)}const read=q('modWheelV');if(read){const n=parseFloat(read.textContent);if(Number.isFinite(n))return clamp01(Math.abs(n)>1?n/100:n)}return localMod}
   const modWheel=q('modWheel')||document.querySelector('.mod .wheel');
@@ -83,7 +99,7 @@ frame.addEventListener('load',()=>{
   const padPanel=pad&&pad.closest('.pad-panel');if(padPanel&&!padPanel.querySelector('.instant-fx')){padPanel.classList.add('instant-layout');const bank=document.createElement('div');bank.className='instant-fx';bank.innerHTML='<div class="instant-fx-title">INSTANT FX · HOLD</div><div class="instant-fx-grid"></div>';const grid=bank.querySelector('.instant-fx-grid');Object.entries(instantPresets).forEach(([name,p])=>{const b=document.createElement('button');b.type='button';b.className='instant-fx-btn';b.setAttribute('aria-label','Instant FX '+p.label);b.innerHTML='<span>'+p.label+'</span><small>'+p.beat+'</small>';b.addEventListener('pointerdown',e=>{e.preventDefault();beginInstant(name,b,e)},{passive:false});b.addEventListener('pointerup',e=>endInstant(b,e));b.addEventListener('pointercancel',e=>endInstant(b,e));b.addEventListener('lostpointercapture',e=>endInstant(b,e));grid.appendChild(b)});padPanel.appendChild(bank)}
   const kill=q('killfx'),oldKill=kill&&kill.onclick;if(kill)kill.onclick=async()=>{try{if(oldKill)await oldKill.call(kill)}catch(_){};const pitch=q('pitch');if(pitch){pitch.value=0;pitch.dispatchEvent(new Event('input',{bubbles:true}))}localMod=.5;if(modWheel){modWheel.setAttribute('aria-valuenow','50');modWheel.style.setProperty('--angle','0deg');modWheel.classList.remove('active')}const mv=q('modWheelV');if(mv)mv.textContent='50%';restorePadCenter();clearLiveText();instantSnapshot=null;instantOwner=null;document.querySelectorAll('.instant-fx-btn.active').forEach(b=>b.classList.remove('active'));try{log('KILL FX · PAD CENTER · MOD + LIVE SIGNAL + INSTANT FX RESET')}catch(_){}};
   function frameTick(now){try{if(a&&!a.paused&&!a.ended)updateLiveText(readBaseSignal(),now)}catch(_){}requestAnimationFrame(frameTick)}requestAnimationFrame(frameTick);
-  try{log('BASE ENOCHIAN SIGNAL → LIVE OUTPUT/MOD → LOG · PAD SPRING ACTIVE · PLATTER SCRATCH READY · INSTANT FX READY')}catch(_){}
+  try{log('BASE ENOCHIAN SIGNAL → LIVE OUTPUT/MOD → LOG · ANALYSER AUTOGAIN · GLYPH CACHE · PAD SPRING ACTIVE · PLATTER SCRATCH READY · INSTANT FX READY')}catch(_){}
  })();`;
  d.body.appendChild(patch);
 });
