@@ -14,34 +14,63 @@ class DjWhoEnochianTerminal extends StatefulWidget {
   State<DjWhoEnochianTerminal> createState() => _DjWhoEnochianTerminalState();
 }
 
+class _SignalTrack {
+  const _SignalTrack(this.sampleHz, this.frames);
+  final double sampleHz;
+  final List<List<int>> frames;
+}
+
 class _DjWhoEnochianTerminalState extends State<DjWhoEnochianTerminal> {
   static const _names = <String>[
     'UN','PA','VEH','GAL','GRAPH','OR','NA','GON','UR','TAL','GISA','FAM','GED','DON','MED','MALS','GER','DRUX','PAL','CEPH','VAN'
   ];
+  static const _assets = <String,String>{
+    'C0zocqpnIpY': 'assets/json/ai_comptroller_enochian.json',
+    '6v3YRGccqZE': 'assets/json/caesar_spitter_enochian_compact.json',
+    'XT60H_iOIvQ': 'assets/json/the_kraken_enochian_compact.json',
+    'lw4S2kb1_Ew': 'assets/json/heliogabal_design_enochian_compact.json',
+    'IV2IY5Faldc': 'assets/json/vivid_void_enochian_compact.json',
+  };
+
   Timer? _timer;
-  List<List<int>> _frames = const [];
-  double _sampleHz = 0, _seconds = 0;
+  final Map<String,_SignalTrack> _signals = {};
+  double _seconds = 0;
   bool _real = false;
   List<int> _raw = const [0,0,0,0];
   final _log = <String>[];
   final _scroll = ScrollController();
   int _lastFrame = -1;
+  String? _lastVideoId;
   double _bass = 1, _mid = 1, _high = 1, _beat = 1, _cross = .5;
 
   @override
   void initState() {
     super.initState();
-    unawaited(_load());
+    unawaited(_loadSignals());
     _timer = Timer.periodic(const Duration(milliseconds: 160), (_) => unawaited(_sample()));
   }
 
-  Future<void> _load() async {
-    try {
-      final data = jsonDecode(await rootBundle.loadString('assets/json/ai_comptroller_enochian.json')) as Map<String,dynamic>;
-      final frames = (data['frames'] as List).map((f) => (f as List).map((v) => (v as num).round()).toList()).toList();
-      if (!mounted) return;
-      setState(() { _frames = frames; _sampleHz = (data['sampleHz'] as num).toDouble(); });
-    } catch (_) {}
+  Future<void> _loadSignals() async {
+    for (final entry in _assets.entries) {
+      try {
+        final data = jsonDecode(await rootBundle.loadString(entry.value)) as Map<String,dynamic>;
+        final sampleHz = (data['sampleHz'] as num).toDouble();
+        List<List<int>> frames;
+        if (data['encoding'] == 'u8x4-base64') {
+          final bytes = base64Decode(data['data'] as String);
+          frames = List.generate(bytes.length ~/ 4, (i) {
+            final o = i * 4;
+            return [bytes[o], bytes[o + 1], bytes[o + 2], bytes[o + 3]];
+          }, growable: false);
+        } else {
+          frames = (data['frames'] as List).map((f) =>
+            (f as List).map((v) => (v as num).round()).toList(growable:false)
+          ).toList(growable:false);
+        }
+        _signals[entry.key] = _SignalTrack(sampleHz, frames);
+      } catch (_) {}
+    }
+    if (mounted) setState(() {});
   }
 
   Future<void> _sample() async {
@@ -51,9 +80,20 @@ class _DjWhoEnochianTerminalState extends State<DjWhoEnochianTerminal> {
     double s;
     try { s = await c.currentTime; } catch (_) { return; }
     if (!mounted) return;
-    final real = v.videoId == 'C0zocqpnIpY' && _frames.isNotEmpty && _sampleHz > 0;
-    final index = real ? (s * _sampleHz).floor().clamp(0, _frames.length - 1) : (s * 8).floor();
-    final values = real ? _frames[index] : _fallback(v.videoId, s);
+
+    if (_lastVideoId != v.videoId) {
+      _lastVideoId = v.videoId;
+      _lastFrame = -1;
+      _log.clear();
+    }
+
+    final signal = _signals[v.videoId];
+    final real = signal != null && signal.frames.isNotEmpty && signal.sampleHz > 0;
+    final index = real
+        ? (s * signal.sampleHz).floor().clamp(0, signal.frames.length - 1)
+        : (s * 8).floor();
+    final values = real ? signal.frames[index] : _fallback(v.videoId, s);
+
     setState(() {
       _seconds = s; _real = real; _raw = values;
       if (index != _lastFrame) {
