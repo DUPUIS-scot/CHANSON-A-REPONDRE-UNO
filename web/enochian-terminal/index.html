@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>DJ WHO · ENOCHIAN TERMINAL</title><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000}iframe{display:block;width:100%;height:100%;border:0;background:#000}</style></head><body><iframe id="deck" src="/enochian-test/base.html?v=20260823-terminal-restart" title="ENOCHIAN TERMINAL"></iframe><script>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>DJ WHO · ENOCHIAN TERMINAL</title><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000}iframe{display:block;width:100%;height:100%;border:0;background:#000}</style></head><body><iframe id="deck" src="/enochian-test/base.html?v=20260823-terminal-dualmod" title="ENOCHIAN TERMINAL"></iframe><script>
 const frame=document.getElementById('deck');
 frame.addEventListener('load',()=>{
  const w=frame.contentWindow,d=frame.contentDocument;
@@ -13,11 +13,11 @@ frame.addEventListener('load',()=>{
  const title=d.querySelector('.title');if(title)title.textContent='ENOCHIAN TERMINAL · EQ / FX / MOD / GLIDE';
  const home=d.querySelector('.home-link');if(home){home.textContent='⌂';home.setAttribute('aria-label','Home');home.setAttribute('title','Home');home.href='/';}
  const labels=d.querySelectorAll('.sig span');if(labels[0])labels[0].textContent='BASS';if(labels[1])labels[1].textContent='MID';if(labels[2])labels[2].textContent='HIGH';if(labels[3])labels[3].textContent='BEAT';
- const art=d.getElementById('platterArt');if(art){art.src='/assets/assets/images/uno_jester_headphones.webp?v=20260823-terminal-restart';art.alt='UNO jester';}
+ const art=d.getElementById('platterArt');if(art){art.src='/assets/assets/images/uno_jester_headphones.webp?v=20260823-terminal-dualmod';art.alt='UNO jester';}
  const patch=d.createElement('script');patch.textContent=`
  (function(){
   const q=id=>document.getElementById(id);
-  let spin=0,last=performance.now(),prev=null,beatBase=0,beatPeak=0,stream='';
+  let spin=0,last=performance.now(),prev=null,beatBase=0,beatPeak=0,stream='',lastTextAt=0,localMod=.5;
   const oldSignal=typeof signal==='function'?signal:null;
   signal=function(){
     if(!an||!ctx){return oldSignal?oldSignal():[0,0,0,0]}
@@ -28,18 +28,41 @@ frame.addEventListener('load',()=>{
     let flux=0;for(let i=1;i<n;i++)if(prev)flux+=Math.max(0,data[i]-prev[i]);prev=data.slice();if(!beatBase)beatBase=flux;const onset=Math.max(0,flux-beatBase*1.18);beatBase=beatBase*.9+flux*.1;beatPeak=Math.max(Math.min(255,onset*.06),beatPeak*.56);
     return[bass,mid,high,Math.round(beatPeak)].map(v=>Math.max(0,Math.min(255,Math.round(v))));
   };
-  function updateLiveText(vals){
-    const glyphs=vals.map(v=>String.fromCharCode(0x2800+(v%0x100))).join(' ');
-    stream=(stream+' '+glyphs).trim().slice(-420);
-    const text=q('modText')||d.querySelector('.mod textarea');if(text&&!text.matches(':focus'))text.value=stream;
-    const glyphBox=q('modGlyphs')||d.querySelector('.mod-glyphs');if(glyphBox){glyphBox.textContent=glyphs;glyphBox.style.fontSize='24px';glyphBox.style.letterSpacing='.15em';}
+  function clamp01(v){return Math.max(0,Math.min(1,v))}
+  function readModDepth(){
+    const wheel=q('modWheel')||d.querySelector('.mod .wheel');
+    if(wheel){
+      const aria=parseFloat(wheel.getAttribute('aria-valuenow'));if(Number.isFinite(aria))return clamp01(aria>1?aria/100:aria);
+      const angle=parseFloat(wheel.style.getPropertyValue('--angle')||getComputedStyle(wheel).getPropertyValue('--angle'));if(Number.isFinite(angle))return clamp01((angle+135)/270);
+    }
+    const read=q('modWheelV');if(read){const n=parseFloat(read.textContent);if(Number.isFinite(n))return clamp01(Math.abs(n)>1?n/100:n)}
+    return localMod;
   }
+  const modWheel=q('modWheel')||d.querySelector('.mod .wheel');
+  if(modWheel){const track=e=>{const r=modWheel.getBoundingClientRect(),x=e.clientX-(r.left+r.width/2),y=e.clientY-(r.top+r.height/2),deg=Math.atan2(y,x)*180/Math.PI;localMod=clamp01((deg+180)/360)};modWheel.addEventListener('pointerdown',track,{passive:true});modWheel.addEventListener('pointermove',e=>{if(modWheel.hasPointerCapture&&modWheel.hasPointerCapture(e.pointerId))track(e)},{passive:true})}
+  function tokenFor(v,i,vals,depth){
+    const bank=(typeof words!=='undefined'&&Array.isArray(words)&&words.length)?words:['UN','PA','VEH','GAL','GRAPH','OR','NA','GON','UR','TAL','GISA','FAM','GED','DON','MED','MALS','GER','DRUX','PAL','CEPH','VAN'];
+    const cross=vals[(i+1)%vals.length],beat=vals[3],spread=Math.round(depth*20),idx=(v+Math.round(cross*depth)+Math.round(beat*depth*.6)+i*spread)%bank.length;
+    let out=bank[(idx+bank.length)%bank.length];
+    if(depth>.72&&beat>80)out+=out.slice(0,Math.max(1,Math.round(depth*3)));
+    if(depth>.88)out=out.split('').join('·');
+    return out;
+  }
+  function updateLiveText(vals,now){
+    if(now-lastTextAt<115)return;lastTextAt=now;
+    const depth=readModDepth(),tokens=vals.map((v,i)=>tokenFor(v,i,vals,depth));
+    const separator=depth>.75?' / ':depth>.4?' · ':' ';
+    const phrase=tokens.join(separator);
+    stream=(stream+(stream?' ':'')+phrase).slice(-900);
+    const text=q('modText')||d.querySelector('.mod textarea');if(text&&!text.matches(':focus')){text.value=stream;text.scrollTop=text.scrollHeight}
+    const glyphBox=q('modGlyphs')||d.querySelector('.mod-glyphs');if(glyphBox){glyphBox.textContent=phrase;glyphBox.style.fontSize='18px';glyphBox.style.letterSpacing=(.06+depth*.13)+'em'}
+  }
+  function clearLiveText(){stream='';lastTextAt=0;const text=q('modText')||d.querySelector('.mod textarea');if(text)text.value='';const glyphBox=q('modGlyphs')||d.querySelector('.mod-glyphs');if(glyphBox)glyphBox.textContent=''}
   const oldKill=q('killfx')&&q('killfx').onclick;
-  if(q('killfx'))q('killfx').onclick=()=>{try{oldKill&&oldKill()}catch(_){};['low','mid','high'].forEach(id=>{const e=q(id);if(e){e.value=0;e.dispatchEvent(new Event('input',{bubbles:true}))}});[['filter',1000],['drive',0],['delay',0],['fb',.25],['wet',0],['pitch',0]].forEach(([id,v])=>{const e=q(id);if(e){e.value=v;e.dispatchEvent(new Event('input',{bubbles:true}))}});try{if(typeof baseRate!=='undefined'&&a)a.playbackRate=baseRate}catch(_){};};
-  function activeWheel(){return !!(d.querySelector('.wheel.active')||d.querySelector('.xy-pad.active')||d.querySelector('.xy-pad:active'))}
-  function frameTick(now){const dt=Math.min(.05,(now-last)/1000);last=now;try{if(a&&!a.paused){spin=(spin+dt*145*a.playbackRate)%360;d.documentElement.style.setProperty('--rot',spin+'deg')}}catch(_){};try{const vals=signal();if(activeWheel())updateLiveText(vals)}catch(_){};requestAnimationFrame(frameTick)}
+  if(q('killfx'))q('killfx').onclick=()=>{try{oldKill&&oldKill()}catch(_){};['low','mid','high'].forEach(id=>{const e=q(id);if(e){e.value=0;e.dispatchEvent(new Event('input',{bubbles:true}))}});[['filter',1000],['drive',0],['delay',0],['fb',.25],['wet',0],['pitch',0]].forEach(([id,v])=>{const e=q(id);if(e){e.value=v;e.dispatchEvent(new Event('input',{bubbles:true}))}});try{if(typeof baseRate!=='undefined'&&a)a.playbackRate=baseRate}catch(_){};localMod=.5;if(modWheel){modWheel.setAttribute('aria-valuenow','50');modWheel.style.setProperty('--angle','0deg');modWheel.classList.remove('active')}const mv=q('modWheelV');if(mv)mv.textContent='50%';clearLiveText();try{log('KILL FX · MOD + LIVE TEXT RESET')}catch(_){}};
+  function frameTick(now){const dt=Math.min(.05,(now-last)/1000);last=now;let playing=false;try{playing=!!(a&&!a.paused&&!a.ended);if(playing){spin=(spin+dt*145*a.playbackRate)%360;d.documentElement.style.setProperty('--rot',spin+'deg')}}catch(_){};try{if(playing){const vals=signal();updateLiveText(vals,now)}}catch(_){};requestAnimationFrame(frameTick)}
   requestAnimationFrame(frameTick);
-  try{log('ENOCHIAN SIGNAL RESTORED · FX/PITCH/MOD ACTIVE · TURNTABLE RESTARTED')}catch(_){}
+  try{log('DUAL LIVE ENOCHIAN TEXT · SIGNAL × MOD WHEEL ACTIVE')}catch(_){}
  })();`;
  d.body.appendChild(patch);
 });
