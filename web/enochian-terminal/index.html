@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>DJ WHO · ENOCHIAN TERMINAL</title><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000}iframe{display:block;width:100%;height:100%;border:0;background:#000}</style></head><body><iframe id="deck" src="/enochian-test/base.html?v=20260823-terminal-analyser-sync" title="ENOCHIAN TERMINAL"></iframe><script>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>DJ WHO · ENOCHIAN TERMINAL</title><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000}iframe{display:block;width:100%;height:100%;border:0;background:#000}</style></head><body><iframe id="deck" src="/enochian-test/base.html?v=20260823-terminal-kill-reset" title="ENOCHIAN TERMINAL"></iframe><script>
 const frame=document.getElementById('deck');
 frame.addEventListener('load',()=>{
  const d=frame.contentDocument;
@@ -15,6 +15,7 @@ frame.addEventListener('load',()=>{
  .stage{grid-template-rows:180px minmax(390px,1fr) auto auto auto!important}
  .wave canvas{top:28px!important;bottom:50px!important;height:auto!important}
  .signals{z-index:2!important}
+ .mod-glyphs{display:none!important;min-height:0!important}
  .pad-panel.instant-layout{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;align-items:stretch!important}
  .pad-panel.instant-layout>.pad-top{grid-column:1/-1!important}
  .pad-panel.instant-layout>.xy-pad{grid-column:1!important;height:100%!important;min-height:180px!important}
@@ -30,11 +31,11 @@ frame.addEventListener('load',()=>{
  `;d.head.appendChild(css);
  const title=d.querySelector('.title');if(title)title.textContent='ENOCHIAN TERMINAL · EQ / FX / MOD / GLIDE';
  const home=d.querySelector('.home-link');if(home){home.textContent='⌂';home.setAttribute('aria-label','Home');home.setAttribute('title','Home');home.href='/';}
- const art=d.getElementById('platterArt');if(art){art.src='/assets/assets/images/uno_jester_headphones.webp?v=20260823-terminal-analyser-sync';art.alt='UNO jester';}
+ const art=d.getElementById('platterArt');if(art){art.src='/assets/assets/images/uno_jester_headphones.webp?v=20260823-terminal-kill-reset';art.alt='UNO jester';}
  const patch=d.createElement('script');patch.textContent=`
  (function(){
   const q=id=>document.getElementById(id);
-  let stream='',lastTextAt=0,localMod=.5;
+  let localMod=0;
   function clamp01(v){return Math.max(0,Math.min(1,v))}
   try{
    const srcDesc=Object.getOwnPropertyDescriptor(HTMLImageElement.prototype,'src');
@@ -49,10 +50,8 @@ frame.addEventListener('load',()=>{
    let peakHold=56;
    draw=function(canvas,arr){const r=canvas.getBoundingClientRect(),dpr=devicePixelRatio||1,w=Math.max(1,Math.floor(r.width*dpr)),h=Math.max(1,Math.floor(r.height*dpr));if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h}const c=canvas.getContext('2d');c.clearRect(0,0,w,h);let framePeak=0;for(let i=0;i<arr.length;i++)if(arr[i]>framePeak)framePeak=arr[i];peakHold=Math.max(30,framePeak,peakHold*.94);const floor=Math.min(16,peakHold*.14),span=Math.max(12,peakHold-floor);c.strokeStyle='#79eadb';c.lineWidth=Math.max(1,dpr*1.35);c.beginPath();arr.forEach((v,i)=>{const x=arr.length>1?i/(arr.length-1)*w:0;const n=clamp01((v-floor)/span);const shaped=Math.pow(n,.72);const y=h-(shaped*(h-2*dpr)+dpr);i?c.lineTo(x,y):c.moveTo(x,y)});c.stroke()};
   }catch(_){ }
-  function readBaseSignal(){return[0,1,2,3].map(i=>{const raw=(q('b'+i)?.textContent||'00000000').match(/[01]{8}$/);return raw?parseInt(raw[0],2):0})}
-  function readModDepth(){const wheel=q('modWheel')||document.querySelector('.mod .wheel');if(wheel){const aria=parseFloat(wheel.getAttribute('aria-valuenow'));if(Number.isFinite(aria))return clamp01(aria>1?aria/100:aria);const angle=parseFloat(wheel.style.getPropertyValue('--angle')||getComputedStyle(wheel).getPropertyValue('--angle'));if(Number.isFinite(angle))return clamp01((angle+135)/270)}const read=q('modWheelV');if(read){const n=parseFloat(read.textContent);if(Number.isFinite(n))return clamp01(Math.abs(n)>1?n/100:n)}return localMod}
   const modWheel=q('modWheel')||document.querySelector('.mod .wheel');
-  const modText=q('modText')||document.querySelector('.mod textarea');
+  const modText=q('phrase')||document.querySelector('.mod textarea');
   let preserveTextFocus=false,preserveStart=0,preserveEnd=0;
   function rememberTextFocus(){if(!modText||document.activeElement!==modText)return false;preserveTextFocus=true;preserveStart=modText.selectionStart??modText.value.length;preserveEnd=modText.selectionEnd??preserveStart;return true}
   function restoreTextFocus(){if(!preserveTextFocus||!modText)return;requestAnimationFrame(()=>{try{modText.focus({preventScroll:true});modText.setSelectionRange(preserveStart,preserveEnd)}catch(_){modText.focus()}})}
@@ -78,9 +77,6 @@ frame.addEventListener('load',()=>{
    platter.addEventListener('wheel',e=>{e.preventDefault();stopInertia();addRotation(Math.sign(e.deltaY||e.deltaX)*-12)},{passive:false});
    platter.addEventListener('keydown',e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();stopInertia();addRotation(e.key==='ArrowLeft'?-15:15)}});
   }
-  function tokenFor(v,i,vals,depth){const bank=(typeof words!=='undefined'&&Array.isArray(words)&&words.length)?words:['UN','PA','VEH','GAL','GRAPH','OR','NA','GON','UR','TAL','GISA','FAM','GED','DON','MED','MALS','GER','DRUX','PAL','CEPH','VAN'];const cross=vals[(i+1)%vals.length],beat=vals[3],spread=Math.round(depth*20),idx=(v+Math.round(cross*depth)+Math.round(beat*depth*.6)+i*spread)%bank.length;let out=bank[(idx+bank.length)%bank.length];if(depth>.72&&beat>80)out+=out.slice(0,Math.max(1,Math.round(depth*3)));if(depth>.88)out=out.split('').join('·');return out}
-  function updateLiveText(vals,now){if(now-lastTextAt<115)return;lastTextAt=now;const depth=readModDepth(),tokens=vals.map((v,i)=>tokenFor(v,i,vals,depth)),separator=depth>.75?' / ':depth>.4?' · ':' ',phrase=tokens.join(separator);stream=(stream+(stream?' ':'')+phrase).slice(-900);const glyphBox=q('modGlyphs')||document.querySelector('.mod-glyphs');if(glyphBox){glyphBox.textContent=phrase;glyphBox.style.fontSize='18px';glyphBox.style.letterSpacing=(.06+depth*.13)+'em'}}
-  function clearLiveText(){stream='';lastTextAt=0;const glyphBox=q('modGlyphs')||document.querySelector('.mod-glyphs');if(glyphBox)glyphBox.textContent=''}
   function restorePadCenter(){try{if(typeof setPad==='function')setPad(.5,.5,false);if(typeof padRateFactor!=='undefined')padRateFactor=1;if(typeof applyPlaybackRate==='function')applyPlaybackRate();if(typeof applyFxMacro==='function'&&typeof fxMacro!=='undefined')applyFxMacro(fxMacro);const r=q('padReadout');if(r)r.textContent='X 50 · Y 50'}catch(_){}}
   const pad=q('xyPad');if(pad){pad.addEventListener('pointerup',e=>{try{if(pad.hasPointerCapture(e.pointerId))pad.releasePointerCapture(e.pointerId)}catch(_){}restorePadCenter()});pad.addEventListener('pointercancel',restorePadCenter);pad.addEventListener('lostpointercapture',restorePadCenter)}
   const instantPresets={
@@ -98,9 +94,22 @@ frame.addEventListener('load',()=>{
   function beginInstant(name,button,e){const p=instantPresets[name];if(!p)return;if(!instantSnapshot){instantSnapshot={};instantControls.forEach(id=>{const el=q(id);if(el)instantSnapshot[id]=el.value})}instantOwner=button;document.querySelectorAll('.instant-fx-btn.active').forEach(b=>b.classList.remove('active'));button.classList.add('active');instantControls.forEach(id=>setInstantControl(id,p[id]));try{button.setPointerCapture(e.pointerId)}catch(_){};try{log('INSTANT FX · '+name.toUpperCase()+' · '+p.beat)}catch(_){}}
   function endInstant(button,e){if(instantOwner!==button)return;button.classList.remove('active');if(instantSnapshot){Object.entries(instantSnapshot).forEach(([id,value])=>setInstantControl(id,value));instantSnapshot=null}instantOwner=null;try{if(e&&button.hasPointerCapture(e.pointerId))button.releasePointerCapture(e.pointerId)}catch(_){};try{log('INSTANT FX · RELEASE')}catch(_){}}
   const padPanel=pad&&pad.closest('.pad-panel');if(padPanel&&!padPanel.querySelector('.instant-fx')){padPanel.classList.add('instant-layout');const bank=document.createElement('div');bank.className='instant-fx';bank.innerHTML='<div class="instant-fx-title">INSTANT FX · HOLD</div><div class="instant-fx-grid"></div>';const grid=bank.querySelector('.instant-fx-grid');Object.entries(instantPresets).forEach(([name,p])=>{const b=document.createElement('button');b.type='button';b.className='instant-fx-btn';b.setAttribute('aria-label','Instant FX '+p.label);b.innerHTML='<span>'+p.label+'</span><small>'+p.beat+'</small>';b.addEventListener('pointerdown',e=>{e.preventDefault();beginInstant(name,b,e)},{passive:false});b.addEventListener('pointerup',e=>endInstant(b,e));b.addEventListener('pointercancel',e=>endInstant(b,e));b.addEventListener('lostpointercapture',e=>endInstant(b,e));grid.appendChild(b)});padPanel.appendChild(bank)}
-  const kill=q('killfx'),oldKill=kill&&kill.onclick;if(kill)kill.onclick=async()=>{try{if(oldKill)await oldKill.call(kill)}catch(_){};const pitch=q('pitch');if(pitch){pitch.value=0;pitch.dispatchEvent(new Event('input',{bubbles:true}))}localMod=.5;if(modWheel){modWheel.setAttribute('aria-valuenow','50');modWheel.style.setProperty('--angle','0deg');modWheel.classList.remove('active')}const mv=q('modWheelV');if(mv)mv.textContent='50%';restorePadCenter();clearLiveText();instantSnapshot=null;instantOwner=null;document.querySelectorAll('.instant-fx-btn.active').forEach(b=>b.classList.remove('active'));try{log('KILL FX · PAD CENTER · MOD + LIVE SIGNAL + INSTANT FX RESET')}catch(_){}};
-  function frameTick(now){try{if(a&&!a.paused&&!a.ended)updateLiveText(readBaseSignal(),now)}catch(_){}requestAnimationFrame(frameTick)}requestAnimationFrame(frameTick);
-  try{log('BASE ENOCHIAN SIGNAL → LIVE OUTPUT/MOD → LOG · ANALYSER AUTOGAIN · GLYPH CACHE · PAD SPRING ACTIVE · PLATTER SCRATCH READY · INSTANT FX READY')}catch(_){}
+  const kill=q('killfx'),oldKill=kill&&kill.onclick;
+  if(kill)kill.onclick=async()=>{
+   try{if(oldKill)await oldKill.call(kill)}catch(_){}
+   const pitch=q('pitch');if(pitch){pitch.value=0;pitch.dispatchEvent(new Event('input',{bubbles:true}))}
+   if(modText){modText.value='';modText.dispatchEvent(new Event('input',{bubbles:true}))}
+   try{if(typeof modW!=='undefined')modW.reset()}catch(_){}
+   try{if(typeof modDepth!=='undefined')modDepth=0;if(typeof modActive!=='undefined')modActive=false;if(typeof modRateFactor!=='undefined')modRateFactor=1;if(typeof applyPlaybackRate==='function')applyPlaybackRate();if(typeof applyFxMacro==='function'&&typeof fxMacro!=='undefined')applyFxMacro(fxMacro)}catch(_){}
+   localMod=0;
+   if(modWheel){modWheel.setAttribute('aria-valuenow','0');modWheel.style.setProperty('--angle','-135deg');modWheel.classList.remove('active')}
+   const mv=q('modWheelV');if(mv)mv.textContent='0%';
+   const modBtn=q('modActivate');if(modBtn){modBtn.classList.remove('active');modBtn.textContent='MOD OFF'}
+   restorePadCenter();
+   instantSnapshot=null;instantOwner=null;document.querySelectorAll('.instant-fx-btn.active').forEach(b=>b.classList.remove('active'));
+   try{log('KILL FX · TEXT CLEARED · MOD OFF · MOD DEPTH 0 · PAD CENTER · INSTANT FX RESET')}catch(_){}
+  };
+  try{log('ENOCHIAN SIGNAL ANALYSER · TEXT INPUT MANUAL · PAD SPRING ACTIVE · PLATTER SCRATCH READY · INSTANT FX READY')}catch(_){}
  })();`;
  d.body.appendChild(patch);
 });
