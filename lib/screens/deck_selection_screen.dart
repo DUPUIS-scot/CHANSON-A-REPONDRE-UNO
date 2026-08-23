@@ -63,8 +63,10 @@ class DeckSelectionScreen extends StatelessWidget {
                     : 16.0;
 
                 final portraitAspectRatio = width < 720 ? 0.64 : 0.72;
-                final landscapeTileHeight = compactLandscape
-                    ? (height - (verticalPadding * 2)).clamp(210.0, 360.0)
+                final double? landscapeTileHeight = compactLandscape
+                    ? (height - (verticalPadding * 2))
+                          .clamp(210.0, 360.0)
+                          .toDouble()
                     : null;
 
                 return SafeArea(
