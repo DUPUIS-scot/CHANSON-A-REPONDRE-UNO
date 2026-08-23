@@ -88,11 +88,18 @@ class _DjWhoEnochianTerminalState extends State<DjWhoEnochianTerminal> {
     }
 
     final signal = _signals[v.videoId];
-    final real = signal != null && signal.frames.isNotEmpty && signal.sampleHz > 0;
-    final index = real
-        ? (s * signal.sampleHz).floor().clamp(0, signal.frames.length - 1)
-        : (s * 8).floor();
-    final values = real ? signal.frames[index] : _fallback(v.videoId, s);
+    late final int index;
+    late final List<int> values;
+    final bool real;
+    if (signal != null && signal.frames.isNotEmpty && signal.sampleHz > 0) {
+      real = true;
+      index = (s * signal.sampleHz).floor().clamp(0, signal.frames.length - 1);
+      values = signal.frames[index];
+    } else {
+      real = false;
+      index = (s * 8).floor();
+      values = _fallback(v.videoId, s);
+    }
 
     setState(() {
       _seconds = s; _real = real; _raw = values;
