@@ -8,6 +8,7 @@ if (!window.__castleBureauVideoBridgeInstalled) {
     document.baseURI,
   ).href;
   const SCREEN_NAME = /^VideoScreen_(Left|Right)$/i;
+  const PRIME_WINDOW_MS = 60000;
 
   let video = null;
   let texture = null;
@@ -17,8 +18,10 @@ if (!window.__castleBureauVideoBridgeInstalled) {
   let observer = null;
   let playPromise = null;
   let textureFrame = 0;
+  let entryPrimed = false;
+  let entryPrimedAt = 0;
 
-  document.body.dataset.bureauVideoOwner = 'castle-bureau-video-bridge-v63';
+  document.body.dataset.bureauVideoOwner = 'castle-bureau-video-bridge-v72';
 
   const mode = () => document.body.dataset.sceneMode || 'exterior';
   const isLaboratoryActive = () => mode() === 'laboratory' || mode() === 'bureau';
@@ -57,7 +60,7 @@ if (!window.__castleBureauVideoBridgeInstalled) {
     texture.generateMipmaps = false;
 
     material = new THREE.MeshBasicMaterial({
-      name: 'bureau-live-video-material-v63',
+      name: 'bureau-live-video-material-v72',
       map: texture,
       color: 0xffffff,
       side: THREE.DoubleSide,
@@ -101,29 +104,34 @@ if (!window.__castleBureauVideoBridgeInstalled) {
     document.body.dataset.bureauVideoScreenCount = String(targets.length);
     document.body.dataset.bureauVideoBoundNames = targets.map(object => object.name || '(unnamed)').join('|');
     document.body.dataset.bureauVideoState = targets.length === 2
-      ? 'exact-screens-ready-v63'
-      : 'screen-mismatch-v63';
+      ? 'exact-screens-ready-v72'
+      : 'screen-mismatch-v72';
     return targets.length === 2;
   }
 
   function attemptPlay(reason) {
     ensureVideoTexture();
+    video.muted = true;
+    video.defaultMuted = true;
+    video.playsInline = true;
+    video.volume = 0;
+
     if (!video.paused && !video.ended) {
-      document.body.dataset.bureauVideoPlayback = 'playing-loop-v63';
+      document.body.dataset.bureauVideoPlayback = 'playing-loop-v72';
       delete document.body.dataset.bureauVideoError;
       return Promise.resolve(true);
     }
     if (playPromise) return playPromise;
 
-    document.body.dataset.bureauVideoPlayback = `${reason}-attempt-v63`;
+    document.body.dataset.bureauVideoPlayback = `${reason}-attempt-v72`;
     playPromise = Promise.resolve(video.play())
       .then(() => {
-        document.body.dataset.bureauVideoPlayback = 'playing-loop-v63';
+        document.body.dataset.bureauVideoPlayback = 'playing-loop-v72';
         delete document.body.dataset.bureauVideoError;
         return true;
       })
       .catch(error => {
-        document.body.dataset.bureauVideoPlayback = 'waiting-user-gesture-v63';
+        document.body.dataset.bureauVideoPlayback = 'waiting-user-gesture-v72';
         document.body.dataset.bureauVideoError = String(error?.message || error);
         return false;
       })
@@ -131,15 +139,42 @@ if (!window.__castleBureauVideoBridgeInstalled) {
     return playPromise;
   }
 
+  function primeFromGesture(reason = 'interior-gesture-prime') {
+    if (mode() !== 'interior') return Promise.resolve(false);
+    entryPrimed = true;
+    entryPrimedAt = performance.now();
+    document.body.dataset.bureauVideoGesturePrime = 'armed-v72';
+    if (video?.ended) {
+      try { video.currentTime = 0; } catch (_) {}
+    }
+    return attemptPlay(reason);
+  }
+
+  function keepPrimedDuringEntry() {
+    return entryPrimed
+      && mode() === 'interior'
+      && performance.now() - entryPrimedAt < PRIME_WINDOW_MS;
+  }
+
   function syncPlayback() {
     if (isLaboratoryActive()) {
+      entryPrimed = false;
       const root = findBureauRoot();
       if (root) bindScreens(root);
       attemptPlay('laboratory-entry');
       return;
     }
+
+    if (keepPrimedDuringEntry()) {
+      document.body.dataset.bureauVideoPlayback = video?.paused
+        ? 'gesture-primed-pending-v72'
+        : 'gesture-primed-playing-v72';
+      return;
+    }
+
+    entryPrimed = false;
     if (video && !video.paused) video.pause();
-    document.body.dataset.bureauVideoPlayback = 'paused-v63';
+    document.body.dataset.bureauVideoPlayback = 'paused-v72';
   }
 
   function hydrate() {
@@ -152,6 +187,7 @@ if (!window.__castleBureauVideoBridgeInstalled) {
     if (isLaboratoryActive()) attemptPlay('gesture-resume');
   }
 
+  window.__castleBureauVideoPrime = primeFromGesture;
   window.__castleBureauVideoPlay = hydrate;
   window.__castleBureauVideoDiagnostics = () => ({
     mode: mode(),
@@ -160,6 +196,7 @@ if (!window.__castleBureauVideoBridgeInstalled) {
     readyState: video?.readyState,
     networkState: video?.networkState,
     currentTime: video?.currentTime,
+    entryPrimed,
     boundNames: [...boundMeshes].map(object => object.name || '(unnamed)'),
   });
 
@@ -174,6 +211,7 @@ if (!window.__castleBureauVideoBridgeInstalled) {
       requestAnimationFrame(hydrate);
       setTimeout(hydrate, 120);
       setTimeout(hydrate, 420);
+      setTimeout(hydrate, 900);
     }
   });
   observer.observe(document.body, {
@@ -195,6 +233,7 @@ if (!window.__castleBureauVideoBridgeInstalled) {
     material?.dispose();
     texture?.dispose();
     video?.remove();
+    delete window.__castleBureauVideoPrime;
     delete window.__castleBureauVideoPlay;
     delete window.__castleBureauVideoDiagnostics;
   }, {once: true});
