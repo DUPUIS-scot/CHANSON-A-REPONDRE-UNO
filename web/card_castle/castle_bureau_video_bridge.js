@@ -33,7 +33,6 @@ if (!window.__castleBureauVideoBridgeInstalled) {
 
     video = document.createElement('video');
     video.id = 'bureau-screen-loop-video';
-    video.src = VIDEO_URL;
     video.loop = true;
     video.muted = true;
     video.defaultMuted = true;
@@ -47,6 +46,7 @@ if (!window.__castleBureauVideoBridgeInstalled) {
     video.setAttribute('muted', '');
     video.setAttribute('autoplay', '');
     video.setAttribute('aria-hidden', 'true');
+    video.src = VIDEO_URL;
     document.body.appendChild(video);
     video.load();
 
