@@ -171,6 +171,7 @@ class DeckProvider extends ChangeNotifier {
       'assets/hp/ChatGPT Image Aug 22, 2026, 11_00_51 AM.png',
       'assets/hp/ChatGPT Image Aug 22, 2026, 11_08_07 AM.png',
       'assets/hp/ChatGPT Image Aug 22, 2026, 11_12_32 AM.png',
+      'assets/hp/ChatGPT Image Aug 23, 2026, 08_45_28 AM.png',
     ];
     final cards = <CardImageModel>[
       for (var index = 0; index < paths.length; index++)
