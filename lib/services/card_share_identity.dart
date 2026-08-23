@@ -1,9 +1,9 @@
 import '../core/app_constants.dart';
 
 abstract final class CardShareIdentity {
-  static final RegExp _unoCardPattern = RegExp(r'^final-84-(\d{2})$');
-  static final RegExp _brioCardPattern = RegExp(r'^brio-(\d{3})$');
-  static final RegExp _hpCardPattern = RegExp(r'^hp-(\d{3})$');
+  static final RegExp _unoCardPattern = RegExp(r'^final-(?:\d+)-(\d+)$');
+  static final RegExp _brioCardPattern = RegExp(r'^brio-(\d+)$');
+  static final RegExp _hpCardPattern = RegExp(r'^hp-(\d+)$');
 
   static String canonicalSlugFor({
     required String cardId,
@@ -11,21 +11,21 @@ abstract final class CardShareIdentity {
   }) {
     if (deckId == AppConstants.productionDeckId) {
       final number = _numberFrom(_unoCardPattern, cardId);
-      if (number == null || number < 1 || number > 84) {
+      if (number == null || number < 1) {
         throw FormatException('Invalid built-in UNO card id: $cardId');
       }
       return 'UNO-${number.toString().padLeft(3, '0')}';
     }
     if (deckId == AppConstants.brioDeckId) {
       final number = _numberFrom(_brioCardPattern, cardId);
-      if (number == null || number < 1 || number > 16) {
+      if (number == null || number < 1) {
         throw FormatException('Invalid built-in BRIO card id: $cardId');
       }
       return 'BRIO-${number.toString().padLeft(3, '0')}';
     }
     if (deckId == AppConstants.hpDeckId) {
       final number = _numberFrom(_hpCardPattern, cardId);
-      if (number == null || number < 1 || number > 4) {
+      if (number == null || number < 1) {
         throw FormatException('Invalid built-in HP card id: $cardId');
       }
       return 'HP-${number.toString().padLeft(3, '0')}';
