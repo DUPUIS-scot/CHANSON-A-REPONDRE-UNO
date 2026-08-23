@@ -182,6 +182,7 @@ jobs:
           test -f build/web/index.html
           test -f build/web/404.html
           test -f build/web/main.dart.js
+          test -f build/web/enochian/index.html
           test -f build/web/assets/assets/models/transcription_jester_rigged.glb
           test -s build/web/assets/assets/videos/bureau_screen_loop.mp4
           test -f build/web/assets/assets/hp/work_in_progress_ribbon.webp
