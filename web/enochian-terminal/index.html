@@ -15,17 +15,18 @@ frame.addEventListener('load',()=>{
  .stage{grid-template-rows:180px minmax(390px,1fr) auto auto auto!important}
  .wave canvas{top:28px!important;bottom:50px!important;height:auto!important}
  .signals{z-index:2!important}
- .pad-panel.instant-layout{grid-template-columns:minmax(0,1fr) 292px!important;align-items:stretch!important}
+ .pad-panel.instant-layout{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;align-items:stretch!important}
  .pad-panel.instant-layout>.pad-top{grid-column:1/-1!important}
- .instant-fx{border-left:1px solid #17332e;padding-left:10px;display:grid;grid-template-rows:auto 1fr;gap:7px;min-width:0}
+ .pad-panel.instant-layout>.xy-pad{grid-column:1!important;height:100%!important;min-height:180px!important}
+ .instant-fx{grid-column:2!important;border-left:1px solid #17332e;padding-left:10px;display:grid;grid-template-rows:auto 1fr;gap:7px;min-width:0}
  .instant-fx-title{text-align:center;color:#9dece0;letter-spacing:.18em;font-size:9px}
  .instant-fx-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
  .instant-fx-btn{min-height:68px;border:1px solid #315b56;border-radius:6px;background:linear-gradient(180deg,#07120f,#020706);color:#d7fff8;padding:8px 6px;cursor:pointer;touch-action:none;user-select:none;text-align:left;box-shadow:inset 0 0 0 1px #0008}
  .instant-fx-btn span{display:block;color:#d7fff8;font-size:12px;font-weight:800;line-height:1.05}
  .instant-fx-btn small{display:block;margin-top:8px;color:#d5aa63;font-size:9px;font-weight:700}
  .instant-fx-btn.active{background:#0b3027;border-color:#68d8bd;box-shadow:0 0 18px #40e6b455,inset 0 0 0 1px #68d8bd66;color:#fff}
- @media(max-width:1000px){.stage{grid-template-rows:200px auto auto auto auto!important}.pad-panel.instant-layout{grid-template-columns:1fr!important}.instant-fx{border-left:0;border-top:1px solid #17332e;padding-left:0;padding-top:10px}.instant-fx-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.instant-fx-btn{min-height:60px}}
- @media(max-width:620px){.instant-fx-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+ @media(max-width:1000px){.stage{grid-template-rows:200px auto auto auto auto!important}.pad-panel.instant-layout{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important}.instant-fx-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.instant-fx-btn{min-height:60px}}
+ @media(max-width:620px){.pad-panel.instant-layout{grid-template-columns:1fr!important}.pad-panel.instant-layout>.xy-pad{grid-column:1!important;height:220px!important}.instant-fx{grid-column:1!important;border-left:0;border-top:1px solid #17332e;padding-left:0;padding-top:10px}.instant-fx-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
  `;d.head.appendChild(css);
  const title=d.querySelector('.title');if(title)title.textContent='ENOCHIAN TERMINAL · EQ / FX / MOD / GLIDE';
  const home=d.querySelector('.home-link');if(home){home.textContent='⌂';home.setAttribute('aria-label','Home');home.setAttribute('title','Home');home.href='/';}
