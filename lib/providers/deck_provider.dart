@@ -20,6 +20,7 @@ class DeckProvider extends ChangeNotifier {
   static const _decksKey = 'decks';
   static const _activeKey = 'active_deck';
   static const _searchStateKey = 'search_path_state_v1';
+  static const _imageExtensions = ['.png', '.jpg', '.jpeg', '.webp'];
 
   List<Deck> _decks = [];
   String? _activeDeckId;
@@ -71,6 +72,22 @@ class DeckProvider extends ChangeNotifier {
     }
   }
 
+  Future<List<String>> _bundledImagesUnder(
+    String prefix, {
+    Set<String> excludedBasenames = const {},
+  }) async {
+    final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
+    final paths = manifest.listAssets().where((path) {
+      if (!path.startsWith(prefix)) return false;
+      final lower = path.toLowerCase();
+      if (!_imageExtensions.any(lower.endsWith)) return false;
+      final basename = path.split('/').last.toLowerCase();
+      return !excludedBasenames.contains(basename);
+    }).toList()
+      ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    return paths;
+  }
+
   Future<void> _installProductionDeck() async {
     final source = await rootBundle.loadString(AppConstants.cardsAsset);
     final decoded = jsonDecode(source);
@@ -85,24 +102,44 @@ class DeckProvider extends ChangeNotifier {
         .whereType<Map<String, dynamic>>()
         .map(Deck.fromJson)
         .firstWhere((deck) => deck.id == AppConstants.productionDeckId);
-    final deck = sourceDeck.copyWith(
-      coverPath: AppConstants.productionDeckCover,
-      cards: [
-        for (var index = 0; index < sourceDeck.cards.length; index++)
-          sourceDeck.cards[index].copyWith(
-            category: cardCategoryAt(index).label,
-            colour: cardCategoryAt(index).colour,
-          ),
-      ],
-    );
-    final ids = deck.cards.map((card) => card.id).toSet();
-    if (deck.cards.length != AppConstants.productionDeckSize ||
-        ids.length != AppConstants.productionDeckSize) {
+
+    final cards = <CardImageModel>[
+      for (var index = 0; index < sourceDeck.cards.length; index++)
+        sourceDeck.cards[index].copyWith(
+          category: cardCategoryAt(index).label,
+          colour: cardCategoryAt(index).colour,
+        ),
+    ];
+    final knownPaths = cards.map((card) => card.path).toSet();
+    final discovered = await _bundledImagesUnder('assets/cards/final_import/');
+    for (final path in discovered.where((path) => !knownPaths.contains(path))) {
+      final index = cards.length;
+      final number = index + 1;
+      final category = cardCategoryAt(index);
+      cards.add(
+        CardImageModel(
+          id: 'final-84-${number.toString().padLeft(2, '0')}',
+          deckId: AppConstants.productionDeckId,
+          title: 'UNO ${number.toString().padLeft(3, '0')}',
+          path: path,
+          category: category.label,
+          colour: category.colour,
+          importedAt: DateTime.utc(2026, 8, 23),
+        ),
+      );
+    }
+
+    final ids = cards.map((card) => card.id).toSet();
+    if (ids.length != cards.length || cards.length < AppConstants.productionDeckSize) {
       throw FormatException(
-        'The production deck must contain exactly '
+        'The production deck must contain at least '
         '${AppConstants.productionDeckSize} unique cards.',
       );
     }
+    final deck = sourceDeck.copyWith(
+      coverPath: AppConstants.productionDeckCover,
+      cards: cards,
+    );
     _decks = [
       deck,
       ..._decks.where((item) => item.id != AppConstants.productionDeckId),
@@ -130,7 +167,7 @@ class DeckProvider extends ChangeNotifier {
       final card = rawCards[index];
       if (card is! Map<String, dynamic>) continue;
       final cardId = card['id'] as String?;
-      final image = card['image'] as String?;
+      final image = (card['image'] ?? card['path']) as String?;
       if (cardId == null || image == null) continue;
       final category = cardCategoryAt(index);
       cards.add(
@@ -145,10 +182,32 @@ class DeckProvider extends ChangeNotifier {
         ),
       );
     }
+
+    final knownPaths = cards.map((card) => card.path).toSet();
+    final discovered = await _bundledImagesUnder(
+      'assets/decks/chanson_a_repondre_brio/cards/',
+    );
+    for (final path in discovered.where((path) => !knownPaths.contains(path))) {
+      final index = cards.length;
+      final number = index + 1;
+      final category = cardCategoryAt(index);
+      cards.add(
+        CardImageModel(
+          id: 'brio-${number.toString().padLeft(3, '0')}',
+          deckId: AppConstants.brioDeckId,
+          title: 'BRIO ${number.toString().padLeft(3, '0')}',
+          path: path,
+          category: category.label,
+          colour: category.colour,
+          importedAt: DateTime.utc(2026, 8, 23),
+        ),
+      );
+    }
+
     final ids = cards.map((card) => card.id).toSet();
-    if (cards.length != 16 || ids.length != 16) {
+    if (cards.length < 16 || ids.length != cards.length) {
       throw const FormatException(
-        'The bundled BRIO deck must contain exactly 16 unique cards.',
+        'The bundled BRIO deck must contain at least 16 unique cards.',
       );
     }
     final deck = Deck(
@@ -166,13 +225,13 @@ class DeckProvider extends ChangeNotifier {
   }
 
   Future<void> _installHpDeck() async {
-    const paths = [
-      'assets/hp/ChatGPT Image Aug 22, 2026, 10_59_05 AM.png',
-      'assets/hp/ChatGPT Image Aug 22, 2026, 11_00_51 AM.png',
-      'assets/hp/ChatGPT Image Aug 22, 2026, 11_08_07 AM.png',
-      'assets/hp/ChatGPT Image Aug 22, 2026, 11_12_32 AM.png',
-      'assets/hp/ChatGPT Image Aug 23, 2026, 08_45_28 AM.png',
-    ];
+    final paths = await _bundledImagesUnder(
+      'assets/hp/',
+      excludedBasenames: const {
+        'verso.png',
+        'work_in_progress_ribbon.webp',
+      },
+    );
     final cards = <CardImageModel>[
       for (var index = 0; index < paths.length; index++)
         CardImageModel(
@@ -182,9 +241,12 @@ class DeckProvider extends ChangeNotifier {
           path: paths[index],
           category: cardCategoryAt(index).label,
           colour: cardCategoryAt(index).colour,
-          importedAt: DateTime.utc(2026, 8, 22),
+          importedAt: DateTime.utc(2026, 8, 23),
         ),
     ];
+    if (cards.isEmpty) {
+      throw const FormatException('The bundled HP deck has no cards.');
+    }
     final deck = Deck(
       id: AppConstants.hpDeckId,
       name: 'CHANSON A REPONDRE HP',
