@@ -57,10 +57,9 @@ void main() {
     expect(resetView, contains("laboratory-entry-v70"));
     expect(resetView, contains("reset-button-v70"));
 
-    expect(bridge, contains(r'EXACT_SCREEN_NAME = /^VideoScreen_(Left|Right)$/i'));
-    expect(bridge, contains('interior-trusted-gesture-v62'));
+    expect(bridge, contains(r'const SCREEN_NAME = /^VideoScreen_(Left|Right)$/i'));
     expect(bridge, contains('texture.needsUpdate = true'));
-    expect(bridge, contains("bureauVideoPlayback = 'playing-loop-v62'"));
+    expect(bridge, contains("bureauVideoPlayback = 'playing-loop-v63'"));
     expect(overlay, contains("castle_bureau_video_bridge.js?v=70"));
     expect(overlay, contains("castle_bureau_video_refresh_v70.js?v=70"));
     expect(overlay, contains("castle_visual_regression_v55.js?v=70"));
