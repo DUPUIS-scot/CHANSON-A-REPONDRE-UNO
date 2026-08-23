@@ -117,30 +117,54 @@ jobs:
           from pathlib import Path
           from PIL import Image, ImageOps
 
+          EXTENSIONS = {'.png', '.jpg', '.jpeg', '.webp'}
           out = Path('build/web/assets/share-previews')
 
-          brio = Path('build/web/assets/assets/decks/chanson_a_repondre_brio/cards')
-          for i in range(1, 17):
-              card = f'{i:03d}'
-              source = brio / f'{card}.jpeg'
-              target = out / f'BRIO-{card}.jpg'
-              with Image.open(source) as image:
-                  fitted = ImageOps.fit(ImageOps.exif_transpose(image).convert('RGB'), (600, 900), method=Image.Resampling.LANCZOS)
-                  fitted.save(target, 'JPEG', quality=60, optimize=True, progressive=True, subsampling=2)
+          def image_files(directory, excluded=()):
+              excluded = {name.lower() for name in excluded}
+              return sorted(
+                  (
+                      path for path in Path(directory).iterdir()
+                      if path.is_file()
+                      and path.suffix.lower() in EXTENSIONS
+                      and path.name.lower() not in excluded
+                  ),
+                  key=lambda path: str(path).lower(),
+              )
 
-          hp = Path('assets/hp')
-          hp_sources = [
-              'ChatGPT Image Aug 22, 2026, 10_59_05 AM.png',
-              'ChatGPT Image Aug 22, 2026, 11_00_51 AM.png',
-              'ChatGPT Image Aug 22, 2026, 11_08_07 AM.png',
-              'ChatGPT Image Aug 22, 2026, 11_12_32 AM.png',
-          ]
-          for i, filename in enumerate(hp_sources, 1):
-              card = f'{i:03d}'
-              target = out / f'HP-{card}.jpg'
-              with Image.open(hp / filename) as image:
-                  fitted = ImageOps.fit(ImageOps.exif_transpose(image).convert('RGB'), (600, 900), method=Image.Resampling.LANCZOS)
-                  fitted.save(target, 'JPEG', quality=58, optimize=True, progressive=True, subsampling=2)
+          def make_preview(source, target, quality):
+              with Image.open(source) as image:
+                  fitted = ImageOps.fit(
+                      ImageOps.exif_transpose(image).convert('RGB'),
+                      (600, 900),
+                      method=Image.Resampling.LANCZOS,
+                  )
+                  fitted.save(
+                      target,
+                      'JPEG',
+                      quality=quality,
+                      optimize=True,
+                      progressive=True,
+                      subsampling=2,
+                  )
+
+          brio_sources = image_files(
+              'assets/decks/chanson_a_repondre_brio/cards'
+          )
+          for i, source in enumerate(brio_sources, 1):
+              make_preview(source, out / f'BRIO-{i:03d}.jpg', 60)
+
+          hp_sources = image_files(
+              'assets/hp',
+              excluded=('verso.png', 'work_in_progress_ribbon.webp'),
+          )
+          for i, source in enumerate(hp_sources, 1):
+              make_preview(source, out / f'HP-{i:03d}.jpg', 58)
+
+          print(
+              f'Generated {len(brio_sources)} BRIO previews and '
+              f'{len(hp_sources)} HP previews.'
+          )
           PY
           python3 scripts/generate_uno_texture_previews.py
           cp build/web/index.html build/web/404.html
@@ -161,11 +185,19 @@ jobs:
           test -f build/web/assets/assets/models/transcription_jester_rigged.glb
           test -s build/web/assets/assets/videos/bureau_screen_loop.mp4
           test -f build/web/assets/assets/hp/work_in_progress_ribbon.webp
-          test "$(find build/web/share -mindepth 1 -maxdepth 1 -type d -name 'UNO-*' | wc -l)" -eq 84
-          test "$(find build/web/share -mindepth 1 -maxdepth 1 -type d -name 'BRIO-*' | wc -l)" -eq 16
-          test "$(find build/web/share -mindepth 1 -maxdepth 1 -type d -name 'HP-*' | wc -l)" -eq 4
+
+          uno_share_count="$(find build/web/share -mindepth 1 -maxdepth 1 -type d -name 'UNO-*' | wc -l)"
+          brio_share_count="$(find build/web/share -mindepth 1 -maxdepth 1 -type d -name 'BRIO-*' | wc -l)"
+          hp_share_count="$(find build/web/share -mindepth 1 -maxdepth 1 -type d -name 'HP-*' | wc -l)"
+          brio_asset_count="$(find assets/decks/chanson_a_repondre_brio/cards -maxdepth 1 -type f \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.webp' \) | wc -l)"
+          hp_asset_count="$(find assets/hp -maxdepth 1 -type f \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.webp' \) ! -iname 'verso.png' ! -iname 'work_in_progress_ribbon.webp' | wc -l)"
+
+          test "$uno_share_count" -ge 84
+          test "$brio_share_count" -eq "$brio_asset_count"
+          test "$hp_share_count" -eq "$hp_asset_count"
           test -f build/web/share/HP-001/index.html
-          test -f build/web/share/HP-004/index.html
+          test -f build/web/share/HP-005/index.html
+          test -f build/web/assets/share-previews/HP-005.jpg
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
