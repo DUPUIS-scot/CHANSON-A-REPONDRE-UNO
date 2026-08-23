@@ -163,7 +163,7 @@ class _ArtisticHome extends StatelessWidget {
                       onTap: () => onNavigate(AppRoutes.djWhoVideos),
                     ),
                     _PrimaryEntrance(
-                      icon: Icons.terminal_rounded,
+                      icon: Icons.album_rounded,
                       label: 'ENOCHIAN TERMINAL',
                       onTap: () => onNavigate(AppRoutes.enochianTerminal),
                     ),
