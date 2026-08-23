@@ -319,7 +319,7 @@ class _EnochianTerminalScreenState extends State<EnochianTerminalScreen>
           ],
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Text('${_speed}×', style: _micro),
+            child: Text('$_speed×', style: _micro),
           ),
         ),
       ],
@@ -483,12 +483,10 @@ class _SignalBackdropPainter extends CustomPainter {
     for (var band = 0; band < 4; band++) {
       final path = Path();
       for (var x = 0.0; x <= size.width; x += 4) {
-        final wave = math.sin(x * (.018 + band * .006) + t * (2 + band)) *
-            (18 + band * 6);
-        final beat = ((x + t * 80 + band * 27) % 180 < 8)
-            ? math.sin(x) * 30
-            : 0.0;
-        final y = size.height * (.25 + band * .16) + wave + beat;
+        final y = size.height * (.26 + band * .16) +
+            math.sin(x * (.025 + band * .006) + t * (2.4 + band * .8)) *
+                (10 + band * 4) +
+            math.sin(x * .11 - t * (4.3 + band)) * 4;
         if (x == 0) {
           path.moveTo(x, y);
         } else {
@@ -500,67 +498,69 @@ class _SignalBackdropPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _SignalBackdropPainter oldDelegate) =>
-      oldDelegate.t != t;
+  bool shouldRepaint(covariant _SignalBackdropPainter oldDelegate) => oldDelegate.t != t;
 }
 
 class _EnochianPlatterPainter extends CustomPainter {
   const _EnochianPlatterPainter();
 
-  static const _ring = <String>[
-    'UN', 'PA', 'VEH', 'GAL', 'GRAPH', 'OR', 'NA', 'GON', 'UR', 'TAL',
-    'GISA', 'FAM', 'GED', 'DON', 'MED', 'MALS', 'GER', 'DRUX', 'PAL',
-    'CEPH', 'VAN',
-  ];
-
   @override
   void paint(Canvas canvas, Size size) {
     final c = Offset(size.width / 2, size.height / 2);
     final r = math.min(size.width, size.height) / 2 - 6;
-    canvas.drawCircle(c, r, Paint()..color = const Color(0xFF030706));
-    for (final factor in [.98, .88, .72, .54, .34]) {
+    canvas.drawCircle(c, r, Paint()..color = const Color(0xFF050707));
+    for (final factor in [.96, .84, .72, .60, .48, .34]) {
       canvas.drawCircle(
         c,
         r * factor,
         Paint()
-          ..color = const Color(0xFF32665C)
+          ..color = const Color(0xFF315C55)
           ..style = PaintingStyle.stroke
-          ..strokeWidth = factor == .98 ? 3 : 1,
+          ..strokeWidth = factor == .96 ? 3 : 1,
       );
     }
+    final gold = Paint()
+      ..color = const Color(0xFFD5A94B)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+    canvas.drawCircle(c, r * .78, gold);
 
-    final tp = TextPainter(textDirection: TextDirection.ltr);
-    for (var i = 0; i < _ring.length; i++) {
-      final angle = math.pi * 2 * i / _ring.length - math.pi / 2;
-      final p = Offset(
-        c.dx + math.cos(angle) * r * .79,
-        c.dy + math.sin(angle) * r * .79,
+    const glyphs = 'UNPAVEHGALGRAPHORNAGONURTALGISAFAMGEDDONMEDMALSGERDRUXPALCEPHVAN';
+    final textPainter = TextPainter(textDirection: TextDirection.ltr);
+    for (var i = 0; i < 21; i++) {
+      final angle = (math.pi * 2 * i / 21) - math.pi / 2;
+      final pos = Offset(
+        c.dx + math.cos(angle) * r * .70,
+        c.dy + math.sin(angle) * r * .70,
       );
-      tp.text = TextSpan(
-        text: _ring[i],
+      final label = glyphs.substring(i * 2, math.min(i * 2 + 2, glyphs.length));
+      textPainter.text = TextSpan(
+        text: label,
         style: const TextStyle(
           color: Color(0xFFD7B15B),
-          fontFamily: 'monospace',
-          fontSize: 7,
+          fontSize: 12,
           fontWeight: FontWeight.w700,
         ),
       );
-      tp.layout();
+      textPainter.layout();
       canvas.save();
-      canvas.translate(p.dx, p.dy);
+      canvas.translate(pos.dx, pos.dy);
       canvas.rotate(angle + math.pi / 2);
-      tp.paint(canvas, Offset(-tp.width / 2, -tp.height / 2));
+      textPainter.paint(
+        canvas,
+        Offset(-textPainter.width / 2, -textPainter.height / 2),
+      );
       canvas.restore();
     }
 
-    final starPaint = Paint()
+    final cyan = Paint()
       ..color = const Color(0xFF55E6CD)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
     final star = Path();
     for (var i = 0; i < 14; i++) {
       final angle = -math.pi / 2 + i * math.pi / 7;
-      final rr = i.isEven ? r * .23 : r * .10;
+      final rr = i.isEven ? r * .20 : r * .09;
       final p = Offset(
         c.dx + math.cos(angle) * rr,
         c.dy + math.sin(angle) * rr,
@@ -572,8 +572,8 @@ class _EnochianPlatterPainter extends CustomPainter {
       }
     }
     star.close();
-    canvas.drawPath(star, starPaint);
-    canvas.drawCircle(c, 4, Paint()..color = const Color(0xFFD7B15B));
+    canvas.drawPath(star, cyan);
+    canvas.drawCircle(c, 4, Paint()..color = const Color(0xFF55E6CD));
   }
 
   @override
