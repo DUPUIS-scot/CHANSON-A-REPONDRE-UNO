@@ -200,7 +200,7 @@ class _EnochianTerminalScreenState extends State<EnochianTerminalScreen>
         const SizedBox(height: 12),
         Text('${_time(_seconds)}  /  LIVE', style: const TextStyle(color: Colors.white70, fontFamily: 'monospace')),
         const SizedBox(height: 8),
-        LinearProgressIndicator(value: ((_seconds % 180) / 180).clamp(0, 1), minHeight: 3),
+        LinearProgressIndicator(value: ((_seconds % 180) / 180).clamp(0.0, 1.0).toDouble(), minHeight: 3),
         const SizedBox(height: 16),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -464,7 +464,7 @@ class _MeterPainter extends CustomPainter {
     for (var i = 0; i < count; i++) {
       final amp = .2 + .8 * ((math.sin(t * 2.8 + i * .7) + 1) / 2);
       final h = size.height * amp;
-      canvas.drawRect(Rect.fromLTWH(i * w + 1, size.height - h, math.max(2, w - 3), h), paint);
+      canvas.drawRect(Rect.fromLTWH(i * w + 1, size.height - h, math.max(2.0, w - 3).toDouble(), h), paint);
     }
   }
 
