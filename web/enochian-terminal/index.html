@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>DJ WHO · ENOCHIAN TERMINAL</title><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000}iframe{display:block;width:100%;height:100%;border:0;background:#000}</style></head><body><iframe id="deck" src="/enochian-test/base.html?v=20260823-terminal-mixer-pad" title="ENOCHIAN TERMINAL"></iframe><script>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>DJ WHO · ENOCHIAN TERMINAL</title><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000}iframe{display:block;width:100%;height:100%;border:0;background:#000}</style></head><body><iframe id="deck" src="/enochian-test/base.html?v=20260823-terminal-analyser-log-translation" title="ENOCHIAN TERMINAL"></iframe><script>
 const frame=document.getElementById('deck');
 frame.addEventListener('load',()=>{
  const d=frame.contentDocument;
@@ -13,9 +13,9 @@ frame.addEventListener('load',()=>{
  .platter-wrap{cursor:grab!important;touch-action:none!important}
  .platter-wrap.spinning{cursor:grabbing!important}
  .stage{grid-template-rows:180px minmax(390px,1fr) auto auto auto!important}
- .wave canvas{top:28px!important;bottom:50px!important;height:auto!important}
+ .wave canvas{top:28px!important;bottom:0!important;height:auto!important}
  .signals{z-index:2!important}
- .mod-glyphs{display:none!important;min-height:0!important}
+ .mod-glyphs{display:flex!important;gap:4px!important;flex-wrap:wrap!important;min-height:28px!important;align-items:center!important;padding-top:2px!important}
  .pad-panel.instant-layout{grid-template-columns:minmax(0,1fr) 64px minmax(0,1fr)!important;grid-template-rows:auto minmax(180px,1fr)!important;align-items:stretch!important}
  .pad-panel.instant-layout>.pad-top{grid-column:1!important;grid-row:1!important}
  .pad-panel.instant-layout>.xy-pad{grid-column:1!important;grid-row:2!important;height:100%!important;min-height:180px!important}
@@ -36,11 +36,11 @@ frame.addEventListener('load',()=>{
  `;d.head.appendChild(css);
  const title=d.querySelector('.title');if(title)title.textContent='ENOCHIAN TERMINAL · EQ / FX / MOD / GLIDE';
  const home=d.querySelector('.home-link');if(home){home.textContent='⌂';home.setAttribute('aria-label','Home');home.setAttribute('title','Home');home.href='/';}
- const art=d.getElementById('platterArt');if(art){art.src='/assets/assets/images/uno_jester_headphones.webp?v=20260823-terminal-mixer-pad';art.alt='UNO jester';}
+ const art=d.getElementById('platterArt');if(art){art.src='/assets/assets/images/uno_jester_headphones.webp?v=20260823-terminal-analyser-log-translation';art.alt='UNO jester';}
  const patch=d.createElement('script');patch.textContent=`
  (function(){
   const q=id=>document.getElementById(id);
-  let localMod=0;
+  let localMod=0,lastSignalLogAt=0,lastSignalKey='';
   function clamp01(v){return Math.max(0,Math.min(1,v))}
   try{
    const srcDesc=Object.getOwnPropertyDescriptor(HTMLImageElement.prototype,'src');
@@ -55,6 +55,10 @@ frame.addEventListener('load',()=>{
    let peakHold=56;
    draw=function(canvas,arr){const r=canvas.getBoundingClientRect(),dpr=devicePixelRatio||1,w=Math.max(1,Math.floor(r.width*dpr)),h=Math.max(1,Math.floor(r.height*dpr));if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h}const c=canvas.getContext('2d');c.clearRect(0,0,w,h);let framePeak=0;for(let i=0;i<arr.length;i++)if(arr[i]>framePeak)framePeak=arr[i];peakHold=Math.max(30,framePeak,peakHold*.94);const floor=Math.min(16,peakHold*.14),span=Math.max(12,peakHold-floor);c.strokeStyle='#79eadb';c.lineWidth=Math.max(1,dpr*1.35);c.beginPath();arr.forEach((v,i)=>{const x=arr.length>1?i/(arr.length-1)*w:0;const n=clamp01((v-floor)/span);const shaped=Math.pow(n,.72);const y=h-(shaped*(h-2*dpr)+dpr);i?c.lineTo(x,y):c.moveTo(x,y)});c.stroke()};
   }catch(_){ }
+  function readBaseSignal(){return[0,1,2,3].map(i=>{const raw=(q('b'+i)?.textContent||'00000000').match(/[01]{8}$/);return raw?parseInt(raw[0],2):0})}
+  function signalWord(v){try{return names[v%names.length].toUpperCase()}catch(_){return String(v)}}
+  function signalClock(){const s=(typeof a!=='undefined'&&Number.isFinite(a.currentTime))?a.currentTime:0,m=Math.floor(s/60),sec=(s-m*60).toFixed(1).padStart(4,'0');return String(m).padStart(2,'0')+':'+sec}
+  function appendSignalLog(now){if(now-lastSignalLogAt<160)return;lastSignalLogAt=now;const vals=readBaseSignal(),key=vals.join(',');if(key===lastSignalKey)return;lastSignalKey=key;const box=q('log');if(!box)return;const row=document.createElement('div');const bits=vals.map(v=>v.toString(2).padStart(8,'0')).join(' '),words=vals.map(signalWord).join(' ');row.textContent='['+signalClock()+'] '+words+' · '+bits;box.prepend(row);while(box.children.length>40)box.lastChild.remove()}
   const modWheel=q('modWheel')||document.querySelector('.mod .wheel');
   const modText=q('phrase')||document.querySelector('.mod textarea');
   let preserveTextFocus=false,preserveStart=0,preserveEnd=0;
@@ -128,7 +132,8 @@ frame.addEventListener('load',()=>{
    instantSnapshot=null;instantOwner=null;document.querySelectorAll('.instant-fx-btn.active').forEach(b=>b.classList.remove('active'));
    try{log('KILL FX · TEXT CLEARED · MOD OFF · MOD DEPTH 0 · PAD CENTER · INSTANT FX RESET')}catch(_){}
   };
-  try{log('ENOCHIAN SIGNAL ANALYSER · TEXT INPUT MANUAL · PAD XY READOUT · MIXER LEVEL · INSTANT FX HIGH LAYOUT · PAD SPRING ACTIVE · PLATTER SCRATCH READY')}catch(_){}
+  function frameTick(now){try{if(typeof a!=='undefined'&&a&&!a.paused&&!a.ended)appendSignalLog(now)}catch(_){}requestAnimationFrame(frameTick)}requestAnimationFrame(frameTick);
+  try{log('ENOCHIAN SIGNAL ANALYSER · FULL HEIGHT AUTOGAIN · LIVE SIGNAL LOG · TEXT → ENOCHIAN GLYPHS · PAD XY READOUT · MIXER LEVEL · INSTANT FX HIGH LAYOUT · PAD SPRING ACTIVE · PLATTER SCRATCH READY')}catch(_){}
  })();`;
  d.body.appendChild(patch);
 });
