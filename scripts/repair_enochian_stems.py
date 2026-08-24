@@ -1,6 +1,5 @@
 from pathlib import Path
 
-# Verify the authoritative Enochian audio runtime and the production terminal shell.
 runtime_path = Path('web/enochian-test/live-copy.html')
 s = runtime_path.read_text(encoding='utf-8')
 shell_path = Path('web/enochian-terminal/index.html')
@@ -31,6 +30,7 @@ if 'requestAnimationFrame(stemDriftTick)' in s:
     raise SystemExit('RAF stem drift loop unexpectedly present')
 
 shell_required = [
+    "live-copy.html?v=20260824-authority-v1",
     "installReliableNavigation",
     "home.href='/#/home'",
     "go('#/home')",
@@ -38,61 +38,65 @@ shell_required = [
     "installConsoleAuthority",
     "installReliableFullscreen",
     "syncResponsiveLayout",
-    "stem-separator-control.js?v=20260824-v7",
-    "transport-stem-sync.js?v=20260824-v3",
+    "authoritative-runtime.js?v=20260824-v1",
+    "outer-analyser-panel.js?v=20260824-v1",
     "analyser-data-bus.js?v=20260824-v1",
     "analyser-composite-signal.js?v=20260824-v9",
     "analyser-signal-glide.js?v=20260824-v5",
     "analyser-signal-3d.js?v=20260824-v5",
     "sculpt-audio-mod.js?v=20260824-v2",
-    "analyser-expand-overlay.js?v=20260824-v8",
-    "installEnochianTransportStemSync",
+    "installEnochianAuthoritativeRuntime",
+    "installEnochianOuterAnalyserPanel",
     "installEnochianAnalyserDataBus",
     "installEnochianAnalyserSignalGlide",
     "installEnochianAnalyserSignal3D",
     "installEnochianSculptAudioMod",
-    "installEnochianAnalyserExpandOverlay",
     "target-viewport.js?v=20260824-v9",
     "iphone-landscape-layout-v2.js?v=20260824-deep-v19",
 ]
 for marker in shell_required:
     if marker not in shell:
         raise SystemExit(f'missing terminal shell marker: {marker}')
+for stale in [
+    "stem-separator-control.js?v=20260824-v7",
+    "transport-stem-sync.js?v=20260824-v3",
+    "analyser-expand-overlay.js?v=20260824-v8",
+]:
+    if stale in shell:
+        raise SystemExit(f'legacy competing runtime still loaded: {stale}')
 
-for required_file in [
-    Path('web/enochian-test/stem-separator-control.js'),
-    Path('web/enochian-test/transport-stem-sync.js'),
+required_files = [
+    Path('web/enochian-test/authoritative-runtime.js'),
+    Path('web/enochian-test/outer-analyser-panel.js'),
     Path('web/enochian-test/analyser-data-bus.js'),
     Path('web/enochian-test/analyser-composite-signal.js'),
     Path('web/enochian-test/analyser-signal-glide.js'),
     Path('web/enochian-test/analyser-signal-3d.js'),
     Path('web/enochian-test/sculpt-audio-mod.js'),
-    Path('web/enochian-test/analyser-expand-overlay.js'),
-]:
+]
+for required_file in required_files:
     if not required_file.is_file() or required_file.stat().st_size == 0:
-        raise SystemExit(f'missing Enochian repair layer: {required_file}')
+        raise SystemExit(f'missing Enochian runtime layer: {required_file}')
 
-stem_control = Path('web/enochian-test/stem-separator-control.js').read_text(encoding='utf-8')
+authority = Path('web/enochian-test/authoritative-runtime.js').read_text(encoding='utf-8')
+outer_panel = Path('web/enochian-test/outer-analyser-panel.js').read_text(encoding='utf-8')
 bus = Path('web/enochian-test/analyser-data-bus.js').read_text(encoding='utf-8')
 composite = Path('web/enochian-test/analyser-composite-signal.js').read_text(encoding='utf-8')
 three_d = Path('web/enochian-test/analyser-signal-3d.js').read_text(encoding='utf-8')
 glide = Path('web/enochian-test/analyser-signal-glide.js').read_text(encoding='utf-8')
 sculpt_audio = Path('web/enochian-test/sculpt-audio-mod.js').read_text(encoding='utf-8')
-overlay = Path('web/enochian-test/analyser-expand-overlay.js').read_text(encoding='utf-8')
-transport = Path('web/enochian-test/transport-stem-sync.js').read_text(encoding='utf-8')
+
+if "authoritativeRuntime==='v1'" not in authority or 'LOOP CYCLE' not in authority or 'master.muted=true' not in authority or 'STEMS FALLBACK' not in authority:
+    raise SystemExit('authoritative loop/stem ownership contract missing')
+if "outerAnalyserPanel==='v1'" not in outer_panel or 'DRAG ANALYSER WINDOW' not in outer_panel or 'outer-float-launch' not in outer_panel or 'localStorage' not in outer_panel:
+    raise SystemExit('outer terminal analyser panel contract missing')
 if "__enochAnalyserBus" not in bus or "__enochAnalyserBus" not in composite or "__enochAnalyserBus" not in three_d:
     raise SystemExit('unified analyser bus contract missing')
-if "stemSeparatorControl='v7'" not in stem_control or 'startMedia' not in stem_control:
-    raise SystemExit('live stem operator contract missing')
-if "transportStemSync='v3'" not in transport or 'hardLoopSync' not in transport or 'loop-timing' not in transport:
-    raise SystemExit('hard loop synchronization / live timer contract missing')
 if '__compositeCapture' in composite or '__enoch3dCapture' in three_d:
     raise SystemExit('legacy independent analyser wrappers unexpectedly present')
 if "analyserSignalGlide='v5'" not in glide or "analyserSignal3d='v5'" not in three_d:
     raise SystemExit('current sculptable 3D analyser contract missing')
 if "sculptAudioMod='v2'" not in sculpt_audio or "version:'v2'" not in sculpt_audio or '__enochSculptAudio' not in sculpt_audio or 'restoreBase' not in sculpt_audio or 'SCULPT AUDIO' not in sculpt_audio:
     raise SystemExit('sculpt-to-audio modulation v2 contract missing')
-if "analyserExpandOverlay='v8'" not in overlay or 'DRAG ANALYSER WINDOW' not in overlay or "addEventListener('pointermove',move,true)" not in overlay:
-    raise SystemExit('full-viewport floating analyser drag contract missing')
 
-print('Enochian runtime verified: master transport, live stem operator, hard loop sync with timer, unified analyser bus, sculptable 3D analyser with reversible live audio modulation, full-viewport floating analyser, navigation and fullscreen.')
+print('Enochian runtime verified: outer floating analyser owner, one loop controller, truthful audible stem mixer, unified analyser bus, reversible sculpt-to-audio, navigation and outer fullscreen.')
