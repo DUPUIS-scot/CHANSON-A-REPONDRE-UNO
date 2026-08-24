@@ -57,6 +57,7 @@ flutter:
     - assets/hp/
     - assets/videos/
     - assets/audio/
+    - assets/audio/stems/ai_comptroller/
     - assets/json/cards.json
     - assets/json/ai_comptroller_enochian.json
     - assets/json/caesar_spitter_enochian_compact.json
