@@ -49,18 +49,44 @@ frame.addEventListener('load',()=>{
  .terminal-actions{display:flex;gap:6px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
  .terminal-action{min-height:34px!important;padding:7px 9px!important;font-size:8px!important;letter-spacing:.08em!important;white-space:nowrap!important}
  .terminal-action.active{background:#083128!important;color:#63f5cf!important;border-color:#68d8bd!important;box-shadow:0 0 12px #40e6b422!important}
- html.terminal-fullscreen,html.terminal-fullscreen body{width:100%!important;height:100%!important;min-height:100%!important;overflow:auto!important}
- html.terminal-fullscreen .app{width:100%!important;max-width:none!important;min-height:100dvh!important;padding:6px!important;gap:6px!important}
- html.terminal-fullscreen .top{min-height:54px!important;padding:5px 8px!important}
- html.terminal-fullscreen .avatar{width:40px!important;height:40px!important}
- html.terminal-fullscreen .grid{grid-template-columns:minmax(190px,20vw) minmax(0,1fr) minmax(220px,22vw)!important;gap:6px!important}
- html.terminal-fullscreen .side{padding:7px!important;gap:5px!important}
- html.terminal-fullscreen .stage{padding:7px!important;gap:6px!important;grid-template-rows:minmax(120px,18vh) minmax(260px,1fr) auto auto auto!important}
- html.terminal-fullscreen .platter-wrap{width:min(38vw,48vh,430px)!important}
- html.terminal-fullscreen .console{min-height:110px!important}
- html.terminal-fullscreen .console-lines{height:82px!important}
- @media(max-width:1000px){.stage{grid-template-rows:200px auto auto auto auto!important}.pad-panel.instant-layout{grid-template-columns:minmax(0,1fr) 58px minmax(0,1fr)!important}.instant-fx-btn{min-height:54px}html.terminal-fullscreen .grid{display:flex!important;flex-direction:column!important}html.terminal-fullscreen .platter-wrap{width:min(76vw,42vh,420px)!important}}
- @media(max-width:620px){.pad-panel.instant-layout{grid-template-columns:1fr!important;grid-template-rows:auto 220px 130px auto!important}.pad-panel.instant-layout>.pad-top{grid-column:1!important;grid-row:1!important}.pad-panel.instant-layout>.xy-pad{grid-column:1!important;grid-row:2!important;height:220px!important}.mixer-level{grid-column:1!important;grid-row:3!important;grid-template-columns:auto 1fr auto;grid-template-rows:1fr;padding:8px;border:1px solid #17332e}.mixer-level-title{writing-mode:horizontal-tb;transform:none}.mixer-level-range{writing-mode:horizontal-tb;direction:ltr;appearance:auto;-webkit-appearance:auto;width:100%;height:34px;min-height:0;cursor:ew-resize}.instant-fx{grid-column:1!important;grid-row:4!important;border-top:1px solid #17332e;padding-left:0;padding-top:10px}.instant-fx-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.instant-fx-btn{min-height:58px}html.terminal-fullscreen .app{padding:4px!important}html.terminal-fullscreen .stage{grid-template-rows:140px auto auto auto auto!important}html.terminal-fullscreen .platter-wrap{width:min(90vw,42vh,360px)!important}.terminal-actions{gap:4px}.terminal-action{padding:6px!important;font-size:7px!important}}
+ html.terminal-fullscreen,html.terminal-fullscreen body{width:100%!important;height:100%!important;min-height:0!important;overflow:hidden!important}
+ html.terminal-fullscreen .app{width:100%!important;max-width:none!important;height:100dvh!important;min-height:0!important;padding:4px!important;gap:4px!important;overflow:hidden!important;grid-template-rows:auto minmax(0,1fr) auto!important}
+ html.terminal-fullscreen .top{min-height:42px!important;height:42px!important;padding:3px 7px!important}
+ html.terminal-fullscreen .avatar{width:32px!important;height:32px!important}
+ html.terminal-fullscreen .home-link{width:34px!important;height:34px!important;font-size:17px!important}
+ html.terminal-fullscreen .grid{min-height:0!important;height:100%!important;grid-template-columns:minmax(180px,18vw) minmax(0,1fr) minmax(205px,20vw)!important;gap:4px!important;overflow:hidden!important}
+ html.terminal-fullscreen .side{min-height:0!important;padding:5px!important;gap:3px!important;overflow:hidden!important;align-content:start!important}
+ html.terminal-fullscreen .side .box,html.terminal-fullscreen .side .fxbox,html.terminal-fullscreen .stem-isolator{padding:5px!important;gap:3px!important}
+ html.terminal-fullscreen .stem-row{grid-template-columns:72px minmax(0,1fr) 34px!important;gap:3px!important}
+ html.terminal-fullscreen .stem-toggle{padding:4px 3px!important;font-size:7px!important}
+ html.terminal-fullscreen .stage{min-height:0!important;height:100%!important;padding:5px!important;gap:4px!important;grid-template-rows:minmax(82px,12vh) minmax(0,34vh) minmax(68px,10vh) minmax(118px,18vh) minmax(58px,9vh)!important;overflow:hidden!important}
+ html.terminal-fullscreen .wave{min-height:0!important}
+ html.terminal-fullscreen .wave h2{margin:4px!important;font-size:8px!important}
+ html.terminal-fullscreen .wave canvas{top:22px!important}
+ html.terminal-fullscreen .deckarea{min-height:0!important;gap:6px!important;grid-template-columns:96px minmax(230px,1fr) 96px!important}
+ html.terminal-fullscreen .wheelbox{padding:4px 2px!important;gap:4px!important}
+ html.terminal-fullscreen .wheel{width:78px!important;height:78px!important}
+ html.terminal-fullscreen .wheel:before{top:7px!important;height:20px!important;transform-origin:2px 32px!important}
+ html.terminal-fullscreen .platter-wrap{width:min(32vh,320px)!important;max-width:320px!important}
+ html.terminal-fullscreen .seek{left:20%!important;right:20%!important}
+ html.terminal-fullscreen .mod{padding:5px!important;gap:4px!important;grid-template-columns:minmax(0,1fr) 92px!important}
+ html.terminal-fullscreen .mod textarea{min-height:34px!important;padding:5px!important}
+ html.terminal-fullscreen .mod-state{gap:3px!important}
+ html.terminal-fullscreen .mod-state div{padding:3px!important}
+ html.terminal-fullscreen .mod>.wheelbox .wheel{width:72px!important;height:72px!important}
+ html.terminal-fullscreen .pad-panel{padding:5px!important;gap:4px!important}
+ html.terminal-fullscreen .pad-panel.instant-layout{grid-template-rows:auto minmax(0,1fr)!important}
+ html.terminal-fullscreen .pad-panel.instant-layout>.xy-pad{min-height:0!important;height:100%!important}
+ html.terminal-fullscreen .mixer-level-range{min-height:78px!important}
+ html.terminal-fullscreen .instant-fx{gap:3px!important;padding-left:6px!important}
+ html.terminal-fullscreen .instant-fx-grid{gap:3px!important}
+ html.terminal-fullscreen .instant-fx-btn{min-height:34px!important;padding:4px!important}
+ html.terminal-fullscreen .instant-fx-btn small{margin-top:2px!important}
+ html.terminal-fullscreen .console{min-height:0!important;padding:4px!important;gap:2px!important}
+ html.terminal-fullscreen .console-lines{height:42px!important}
+ html.terminal-fullscreen .foot{padding:2px!important;font-size:7px!important}
+ @media(max-width:1000px){.stage{grid-template-rows:200px auto auto auto auto!important}.pad-panel.instant-layout{grid-template-columns:minmax(0,1fr) 58px minmax(0,1fr)!important}.instant-fx-btn{min-height:54px}html.terminal-fullscreen,html.terminal-fullscreen body{overflow:auto!important}html.terminal-fullscreen .app{height:auto!important;min-height:100dvh!important;overflow:visible!important}html.terminal-fullscreen .grid{display:flex!important;flex-direction:column!important;overflow:visible!important}html.terminal-fullscreen .stage{height:auto!important;grid-template-rows:120px auto auto auto auto!important;overflow:visible!important}html.terminal-fullscreen .platter-wrap{width:min(60vw,32vh,320px)!important}}
+ @media(max-width:620px){.pad-panel.instant-layout{grid-template-columns:1fr!important;grid-template-rows:auto 220px 130px auto!important}.pad-panel.instant-layout>.pad-top{grid-column:1!important;grid-row:1!important}.pad-panel.instant-layout>.xy-pad{grid-column:1!important;grid-row:2!important;height:220px!important}.mixer-level{grid-column:1!important;grid-row:3!important;grid-template-columns:auto 1fr auto;grid-template-rows:1fr;padding:8px;border:1px solid #17332e}.mixer-level-title{writing-mode:horizontal-tb;transform:none}.mixer-level-range{writing-mode:horizontal-tb;direction:ltr;appearance:auto;-webkit-appearance:auto;width:100%;height:34px;min-height:0;cursor:ew-resize}.instant-fx{grid-column:1!important;grid-row:4!important;border-top:1px solid #17332e;padding-left:0;padding-top:10px}.instant-fx-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.instant-fx-btn{min-height:58px}html.terminal-fullscreen .app{padding:4px!important}html.terminal-fullscreen .stage{grid-template-rows:140px auto auto auto auto!important}html.terminal-fullscreen .platter-wrap{width:min(82vw,30vh,300px)!important}.terminal-actions{gap:4px}.terminal-action{padding:6px!important;font-size:7px!important}}
  `;d.head.appendChild(css);
  const title=d.querySelector('.title');if(title)title.textContent='ENOCHIAN TERMINAL · EQ / FX / MOD / GLIDE';
  const home=d.querySelector('.home-link');if(home){home.textContent='⌂';home.setAttribute('aria-label','Home');home.setAttribute('title','Home');home.href='/';home.onclick=e=>{e.preventDefault();try{window.top.location.replace('/')}catch(_){window.location.href='/'};return false};}
