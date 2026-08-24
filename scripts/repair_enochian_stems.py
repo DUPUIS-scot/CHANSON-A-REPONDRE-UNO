@@ -15,6 +15,9 @@ runtime_required = [
     "RELIABLE BASE TRANSPORT",
     "MASTER STEM TOGGLE",
     "stemMasterToggle",
+    "masterGate",
+    "ensureMasterGate",
+    "setMasterRoute",
     "window.__enochToggleFullscreen",
     "fullBtn.dataset.terminalFullscreen='1'",
     "FULL SCREEN",
@@ -31,7 +34,7 @@ if 'requestAnimationFrame(stemDriftTick)' in s:
     raise SystemExit('RAF stem drift loop unexpectedly present')
 
 shell_required = [
-    "live-copy.html?v=20260824-runtime-fix-v2",
+    "live-copy.html?v=20260824-master-gate-v3",
     "installReliableNavigation",
     "home.href='/#/home'",
     "go('#/home')",
