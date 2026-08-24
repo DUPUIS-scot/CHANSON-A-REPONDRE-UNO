@@ -7,13 +7,12 @@
       if(!d||!w)return false;
       const low=d.getElementById('low'),mid=d.getElementById('mid'),high=d.getElementById('high');
       if(!low||!mid||!high)return false;
-      if(d.documentElement.dataset.sculptAudioMod==='v1')return true;
-      d.documentElement.dataset.sculptAudioMod='v1';
+      if(d.documentElement.dataset.sculptAudioMod==='v2')return true;
+      d.documentElement.dataset.sculptAudioMod='v2';
 
       const fxMix=d.getElementById('fxMix')||d.querySelector('.mixer-level-range');
-      const modToggle=d.getElementById('signalModToggle');
       const modDepth=()=>clamp((parseFloat(d.getElementById('modWheelV')?.textContent||'0')||0)/100,0,1);
-      const signalOn=()=>w.__enochSignalModulation===true||modToggle?.getAttribute('aria-pressed')==='true';
+      const signalOn=()=>w.__enochSignalModulation===true||d.getElementById('signalModToggle')?.getAttribute('aria-pressed')==='true';
       const n=e=>parseFloat(e?.value)||0;
       const base={low:n(low),mid:n(mid),high:n(high),mix:fxMix?n(fxMix):50};
       const current={low:base.low,mid:base.mid,high:base.high,mix:base.mix};
@@ -26,8 +25,14 @@
         if(Math.abs((parseFloat(el.value)||0)-next)<.02)return;
         writing=true;el.value=String(next);el.dispatchEvent(new Event('input',{bubbles:true}));writing=false;
       };
-      const bindBase=(el,key)=>{if(!el)return;const capture=()=>{if(!writing)base[key]=n(el)};el.addEventListener('input',capture);el.addEventListener('change',capture)};
+      const bindBase=(el,key)=>{if(!el)return;const capture=()=>{if(!writing){base[key]=n(el);current[key]=base[key]}};el.addEventListener('input',capture);el.addEventListener('change',capture)};
       bindBase(low,'low');bindBase(mid,'mid');bindBase(high,'high');bindBase(fxMix,'mix');
+
+      const restoreBase=()=>{
+        current.low=base.low;current.mid=base.mid;current.high=base.high;current.mix=base.mix;
+        setControl(low,base.low);setControl(mid,base.mid);setControl(high,base.high);if(fxMix)setControl(fxMix,base.mix);
+        if(w.__enochAnalyserGesture?.deform)Object.assign(w.__enochAnalyserGesture.deform,{pullY:0,pullZ:0,twist:0,vY:0,vZ:0,grabBin:null,grabRow:null});
+      };
 
       const update=()=>{
         const g=w.__enochAnalyserGesture||{},def=g.deform||{},depth=modDepth(),on=signalOn();
@@ -35,8 +40,6 @@
         const speed=on?clamp(Math.hypot(def.vY||0,def.vZ||0)*600,0,1):0;
         const strength=on?depth:0;
 
-        // Bounded sculpt offsets. Vertical motion is tonal, depth is wet/dry space,
-        // twist adds contrasting mid/high colour, and fast throws add a small transient lift.
         const targetLow=base.low+(-pullY*5.5+Math.max(0,-pullZ)*2.0)*strength;
         const targetMid=base.mid+(pullY*3.5-twist*4.0)*strength;
         const targetHigh=base.high+(pullY*6.0+twist*4.5+speed*2.0)*strength;
@@ -45,7 +48,7 @@
         current.low=lerp(current.low,targetLow,smoothing);current.mid=lerp(current.mid,targetMid,smoothing);current.high=lerp(current.high,targetHigh,smoothing);current.mix=lerp(current.mix,targetMix,smoothing);
         setControl(low,current.low);setControl(mid,current.mid);setControl(high,current.high);if(fxMix)setControl(fxMix,current.mix);
 
-        w.__enochSculptAudio={version:'v1',active:on&&strength>0,strength,pullY,pullZ,twist,speed,offsets:{low:current.low-base.low,mid:current.mid-base.mid,high:current.high-base.high,mix:current.mix-base.mix}};
+        w.__enochSculptAudio={version:'v2',active:on&&strength>0,strength,pullY,pullZ,twist,speed,offsets:{low:current.low-base.low,mid:current.mid-base.mid,high:current.high-base.high,mix:current.mix-base.mix},restore:restoreBase};
         const now=performance.now();
         if(now-lastLog>900&&on&&strength>.01&&(Math.abs(pullY)+Math.abs(pullZ)+Math.abs(twist)+speed)>.04){
           lastLog=now;try{const log=d.getElementById('log');if(log){const row=d.createElement('div');row.className='signal-flow-line sculpt-audio-line';row.textContent='SCULPT AUDIO · Y '+Math.round(pullY*100)+' · Z '+Math.round(pullZ*100)+' · TWIST '+Math.round(twist*100)+' · SPEED '+Math.round(speed*100)+' · MOD '+Math.round(strength*100)+'%';log.prepend(row)}}catch(_){}
@@ -53,11 +56,9 @@
         raf=w.requestAnimationFrame(update);
       };
 
-      const reset=()=>{base.low=n(low);base.mid=n(mid);base.high=n(high);if(fxMix)base.mix=n(fxMix);current.low=base.low;current.mid=base.mid;current.high=base.high;current.mix=base.mix};
-      d.getElementById('loopReset')?.addEventListener('click',()=>{});
-      d.querySelector('.btn.danger')?.addEventListener('click',()=>setTimeout(reset,0));
-      d.getElementById('track')?.addEventListener('change',()=>setTimeout(reset,0));
-      w.addEventListener('pagehide',()=>{if(raf)w.cancelAnimationFrame(raf);delete w.__enochSculptAudio},{once:true});
+      const kill=d.querySelector('.btn.danger');if(kill)kill.addEventListener('click',()=>setTimeout(restoreBase,0));
+      d.getElementById('track')?.addEventListener('change',()=>setTimeout(restoreBase,0));
+      w.addEventListener('pagehide',()=>{restoreBase();if(raf)w.cancelAnimationFrame(raf);delete w.__enochSculptAudio},{once:true});
       raf=w.requestAnimationFrame(update);return true;
     }catch(_){return false}
   }
