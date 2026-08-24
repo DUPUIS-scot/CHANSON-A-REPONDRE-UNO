@@ -39,7 +39,7 @@ shell_required = [
     "installConsoleAuthority",
     "installReliableFullscreen",
     "syncResponsiveLayout",
-    "authoritative-runtime.js?v=20260824-v3",
+    "authoritative-runtime.js?v=20260824-v4",
     "outer-analyser-panel.js?v=20260824-v2",
     "analyser-data-bus.js?v=20260824-v1",
     "analyser-composite-signal.js?v=20260824-v9",
@@ -62,6 +62,7 @@ for stale in [
     "stem-separator-control.js?v=20260824-v7",
     "transport-stem-sync.js?v=20260824-v3",
     "analyser-expand-overlay.js?v=20260824-v8",
+    "authoritative-runtime.js?v=20260824-v3",
 ]:
     if stale in shell:
         raise SystemExit(f'legacy competing runtime still loaded: {stale}')
@@ -90,10 +91,26 @@ three_d = Path('web/enochian-test/analyser-signal-3d.js').read_text(encoding='ut
 glide = Path('web/enochian-test/analyser-signal-glide.js').read_text(encoding='utf-8')
 sculpt_audio = Path('web/enochian-test/sculpt-audio-mod.js').read_text(encoding='utf-8')
 
-if "authoritativeRuntime==='v3'" not in authority or "__enochStemAuthority={version:'v3'" not in authority or 'nativeMasterHandler' not in authority or 'nativeRowHandlers' not in authority or 'nativeRangeHandlers' not in authority or 'allStemMediaRunning' not in authority or 'isCustomMix' not in authority or 'STEMS FALLBACK' not in authority or 'LOOP CYCLE' not in authority:
-    raise SystemExit('single-path authoritative loop/stem contract missing')
-if 'master.muted=true' in authority or 'm.volume=' in authority:
-    raise SystemExit('secondary HTML-media/master-mute stem mixer unexpectedly present')
+required_authority = [
+    "authoritativeRuntime==='v4'",
+    "__enochStemAuthority={version:'v4'",
+    "__enochNativeStemEngine={version:'v2'",
+    "masterConnected",
+    "routed:",
+    "stemGains",
+    "stemState",
+    "setTargetAtTime",
+    "setEnabled(on)",
+    "setRow(key,on)",
+    "setLevel(key,value)",
+    "STEMS FALLBACK",
+    "LOOP CYCLE",
+]
+for marker in required_authority:
+    if marker not in authority:
+        raise SystemExit(f'native Web Audio stem authority marker missing: {marker}')
+if 'master.muted=true' in authority or 'm.volume=' in authority or 'createMediaElementSource' in authority:
+    raise SystemExit('secondary stem mixer/audio graph unexpectedly present')
 if "outerAnalyserPanel==='v2'" not in outer_panel or 'DRAG ANALYSER WINDOW' not in outer_panel or 'outer-float-launch' not in outer_panel or 'outerAnalyserLaunchStyle' not in outer_panel or 'localStorage' not in outer_panel:
     raise SystemExit('outer terminal analyser panel contract missing')
 if "__enochAnalyserBus" not in bus or "__enochAnalyserBus" not in composite or "__enochAnalyserBus" not in three_d:
@@ -105,4 +122,4 @@ if "analyserSignalGlide='v5'" not in glide or "analyserSignal3d='v5'" not in thr
 if "sculptAudioMod='v2'" not in sculpt_audio or "version:'v2'" not in sculpt_audio or '__enochSculptAudio' not in sculpt_audio or 'restoreBase' not in sculpt_audio or 'SCULPT AUDIO' not in sculpt_audio:
     raise SystemExit('sculpt-to-audio modulation v2 contract missing')
 
-print('Enochian runtime verified: outer floating analyser owner, one loop controller, native Web Audio stem authority with true ON/MIX/OFF/FALLBACK state, unified analyser bus, reversible sculpt-to-audio, navigation and outer fullscreen.')
+print('Enochian runtime verified: outer floating analyser owner, one loop controller, native Web Audio stem bridge with exclusive master/stem routing and smoothed GainNode mix, unified analyser bus, reversible sculpt-to-audio, navigation and outer fullscreen.')
