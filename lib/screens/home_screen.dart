@@ -1,8 +1,10 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../core/app_router.dart';
 import '../providers/background_provider.dart';
@@ -44,6 +46,19 @@ class HomeScreen extends StatelessWidget {
     if (context.mounted) context.go(AppRoutes.search);
   }
 
+  Future<void> _openEnochianTerminal(BuildContext context) async {
+    // On web, go straight from the home control to the standalone terminal.
+    // This avoids building the intermediate Flutter terminal route for one
+    // frame before that route redirects to the same document, which is
+    // particularly noticeable in iOS Safari.
+    if (kIsWeb) {
+      final uri = Uri.base.resolve('/enochian-terminal/');
+      final opened = await launchUrl(uri, webOnlyWindowName: '_self');
+      if (opened) return;
+    }
+    if (context.mounted) context.go(AppRoutes.enochianTerminal);
+  }
+
   @override
   Widget build(BuildContext context) {
     final background = context.watch<BackgroundProvider>();
@@ -82,6 +97,7 @@ class HomeScreen extends StatelessWidget {
                 child: _ArtisticHome(
                   onNavigate: (route) => context.go(route),
                   onCastle: () => _openCastleFromHome(context),
+                  onEnochianTerminal: () => _openEnochianTerminal(context),
                 ),
               ),
             ),
@@ -115,10 +131,15 @@ class HomeScreen extends StatelessWidget {
 }
 
 class _ArtisticHome extends StatelessWidget {
-  const _ArtisticHome({required this.onNavigate, required this.onCastle});
+  const _ArtisticHome({
+    required this.onNavigate,
+    required this.onCastle,
+    required this.onEnochianTerminal,
+  });
 
   final ValueChanged<String> onNavigate;
   final VoidCallback onCastle;
+  final VoidCallback onEnochianTerminal;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
@@ -166,7 +187,7 @@ class _ArtisticHome extends StatelessWidget {
                       icon: Icons.album_rounded,
                       label: 'ENOCHIAN TERMINAL',
                       tooltip: 'Best experience on desktop',
-                      onTap: () => onNavigate(AppRoutes.enochianTerminal),
+                      onTap: onEnochianTerminal,
                     ),
                   ],
                 ),
@@ -185,16 +206,10 @@ class _ArtisticHome extends StatelessWidget {
                     _SecondaryEntrance('DECK', AppRoutes.decks, onNavigate),
                     _SecondaryEntrance('BROWSE', AppRoutes.cards, onNavigate),
                     _SecondaryEntrance(
-                      'JOURNAL',
-                      AppRoutes.journal,
-                      onNavigate,
-                    ),
+                      'JOURNAL', AppRoutes.journal, onNavigate),
                     _SecondaryEntrance('RULES', AppRoutes.rules, onNavigate),
                     _SecondaryEntrance(
-                      'SETTINGS',
-                      AppRoutes.settings,
-                      onNavigate,
-                    ),
+                      'SETTINGS', AppRoutes.settings, onNavigate),
                   ],
                 ),
               ],
@@ -238,22 +253,21 @@ class _PrimaryEntrance extends StatelessWidget {
               BoxShadow(
                 color: Color(0x443D0804),
                 blurRadius: 22,
-                spreadRadius: 3,
+                spreadRadius: 1,
               ),
             ],
           ),
-          child: Column(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, color: AppTheme.brightGold, size: 30),
-              const SizedBox(height: 5),
+              Icon(icon, color: AppTheme.gold, size: 28),
+              const SizedBox(width: 10),
               Text(
                 label,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.5,
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: AppTheme.parchment,
+                  letterSpacing: 1.3,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ],
@@ -261,14 +275,8 @@ class _PrimaryEntrance extends StatelessWidget {
         ),
       ),
     );
-
     if (tooltip == null) return entrance;
-    return Tooltip(
-      message: tooltip!,
-      preferBelow: true,
-      waitDuration: const Duration(milliseconds: 300),
-      child: entrance,
-    );
+    return Tooltip(message: tooltip!, child: entrance);
   }
 }
 
@@ -282,7 +290,6 @@ class _SecondaryEntrance extends StatelessWidget {
   @override
   Widget build(BuildContext context) => TextButton(
     onPressed: () => onNavigate(route),
-    style: TextButton.styleFrom(foregroundColor: const Color(0xFFEAD9B0)),
-    child: Text(label, style: const TextStyle(letterSpacing: .9)),
+    child: Text(label),
   );
 }
