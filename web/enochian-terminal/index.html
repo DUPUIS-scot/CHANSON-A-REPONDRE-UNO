@@ -136,6 +136,27 @@ frame.addEventListener('load',()=>{
   async function setStemMode(){const ai=isAiComptroller();if(!ai){stemMode=false;Object.values(stemMedia).forEach(m=>{try{m.pause()}catch(_){}});try{if(!originalDeckConnected&&src&&low){src.connect(low);originalDeckConnected=true}}catch(_){};updateStemUi();return}if(stemMode){updateStemUi();return}try{if(originalEnsureAudio)await originalEnsureAudio();else if(typeof ensureAudio==='function')await ensureAudio()}catch(_){};try{await ensureStemMediaLoaded();await ensureStemGraph();syncStemTimes(true);setStemRate();applyStemGains();if(!a.paused){await Promise.all(Object.values(stemMedia).map(m=>m.play()));try{if(originalDeckConnected&&src){src.disconnect();originalDeckConnected=false}}catch(_){}}stemMode=true;try{log('STEM MODE · AI COMPTROLLER')}catch(_){}}catch(error){stemMode=false;Object.values(stemMedia).forEach(m=>{try{m.pause()}catch(_){}});try{if(!originalDeckConnected&&src&&low){src.connect(low);originalDeckConnected=true}}catch(_){};try{log('STEM FALLBACK · MASTER AUDIO')}catch(_){}}updateStemUi()}
   const originalEnsureAudio=typeof ensureAudio==='function'?ensureAudio:null;
   if(originalEnsureAudio)ensureAudio=async function(){return await originalEnsureAudio()};
+  // RELIABLE BASE TRANSPORT: master playback must never depend on optional stems.
+  const reliablePlay=q('play');
+  if(reliablePlay){
+   reliablePlay.onclick=async()=>{
+    try{
+     if(typeof a==='undefined'||!a)return;
+     if(a.paused){
+      try{if(originalEnsureAudio)await originalEnsureAudio();else if(typeof ensureAudio==='function')await ensureAudio()}catch(_){}
+      try{if(typeof disablePitchPreservation==='function')disablePitchPreservation()}catch(_){}
+      try{if(typeof applyPlaybackRate==='function')applyPlaybackRate()}catch(_){}
+      await a.play();
+      try{Promise.resolve(setStemMode()).catch(()=>{})}catch(_){}
+     }else{
+      a.pause();
+     }
+    }catch(error){
+     try{log('PLAY ERROR · '+(error&&error.message?error.message:'UNKNOWN'))}catch(_){}
+     try{if(a.paused)await a.play()}catch(_){}
+    }
+   };
+  }
   const leftSide=q('track')&&q('track').closest('.side');
   if(leftSide&&!q('stemIsolator')){const box=document.createElement('div');box.id='stemIsolator';box.className='stem-isolator';box.innerHTML='<div class="stem-title">STEM ISOLATOR · AI COMPTROLLER</div><div class="stem-row"><button class="btn stem-toggle active" data-stem-toggle="vocals">VOCALS</button><input class="stem-range" data-stem-range="vocals" type="range" min="0" max="100" value="100"><output class="stem-value" data-stem-value="vocals">100%</output></div><div class="stem-row"><button class="btn stem-toggle active" data-stem-toggle="drums">DRUMS</button><input class="stem-range" data-stem-range="drums" type="range" min="0" max="100" value="100"><output class="stem-value" data-stem-value="drums">100%</output></div><div class="stem-row"><button class="btn stem-toggle active" data-stem-toggle="instruments">INSTRUMENTS</button><input class="stem-range" data-stem-range="instruments" type="range" min="0" max="100" value="100"><output class="stem-value" data-stem-value="instruments">100%</output></div><div id="stemNote" class="stem-note">BASS + OTHERS = INSTRUMENTS</div>';q('track').insertAdjacentElement('afterend',box);
    box.querySelectorAll('[data-stem-toggle]').forEach(b=>b.onclick=async()=>{await ensureAudio();const key=b.dataset.stemToggle;if(key==='instruments'){const next=!(stemState.bass.on&&stemState.other.on);stemState.bass.on=next;stemState.other.on=next;b.classList.toggle('active',next)}else{stemState[key].on=!stemState[key].on;b.classList.toggle('active',stemState[key].on)}applyStemGains();try{log('STEM '+key.toUpperCase()+' · '+(b.classList.contains('active')?'ON':'OFF'))}catch(_){}});
