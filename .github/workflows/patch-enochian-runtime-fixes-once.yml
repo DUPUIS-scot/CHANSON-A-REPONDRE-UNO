@@ -1,0 +1,72 @@
+name: Patch Enochian runtime fixes once
+
+on:
+  push:
+    paths:
+      - '.github/workflows/patch-enochian-runtime-fixes-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch terminal runtime fixes
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('web/enochian-terminal/index.html')
+          s = p.read_text(encoding='utf-8')
+
+          # Home must return to app root, not /home.
+          s = s.replace("home.href='/home';home.onclick=e=>{e.preventDefault();try{window.top.location.replace('/home')}catch(_){window.location.href='/home'};return false};", "home.href='/';home.onclick=e=>{e.preventDefault();try{window.top.location.replace('/')}catch(_){window.location.href='/'};return false};", 1)
+
+          # Fullscreen: make CSS fallback a first-class active state so inner sync does not cancel it.
+          s = s.replace("function outerFullscreenActive(){return !!(document.fullscreenElement||document.webkitFullscreenElement)}", "function outerFullscreenActive(){return !!(document.fullscreenElement||document.webkitFullscreenElement||document.body.classList.contains('outer-fullscreen'))}", 1)
+          s = s.replace("const syncFull=()=>{let active=false;try{active=!!(window.parent.document.fullscreenElement||window.parent.document.webkitFullscreenElement)}catch(_){};", "const syncFull=()=>{let active=false;try{active=typeof window.parent.outerFullscreenActive==='function'?window.parent.outerFullscreenActive():!!(window.parent.document.fullscreenElement||window.parent.document.webkitFullscreenElement)}catch(_){};", 1)
+
+          # Stem startup: remove ensureAudio -> setStemMode -> ensureAudio recursion.
+          old = "async function setStemMode(){const ai=isAiComptroller();if(ai===stemMode){updateStemUi();return}try{await ensureAudio()}catch(_){};await ensureStemGraph();stemMode=ai;"
+          new = "async function setStemMode(){const ai=isAiComptroller();if(ai===stemMode){updateStemUi();return}stemMode=ai;try{if(originalEnsureAudio)await originalEnsureAudio();else if(typeof ensureAudio==='function')await ensureAudio()}catch(_){};await ensureStemGraph();"
+          if old not in s:
+              raise SystemExit('Expected stem mode block not found')
+          s = s.replace(old, new, 1)
+
+          # Loop reset control.
+          s = s.replace("let loopBtn=null,loopInBtn=null,loopOutBtn=null;", "let loopBtn=null,loopInBtn=null,loopOutBtn=null,loopResetBtn=null;", 1)
+          s = s.replace("transport.style.gridTemplateColumns='repeat(3,minmax(0,1fr))';", "transport.style.gridTemplateColumns='repeat(4,minmax(0,1fr))';", 1)
+          anchor = "loopBtn=document.createElement('button');loopBtn.type='button';loopBtn.className='btn';loopBtn.id='loopToggle';loopBtn.textContent='LOOP OFF';loopBtn.setAttribute('aria-pressed','false');loopBtn.onclick=()=>{if(loopEnd==null){loopStart=0;loopEnd=Number.isFinite(a.duration)&&a.duration>0?a.duration:null}loopEnabled=!loopEnabled;syncLoopUi();armLoopTimer();try{log('LOOP '+(loopEnabled?'ON':'OFF'))}catch(_){}};"
+          replacement = anchor + "\n   loopResetBtn=document.createElement('button');loopResetBtn.type='button';loopResetBtn.className='btn';loopResetBtn.id='loopReset';loopResetBtn.textContent='RESET LOOP';loopResetBtn.onclick=()=>{loopEnabled=false;loopStart=0;loopEnd=null;if(loopTimer){clearTimeout(loopTimer);loopTimer=0}syncLoopUi();try{log('LOOP RESET')}catch(_){}};"
+          if anchor not in s:
+              raise SystemExit('Expected loop toggle block not found')
+          s = s.replace(anchor, replacement, 1)
+          s = s.replace("transport.appendChild(loopInBtn);transport.appendChild(loopOutBtn);transport.appendChild(loopBtn);syncLoopUi();", "transport.appendChild(loopInBtn);transport.appendChild(loopOutBtn);transport.appendChild(loopBtn);transport.appendChild(loopResetBtn);syncLoopUi();", 1)
+
+          # Cache bust this repaired wrapper/base load.
+          s = s.replace('v=20260824-fullscreen-home-platter-v2', 'v=20260824-runtime-fixes-v3', 1)
+          p.write_text(s, encoding='utf-8')
+
+      - name: Verify fixes
+        shell: bash
+        run: |
+          grep -q "home.href='/'" web/enochian-terminal/index.html
+          grep -q "outer-fullscreen'))" web/enochian-terminal/index.html
+          grep -q "if(originalEnsureAudio)await originalEnsureAudio()" web/enochian-terminal/index.html
+          grep -q "id='loopReset'" web/enochian-terminal/index.html
+          grep -q "RESET LOOP" web/enochian-terminal/index.html
+          grep -q "PERSISTENT TIME-BASED PLATTER" web/enochian-terminal/index.html
+
+      - name: Commit runtime fixes
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo 'No changes needed'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add web/enochian-terminal/index.html
+          git commit -m 'Fix Enochian home fullscreen stems platter and loop reset'
+          git push
