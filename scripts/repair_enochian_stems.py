@@ -39,7 +39,7 @@ shell_required = [
     "installReliableFullscreen",
     "syncResponsiveLayout",
     "authoritative-runtime.js?v=20260824-v1",
-    "outer-analyser-panel.js?v=20260824-v1",
+    "outer-analyser-panel.js?v=20260824-v2",
     "analyser-data-bus.js?v=20260824-v1",
     "analyser-composite-signal.js?v=20260824-v9",
     "analyser-signal-glide.js?v=20260824-v5",
@@ -88,7 +88,7 @@ sculpt_audio = Path('web/enochian-test/sculpt-audio-mod.js').read_text(encoding=
 
 if "authoritativeRuntime==='v1'" not in authority or 'LOOP CYCLE' not in authority or 'master.muted=true' not in authority or 'STEMS FALLBACK' not in authority:
     raise SystemExit('authoritative loop/stem ownership contract missing')
-if "outerAnalyserPanel==='v1'" not in outer_panel or 'DRAG ANALYSER WINDOW' not in outer_panel or 'outer-float-launch' not in outer_panel or 'localStorage' not in outer_panel:
+if "outerAnalyserPanel==='v2'" not in outer_panel or 'DRAG ANALYSER WINDOW' not in outer_panel or 'outer-float-launch' not in outer_panel or 'outerAnalyserLaunchStyle' not in outer_panel or 'localStorage' not in outer_panel:
     raise SystemExit('outer terminal analyser panel contract missing')
 if "__enochAnalyserBus" not in bus or "__enochAnalyserBus" not in composite or "__enochAnalyserBus" not in three_d:
     raise SystemExit('unified analyser bus contract missing')
