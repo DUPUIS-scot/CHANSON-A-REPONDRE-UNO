@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Chanson à Répondre UNO!</title><meta name="description" content="Chanson à Répondre UNO! — official web application."><link rel="canonical" href="https://www.chanson-a-repondre-uno.scot/enochian-terminal/"><meta property="og:type" content="website"><meta property="og:site_name" content="Chanson à Répondre UNO!"><meta property="og:title" content="Chanson à Répondre UNO!"><meta property="og:description" content="Chanson à Répondre UNO! — official web application."><meta property="og:url" content="https://www.chanson-a-repondre-uno.scot/enochian-terminal/"><meta property="og:image" content="https://www.chanson-a-repondre-uno.scot/social/chanson-a-repondre-uno-share.png"><meta property="og:image:secure_url" content="https://www.chanson-a-repondre-uno.scot/social/chanson-a-repondre-uno-share.png"><meta property="og:image:type" content="image/png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="Chanson à Répondre UNO!"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Chanson à Répondre UNO!"><meta name="twitter:description" content="Chanson à Répondre UNO! — official web application."><meta name="twitter:image" content="https://www.chanson-a-repondre-uno.scot/social/chanson-a-repondre-uno-share.png"><meta name="twitter:image:alt" content="Chanson à Répondre UNO!"><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000}iframe{display:block;width:100%;height:100%;border:0;background:#000}</style></head><body><iframe id="deck" src="/enochian-test/base.html?v=20260823-terminal-analyser-log-translation" title="ENOCHIAN TERMINAL"></iframe><script>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Chanson à Répondre UNO!</title><meta name="description" content="Chanson à Répondre UNO! — official web application."><link rel="canonical" href="https://www.chanson-a-repondre-uno.scot/enochian-terminal/"><meta property="og:type" content="website"><meta property="og:site_name" content="Chanson à Répondre UNO!"><meta property="og:title" content="Chanson à Répondre UNO!"><meta property="og:description" content="Chanson à Répondre UNO! — official web application."><meta property="og:url" content="https://www.chanson-a-repondre-uno.scot/enochian-terminal/"><meta property="og:image" content="https://www.chanson-a-repondre-uno.scot/social/chanson-a-repondre-uno-share.png"><meta property="og:image:secure_url" content="https://www.chanson-a-repondre-uno.scot/social/chanson-a-repondre-uno-share.png"><meta property="og:image:type" content="image/png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="Chanson à Répondre UNO!"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Chanson à Répondre UNO!"><meta name="twitter:description" content="Chanson à Répondre UNO! — official web application."><meta name="twitter:image" content="https://www.chanson-a-repondre-uno.scot/social/chanson-a-repondre-uno-share.png"><meta name="twitter:image:alt" content="Chanson à Répondre UNO!"><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000}iframe{display:block;width:100%;height:100%;border:0;background:#000}</style></head><body><iframe id="deck" src="/enochian-test/base.html?v=20260824-padfx-mix-timing" title="ENOCHIAN TERMINAL"></iframe><script>
 const frame=document.getElementById('deck');
 frame.addEventListener('load',()=>{
  const d=frame.contentDocument;
@@ -20,23 +20,25 @@ frame.addEventListener('load',()=>{
  .pad-panel.instant-layout>.pad-top{grid-column:1!important;grid-row:1!important}
  .pad-panel.instant-layout>.xy-pad{grid-column:1!important;grid-row:2!important;height:100%!important;min-height:180px!important}
  .pad-readout-overlay{position:absolute!important;right:10px!important;top:8px!important;z-index:4!important;padding:3px 6px!important;border:1px solid #315b56!important;border-radius:4px!important;background:#020706dd!important;box-shadow:0 0 10px #0008!important;pointer-events:none!important}
+ .pad-mode{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:5px!important;flex:1!important}
+ .pad-mode .btn{min-width:0!important;padding:7px 5px!important;font-size:8px!important;white-space:normal!important}
  .mixer-level{grid-column:2!important;grid-row:1/3!important;display:grid;grid-template-rows:auto 1fr auto;justify-items:center;align-items:center;gap:8px;padding:7px 5px;border-left:1px solid #17332e;border-right:1px solid #17332e;background:#020706;min-width:0}
  .mixer-level-title{font-size:8px;letter-spacing:.16em;color:#9dece0;writing-mode:vertical-rl;transform:rotate(180deg)}
  .mixer-level-range{appearance:slider-vertical;-webkit-appearance:slider-vertical;writing-mode:vertical-lr;direction:rtl;width:32px;height:100%;min-height:150px;accent-color:#d5aa63;cursor:ns-resize}
  .mixer-level-value{font-size:9px;color:#d5aa63;font-weight:800;white-space:nowrap}
  .instant-fx{grid-column:3!important;grid-row:1/3!important;border-left:0;padding-left:10px;display:grid;grid-template-rows:auto 1fr;gap:7px;min-width:0;align-self:stretch}
  .instant-fx-title{text-align:center;color:#9dece0;letter-spacing:.18em;font-size:9px;align-self:start;padding-top:2px}
- .instant-fx-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;align-content:stretch}
- .instant-fx-btn{min-height:68px;border:1px solid #315b56;border-radius:6px;background:linear-gradient(180deg,#07120f,#020706);color:#d7fff8;padding:8px 6px;cursor:pointer;touch-action:none;user-select:none;text-align:left;box-shadow:inset 0 0 0 1px #0008}
+ .instant-fx-grid{display:grid;grid-template-columns:1fr;gap:6px;align-content:stretch}
+ .instant-fx-btn{min-height:58px;border:1px solid #315b56;border-radius:6px;background:linear-gradient(180deg,#07120f,#020706);color:#d7fff8;padding:8px 6px;cursor:pointer;touch-action:none;user-select:none;text-align:center;box-shadow:inset 0 0 0 1px #0008}
  .instant-fx-btn span{display:block;color:#d7fff8;font-size:12px;font-weight:800;line-height:1.05}
- .instant-fx-btn small{display:block;margin-top:8px;color:#d5aa63;font-size:9px;font-weight:700}
+ .instant-fx-btn small{display:block;margin-top:6px;color:#d5aa63;font-size:8px;font-weight:700}
  .instant-fx-btn.active{background:#0b3027;border-color:#68d8bd;box-shadow:0 0 18px #40e6b455,inset 0 0 0 1px #68d8bd66;color:#fff}
- @media(max-width:1000px){.stage{grid-template-rows:200px auto auto auto auto!important}.pad-panel.instant-layout{grid-template-columns:minmax(0,1fr) 58px minmax(0,1fr)!important}.instant-fx-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.instant-fx-btn{min-height:60px}}
- @media(max-width:620px){.pad-panel.instant-layout{grid-template-columns:1fr!important;grid-template-rows:auto 220px 130px auto!important}.pad-panel.instant-layout>.pad-top{grid-column:1!important;grid-row:1!important}.pad-panel.instant-layout>.xy-pad{grid-column:1!important;grid-row:2!important;height:220px!important}.mixer-level{grid-column:1!important;grid-row:3!important;grid-template-columns:auto 1fr auto;grid-template-rows:1fr;padding:8px;border:1px solid #17332e}.mixer-level-title{writing-mode:horizontal-tb;transform:none}.mixer-level-range{writing-mode:horizontal-tb;direction:ltr;appearance:auto;-webkit-appearance:auto;width:100%;height:34px;min-height:0;cursor:ew-resize}.instant-fx{grid-column:1!important;grid-row:4!important;border-top:1px solid #17332e;padding-left:0;padding-top:10px}.instant-fx-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+ @media(max-width:1000px){.stage{grid-template-rows:200px auto auto auto auto!important}.pad-panel.instant-layout{grid-template-columns:minmax(0,1fr) 58px minmax(0,1fr)!important}.instant-fx-btn{min-height:54px}}
+ @media(max-width:620px){.pad-panel.instant-layout{grid-template-columns:1fr!important;grid-template-rows:auto 220px 130px auto!important}.pad-panel.instant-layout>.pad-top{grid-column:1!important;grid-row:1!important}.pad-panel.instant-layout>.xy-pad{grid-column:1!important;grid-row:2!important;height:220px!important}.mixer-level{grid-column:1!important;grid-row:3!important;grid-template-columns:auto 1fr auto;grid-template-rows:1fr;padding:8px;border:1px solid #17332e}.mixer-level-title{writing-mode:horizontal-tb;transform:none}.mixer-level-range{writing-mode:horizontal-tb;direction:ltr;appearance:auto;-webkit-appearance:auto;width:100%;height:34px;min-height:0;cursor:ew-resize}.instant-fx{grid-column:1!important;grid-row:4!important;border-top:1px solid #17332e;padding-left:0;padding-top:10px}.instant-fx-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.instant-fx-btn{min-height:58px}}
  `;d.head.appendChild(css);
  const title=d.querySelector('.title');if(title)title.textContent='ENOCHIAN TERMINAL · EQ / FX / MOD / GLIDE';
- const home=d.querySelector('.home-link');if(home){home.textContent='⌂';home.setAttribute('aria-label','Home');home.setAttribute('title','Home');home.href='/';}
- const art=d.getElementById('platterArt');if(art){art.src='/assets/assets/images/uno_jester_headphones.webp?v=20260823-terminal-analyser-log-translation';art.alt='UNO jester';}
+ const home=d.querySelector('.home-link');if(home){home.textContent='⌂';home.setAttribute('aria-label','Home');home.setAttribute('title','Home');home.href='/';home.onclick=()=>{window.top.location.href='/';return false};}
+ const art=d.getElementById('platterArt');if(art){art.src='/assets/assets/images/uno_jester_headphones.webp?v=20260824-padfx-mix-timing';art.alt='UNO jester';}
  const patch=d.createElement('script');patch.textContent=`
  (function(){
   const q=id=>document.getElementById(id);
@@ -72,68 +74,83 @@ frame.addEventListener('load',()=>{
   }
   const platter=document.querySelector('.platter-wrap');
   if(platter){
-   let dragging=false,lastAngle=0,lastAt=0,velocity=0,inertiaId=0;
+   let dragging=false,lastAngle=0,lastAt=0,velocity=0,inertiaId=0,coastAt=0;
    const pointerAngle=e=>{const r=platter.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;return Math.atan2(e.clientY-cy,e.clientX-cx)*180/Math.PI};
    const normalize=d=>{while(d>180)d-=360;while(d<-180)d+=360;return d};
    const addRotation=delta=>{try{rot+=delta;document.documentElement.style.setProperty('--rot',rot+'deg')}catch(_){const current=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--rot'))||0;document.documentElement.style.setProperty('--rot',(current+delta)+'deg')}};
-   const stopInertia=()=>{if(inertiaId){cancelAnimationFrame(inertiaId);inertiaId=0}};
-   const coast=()=>{velocity*=.955;if(Math.abs(velocity)<.08){inertiaId=0;return}addRotation(velocity);inertiaId=requestAnimationFrame(coast)};
+   const stopInertia=()=>{if(inertiaId){cancelAnimationFrame(inertiaId);inertiaId=0}coastAt=0};
+   const coast=now=>{if(!coastAt)coastAt=now;const dt=Math.min(.05,Math.max(.001,(now-coastAt)/1000));coastAt=now;velocity*=Math.pow(.955,dt*60);if(Math.abs(velocity)<5){inertiaId=0;coastAt=0;return}addRotation(velocity*dt);inertiaId=requestAnimationFrame(coast)};
    platter.setAttribute('role','slider');platter.setAttribute('aria-label','Turntable platter. Drag to spin.');platter.setAttribute('tabindex','0');
    platter.addEventListener('pointerdown',e=>{stopInertia();dragging=true;velocity=0;lastAngle=pointerAngle(e);lastAt=performance.now();platter.classList.add('spinning');try{platter.setPointerCapture(e.pointerId)}catch(_){};e.preventDefault()},{passive:false});
-   platter.addEventListener('pointermove',e=>{if(!dragging)return;const now=performance.now(),next=pointerAngle(e),delta=normalize(next-lastAngle),dt=Math.max(8,now-lastAt);addRotation(delta);velocity=delta*(16.67/dt);lastAngle=next;lastAt=now;e.preventDefault()},{passive:false});
-   const release=e=>{if(!dragging)return;dragging=false;platter.classList.remove('spinning');try{if(platter.hasPointerCapture(e.pointerId))platter.releasePointerCapture(e.pointerId)}catch(_){};if(Math.abs(velocity)>.3){stopInertia();inertiaId=requestAnimationFrame(coast)}};
+   platter.addEventListener('pointermove',e=>{if(!dragging)return;const now=performance.now(),next=pointerAngle(e),delta=normalize(next-lastAngle),dt=Math.max(8,now-lastAt)/1000;addRotation(delta);velocity=delta/dt;lastAngle=next;lastAt=now;e.preventDefault()},{passive:false});
+   const release=e=>{if(!dragging)return;dragging=false;platter.classList.remove('spinning');try{if(platter.hasPointerCapture(e.pointerId))platter.releasePointerCapture(e.pointerId)}catch(_){};if(Math.abs(velocity)>18){stopInertia();inertiaId=requestAnimationFrame(coast)}};
    platter.addEventListener('pointerup',release);platter.addEventListener('pointercancel',release);platter.addEventListener('lostpointercapture',e=>{if(dragging)release(e)});
    platter.addEventListener('wheel',e=>{e.preventDefault();stopInertia();addRotation(Math.sign(e.deltaY||e.deltaX)*-12)},{passive:false});
    platter.addEventListener('keydown',e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();stopInertia();addRotation(e.key==='ArrowLeft'?-15:15)}});
   }
-  function restorePadCenter(){try{if(typeof setPad==='function')setPad(.5,.5,false);if(typeof padRateFactor!=='undefined')padRateFactor=1;if(typeof applyPlaybackRate==='function')applyPlaybackRate();if(typeof applyFxMacro==='function'&&typeof fxMacro!=='undefined')applyFxMacro(fxMacro);const r=q('padReadout');if(r)r.textContent='X 50 · Y 50'}catch(_){}}
+  let fxMix=.5,lastPadX=.5,lastPadY=.5,activeInstant=null,instantSnapshot=null,instantOwner=null;
   const pad=q('xyPad');
   const padReadout=q('padReadout');if(pad&&padReadout){pad.appendChild(padReadout);padReadout.classList.add('pad-readout-overlay')}
+  const padPanel=pad&&pad.closest('.pad-panel');
+  const modeBox=padPanel&&padPanel.querySelector('.pad-mode');
+  const padModes=[['echo','ECHO'],['reverb','REVERB'],['flanger','FLANGER'],['phaser','PHASER'],['bitcrusher','BIT CRUSHER'],['gate','GATE']];
+  try{padActive=true;padMode=null}catch(_){}
+  if(modeBox){modeBox.innerHTML='';padModes.forEach(([mode,label])=>{const b=document.createElement('button');b.type='button';b.className='btn';b.dataset.padFx=mode;b.textContent=label;b.onclick=async()=>{try{await ensureAudio()}catch(_){};try{padActive=true;padMode=mode}catch(_){};modeBox.querySelectorAll('[data-pad-fx]').forEach(x=>x.classList.toggle('active',x===b));applyPadFx(mode,lastPadX,lastPadY);try{log('PAD FX · '+label)}catch(_){}};modeBox.appendChild(b)})}
+  const oldSetPad=typeof setPad==='function'?setPad:null;
+  function resetFxNodes(){try{if(filter){filter.type='lowpass';filter.frequency.value=20000;if(filter.Q)filter.Q.value=1}if(drive)drive.curve=null;if(delay)delay.delayTime.value=0;if(fb)fb.gain.value=.25;if(wet)wet.gain.value=0;if(typeof padRateFactor!=='undefined')padRateFactor=1;if(typeof applyPlaybackRate==='function')applyPlaybackRate()}catch(_){}}
+  function applyPadFx(mode,x,y){if(!mode)return;try{if(typeof ctx==='undefined'||!ctx)return;filter.type='lowpass';if(filter.Q)filter.Q.value=1;padRateFactor=1;applyPlaybackRate();const m=fxMix;
+   if(mode==='echo'){delay.delayTime.value=.04+x*.5;fb.gain.value=.12+y*.58;wet.gain.value=m*(.15+y*.65);filter.frequency.value=1800+Math.pow(x,.7)*17500;drive.curve=null}
+   else if(mode==='reverb'){delay.delayTime.value=.07+x*.18;fb.gain.value=.5+y*.28;wet.gain.value=m*(.3+y*.6);filter.frequency.value=900+Math.pow(x,.7)*12500;drive.curve=null}
+   else if(mode==='flanger'){delay.delayTime.value=.002+x*.018;fb.gain.value=.18+y*.52;wet.gain.value=m*(.12+y*.5);filter.frequency.value=2800+Math.pow(x,.8)*14500;drive.curve=curve(.04+m*.12)}
+   else if(mode==='phaser'){filter.type='allpass';filter.frequency.value=180+Math.pow(x,1.3)*9000;if(filter.Q)filter.Q.value=1+y*18;delay.delayTime.value=.003+y*.014;fb.gain.value=.08+y*.22;wet.gain.value=m*(.08+y*.34);drive.curve=null}
+   else if(mode==='bitcrusher'){filter.frequency.value=350+Math.pow(1-y,1.6)*16000;drive.curve=curve(m*(.15+x*.85));delay.delayTime.value=0;fb.gain.value=.05;wet.gain.value=m*.08}
+   else if(mode==='gate'){filter.frequency.value=500+Math.pow(x,1.2)*18500;drive.curve=curve(m*(.08+y*.5));delay.delayTime.value=.01+x*.06;fb.gain.value=.04+y*.16;wet.gain.value=m*(.04+y*.18)}
+  }catch(_){}}
+  if(typeof setPad==='function')setPad=function(x,y,apply=true){x=clamp01(x);y=clamp01(y);lastPadX=x;lastPadY=y;const dot=q('padDot');if(dot){dot.style.left=(x*100)+'%';dot.style.top=((1-y)*100)+'%'}const r=q('padReadout');if(r)r.textContent='X '+Math.round(x*100)+' · Y '+Math.round(y*100);if(!apply)return;try{if(typeof padActive!=='undefined')padActive=true}catch(_){};applyPadFx(typeof padMode!=='undefined'?padMode:null,x,y)};
+  function restorePadCenter(){try{if(typeof setPad==='function')setPad(.5,.5,false);if(typeof padRateFactor!=='undefined')padRateFactor=1;if(typeof applyPlaybackRate==='function')applyPlaybackRate();const r=q('padReadout');if(r)r.textContent='X 50 · Y 50'}catch(_){}}
   if(pad){pad.addEventListener('pointerup',e=>{try{if(pad.hasPointerCapture(e.pointerId))pad.releasePointerCapture(e.pointerId)}catch(_){}restorePadCenter()});pad.addEventListener('pointercancel',restorePadCenter);pad.addEventListener('lostpointercapture',restorePadCenter)}
   const instantPresets={
-   Landing:{label:'Landing',beat:'1',filter:260,drive:58,delay:.23,fb:.68,wet:.78,pitch:-5},
-   Echo:{label:'Echo',beat:'1',filter:760,drive:16,delay:.36,fb:.64,wet:.72,pitch:0},
-   Reverb:{label:'Reverb',beat:'1',filter:1350,drive:8,delay:.12,fb:.82,wet:.86,pitch:0},
-   Gate:{label:'Gate',beat:'1/4',filter:180,drive:76,delay:.03,fb:.12,wet:.26,pitch:0},
-   Flanger:{label:'Flanger',beat:'4',filter:980,drive:28,delay:.018,fb:.76,wet:.68,pitch:0},
-   Alarm:{label:'Alarm',beat:'1/2',filter:3200,drive:84,delay:.11,fb:.48,wet:.74,pitch:7},
-   Hydrant:{label:'Hydrant',beat:'1',filter:420,drive:92,delay:.07,fb:.34,wet:.82,pitch:-12},
-   Rocket:{label:'Rocket',beat:'1/4',filter:5400,drive:88,delay:.16,fb:.72,wet:.88,pitch:12}
+   Glide:{label:'Glide',beat:'HOLD',filter:7000,drive:6,delay:.08,fb:.18,wet:.28,pitch:4},
+   Space:{label:'Space',beat:'HOLD',filter:5200,drive:4,delay:.42,fb:.7,wet:.82,pitch:0},
+   Crush:{label:'Crush',beat:'HOLD',filter:900,drive:88,delay:.03,fb:.08,wet:.24,pitch:0}
   };
-  const instantControls=['filter','drive','delay','fb','wet','pitch'];let instantSnapshot=null,instantOwner=null;
+  const instantControls=['filter','drive','delay','fb','wet','pitch'];
   function setInstantControl(id,value){const el=q(id);if(!el||value===undefined)return;el.value=value;el.dispatchEvent(new Event('input',{bubbles:true}))}
-  function beginInstant(name,button,e){const p=instantPresets[name];if(!p)return;if(!instantSnapshot){instantSnapshot={};instantControls.forEach(id=>{const el=q(id);if(el)instantSnapshot[id]=el.value})}instantOwner=button;document.querySelectorAll('.instant-fx-btn.active').forEach(b=>b.classList.remove('active'));button.classList.add('active');instantControls.forEach(id=>setInstantControl(id,p[id]));try{button.setPointerCapture(e.pointerId)}catch(_){};try{log('INSTANT FX · '+name.toUpperCase()+' · '+p.beat)}catch(_){}}
-  function endInstant(button,e){if(instantOwner!==button)return;button.classList.remove('active');if(instantSnapshot){Object.entries(instantSnapshot).forEach(([id,value])=>setInstantControl(id,value));instantSnapshot=null}instantOwner=null;try{if(e&&button.hasPointerCapture(e.pointerId))button.releasePointerCapture(e.pointerId)}catch(_){};try{log('INSTANT FX · RELEASE')}catch(_){}}
-  const padPanel=pad&&pad.closest('.pad-panel');
+  function applyInstant(name){const p=instantPresets[name];if(!p)return;instantControls.forEach(id=>setInstantControl(id,id==='wet'?p[id]*fxMix:p[id]))}
+  function beginInstant(name,button,e){const p=instantPresets[name];if(!p)return;if(!instantSnapshot){instantSnapshot={};instantControls.forEach(id=>{const el=q(id);if(el)instantSnapshot[id]=el.value})}activeInstant=name;instantOwner=button;document.querySelectorAll('.instant-fx-btn.active').forEach(b=>b.classList.remove('active'));button.classList.add('active');applyInstant(name);try{button.setPointerCapture(e.pointerId)}catch(_){};try{log('INSTANT FX · '+name.toUpperCase())}catch(_){}}
+  function endInstant(button,e){if(instantOwner!==button)return;button.classList.remove('active');if(instantSnapshot){Object.entries(instantSnapshot).forEach(([id,value])=>setInstantControl(id,value));instantSnapshot=null}activeInstant=null;instantOwner=null;try{if(e&&button.hasPointerCapture(e.pointerId))button.releasePointerCapture(e.pointerId)}catch(_){};try{log('INSTANT FX · RELEASE')}catch(_){}}
+  let mixRange=null,mixValue=null;
   if(padPanel&&!padPanel.querySelector('.instant-fx')){
    padPanel.classList.add('instant-layout');
-   const mixer=document.createElement('div');mixer.className='mixer-level';mixer.innerHTML='<div class="mixer-level-title">MIX LEVEL</div><input id="mixerLevel" class="mixer-level-range" type="range" min="0" max="100" step="1" value="82" aria-label="Mixer level"><output id="mixerLevelV" class="mixer-level-value">82%</output>';
-   const masterRange=q('vol'),mixRange=mixer.querySelector('#mixerLevel'),mixValue=mixer.querySelector('#mixerLevelV');
-   if(masterRange){mixRange.value=Math.round((parseFloat(masterRange.value)||0)*100);mixValue.textContent=mixRange.value+'%'}
-   const applyMixer=()=>{const pct=Math.max(0,Math.min(100,parseFloat(mixRange.value)||0));mixValue.textContent=Math.round(pct)+'%';if(masterRange){masterRange.value=(pct/100).toFixed(2);masterRange.dispatchEvent(new Event('input',{bubbles:true}))}};
+   const mixer=document.createElement('div');mixer.className='mixer-level';mixer.innerHTML='<div class="mixer-level-title">FX MIX</div><input id="mixerLevel" class="mixer-level-range" type="range" min="0" max="100" step="1" value="50" aria-label="FX wet dry mix"><output id="mixerLevelV" class="mixer-level-value">50%</output>';
+   mixRange=mixer.querySelector('#mixerLevel');mixValue=mixer.querySelector('#mixerLevelV');
+   const applyMixer=()=>{const pct=Math.max(0,Math.min(100,parseFloat(mixRange.value)||0));fxMix=pct/100;mixValue.textContent=Math.round(pct)+'%';try{if(typeof padMode!=='undefined'&&padMode)applyPadFx(padMode,lastPadX,lastPadY)}catch(_){};if(activeInstant)applyInstant(activeInstant)};
    mixRange.addEventListener('input',applyMixer);
    mixRange.addEventListener('wheel',e=>{e.preventDefault();mixRange.value=Math.max(0,Math.min(100,(parseFloat(mixRange.value)||0)+(e.deltaY<0?2:-2)));applyMixer()},{passive:false});
-   if(masterRange)masterRange.addEventListener('input',()=>{const pct=Math.round((parseFloat(masterRange.value)||0)*100);if(Math.round(parseFloat(mixRange.value)||0)!==pct){mixRange.value=pct;mixValue.textContent=pct+'%'}});
    const bank=document.createElement('div');bank.className='instant-fx';bank.innerHTML='<div class="instant-fx-title">INSTANT FX · HOLD</div><div class="instant-fx-grid"></div>';const grid=bank.querySelector('.instant-fx-grid');Object.entries(instantPresets).forEach(([name,p])=>{const b=document.createElement('button');b.type='button';b.className='instant-fx-btn';b.setAttribute('aria-label','Instant FX '+p.label);b.innerHTML='<span>'+p.label+'</span><small>'+p.beat+'</small>';b.addEventListener('pointerdown',e=>{e.preventDefault();beginInstant(name,b,e)},{passive:false});b.addEventListener('pointerup',e=>endInstant(b,e));b.addEventListener('pointercancel',e=>endInstant(b,e));b.addEventListener('lostpointercapture',e=>endInstant(b,e));grid.appendChild(b)});
    padPanel.appendChild(mixer);padPanel.appendChild(bank)
   }
   const kill=q('killfx'),oldKill=kill&&kill.onclick;
   if(kill)kill.onclick=async()=>{
    try{if(oldKill)await oldKill.call(kill)}catch(_){}
+   resetFxNodes();
+   try{padActive=true;padMode=null}catch(_){}
+   if(modeBox)modeBox.querySelectorAll('[data-pad-fx]').forEach(b=>b.classList.remove('active'));
    const pitch=q('pitch');if(pitch){pitch.value=0;pitch.dispatchEvent(new Event('input',{bubbles:true}))}
    if(modText){modText.value='';modText.dispatchEvent(new Event('input',{bubbles:true}))}
    try{if(typeof modW!=='undefined')modW.reset()}catch(_){}
-   try{if(typeof modDepth!=='undefined')modDepth=0;if(typeof modActive!=='undefined')modActive=false;if(typeof modRateFactor!=='undefined')modRateFactor=1;if(typeof applyPlaybackRate==='function')applyPlaybackRate();if(typeof applyFxMacro==='function'&&typeof fxMacro!=='undefined')applyFxMacro(fxMacro)}catch(_){}
+   try{if(typeof modDepth!=='undefined')modDepth=0;if(typeof modActive!=='undefined')modActive=false;if(typeof modRateFactor!=='undefined')modRateFactor=1;if(typeof applyPlaybackRate==='function')applyPlaybackRate()}catch(_){}
    localMod=0;
    if(modWheel){modWheel.setAttribute('aria-valuenow','0');modWheel.style.setProperty('--angle','-135deg');modWheel.classList.remove('active')}
    const mv=q('modWheelV');if(mv)mv.textContent='0%';
    const modBtn=q('modActivate');if(modBtn){modBtn.classList.remove('active');modBtn.textContent='MOD OFF'}
    restorePadCenter();
-   instantSnapshot=null;instantOwner=null;document.querySelectorAll('.instant-fx-btn.active').forEach(b=>b.classList.remove('active'));
-   try{log('KILL FX · TEXT CLEARED · MOD OFF · MOD DEPTH 0 · PAD CENTER · INSTANT FX RESET')}catch(_){}
+   instantSnapshot=null;instantOwner=null;activeInstant=null;document.querySelectorAll('.instant-fx-btn.active').forEach(b=>b.classList.remove('active'));
+   if(mixRange&&mixValue){mixRange.value='50';fxMix=.5;mixValue.textContent='50%'}
+   try{log('KILL FX · NO PAD FX SELECTED · INSTANT FX RESET · PAD READY')}catch(_){}
   };
   function frameTick(now){try{if(typeof a!=='undefined'&&a&&!a.paused&&!a.ended)appendSignalLog(now)}catch(_){}requestAnimationFrame(frameTick)}requestAnimationFrame(frameTick);
-  try{log('ENOCHIAN SIGNAL ANALYSER · FULL HEIGHT AUTOGAIN · LIVE SIGNAL LOG · TEXT → ENOCHIAN GLYPHS · PAD XY READOUT · MIXER LEVEL · INSTANT FX HIGH LAYOUT · PAD SPRING ACTIVE · PLATTER SCRATCH READY')}catch(_){}
+  try{log('ENOCHIAN SIGNAL · PAD ALWAYS READY · 6 PAD FX · GLIDE/SPACE/CRUSH INSTANT FX · FX MIX · TIME-BASED PLATTER')}catch(_){}
  })();`;
  d.body.appendChild(patch);
 });
