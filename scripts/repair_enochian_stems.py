@@ -83,7 +83,7 @@ for marker in [
     "home.href='/'",
     "window.top.location.replace('/')",
     "window.__enochToggleFullscreen",
-    "data.terminalFullscreen='1'",
+    "fullBtn.dataset.terminalFullscreen='1'",
     "FULL SCREEN",
     "stemMasterToggle",
     "STEMS ON",
