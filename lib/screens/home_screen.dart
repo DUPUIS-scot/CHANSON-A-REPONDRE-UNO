@@ -165,6 +165,7 @@ class _ArtisticHome extends StatelessWidget {
                     _PrimaryEntrance(
                       icon: Icons.album_rounded,
                       label: 'ENOCHIAN TERMINAL',
+                      tooltip: 'Best experience on desktop',
                       onTap: () => onNavigate(AppRoutes.enochianTerminal),
                     ),
                   ],
@@ -210,53 +211,65 @@ class _PrimaryEntrance extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
+    this.tooltip,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final String? tooltip;
 
   @override
-  Widget build(BuildContext context) => Semantics(
-    button: true,
-    label: label,
-    child: InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(48),
-      child: Container(
-        constraints: const BoxConstraints(minWidth: 150, minHeight: 72),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-        decoration: BoxDecoration(
-          color: const Color(0xB0140B08),
-          borderRadius: BorderRadius.circular(48),
-          border: Border.all(color: AppTheme.gold, width: 1.4),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x443D0804),
-              blurRadius: 22,
-              spreadRadius: 3,
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: AppTheme.brightGold, size: 30),
-            const SizedBox(height: 5),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1.5,
+  Widget build(BuildContext context) {
+    final entrance = Semantics(
+      button: true,
+      label: label,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(48),
+        child: Container(
+          constraints: const BoxConstraints(minWidth: 150, minHeight: 72),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          decoration: BoxDecoration(
+            color: const Color(0xB0140B08),
+            borderRadius: BorderRadius.circular(48),
+            border: Border.all(color: AppTheme.gold, width: 1.4),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x443D0804),
+                blurRadius: 22,
+                spreadRadius: 3,
               ),
-            ),
-          ],
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: AppTheme.brightGold, size: 30),
+              const SizedBox(height: 5),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.5,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-    ),
-  );
+    );
+
+    if (tooltip == null) return entrance;
+    return Tooltip(
+      message: tooltip!,
+      preferBelow: true,
+      waitDuration: const Duration(milliseconds: 300),
+      child: entrance,
+    );
+  }
 }
 
 class _SecondaryEntrance extends StatelessWidget {
