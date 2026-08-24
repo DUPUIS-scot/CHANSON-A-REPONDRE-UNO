@@ -42,7 +42,7 @@ shell_required = [
     "installReliableFullscreen",
     "stem-separator-control.js?v=20260824-v5",
     "analyser-composite-signal.js?v=20260824-v4",
-    "target-viewport.js?v=20260824-v7",
+    "target-viewport.js?v=20260824-v8",
     "iphone-landscape-layout-v2.js?v=20260824-deep-v18",
 ]
 for marker in shell_required:
