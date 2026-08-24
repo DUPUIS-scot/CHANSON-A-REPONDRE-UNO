@@ -27,7 +27,7 @@
             setRow(key,on){const value=!!on;if(key==='instruments'){stemState.bass.on=value;stemState.other.on=value}else if(stemState[key])stemState[key].on=value;smoothApply();return status()},
             setLevel(key,value){const v=Math.max(0,Math.min(1,Number(value)||0));if(key==='instruments'){stemState.bass.level=v;stemState.other.level=v}else if(stemState[key])stemState[key].level=v;smoothApply();return status()},
             smoothApply,
-            sync(){try{syncStemTimes(true);setStemRate()}catch(_){}return status()}
+            sync(force=false){try{syncStemTimes(!!force);setStemRate()}catch(_){}return status()}
           };
         }catch(_){}})();`;
         d.documentElement.appendChild(bridge);bridge.remove();
@@ -45,7 +45,7 @@
       let loopEnabled=false,loopStart=0,loopEnd=null,loopTimer=0,lastWrapAt=0,wrapping=false;
       const validDuration=()=>Number.isFinite(master.duration)&&master.duration>0?master.duration:null;
       const loopUi=()=>{loop.classList.toggle('active',loopEnabled);loop.classList.toggle('loop-authority-on',loopEnabled);loop.setAttribute('aria-pressed',String(loopEnabled));loop.textContent=loopEnabled?'LOOP ON':'LOOP OFF';loopIn.textContent='IN '+fmt(loopStart);loopOut.textContent='OUT '+(loopEnd==null?'--:--.-':fmt(loopEnd))};
-      const syncAfterSeek=()=>{try{engine.sync()}catch(_){}};
+      const syncAfterSeek=()=>{try{engine.sync(true)}catch(_){}};
       const wrap=async(force=false)=>{
         if(!loopEnabled||loopEnd==null||wrapping)return false;
         const now=performance.now();
@@ -97,8 +97,8 @@
       ranges().forEach(r=>r.addEventListener('input',()=>{engine.setLevel(rangeKey(r),clamp((parseFloat(r.value)||0)/100,0,1));refresh()}));
       if(play)play.addEventListener('pointerdown',()=>{if(desiredEnabled)setStemStatus('loading')},true);
       master.addEventListener('play',()=>{if(desiredEnabled)setTimeout(()=>{const s=engine.status();if(s.routed)refresh();else activate()},0);else refresh()});
-      master.addEventListener('pause',refresh);master.addEventListener('seeking',()=>engine.sync());master.addEventListener('ratechange',()=>engine.sync());
-      const drift=()=>{if(desiredEnabled&&engine.status().routed&&!master.paused)engine.sync();refresh();w.setTimeout(drift,300)};w.setTimeout(drift,300);
+      master.addEventListener('pause',refresh);master.addEventListener('seeking',()=>engine.sync(true));master.addEventListener('ratechange',()=>engine.sync(false));
+      const drift=()=>{if(desiredEnabled&&engine.status().routed&&!master.paused)engine.sync(false);refresh();w.setTimeout(drift,300)};w.setTimeout(drift,300);
 
       refresh();loopUi();loopTick();
       w.__enochStemAuthority={version:'v5',get state(){return lastStemState},get desired(){return desiredEnabled},get native(){return engine.status()},isCustomMix};
