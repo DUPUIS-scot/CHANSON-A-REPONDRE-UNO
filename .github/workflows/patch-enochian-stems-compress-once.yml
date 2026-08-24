@@ -1,3 +1,4 @@
+# retrigger existing one-shot workflow
 name: Patch Enochian stems compression once
 
 on:
@@ -114,7 +115,7 @@ jobs:
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git config user.email '418982418+github-actions[bot]@users.noreply.github.com'
           git add assets/audio/stems/ai_comptroller/*.mp3 web/enochian-terminal/index.html
           git commit -m 'Compress Enochian stems and restore reliable playback'
           git push
