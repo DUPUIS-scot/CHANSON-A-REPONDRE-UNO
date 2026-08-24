@@ -183,6 +183,19 @@ frame.addEventListener('load',()=>{
     }
    };
   }
+  // MASTER STEM TOGGLE: enable/disable the complete stem engine without affecting master playback.
+  let stemsEnabled=true;
+  const setStemModeCore=setStemMode;
+  setStemMode=async function(){
+   if(!stemsEnabled){
+    stemMode=false;
+    Object.values(stemMedia).forEach(m=>{try{m.pause()}catch(_){}});
+    try{if(!originalDeckConnected&&src&&low){src.connect(low);originalDeckConnected=true}}catch(_){}
+    updateStemUi();
+    return;
+   }
+   return await setStemModeCore();
+  };
   const leftSide=q('track')&&q('track').closest('.side');
   if(leftSide&&!q('stemIsolator')){const box=document.createElement('div');box.id='stemIsolator';box.className='stem-isolator';box.innerHTML='<div class="stem-title">STEM ISOLATOR · AI COMPTROLLER</div><div class="stem-row"><button class="btn stem-toggle active" data-stem-toggle="vocals">VOCALS</button><input class="stem-range" data-stem-range="vocals" type="range" min="0" max="100" value="100"><output class="stem-value" data-stem-value="vocals">100%</output></div><div class="stem-row"><button class="btn stem-toggle active" data-stem-toggle="drums">DRUMS</button><input class="stem-range" data-stem-range="drums" type="range" min="0" max="100" value="100"><output class="stem-value" data-stem-value="drums">100%</output></div><div class="stem-row"><button class="btn stem-toggle active" data-stem-toggle="instruments">INSTRUMENTS</button><input class="stem-range" data-stem-range="instruments" type="range" min="0" max="100" value="100"><output class="stem-value" data-stem-value="instruments">100%</output></div><div id="stemNote" class="stem-note">BASS + OTHERS = INSTRUMENTS</div>';q('track').insertAdjacentElement('afterend',box);
    box.querySelectorAll('[data-stem-toggle]').forEach(b=>b.onclick=async()=>{await ensureAudio();const key=b.dataset.stemToggle;if(key==='instruments'){const next=!(stemState.bass.on&&stemState.other.on);stemState.bass.on=next;stemState.other.on=next;b.classList.toggle('active',next)}else{stemState[key].on=!stemState[key].on;b.classList.toggle('active',stemState[key].on)}applyStemGains();try{log('STEM '+key.toUpperCase()+' · '+(b.classList.contains('active')?'ON':'OFF'))}catch(_){}});
@@ -271,8 +284,10 @@ frame.addEventListener('load',()=>{
   let fullBtn=null;
   if(top){
    const badgeEl=q('badge');const actions=document.createElement('div');actions.className='terminal-actions';
+   let stemBtn=document.createElement('button');stemBtn.type='button';stemBtn.className='btn terminal-action active';stemBtn.id='stemMasterToggle';stemBtn.textContent='STEMS ON';stemBtn.setAttribute('aria-pressed','true');
+   stemBtn.onclick=async()=>{stemsEnabled=!stemsEnabled;stemBtn.classList.toggle('active',stemsEnabled);stemBtn.textContent=stemsEnabled?'STEMS ON':'STEMS OFF';stemBtn.setAttribute('aria-pressed',String(stemsEnabled));try{await setStemMode()}catch(_){};try{log('STEMS '+(stemsEnabled?'ON':'OFF'))}catch(_){}};
    fullBtn=document.createElement('button');fullBtn.type='button';fullBtn.className='btn terminal-action';fullBtn.dataset.terminalFullscreen='1';fullBtn.textContent='FULL SCREEN';fullBtn.setAttribute('aria-pressed','false');
-   actions.appendChild(fullBtn);if(badgeEl)actions.appendChild(badgeEl);top.appendChild(actions);
+   actions.appendChild(stemBtn);actions.appendChild(fullBtn);if(badgeEl)actions.appendChild(badgeEl);top.appendChild(actions);
    const syncFull=()=>{let active=false;try{active=typeof window.parent.outerFullscreenActive==='function'?window.parent.outerFullscreenActive():!!(window.parent.document.fullscreenElement||window.parent.document.webkitFullscreenElement)}catch(_){};document.documentElement.classList.toggle('terminal-fullscreen',active);fullBtn.classList.toggle('active',active);fullBtn.textContent=active?'EXIT FULL SCREEN':'FULL SCREEN';fullBtn.setAttribute('aria-pressed',String(active));setTimeout(()=>window.dispatchEvent(new Event('resize')),50)};
    fullBtn.onclick=async()=>{try{if(window.parent&&typeof window.parent.__enochToggleFullscreen==='function')await window.parent.__enochToggleFullscreen();else throw new Error('parent fullscreen unavailable')}catch(_){document.documentElement.classList.toggle('terminal-fullscreen');fullBtn.classList.toggle('active');fullBtn.textContent=document.documentElement.classList.contains('terminal-fullscreen')?'EXIT FULL SCREEN':'FULL SCREEN';window.dispatchEvent(new Event('resize'))}syncFull()};
    syncFull();
