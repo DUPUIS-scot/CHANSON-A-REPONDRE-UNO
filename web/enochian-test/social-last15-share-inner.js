@@ -1,8 +1,16 @@
 (function(){
   'use strict';
   const SHARE_BASE='https://www.chanson-a-repondre-uno.scot/share/enochian/';
+  const SHARE_COUNT_KEY='flutter.social_preview_share_count';
   function ready(){return typeof a!=='undefined'&&a&&typeof idx!=='undefined'&&typeof tracks!=='undefined';}
   function fmt(t){t=Math.max(0,Number(t)||0);const m=Math.floor(t/60),s=(t-m*60).toFixed(1).padStart(4,'0');return String(m).padStart(2,'0')+':'+s;}
+  function incrementShareCount(){
+    try{
+      const raw=localStorage.getItem(SHARE_COUNT_KEY);
+      const current=Math.max(0,Number.parseInt(raw||'0',10)||0);
+      localStorage.setItem(SHARE_COUNT_KEY,String(current+1));
+    }catch(_){}
+  }
   function makeUrl(){
     const end=Math.max(0,Number(a.currentTime)||0);
     const start=Math.max(0,end-15);
@@ -26,6 +34,7 @@
         try{const ta=document.createElement('textarea');ta.value=clip.url;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();shared=true;}catch(__){}
       }
     }
+    if(shared)incrementShareCount();
     const old=btn.textContent;
     btn.textContent=shared?'COPIED · 15 SEC':'SHARE LINK';
     btn.classList.add('active');
