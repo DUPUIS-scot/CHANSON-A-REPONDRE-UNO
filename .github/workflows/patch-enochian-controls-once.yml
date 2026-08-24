@@ -1,0 +1,64 @@
+name: Patch Enochian terminal controls once
+
+on:
+  push:
+    paths:
+      - '.github/workflows/patch-enochian-controls-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch terminal wrapper
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('web/enochian-terminal/index.html')
+          s = p.read_text(encoding='utf-8')
+
+          old_iframe = '<iframe id="deck" src="/enochian-test/base.html?v=20260824-terminal-controls" title="ENOCHIAN TERMINAL"></iframe>'
+          new_iframe = '<iframe id="deck" src="/enochian-test/base.html?v=20260824-loopinout-fullscreen" title="ENOCHIAN TERMINAL" allow="fullscreen" allowfullscreen></iframe>'
+          if old_iframe in s:
+              s = s.replace(old_iframe, new_iframe, 1)
+
+          old_loop = """  let loopEnabled=false;\n  const transport=q('play')&&q('play').parentElement;\n  let loopBtn=null;\n  if(transport){\n   transport.style.gridTemplateColumns='repeat(4,1fr)';\n   loopBtn=document.createElement('button');loopBtn.type='button';loopBtn.className='btn';loopBtn.id='loopToggle';loopBtn.textContent='LOOP OFF';loopBtn.setAttribute('aria-pressed','false');loopBtn.onclick=()=>{loopEnabled=!loopEnabled;loopBtn.classList.toggle('active',loopEnabled);loopBtn.textContent=loopEnabled?'LOOP ON':'LOOP OFF';loopBtn.setAttribute('aria-pressed',String(loopEnabled));try{log('LOOP '+(loopEnabled?'ON':'OFF'))}catch(_){}};transport.appendChild(loopBtn);\n  }\n  try{if(typeof a!=='undefined'&&a){const originalEnded=a.onended;a.onended=()=>{if(loopEnabled){const wasPaused=a.paused;try{a.currentTime=0}catch(_){};if(!wasPaused){Promise.resolve(a.play()).catch(()=>{})}else{Promise.resolve(a.play()).catch(()=>{})}try{log('LOOP RESTART')}catch(_){}}else if(typeof originalEnded==='function'){originalEnded.call(a)}}}}catch(_){}\n"""
+          new_loop = """  let loopEnabled=false,loopStart=0,loopEnd=null,loopTimer=0;\n  const transport=q('play')&&q('play').parentElement;\n  let loopBtn=null,loopInBtn=null,loopOutBtn=null;\n  function loopLabelTime(v){if(!Number.isFinite(v))return '--:--.-';const m=Math.floor(v/60),sec=(v-m*60).toFixed(1).padStart(4,'0');return String(m).padStart(2,'0')+':'+sec}\n  function syncLoopUi(){if(loopBtn){loopBtn.classList.toggle('active',loopEnabled);loopBtn.textContent=loopEnabled?'LOOP ON':'LOOP OFF';loopBtn.setAttribute('aria-pressed',String(loopEnabled))}if(loopInBtn)loopInBtn.textContent='IN '+loopLabelTime(loopStart);if(loopOutBtn)loopOutBtn.textContent='OUT '+(loopEnd==null?'--:--.-':loopLabelTime(loopEnd))}\n  function armLoopTimer(){if(loopTimer){clearTimeout(loopTimer);loopTimer=0}if(!loopEnabled||loopEnd==null||typeof a==='undefined'||!a||a.paused)return;const remaining=(loopEnd-a.currentTime)/Math.max(.01,a.playbackRate||1);if(remaining<=.015){try{a.currentTime=loopStart}catch(_){};try{log('LOOP CYCLE · '+loopLabelTime(loopStart)+' → '+loopLabelTime(loopEnd))}catch(_){};armLoopTimer();return}loopTimer=setTimeout(()=>{loopTimer=0;if(loopEnabled&&loopEnd!=null&&a.currentTime>=loopEnd-.03){try{a.currentTime=loopStart}catch(_){};try{log('LOOP CYCLE · '+loopLabelTime(loopStart)+' → '+loopLabelTime(loopEnd))}catch(_){}}armLoopTimer()},Math.max(8,Math.min(250,remaining*1000-8)))}\n  if(transport){\n   transport.style.gridTemplateColumns='repeat(3,minmax(0,1fr))';\n   loopInBtn=document.createElement('button');loopInBtn.type='button';loopInBtn.className='btn';loopInBtn.id='loopIn';loopInBtn.textContent='IN 00:00.0';loopInBtn.onclick=()=>{loopStart=Math.max(0,Number(a.currentTime)||0);if(loopEnd!=null&&loopEnd<=loopStart+.05)loopEnd=null;syncLoopUi();armLoopTimer();try{log('LOOP IN · '+loopLabelTime(loopStart))}catch(_){}};\n   loopOutBtn=document.createElement('button');loopOutBtn.type='button';loopOutBtn.className='btn';loopOutBtn.id='loopOut';loopOutBtn.textContent='OUT --:--.-';loopOutBtn.onclick=()=>{const out=Math.max(0,Number(a.currentTime)||0);if(out<=loopStart+.05){try{log('LOOP OUT MUST BE AFTER LOOP IN')}catch(_){};return}loopEnd=out;loopEnabled=true;syncLoopUi();armLoopTimer();try{log('LOOP OUT · '+loopLabelTime(loopEnd))}catch(_){}};\n   loopBtn=document.createElement('button');loopBtn.type='button';loopBtn.className='btn';loopBtn.id='loopToggle';loopBtn.textContent='LOOP OFF';loopBtn.setAttribute('aria-pressed','false');loopBtn.onclick=()=>{if(loopEnd==null){loopStart=0;loopEnd=Number.isFinite(a.duration)&&a.duration>0?a.duration:null}loopEnabled=!loopEnabled;syncLoopUi();armLoopTimer();try{log('LOOP '+(loopEnabled?'ON':'OFF'))}catch(_){}};\n   transport.appendChild(loopInBtn);transport.appendChild(loopOutBtn);transport.appendChild(loopBtn);syncLoopUi();\n  }\n  try{if(typeof a!=='undefined'&&a){const originalEnded=a.onended;a.addEventListener('play',armLoopTimer);a.addEventListener('pause',()=>{if(loopTimer){clearTimeout(loopTimer);loopTimer=0}});a.addEventListener('seeked',armLoopTimer);a.addEventListener('ratechange',armLoopTimer);a.onended=()=>{if(loopEnabled){try{a.currentTime=loopStart}catch(_){};Promise.resolve(a.play()).catch(()=>{});armLoopTimer();try{log('LOOP RESTART')}catch(_){}}else if(typeof originalEnded==='function'){originalEnded.call(a)}}}}catch(_){}\n"""
+          if old_loop not in s:
+              raise SystemExit('Expected loop block not found; refusing unsafe patch')
+          s = s.replace(old_loop, new_loop, 1)
+
+          old_full = """   fullBtn.onclick=async()=>{try{if(document.fullscreenElement||document.webkitFullscreenElement){if(document.exitFullscreen)await document.exitFullscreen();else if(document.webkitExitFullscreen)document.webkitExitFullscreen()}else{const el=document.documentElement;if(el.requestFullscreen)await el.requestFullscreen();else if(el.webkitRequestFullscreen)el.webkitRequestFullscreen();else{document.documentElement.classList.toggle('terminal-fullscreen');fullBtn.classList.toggle('active');fullBtn.textContent=document.documentElement.classList.contains('terminal-fullscreen')?'EXIT FULL SCREEN':'FULL SCREEN';window.dispatchEvent(new Event('resize'))}}}catch(_){document.documentElement.classList.toggle('terminal-fullscreen');fullBtn.classList.toggle('active');fullBtn.textContent=document.documentElement.classList.contains('terminal-fullscreen')?'EXIT FULL SCREEN':'FULL SCREEN';window.dispatchEvent(new Event('resize'))}};\n   document.addEventListener('fullscreenchange',syncFull);document.addEventListener('webkitfullscreenchange',syncFull);\n"""
+          new_full = """   fullBtn.onclick=async()=>{try{const topDoc=window.top&&window.top.document?window.top.document:document;const active=topDoc.fullscreenElement||topDoc.webkitFullscreenElement||document.fullscreenElement||document.webkitFullscreenElement;if(active){if(topDoc.exitFullscreen)await topDoc.exitFullscreen();else if(topDoc.webkitExitFullscreen)topDoc.webkitExitFullscreen();else if(document.exitFullscreen)await document.exitFullscreen();else if(document.webkitExitFullscreen)document.webkitExitFullscreen()}else{const frameEl=window.frameElement;const el=frameEl||document.documentElement;if(el.requestFullscreen)await el.requestFullscreen();else if(el.webkitRequestFullscreen)el.webkitRequestFullscreen();else{document.documentElement.classList.toggle('terminal-fullscreen');fullBtn.classList.toggle('active');fullBtn.textContent=document.documentElement.classList.contains('terminal-fullscreen')?'EXIT FULL SCREEN':'FULL SCREEN';window.dispatchEvent(new Event('resize'))}}}catch(_){document.documentElement.classList.toggle('terminal-fullscreen');fullBtn.classList.toggle('active');fullBtn.textContent=document.documentElement.classList.contains('terminal-fullscreen')?'EXIT FULL SCREEN':'FULL SCREEN';window.dispatchEvent(new Event('resize'))}};\n   document.addEventListener('fullscreenchange',syncFull);document.addEventListener('webkitfullscreenchange',syncFull);try{window.top.document.addEventListener('fullscreenchange',syncFull);window.top.document.addEventListener('webkitfullscreenchange',syncFull)}catch(_){}\n"""
+          if old_full not in s:
+              raise SystemExit('Expected fullscreen block not found; refusing unsafe patch')
+          s = s.replace(old_full, new_full, 1)
+
+          s = s.replace("FX MIX · LOOP · FULLSCREEN · TIME-BASED PLATTER", "FX MIX · LOOP IN/OUT · FULLSCREEN · TIME-BASED PLATTER", 1)
+          p.write_text(s, encoding='utf-8')
+
+      - name: Verify patch
+        shell: bash
+        run: |
+          grep -q 'allow="fullscreen"' web/enochian-terminal/index.html
+          grep -q "id='loopIn'" web/enochian-terminal/index.html
+          grep -q "id='loopOut'" web/enochian-terminal/index.html
+          grep -q 'window.frameElement' web/enochian-terminal/index.html
+          grep -q "window.top.location.href='/'" web/enochian-terminal/index.html
+          grep -q "platter.addEventListener('pointerdown'" web/enochian-terminal/index.html
+
+      - name: Commit patch
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo 'No changes needed'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add web/enochian-terminal/index.html
+          git commit -m 'Fix Enochian loop and fullscreen controls'
+          git push
