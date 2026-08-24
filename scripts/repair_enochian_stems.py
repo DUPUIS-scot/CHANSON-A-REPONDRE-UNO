@@ -41,10 +41,10 @@ shell_required = [
     "syncResponsiveLayout",
     "authoritative-runtime.js?v=20260824-v4",
     "outer-analyser-panel.js?v=20260824-v2",
-    "analyser-data-bus.js?v=20260824-v1",
+    "analyser-data-bus.js?v=20260824-v2",
     "analyser-composite-signal.js?v=20260824-v9",
     "analyser-signal-glide.js?v=20260824-v5",
-    "analyser-signal-3d.js?v=20260824-v5",
+    "analyser-signal-3d.js?v=20260824-v6",
     "sculpt-audio-mod.js?v=20260824-v2",
     "installEnochianAuthoritativeRuntime",
     "installEnochianOuterAnalyserPanel",
@@ -80,7 +80,12 @@ for required_file in required_files:
     if not required_file.is_file() or required_file.stat().st_size == 0:
         raise SystemExit(f'missing Enochian runtime layer: {required_file}')
 
-for js_file in [Path('web/enochian-test/authoritative-runtime.js'), Path('web/enochian-test/outer-analyser-panel.js')]:
+for js_file in [
+    Path('web/enochian-test/authoritative-runtime.js'),
+    Path('web/enochian-test/outer-analyser-panel.js'),
+    Path('web/enochian-test/analyser-data-bus.js'),
+    Path('web/enochian-test/analyser-signal-3d.js'),
+]:
     subprocess.run(['node', '--check', str(js_file)], check=True)
 
 authority = Path('web/enochian-test/authoritative-runtime.js').read_text(encoding='utf-8')
@@ -115,11 +120,13 @@ if "outerAnalyserPanel==='v2'" not in outer_panel or 'DRAG ANALYSER WINDOW' not 
     raise SystemExit('outer terminal analyser panel contract missing')
 if "__enochAnalyserBus" not in bus or "__enochAnalyserBus" not in composite or "__enochAnalyserBus" not in three_d:
     raise SystemExit('unified analyser bus contract missing')
+if "version:'v2'" not in bus or "frequency:null" not in bus or "bus.emit('frequency'" not in bus:
+    raise SystemExit('FFT analyser bus v2 contract missing')
 if '__compositeCapture' in composite or '__enoch3dCapture' in three_d:
     raise SystemExit('legacy independent analyser wrappers unexpectedly present')
-if "analyserSignalGlide='v5'" not in glide or "analyserSignal3d='v5'" not in three_d:
-    raise SystemExit('current sculptable 3D analyser contract missing')
+if "analyserSignalGlide='v5'" not in glide or "analyserSignal3d='v6'" not in three_d or "latestSource='none'" not in three_d or "writeIndex" not in three_d or "rowAt" not in three_d:
+    raise SystemExit('current FFT sculptable 3D analyser contract missing')
 if "sculptAudioMod='v2'" not in sculpt_audio or "version:'v2'" not in sculpt_audio or '__enochSculptAudio' not in sculpt_audio or 'restoreBase' not in sculpt_audio or 'SCULPT AUDIO' not in sculpt_audio:
     raise SystemExit('sculpt-to-audio modulation v2 contract missing')
 
-print('Enochian runtime verified: outer floating analyser owner, one loop controller, native Web Audio stem bridge with exclusive master/stem routing and smoothed GainNode mix, unified analyser bus, reversible sculpt-to-audio, navigation and outer fullscreen.')
+print('Enochian runtime verified: outer floating analyser owner, one loop controller, native Web Audio stem bridge with exclusive master/stem routing and smoothed GainNode mix, unified FFT analyser bus, ring-buffered 3D signal history, reversible sculpt-to-audio, navigation and outer fullscreen.')
