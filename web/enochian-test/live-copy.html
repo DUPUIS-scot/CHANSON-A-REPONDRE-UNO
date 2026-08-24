@@ -90,9 +90,10 @@ frame.addEventListener('load',()=>{
  `;d.head.appendChild(css);
  const title=d.querySelector('.title');if(title)title.textContent='ENOCHIAN TERMINAL · EQ / FX / MOD / GLIDE';
  const home=d.querySelector('.home-link');if(home){home.textContent='⌂';home.setAttribute('aria-label','Home');home.setAttribute('title','Home');home.href='/';home.onclick=e=>{e.preventDefault();try{window.top.location.replace('/')}catch(_){window.location.href='/'};return false};}
- const art=d.getElementById('platterArt');if(art){art.src='/assets/assets/images/uno_jester_headphones.webp?v=20260824-terminal-controls';art.alt='UNO jester';}
+ const art=d.getElementById('platterArt');if(art){const jesterPath='/assets/assets/images/uno_jester_headphones.webp';try{if(new URL(art.src,location.href).pathname!==jesterPath)art.src=jesterPath+'?v=20260824-terminal-controls'}catch(_){art.src=jesterPath+'?v=20260824-terminal-controls'}art.alt='UNO jester';}
  const patch=d.createElement('script');patch.textContent=`
  (function(){
+  if(window.__enochianLiveCopyPatchV2)return;window.__enochianLiveCopyPatchV2=true;
   const q=id=>document.getElementById(id);
   let localMod=0,lastSignalLogAt=0,lastSignalKey='';
   function clamp01(v){return Math.max(0,Math.min(1,v))}
@@ -112,7 +113,7 @@ frame.addEventListener('load',()=>{
   function readBaseSignal(){return[0,1,2,3].map(i=>{const raw=(q('b'+i)?.textContent||'00000000').match(/[01]{8}$/);return raw?parseInt(raw[0],2):0})}
   function signalWord(v){try{return names[v%names.length].toUpperCase()}catch(_){return String(v)}}
   function signalClock(){const s=(typeof a!=='undefined'&&Number.isFinite(a.currentTime))?a.currentTime:0,m=Math.floor(s/60),sec=(s-m*60).toFixed(1).padStart(4,'0');return String(m).padStart(2,'0')+':'+sec}
-  function appendSignalLog(now){if(now-lastSignalLogAt<160)return;lastSignalLogAt=now;const vals=readBaseSignal(),key=vals.join(',');if(key===lastSignalKey)return;lastSignalKey=key;const box=q('log');if(!box)return;const row=document.createElement('div');const bits=vals.map(v=>v.toString(2).padStart(8,'0')).join(' '),words=vals.map(signalWord).join(' ');row.textContent='['+signalClock()+'] '+words+' · '+bits;box.prepend(row);while(box.children.length>40)box.lastChild.remove()}
+  function appendSignalLog(now){if(now-lastSignalLogAt<400)return;lastSignalLogAt=now;const vals=readBaseSignal(),key=vals.join(',');if(key===lastSignalKey)return;lastSignalKey=key;const box=q('log');if(!box)return;const row=document.createElement('div');const bits=vals.map(v=>v.toString(2).padStart(8,'0')).join(' '),words=vals.map(signalWord).join(' ');row.textContent='['+signalClock()+'] '+words+' · '+bits;box.prepend(row);while(box.children.length>24)box.lastChild.remove()}
   const modWheel=q('modWheel')||document.querySelector('.mod .wheel');
   const modText=q('phrase')||document.querySelector('.mod textarea');
   let preserveTextFocus=false,preserveStart=0,preserveEnd=0;
@@ -159,7 +160,7 @@ frame.addEventListener('load',()=>{
   async function ensureStemMediaLoaded(){const waits=Object.values(stemMedia).map(m=>new Promise((resolve,reject)=>{if(m.readyState>=2)return resolve();const ok=()=>{cleanup();resolve()},bad=()=>{cleanup();reject(new Error('STEM LOAD FAILED'))},cleanup=()=>{m.removeEventListener('loadeddata',ok);m.removeEventListener('error',bad)};m.addEventListener('loadeddata',ok,{once:true});m.addEventListener('error',bad,{once:true});if(!m.src){m.src=m.dataset.src||'';m.load()}}));await Promise.all(waits)}
   async function ensureStemGraph(){if(stemsReady)return;if(typeof ctx==='undefined'||!ctx||typeof low==='undefined'||!low)return;Object.keys(stemMedia).forEach(key=>{const node=ctx.createMediaElementSource(stemMedia[key]);const gain=ctx.createGain();gain.gain.value=stemGainValue(key);node.connect(gain).connect(low);stemSources[key]=node;stemGains[key]=gain});stemsReady=true;applyStemGains();try{log('STEMS READY · VOCALS / DRUMS / BASS / OTHER')}catch(_){}}
   function updateStemUi(){const box=q('stemIsolator');if(!box)return;const ai=isAiComptroller();box.classList.toggle('disabled',!ai);box.querySelectorAll('button,input').forEach(el=>el.disabled=!ai);const note=q('stemNote');if(note)note.textContent=ai?'BASS + OTHERS = INSTRUMENTS · ALL STEMS LOCKED TO MASTER TRANSPORT':'STEM ISOLATOR AVAILABLE ON AI COMPTROLLER'}
-  async function setStemMode(){const ai=isAiComptroller();if(!ai){stemMode=false;Object.values(stemMedia).forEach(m=>{try{m.pause()}catch(_){}});try{if(!originalDeckConnected&&src&&low){src.connect(low);originalDeckConnected=true}}catch(_){};updateStemUi();return}if(stemMode){updateStemUi();return}try{if(originalEnsureAudio)await originalEnsureAudio();else if(typeof ensureAudio==='function')await ensureAudio()}catch(_){};try{await ensureStemMediaLoaded();await ensureStemGraph();syncStemTimes(true);setStemRate();applyStemGains();if(!a.paused){await Promise.all(Object.values(stemMedia).map(m=>m.play()));try{if(originalDeckConnected&&src){src.disconnect();originalDeckConnected=false}}catch(_){}}stemMode=true;try{log('STEM MODE · AI COMPTROLLER')}catch(_){}}catch(error){stemMode=false;Object.values(stemMedia).forEach(m=>{try{m.pause()}catch(_){}});try{if(!originalDeckConnected&&src&&low){src.connect(low);originalDeckConnected=true}}catch(_){};try{log('STEM FALLBACK · MASTER AUDIO')}catch(_){}}updateStemUi()}
+  async function setStemMode(){const ai=isAiComptroller();if(!ai){stemMode=false;Object.values(stemMedia).forEach(m=>{try{m.pause()}catch(_){}});try{if(!originalDeckConnected&&src&&low){src.connect(low);originalDeckConnected=true}}catch(_){};updateStemUi();return}if(stemMode){updateStemUi();return}try{if(originalEnsureAudio)await originalEnsureAudio();else if(typeof ensureAudio==='function')await ensureAudio()}catch(_){};try{await ensureStemMediaLoaded();await ensureStemGraph();syncStemTimes(true);setStemRate();applyStemGains();if(!a.paused){await Promise.all(Object.values(stemMedia).map(m=>m.play()));try{if(originalDeckConnected&&src){src.disconnect();originalDeckConnected=false}}catch(_){}}stemMode=true;try{log('STEM MODE · AI COMPTROLLER')}catch(_){}}catch(error){stemMode=false;Object.values(stemMedia).forEach(m=>{try{m.pause()}catch(_){}});try{if(!originalDeckConnected&&src&&low){src.connect(low);originalDeckConnected=true}}catch(_){};try{log('STEM FALLBACK · MASTER AUDIO · '+(error&&error.message?error.message:'UNKNOWN'))}catch(_){}}updateStemUi()}
   const originalEnsureAudio=typeof ensureAudio==='function'?ensureAudio:null;
   if(originalEnsureAudio)ensureAudio=async function(){return await originalEnsureAudio()};
   // RELIABLE BASE TRANSPORT: master playback must never depend on optional stems.
@@ -173,7 +174,6 @@ frame.addEventListener('load',()=>{
       try{if(typeof disablePitchPreservation==='function')disablePitchPreservation()}catch(_){}
       try{if(typeof applyPlaybackRate==='function')applyPlaybackRate()}catch(_){}
       await a.play();
-      try{Promise.resolve(setStemMode()).catch(()=>{})}catch(_){}
      }else{
       a.pause();
      }
@@ -280,7 +280,7 @@ frame.addEventListener('load',()=>{
   }
   try{if(typeof a!=='undefined'&&a){const originalEnded=a.onended;a.addEventListener('play',armLoopTimer);a.addEventListener('pause',()=>{if(loopTimer){clearTimeout(loopTimer);loopTimer=0}});a.addEventListener('seeked',armLoopTimer);a.addEventListener('ratechange',armLoopTimer);a.onended=()=>{if(loopEnabled){try{a.currentTime=loopStart}catch(_){};Promise.resolve(a.play()).catch(()=>{});armLoopTimer();try{log('LOOP RESTART')}catch(_){}}else if(typeof originalEnded==='function'){originalEnded.call(a)}}}}catch(_){}
 
-  const top=d.querySelector('.top');
+  const top=document.querySelector('.top');
   let fullBtn=null;
   if(top){
    const badgeEl=q('badge');const actions=document.createElement('div');actions.className='terminal-actions';
