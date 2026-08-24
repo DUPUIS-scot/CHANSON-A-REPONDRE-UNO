@@ -1,4 +1,4 @@
-# retrigger existing one-shot workflow
+# retrigger existing one-shot workflow via explicit ref update
 name: Patch Enochian stems compression once
 
 on:
@@ -63,40 +63,25 @@ jobs:
           from pathlib import Path
           p = Path('web/enochian-terminal/index.html')
           s = p.read_text(encoding='utf-8')
-
           s = s.replace('v=20260824-runtime-fixes-v3', 'v=20260824-stem-lazy-v5')
           s = s.replace('v=20260824-canonical-play-v4', 'v=20260824-stem-lazy-v5')
-
-          old_create = "Object.entries(stemFiles).forEach(([key,url])=>{const m=document.createElement('audio');m.preload='auto';m.src=url;m.setAttribute('aria-hidden','true');m.style.display='none';document.body.appendChild(m);stemMedia[key]=m});"
-          new_create = "Object.entries(stemFiles).forEach(([key,url])=>{const m=document.createElement('audio');m.preload='none';m.dataset.src=url;m.setAttribute('aria-hidden','true');m.style.display='none';document.body.appendChild(m);stemMedia[key]=m});"
-          if old_create not in s:
-              raise SystemExit('Stem media creation anchor missing')
-          s = s.replace(old_create, new_create, 1)
-
+          s = s.replace("Object.entries(stemFiles).forEach(([key,url])=>{const m=document.createElement('audio');m.preload='auto';m.src=url;m.setAttribute('aria-hidden','true');m.style.display='none';document.body.appendChild(m);stemMedia[key]=m});", "Object.entries(stemFiles).forEach(([key,url])=>{const m=document.createElement('audio');m.preload='none';m.dataset.src=url;m.setAttribute('aria-hidden','true');m.style.display='none';document.body.appendChild(m);stemMedia[key]=m});", 1)
           old_ready = "async function ensureStemGraph(){if(stemsReady)return;if(typeof ctx==='undefined'||!ctx||typeof low==='undefined'||!low)return;Object.keys(stemMedia).forEach(key=>{const node=ctx.createMediaElementSource(stemMedia[key]);const gain=ctx.createGain();gain.gain.value=stemGainValue(key);node.connect(gain).connect(low);stemSources[key]=node;stemGains[key]=gain});stemsReady=true;applyStemGains();try{log('STEMS READY · VOCALS / DRUMS / BASS / OTHER')}catch(_){}}"
           new_ready = "async function ensureStemMediaLoaded(){const waits=Object.values(stemMedia).map(m=>new Promise((resolve,reject)=>{if(m.readyState>=2)return resolve();const ok=()=>{cleanup();resolve()},bad=()=>{cleanup();reject(new Error('STEM LOAD FAILED'))},cleanup=()=>{m.removeEventListener('loadeddata',ok);m.removeEventListener('error',bad)};m.addEventListener('loadeddata',ok,{once:true});m.addEventListener('error',bad,{once:true});if(!m.src){m.src=m.dataset.src||'';m.load()}}));await Promise.all(waits)}\n  async function ensureStemGraph(){if(stemsReady)return;if(typeof ctx==='undefined'||!ctx||typeof low==='undefined'||!low)return;Object.keys(stemMedia).forEach(key=>{const node=ctx.createMediaElementSource(stemMedia[key]);const gain=ctx.createGain();gain.gain.value=stemGainValue(key);node.connect(gain).connect(low);stemSources[key]=node;stemGains[key]=gain});stemsReady=true;applyStemGains();try{log('STEMS READY · VOCALS / DRUMS / BASS / OTHER')}catch(_){}}"
-          if old_ready not in s:
-              raise SystemExit('Stem graph anchor missing')
+          if old_ready not in s: raise SystemExit('Stem graph anchor missing')
           s = s.replace(old_ready, new_ready, 1)
-
           old_mode = "async function setStemMode(){const ai=isAiComptroller();if(ai===stemMode){updateStemUi();return}try{await ensureAudio()}catch(_){};await ensureStemGraph();stemMode=ai;if(ai){try{if(originalDeckConnected&&src){src.disconnect();originalDeckConnected=false}}catch(_){};syncStemTimes(true);setStemRate();applyStemGains();if(!a.paused)Object.values(stemMedia).forEach(m=>Promise.resolve(m.play()).catch(()=>{}));try{log('STEM MODE · AI COMPTROLLER')}catch(_){}}else{Object.values(stemMedia).forEach(m=>{try{m.pause()}catch(_){}});try{if(!originalDeckConnected&&src&&low){src.connect(low);originalDeckConnected=true}}catch(_){};try{log('STEM MODE · OFF')}catch(_){}}updateStemUi()}"
           new_mode = "async function setStemMode(){const ai=isAiComptroller();if(!ai){stemMode=false;Object.values(stemMedia).forEach(m=>{try{m.pause()}catch(_){}});try{if(!originalDeckConnected&&src&&low){src.connect(low);originalDeckConnected=true}}catch(_){};updateStemUi();return}if(stemMode){updateStemUi();return}try{if(typeof originalEnsureAudio==='function'&&originalEnsureAudio)await originalEnsureAudio();else if(typeof ensureAudio==='function')await ensureAudio()}catch(_){};try{await ensureStemMediaLoaded();await ensureStemGraph();stemMode=true;syncStemTimes(true);setStemRate();applyStemGains();if(!a.paused){await Promise.all(Object.values(stemMedia).map(m=>m.play()));try{if(originalDeckConnected&&src){src.disconnect();originalDeckConnected=false}}catch(_){}}try{log('STEM MODE · AI COMPTROLLER')}catch(_){}}catch(error){stemMode=false;Object.values(stemMedia).forEach(m=>{try{m.pause()}catch(_){}});try{if(!originalDeckConnected&&src&&low){src.connect(low);originalDeckConnected=true}}catch(_){};try{log('STEM FALLBACK · MASTER AUDIO')}catch(_){}}updateStemUi()}"
-          if old_mode not in s:
-              raise SystemExit('Stem mode anchor missing')
+          if old_mode not in s: raise SystemExit('Stem mode anchor missing')
           s = s.replace(old_mode, new_mode, 1)
-
           old_wrap = "const originalEnsureAudio=typeof ensureAudio==='function'?ensureAudio:null;\n  if(originalEnsureAudio)ensureAudio=async function(){await originalEnsureAudio();await ensureStemGraph();if(isAiComptroller()&&!stemMode)await setStemMode();return ctx};"
           new_wrap = "const originalEnsureAudio=typeof ensureAudio==='function'?ensureAudio:null;\n  if(originalEnsureAudio)ensureAudio=async function(){return await originalEnsureAudio()};"
-          if old_wrap not in s:
-              raise SystemExit('ensureAudio wrapper anchor missing')
+          if old_wrap not in s: raise SystemExit('ensureAudio wrapper anchor missing')
           s = s.replace(old_wrap, new_wrap, 1)
-
           old_events = "try{a.addEventListener('play',()=>{if(!stemMode)return;syncStemTimes(true);setStemRate();Object.values(stemMedia).forEach(m=>Promise.resolve(m.play()).catch(()=>{}))});a.addEventListener('pause',()=>{if(stemMode)Object.values(stemMedia).forEach(m=>m.pause())});a.addEventListener('seeking',()=>syncStemTimes(true));a.addEventListener('seeked',()=>syncStemTimes(true));a.addEventListener('ratechange',setStemRate);a.addEventListener('loadedmetadata',()=>setTimeout(setStemMode,0));q('track')?.addEventListener('change',()=>setTimeout(setStemMode,0));q('prev')?.addEventListener('click',()=>setTimeout(setStemMode,0));q('next')?.addEventListener('click',()=>setTimeout(setStemMode,0))}catch(_){}\n  function stemDriftTick(now){if(stemMode&&!a.paused&&now-lastStemSyncAt>220){lastStemSyncAt=now;syncStemTimes(false);setStemRate()}requestAnimationFrame(stemDriftTick)}requestAnimationFrame(stemDriftTick);updateStemUi();"
           new_events = "try{a.addEventListener('play',()=>{if(isAiComptroller()&&!stemMode){Promise.resolve(setStemMode()).catch(()=>{});return}if(stemMode){syncStemTimes(true);setStemRate();Object.values(stemMedia).forEach(m=>Promise.resolve(m.play()).catch(()=>{}))}});a.addEventListener('pause',()=>{if(stemMode)Object.values(stemMedia).forEach(m=>m.pause())});a.addEventListener('seeking',()=>syncStemTimes(true));a.addEventListener('seeked',()=>syncStemTimes(true));a.addEventListener('ratechange',setStemRate);q('track')?.addEventListener('change',()=>setTimeout(()=>{updateStemUi();if(!a.paused&&isAiComptroller())Promise.resolve(setStemMode()).catch(()=>{});else if(!isAiComptroller())Promise.resolve(setStemMode()).catch(()=>{})},0));q('prev')?.addEventListener('click',()=>setTimeout(()=>q('track')?.dispatchEvent(new Event('change')),0));q('next')?.addEventListener('click',()=>setTimeout(()=>q('track')?.dispatchEvent(new Event('change')),0))}catch(_){}\n  function stemDriftTick(){if(stemMode&&!a.paused){syncStemTimes(false);setStemRate()}setTimeout(stemDriftTick,1000)}setTimeout(stemDriftTick,1000);updateStemUi();"
-          if old_events not in s:
-              raise SystemExit('Stem event/drift anchor missing')
+          if old_events not in s: raise SystemExit('Stem event/drift anchor missing')
           s = s.replace(old_events, new_events, 1)
-
           p.write_text(s, encoding='utf-8')
 
       - name: Verify patch
@@ -115,7 +100,7 @@ jobs:
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
-          git config user.email '418982418+github-actions[bot]@users.noreply.github.com'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add assets/audio/stems/ai_comptroller/*.mp3 web/enochian-terminal/index.html
           git commit -m 'Compress Enochian stems and restore reliable playback'
           git push
