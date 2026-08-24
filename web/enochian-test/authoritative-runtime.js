@@ -27,7 +27,7 @@
             setRow(key,on){const value=!!on;if(key==='instruments'){stemState.bass.on=value;stemState.other.on=value}else if(stemState[key])stemState[key].on=value;smoothApply();return status()},
             setLevel(key,value){const v=Math.max(0,Math.min(1,Number(value)||0));if(key==='instruments'){stemState.bass.level=v;stemState.other.level=v}else if(stemState[key])stemState[key].level=v;smoothApply();return status()},
             smoothApply,
-            sync(force=false){try{syncStemTimes(!!force);setStemRate()}catch(_){}return status()}
+            sync(force=false){try{if(force)setStemRate();syncStemTimes(!!force)}catch(_){}return status()}
           };
         }catch(_){}})();`;
         d.documentElement.appendChild(bridge);bridge.remove();
@@ -97,7 +97,7 @@
       ranges().forEach(r=>r.addEventListener('input',()=>{engine.setLevel(rangeKey(r),clamp((parseFloat(r.value)||0)/100,0,1));refresh()}));
       if(play)play.addEventListener('pointerdown',()=>{if(desiredEnabled)setStemStatus('loading')},true);
       master.addEventListener('play',()=>{if(desiredEnabled)setTimeout(()=>{const s=engine.status();if(s.routed)refresh();else activate()},0);else refresh()});
-      master.addEventListener('pause',refresh);master.addEventListener('seeking',()=>engine.sync(true));master.addEventListener('ratechange',()=>engine.sync(false));
+      master.addEventListener('pause',refresh);master.addEventListener('seeking',()=>engine.sync(true));master.addEventListener('ratechange',()=>engine.sync(true));
       const drift=()=>{if(desiredEnabled&&engine.status().routed&&!master.paused)engine.sync(false);refresh();w.setTimeout(drift,300)};w.setTimeout(drift,300);
 
       refresh();loopUi();loopTick();
