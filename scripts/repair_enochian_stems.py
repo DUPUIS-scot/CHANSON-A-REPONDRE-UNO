@@ -41,7 +41,7 @@ shell_required = [
     "installConsoleAuthority",
     "installReliableFullscreen",
     "stem-separator-control.js?v=20260824-v5",
-    "analyser-composite-signal.js?v=20260824-v4",
+    "analyser-composite-signal.js?v=20260824-v5",
     "target-viewport.js?v=20260824-v8",
     "iphone-landscape-layout-v2.js?v=20260824-deep-v18",
 ]
