@@ -31,7 +31,7 @@ if 'requestAnimationFrame(stemDriftTick)' in s:
     raise SystemExit('RAF stem drift loop unexpectedly present')
 
 shell_required = [
-    "live-copy.html?v=20260824-authority-v1",
+    "live-copy.html?v=20260824-runtime-fix-v2",
     "installReliableNavigation",
     "home.href='/#/home'",
     "go('#/home')",
