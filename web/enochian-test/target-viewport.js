@@ -6,7 +6,7 @@
  .enoch-ios-landscape .top{height:32px!important;min-height:32px!important;padding:2px 5px!important;overflow:hidden!important}
  .enoch-ios-landscape .avatar,.enoch-ios-landscape .home-link{width:26px!important;height:26px!important;min-width:26px!important;min-height:26px!important}
  .enoch-ios-landscape .title{font-size:8px!important;letter-spacing:.22em!important;white-space:nowrap!important}
- .enoch-ios-landscape #stemMasterToggle{display:none!important}
+ .enoch-ios-landscape #stemMasterToggle{display:inline-flex!important}
  .enoch-ios-landscape .terminal-actions{display:flex!important;gap:3px!important;align-items:center!important;flex-wrap:nowrap!important}
  .enoch-ios-landscape .terminal-action,.enoch-ios-landscape .badge{min-height:25px!important;padding:2px 5px!important;font-size:5.5px!important;white-space:nowrap!important}
  .enoch-ios-landscape .ios-fullscreen{display:inline-flex!important;visibility:visible!important;opacity:1!important;align-items:center!important;justify-content:center!important;width:28px!important;min-width:28px!important;height:25px!important;padding:0!important;font-size:14px!important;color:#ff8b16!important;border:1px solid #6f5938!important;background:#080b0a!important;z-index:20!important}
