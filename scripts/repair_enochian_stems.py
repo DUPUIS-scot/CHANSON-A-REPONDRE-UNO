@@ -38,13 +38,13 @@ shell_required = [
     "installConsoleAuthority",
     "installReliableFullscreen",
     "syncResponsiveLayout",
-    "stem-separator-control.js?v=20260824-v6",
-    "transport-stem-sync.js?v=20260824-v2",
+    "stem-separator-control.js?v=20260824-v7",
+    "transport-stem-sync.js?v=20260824-v3",
     "analyser-data-bus.js?v=20260824-v1",
     "analyser-composite-signal.js?v=20260824-v9",
     "analyser-signal-glide.js?v=20260824-v5",
     "analyser-signal-3d.js?v=20260824-v5",
-    "analyser-expand-overlay.js?v=20260824-v7",
+    "analyser-expand-overlay.js?v=20260824-v8",
     "installEnochianTransportStemSync",
     "installEnochianAnalyserDataBus",
     "installEnochianAnalyserSignalGlide",
@@ -69,6 +69,7 @@ for required_file in [
     if not required_file.is_file() or required_file.stat().st_size == 0:
         raise SystemExit(f'missing Enochian repair layer: {required_file}')
 
+stem_control = Path('web/enochian-test/stem-separator-control.js').read_text(encoding='utf-8')
 bus = Path('web/enochian-test/analyser-data-bus.js').read_text(encoding='utf-8')
 composite = Path('web/enochian-test/analyser-composite-signal.js').read_text(encoding='utf-8')
 three_d = Path('web/enochian-test/analyser-signal-3d.js').read_text(encoding='utf-8')
@@ -77,13 +78,15 @@ overlay = Path('web/enochian-test/analyser-expand-overlay.js').read_text(encodin
 transport = Path('web/enochian-test/transport-stem-sync.js').read_text(encoding='utf-8')
 if "__enochAnalyserBus" not in bus or "__enochAnalyserBus" not in composite or "__enochAnalyserBus" not in three_d:
     raise SystemExit('unified analyser bus contract missing')
-if "transportStemSync='v2'" not in transport or 'hardLoopSync' not in transport:
-    raise SystemExit('hard loop synchronization contract missing')
+if "stemSeparatorControl='v7'" not in stem_control or 'startMedia' not in stem_control:
+    raise SystemExit('live stem operator contract missing')
+if "transportStemSync='v3'" not in transport or 'hardLoopSync' not in transport or 'loop-timing' not in transport:
+    raise SystemExit('hard loop synchronization / live timer contract missing')
 if '__compositeCapture' in composite or '__enoch3dCapture' in three_d:
     raise SystemExit('legacy independent analyser wrappers unexpectedly present')
 if "analyserSignalGlide='v5'" not in glide or "analyserSignal3d='v5'" not in three_d:
     raise SystemExit('current sculptable 3D analyser contract missing')
-if "analyserExpandOverlay='v7'" not in overlay or 'DRAG ANALYSER WINDOW' not in overlay:
-    raise SystemExit('full-viewport floating analyser contract missing')
+if "analyserExpandOverlay='v8'" not in overlay or 'DRAG ANALYSER WINDOW' not in overlay or "addEventListener('pointermove',move,true)" not in overlay:
+    raise SystemExit('full-viewport floating analyser drag contract missing')
 
-print('Enochian runtime verified: master transport, default-on stems, hard loop sync, unified analyser bus, sculptable 3D analyser, full-viewport floating analyser, navigation and fullscreen.')
+print('Enochian runtime verified: master transport, live stem operator, hard loop sync with timer, unified analyser bus, sculptable 3D analyser, full-viewport floating analyser, navigation and fullscreen.')
