@@ -9,10 +9,8 @@
       const loop=d.getElementById('loopToggle'),loopIn=d.getElementById('loopIn'),loopOut=d.getElementById('loopOut'),loopReset=d.getElementById('loopReset');
       const stemMaster=d.getElementById('stemMasterToggle');
       if(!master||!isolator||!loop||!loopIn||!loopOut||!loopReset||!stemMaster)return false;
-      if(d.documentElement.dataset.authoritativeRuntime==='v4')return true;
+      if(d.documentElement.dataset.authoritativeRuntime==='v5')return true;
 
-      // Bridge into the base.html global lexical realm. This exposes the already-existing
-      // native Web Audio stem graph without creating a second MediaElementSource or mixer.
       if(!w.__enochNativeStemEngine||w.__enochNativeStemEngine.version!=='v2'){
         const bridge=d.createElement('script');
         bridge.textContent=`(()=>{try{
@@ -36,27 +34,54 @@
       }
       const engine=w.__enochNativeStemEngine;
       if(!engine||engine.version!=='v2')return false;
-      d.documentElement.dataset.authoritativeRuntime='v4';
+      d.documentElement.dataset.authoritativeRuntime='v5';
 
       const style=d.createElement('style');
       style.textContent=`#loopToggle.loop-authority-on{color:#f0c97e!important;border-color:#7b6339!important;background:#171308!important;box-shadow:0 0 12px #d5aa6355!important;font-weight:900!important}#stemMasterToggle.stem-loading{color:#f0c97e!important;border-color:#7b6339!important;background:#171308!important}#stemMasterToggle.stem-fallback{color:#ffb2a5!important;border-color:#633c35!important;background:#170806!important}.stem-value{color:#f0c97e!important}`;
       d.head.appendChild(style);
 
-      // One loop owner.
+      // One authoritative loop owner. The audio transport is the clock; visual RAF is never used.
       loop.onclick=loopIn.onclick=loopOut.onclick=loopReset.onclick=null;
-      let loopEnabled=false,loopStart=0,loopEnd=null,loopTimer=0,lastWrap=0;
-      const loopUi=()=>{loop.classList.toggle('active',loopEnabled);loop.classList.toggle('loop-authority-on',loopEnabled);loop.setAttribute('aria-pressed',String(loopEnabled));loop.textContent=loopEnabled?'LOOP '+fmt(master.currentTime||0):'LOOP OFF';loopIn.textContent='IN '+fmt(loopStart);loopOut.textContent='OUT '+(loopEnd==null?'--:--.-':fmt(loopEnd))};
-      const wrap=()=>{if(!loopEnabled||loopEnd==null)return;const now=performance.now();if(now-lastWrap<80)return;lastWrap=now;try{master.currentTime=loopStart;engine.sync()}catch(_){};try{d.getElementById('log')?.prepend(Object.assign(d.createElement('div'),{className:'signal-flow-line',textContent:'LOOP CYCLE · '+fmt(loopStart)+' → '+fmt(loopEnd)}))}catch(_){}};
-      const loopTick=()=>{if(loopTimer)w.clearTimeout(loopTimer);if(loopEnabled&&loopEnd!=null&&!master.paused&&master.currentTime>=loopEnd-.025)wrap();loopUi();loopTimer=w.setTimeout(loopTick,40)};
+      let loopEnabled=false,loopStart=0,loopEnd=null,loopTimer=0,lastWrapAt=0,wrapping=false;
+      const validDuration=()=>Number.isFinite(master.duration)&&master.duration>0?master.duration:null;
+      const loopUi=()=>{loop.classList.toggle('active',loopEnabled);loop.classList.toggle('loop-authority-on',loopEnabled);loop.setAttribute('aria-pressed',String(loopEnabled));loop.textContent=loopEnabled?'LOOP ON':'LOOP OFF';loopIn.textContent='IN '+fmt(loopStart);loopOut.textContent='OUT '+(loopEnd==null?'--:--.-':fmt(loopEnd))};
+      const syncAfterSeek=()=>{try{engine.sync()}catch(_){}};
+      const wrap=async(force=false)=>{
+        if(!loopEnabled||loopEnd==null||wrapping)return false;
+        const now=performance.now();
+        if(!force&&now-lastWrapAt<70)return false;
+        wrapping=true;lastWrapAt=now;
+        const wasPlaying=!master.paused&&!master.ended;
+        try{
+          const target=Math.max(0,Math.min(loopStart,validDuration()??loopStart));
+          if(typeof master.fastSeek==='function')master.fastSeek(target);else master.currentTime=target;
+          syncAfterSeek();
+          if(wasPlaying||master.ended){try{await master.play()}catch(_){}}
+          try{d.getElementById('log')?.prepend(Object.assign(d.createElement('div'),{className:'signal-flow-line',textContent:'LOOP CYCLE · '+fmt(loopStart)+' → '+fmt(loopEnd)}))}catch(_){}
+          return true;
+        }finally{
+          w.setTimeout(()=>{syncAfterSeek();wrapping=false},18);
+        }
+      };
+      const remainingMs=()=>{
+        if(!loopEnabled||loopEnd==null||master.paused)return 120;
+        const rate=Math.max(.05,Math.abs(Number(master.playbackRate)||1));
+        return Math.max(8,Math.min(120,((loopEnd-(Number(master.currentTime)||0))/rate)*1000-12));
+      };
+      const loopTick=()=>{
+        if(loopTimer)w.clearTimeout(loopTimer);
+        if(loopEnabled&&loopEnd!=null&&!master.paused&&master.currentTime>=loopEnd-.012)wrap(false);
+        loopUi();
+        loopTimer=w.setTimeout(loopTick,remainingMs());
+      };
       loopIn.addEventListener('click',()=>{loopStart=Math.max(0,Number(master.currentTime)||0);if(loopEnd!=null&&loopEnd<=loopStart+.05)loopEnd=null;loopUi()});
-      loopOut.addEventListener('click',()=>{const out=Math.max(0,Number(master.currentTime)||0);if(out<=loopStart+.05)return;loopEnd=out;loopEnabled=true;loopUi()});
-      loop.addEventListener('click',()=>{if(loopEnd==null){loopStart=0;loopEnd=Number.isFinite(master.duration)&&master.duration>0?master.duration:null}loopEnabled=!loopEnabled;loopUi()});
-      loopReset.addEventListener('click',()=>{loopEnabled=false;loopStart=0;loopEnd=null;loopUi()});
-      master.addEventListener('timeupdate',()=>{if(loopEnabled&&loopEnd!=null&&master.currentTime>=loopEnd-.025)wrap();loopUi()});
-      master.addEventListener('ended',()=>{if(!loopEnabled)return;wrap();Promise.resolve(master.play()).catch(()=>{})});
+      loopOut.addEventListener('click',()=>{const out=Math.max(0,Number(master.currentTime)||0);if(out<=loopStart+.05)return;loopEnd=out;loopEnabled=true;loopUi();loopTick()});
+      loop.addEventListener('click',()=>{if(loopEnd==null){loopStart=0;loopEnd=validDuration()}loopEnabled=!loopEnabled;loopUi();loopTick()});
+      loopReset.addEventListener('click',()=>{loopEnabled=false;loopStart=0;loopEnd=null;wrapping=false;loopUi();loopTick()});
+      master.addEventListener('timeupdate',()=>{if(loopEnabled&&loopEnd!=null&&master.currentTime>=loopEnd-.012)wrap(false)});
+      master.addEventListener('ended',()=>{if(loopEnabled&&loopEnd!=null)wrap(true)});
+      master.addEventListener('play',loopTick);master.addEventListener('ratechange',loopTick);master.addEventListener('seeked',()=>{syncAfterSeek();loopTick()});
 
-      // Sole stem UI owner. Audio ownership stays inside the native Web Audio graph:
-      // STEMS OFF = master src -> EQ/FX; STEMS ON = stem GainNodes -> EQ/FX, master src disconnected.
       const rows=()=>[...isolator.querySelectorAll('.stem-toggle')],ranges=()=>[...isolator.querySelectorAll('.stem-range')];
       const rowKey=b=>b?.dataset?.stemToggle||'',rangeKey=r=>r?.dataset?.stemRange||'';
       stemMaster.onclick=null;rows().forEach(b=>b.onclick=null);ranges().forEach(r=>r.oninput=null);
@@ -72,11 +97,12 @@
       ranges().forEach(r=>r.addEventListener('input',()=>{engine.setLevel(rangeKey(r),clamp((parseFloat(r.value)||0)/100,0,1));refresh()}));
       if(play)play.addEventListener('pointerdown',()=>{if(desiredEnabled)setStemStatus('loading')},true);
       master.addEventListener('play',()=>{if(desiredEnabled)setTimeout(()=>{const s=engine.status();if(s.routed)refresh();else activate()},0);else refresh()});
-      master.addEventListener('pause',refresh);master.addEventListener('seeking',()=>engine.sync());master.addEventListener('seeked',()=>engine.sync());master.addEventListener('ratechange',()=>engine.sync());
+      master.addEventListener('pause',refresh);master.addEventListener('seeking',()=>engine.sync());master.addEventListener('ratechange',()=>engine.sync());
       const drift=()=>{if(desiredEnabled&&engine.status().routed&&!master.paused)engine.sync();refresh();w.setTimeout(drift,300)};w.setTimeout(drift,300);
 
       refresh();loopUi();loopTick();
-      w.__enochStemAuthority={version:'v4',get state(){return lastStemState},get desired(){return desiredEnabled},get native(){return engine.status()},isCustomMix};
+      w.__enochStemAuthority={version:'v5',get state(){return lastStemState},get desired(){return desiredEnabled},get native(){return engine.status()},isCustomMix};
+      w.__enochLoopAuthority={version:'v5',get enabled(){return loopEnabled},get start(){return loopStart},get end(){return loopEnd},wrap:()=>wrap(true)};
       w.addEventListener('pagehide',()=>{if(loopTimer)w.clearTimeout(loopTimer)},{once:true});return true;
     }catch(_){return false}
   }
