@@ -1,25 +1,20 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>ENOCHIAN TERMINAL · PROFESSIONAL TEST</title><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000}iframe{display:block;width:100%;height:100%;border:0;background:#000}</style></head><body><iframe id="terminalTest" src="./live-copy.html?v=20260824-professional-test-v1" title="ENOCHIAN TERMINAL PROFESSIONAL TEST" allow="fullscreen" allowfullscreen></iframe><script>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>ENOCHIAN TERMINAL · PROFESSIONAL TEST</title><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000}iframe{display:block;width:100%;height:100%;border:0;background:#000}</style></head><body><iframe id="terminalTest" src="./live-copy.html?v=20260824-target-viewport-v1" title="ENOCHIAN TERMINAL PROFESSIONAL TEST" allow="fullscreen" allowfullscreen></iframe><script src="./target-viewport.js?v=20260824-v1"></script><script>
 const outer=document.getElementById('terminalTest');
 const FIX=String.raw`(function(){
  if(window.__enochProfessionalTestFix)return;window.__enochProfessionalTestFix='v1';document.documentElement.dataset.professionalTest='v1';
  const q=id=>document.getElementById(id);const write=m=>{try{log(m)}catch(_){}};
- // One authoritative master transport. Stem initialization remains owned by the existing master play event.
  const playBtn=q('play');let transportBusy=false;
  if(playBtn){playBtn.onclick=async()=>{if(transportBusy)return;transportBusy=true;playBtn.disabled=true;try{if(typeof a==='undefined'||!a)return;if(a.paused){if(typeof ensureAudio==='function')await ensureAudio();try{if(typeof disablePitchPreservation==='function')disablePitchPreservation()}catch(_){};try{if(typeof applyPlaybackRate==='function')applyPlaybackRate()}catch(_){};await a.play()}else a.pause()}catch(error){write('PLAY ERROR · '+(error&&error.message?error.message:'UNKNOWN'))}finally{transportBusy=false;playBtn.disabled=false}}}
- // Prewarm only media bytes during idle time; do not create stem AudioNodes or start playback here.
  const stems=[...document.querySelectorAll('audio[data-src*="/stems/"]')];
  const prewarm=()=>{let count=0;stems.forEach(m=>{try{m.preload='auto';if(!m.src){m.src=m.dataset.src||'';m.load()}count++}catch(error){write('STEM PREWARM ERROR · '+(error&&error.message?error.message:'UNKNOWN'))}});write('TEST STEM PREWARM · '+count+' MEDIA')};
  (window.requestIdleCallback||function(cb){return setTimeout(cb,350)})(prewarm,{timeout:1500});
- // Surface stem failures in the terminal console instead of silently falling back.
  stems.forEach(m=>{m.addEventListener('error',()=>{const file=(m.dataset.src||m.src||'STEM').split('/').pop();const code=m.error&&m.error.code?m.error.code:'UNKNOWN';write('STEM ERROR · '+file+' · CODE '+code)});m.addEventListener('abort',()=>{const file=(m.dataset.src||m.src||'STEM').split('/').pop();write('STEM ABORT · '+file)})});
- // Waveform rendering does not need display-refresh frequency. Cap visual redraws near 30 fps.
  try{if(typeof draw==='function'){const drawCore=draw;let lastDrawAt=0;draw=function(canvas,arr){const now=performance.now();if(now-lastDrawAt<33)return;lastDrawAt=now;return drawCore(canvas,arr)}}}catch(_){}
- // Parent and child fullscreen paths can emit near-identical synthetic resize events. Coalesce them.
  try{const dispatchCore=window.dispatchEvent.bind(window);let lastSyntheticResize=0;window.dispatchEvent=function(ev){if(ev&&ev.type==='resize'&&!ev.isTrusted){const now=performance.now();if(now-lastSyntheticResize<90)return true;lastSyntheticResize=now}return dispatchCore(ev)}}catch(_){}
  const title=document.querySelector('.title');if(title&&!title.textContent.includes('TEST'))title.textContent+=' · TEST';
  write('PROFESSIONAL TEST FIX V1 · SINGLE PLAY OWNER · STEM ERRORS VISIBLE · IDLE PREWARM · 30FPS WAVE');
 })();`;
-function install(){try{const wrapperDoc=outer.contentDocument,deck=wrapperDoc&&wrapperDoc.getElementById('deck'),d=deck&&deck.contentDocument;if(!d||!d.body||!d.getElementById('stemMasterToggle'))return false;if(d.documentElement.dataset.professionalTest==='v1')return true;const s=d.createElement('script');s.textContent=FIX;d.body.appendChild(s);return true}catch(_){return false}}
-outer.addEventListener('load',()=>{let tries=0;const timer=setInterval(()=>{if(install()||++tries>160)clearInterval(timer)},50)});
+function installTestFix(){try{const wrapperDoc=outer.contentDocument,deck=wrapperDoc&&wrapperDoc.getElementById('deck'),d=deck&&deck.contentDocument;if(!d||!d.body||!d.getElementById('stemMasterToggle'))return false;if(d.documentElement.dataset.professionalTest==='v1')return true;const s=d.createElement('script');s.textContent=FIX;d.body.appendChild(s);return true}catch(_){return false}}
+outer.addEventListener('load',()=>{window.installEnochianTargetViewport?.(outer);let tries=0;const timer=setInterval(()=>{if(installTestFix()||++tries>160)clearInterval(timer)},50)});
 </script></body></html>
