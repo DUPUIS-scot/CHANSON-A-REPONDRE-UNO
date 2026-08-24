@@ -7,13 +7,14 @@
   function install(frame){
     try{
       const live=frame.contentDocument,deck=live&&live.getElementById('deck'),d=deck&&deck.contentDocument,w=d&&d.defaultView;
-      if(!d||!d.body||!w||!d.getElementById('b0')||!d.getElementById('log'))return false;
-      if(d.documentElement.dataset.compositeAnalyser==='v6')return true;
-      d.documentElement.dataset.compositeAnalyser='v6';
+      const bus=w&&w.__enochAnalyserBus;
+      if(!d||!d.body||!w||!bus||!d.getElementById('b0')||!d.getElementById('log'))return false;
+      if(d.documentElement.dataset.compositeAnalyser==='v7')return true;
+      d.documentElement.dataset.compositeAnalyser='v7';
       const get=id=>parseFloat(d.getElementById(id)?.value)||0;
       const stemLevel=key=>{const r=d.querySelector('[data-stem-range="'+key+'"]'),b=d.querySelector('[data-stem-toggle="'+key+'"]');return active(b)?pct(r?.value??100):0};
-      let raw=[0,0,0,0],lastLog=0,lastState='';
-      if(typeof w.signal==='function'&&!w.signal.__compositeCapture){const original=w.signal;const wrapped=function(frameData){const vals=original.call(this,frameData);if(Array.isArray(vals)&&vals.length>=4)raw=vals.slice(0,4).map(clamp);return vals};wrapped.__compositeCapture=true;wrapped.__original=original;w.signal=wrapped}
+      let raw=bus.rawSignal.slice(0,4),lastLog=0,lastState='',raf=0;
+      const unsubscribe=bus.subscribe((type,payload)=>{if(type==='signal'&&Array.isArray(payload))raw=payload.slice(0,4).map(clamp)});
       const tick=()=>{
         const vocals=stemLevel('vocals'),drums=stemLevel('drums'),instruments=stemLevel('instruments');
         const master=Math.max(0,Math.min(1,get('vol'))),low=Math.max(0,Math.min(1,(get('low')+18)/36)),mid=Math.max(0,Math.min(1,(get('mid')+18)/36)),high=Math.max(0,Math.min(1,(get('high')+18)/36));
@@ -26,10 +27,11 @@
         const vals=[clamp(raw[0]*.72+42*drums+26*instruments+25*low+10*master+10*Math.max(0,-eqMacro)+10*fxMacro+18*Math.max(0,-glideX)+12*glideSpeed),clamp(raw[1]*.72+38*vocals+22*instruments+25*mid+10*master+10*modOn*modDepth+7*padX+16*Math.abs(glideX)+10*Math.max(0,glideY)),clamp(raw[2]*.72+26*vocals+30*instruments+25*high+10*master+14*fxMacro+10*mix*padY+10*instant+18*Math.max(0,glideX)+12*Math.max(0,glideY)),clamp(raw[3]*.76+46*drums+10*pitch+10*instant+8*modOn*modDepth+26*glideSpeed+10*Math.abs(glideY))];
         vals.forEach((n,i)=>{const b=d.getElementById('b'+i),g=d.getElementById('g'+i);if(b)b.textContent=n.toString(2).padStart(8,'0');if(g)g.src=glyphUrl(n%21)});
         const now=performance.now(),bits=vals.map(v=>v.toString(2).padStart(8,'0')),state=bits.join('|')+'|'+signalMod;
-        if(now-lastLog>500&&state!==lastState&&!d.getElementById('audio')?.paused){lastLog=now;lastState=state;const row=d.createElement('div');row.className='signal-flow-line';row.textContent='ENOCHIAN FLOW · '+bits.join(' ')+' · V'+Math.round(vocals*100)+' D'+Math.round(drums*100)+' I'+Math.round(instruments*100)+' M'+Math.round(master*100)+' · EQ '+Math.round(low*100)+'/'+Math.round(mid*100)+'/'+Math.round(high*100)+' · FX '+Math.round(fxMacro*100)+' PAD '+Math.round(padX*100)+'/'+Math.round(padY*100)+' MIX '+Math.round(mix*100)+' MOD '+Math.round(modOn*modDepth*100)+' · SIGNAL MOD '+(signalMod?'ON '+Math.round(glideX*100)+'/'+Math.round(glideY*100)+' V'+Math.round(glideSpeed*100):'OFF');const log=d.getElementById('log');log.prepend(row);while(log.querySelectorAll('.signal-flow-line').length>18){const rows=log.querySelectorAll('.signal-flow-line');rows[rows.length-1]?.remove()}}
-        requestAnimationFrame(tick);
+        if(now-lastLog>600&&state!==lastState&&!d.getElementById('audio')?.paused){lastLog=now;lastState=state;const row=d.createElement('div');row.className='signal-flow-line';row.textContent='ENOCHIAN FLOW · '+bits.join(' ')+' · V'+Math.round(vocals*100)+' D'+Math.round(drums*100)+' I'+Math.round(instruments*100)+' M'+Math.round(master*100)+' · EQ '+Math.round(low*100)+'/'+Math.round(mid*100)+'/'+Math.round(high*100)+' · FX '+Math.round(fxMacro*100)+' PAD '+Math.round(padX*100)+'/'+Math.round(padY*100)+' MIX '+Math.round(mix*100)+' MOD '+Math.round(modOn*modDepth*100)+' · SIGNAL MOD '+(signalMod?'ON '+Math.round(glideX*100)+'/'+Math.round(glideY*100)+' V'+Math.round(glideSpeed*100):'OFF');const log=d.getElementById('log');log.prepend(row);while(log.querySelectorAll('.signal-flow-line').length>18){const rows=log.querySelectorAll('.signal-flow-line');rows[rows.length-1]?.remove()}}
+        raf=w.requestAnimationFrame(tick);
       };
-      requestAnimationFrame(tick);return true;
+      w.addEventListener('pagehide',()=>{unsubscribe();if(raf)w.cancelAnimationFrame(raf)},{once:true});
+      raf=w.requestAnimationFrame(tick);return true;
     }catch(_){return false}
   }
   window.installEnochianCompositeAnalyser=frame=>{let n=0,t=setInterval(()=>{if(install(frame)||++n>240)clearInterval(t)},50)};
