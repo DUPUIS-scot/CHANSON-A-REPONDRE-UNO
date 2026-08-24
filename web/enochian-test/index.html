@@ -1,32 +1,25 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>DJ WHO · ENOCHIAN DECK LAB</title><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000}iframe{display:block;width:100%;height:100%;border:0;background:#000}</style></head><body><iframe id="deck" src="./base.html?v=20260823-music-spring" title="ENOCHIAN DECK LAB"></iframe><script>
-const frame=document.getElementById('deck');
-frame.addEventListener('load',()=>{
-  const w=frame.contentWindow,d=frame.contentDocument;
-  const css=d.createElement('style');css.textContent=`
-.home-link{display:inline-flex!important;align-items:center!important;justify-content:center!important;width:36px!important;height:36px!important;padding:0!important;font-size:20px!important;line-height:1!important;letter-spacing:0!important}
-.platter{transform:none!important;background:#020403!important;overflow:hidden!important}
-.platter:before{content:"";position:absolute;inset:0;border-radius:50%;background:repeating-radial-gradient(circle,#06100e 0 4px,#172a26 5px 6px,#040807 7px 12px),repeating-conic-gradient(from 0deg,#d5aa6318 0 1deg,transparent 1deg 11deg);transform:rotate(var(--rot));transform-origin:50% 50%;will-change:transform;z-index:0}
-.disc{z-index:1!important}.platter-art{transform:none!important;filter:none!important;object-fit:contain!important}`;d.head.appendChild(css);
-  const home=d.querySelector('.home-link');if(home){home.textContent='⌂';home.setAttribute('aria-label','Home');home.setAttribute('title','Home')}
-  const labels=d.querySelectorAll('.sig span');if(labels[0])labels[0].textContent='NOTE';if(labels[1])labels[1].textContent='CHROMA';if(labels[2])labels[2].textContent='LEVEL';if(labels[3])labels[3].textContent='BEAT';
-  const patch=d.createElement('script');patch.textContent=`
-(function(){
- let prevMusicSpectrum=null,musicBeatBase=0,musicBeatPeak=0;
- const originalEnsureAudio=ensureAudio;
- ensureAudio=async function(){await originalEnsureAudio();if(an){an.fftSize=1024;an.smoothingTimeConstant=.12}return ctx};
- signal=function(){
-  if(!an||!ctx)return[0,0,0,0];
-  const data=new Uint8Array(an.frequencyBinCount);an.getByteFrequencyData(data);
-  const binHz=(ctx.sampleRate/2)/data.length,chroma=new Float32Array(12);let peakBin=0,peakMag=0,total=0,flux=0;
-  for(let i=1;i<data.length;i++){const mag=data[i],freq=i*binHz;total+=mag;if(prevMusicSpectrum)flux+=Math.max(0,mag-prevMusicSpectrum[i]);if(freq>=55&&freq<=4200&&mag>peakMag){peakMag=mag;peakBin=i}if(freq>=55&&freq<=5000&&mag>4){const midi=Math.round(69+12*Math.log2(freq/440)),pc=((midi%12)+12)%12;chroma[pc]+=mag*mag}}
-  prevMusicSpectrum=data.slice();const freq=peakBin*binHz,midi=freq>0?Math.max(0,Math.min(127,Math.round(69+12*Math.log2(freq/440)))):0;let chromaPc=0;for(let i=1;i<12;i++)if(chroma[i]>chroma[chromaPc])chromaPc=i;const level=Math.min(255,Math.round(total/Math.max(1,data.length)*2.25));if(!musicBeatBase)musicBeatBase=flux;const onset=Math.max(0,flux-musicBeatBase*1.22);musicBeatBase=musicBeatBase*.90+flux*.10;musicBeatPeak=Math.max(Math.min(255,onset*.055),musicBeatPeak*.52);return[Math.round(midi/127*255),Math.round(chromaPc/11*255),level,Math.round(musicBeatPeak)]
- };
- function restoreCenter(){setPad(.5,.5,false);if(!ctx)return;a.playbackRate=baseRate;const hz=80*Math.pow(250,+$('filter').value/1000);filter.frequency.value=hz;drive.curve=curve(+$('drive').value/100);delay.delayTime.value=+$('delay').value;fb.gain.value=+$('fb').value;wet.gain.value=+$('wet').value;$('padReadout').textContent='X 50 · Y 50'}
- const pad=$('xyPad');if(pad){pad.onpointerup=e=>{try{pad.releasePointerCapture(e.pointerId)}catch(_e){}restoreCenter()};pad.onpointercancel=restoreCenter;pad.onlostpointercapture=restoreCenter}
- const art=$('platterArt');if(art){art.src='/assets/assets/images/uno_jester_headphones.webp?v=20260823-music-spring';art.style.transform='none';art.style.filter='none'}
- log('MUSIC TRANSCRIPTION · SPRING PAD · STATIONARY JESTER READY');
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>ENOCHIAN TERMINAL · PROFESSIONAL TEST</title><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000}iframe{display:block;width:100%;height:100%;border:0;background:#000}</style></head><body><iframe id="terminalTest" src="./live-copy.html?v=20260824-professional-test-v1" title="ENOCHIAN TERMINAL PROFESSIONAL TEST" allow="fullscreen" allowfullscreen></iframe><script>
+const outer=document.getElementById('terminalTest');
+const FIX=String.raw`(function(){
+ if(window.__enochProfessionalTestFix)return;window.__enochProfessionalTestFix='v1';document.documentElement.dataset.professionalTest='v1';
+ const q=id=>document.getElementById(id);const write=m=>{try{log(m)}catch(_){}};
+ // One authoritative master transport. Stem initialization remains owned by the existing master play event.
+ const playBtn=q('play');let transportBusy=false;
+ if(playBtn){playBtn.onclick=async()=>{if(transportBusy)return;transportBusy=true;playBtn.disabled=true;try{if(typeof a==='undefined'||!a)return;if(a.paused){if(typeof ensureAudio==='function')await ensureAudio();try{if(typeof disablePitchPreservation==='function')disablePitchPreservation()}catch(_){};try{if(typeof applyPlaybackRate==='function')applyPlaybackRate()}catch(_){};await a.play()}else a.pause()}catch(error){write('PLAY ERROR · '+(error&&error.message?error.message:'UNKNOWN'))}finally{transportBusy=false;playBtn.disabled=false}}}
+ // Prewarm only media bytes during idle time; do not create stem AudioNodes or start playback here.
+ const stems=[...document.querySelectorAll('audio[data-src*="/stems/"]')];
+ const prewarm=()=>{let count=0;stems.forEach(m=>{try{m.preload='auto';if(!m.src){m.src=m.dataset.src||'';m.load()}count++}catch(error){write('STEM PREWARM ERROR · '+(error&&error.message?error.message:'UNKNOWN'))}});write('TEST STEM PREWARM · '+count+' MEDIA')};
+ (window.requestIdleCallback||function(cb){return setTimeout(cb,350)})(prewarm,{timeout:1500});
+ // Surface stem failures in the terminal console instead of silently falling back.
+ stems.forEach(m=>{m.addEventListener('error',()=>{const file=(m.dataset.src||m.src||'STEM').split('/').pop();const code=m.error&&m.error.code?m.error.code:'UNKNOWN';write('STEM ERROR · '+file+' · CODE '+code)});m.addEventListener('abort',()=>{const file=(m.dataset.src||m.src||'STEM').split('/').pop();write('STEM ABORT · '+file)})});
+ // Waveform rendering does not need display-refresh frequency. Cap visual redraws near 30 fps.
+ try{if(typeof draw==='function'){const drawCore=draw;let lastDrawAt=0;draw=function(canvas,arr){const now=performance.now();if(now-lastDrawAt<33)return;lastDrawAt=now;return drawCore(canvas,arr)}}}catch(_){}
+ // Parent and child fullscreen paths can emit near-identical synthetic resize events. Coalesce them.
+ try{const dispatchCore=window.dispatchEvent.bind(window);let lastSyntheticResize=0;window.dispatchEvent=function(ev){if(ev&&ev.type==='resize'&&!ev.isTrusted){const now=performance.now();if(now-lastSyntheticResize<90)return true;lastSyntheticResize=now}return dispatchCore(ev)}}catch(_){}
+ const title=document.querySelector('.title');if(title&&!title.textContent.includes('TEST'))title.textContent+=' · TEST';
+ write('PROFESSIONAL TEST FIX V1 · SINGLE PLAY OWNER · STEM ERRORS VISIBLE · IDLE PREWARM · 30FPS WAVE');
 })();`;
-  d.body.appendChild(patch);
-});
+function install(){try{const wrapperDoc=outer.contentDocument,deck=wrapperDoc&&wrapperDoc.getElementById('deck'),d=deck&&deck.contentDocument;if(!d||!d.body||!d.getElementById('stemMasterToggle'))return false;if(d.documentElement.dataset.professionalTest==='v1')return true;const s=d.createElement('script');s.textContent=FIX;d.body.appendChild(s);return true}catch(_){return false}}
+outer.addEventListener('load',()=>{let tries=0;const timer=setInterval(()=>{if(install()||++tries>160)clearInterval(timer)},50)});
 </script></body></html>
