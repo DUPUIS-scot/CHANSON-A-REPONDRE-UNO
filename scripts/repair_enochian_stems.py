@@ -39,11 +39,13 @@ shell_required = [
     "installReliableFullscreen",
     "syncResponsiveLayout",
     "stem-separator-control.js?v=20260824-v6",
-    "transport-stem-sync.js?v=20260824-v1",
-    "analyser-composite-signal.js?v=20260824-v6",
+    "transport-stem-sync.js?v=20260824-v2",
+    "analyser-data-bus.js?v=20260824-v1",
+    "analyser-composite-signal.js?v=20260824-v7",
     "analyser-signal-glide.js?v=20260824-v3",
-    "analyser-signal-3d.js?v=20260824-v2",
+    "analyser-signal-3d.js?v=20260824-v3",
     "installEnochianTransportStemSync",
+    "installEnochianAnalyserDataBus",
     "target-viewport.js?v=20260824-v9",
     "iphone-landscape-layout-v2.js?v=20260824-deep-v19",
 ]
@@ -54,6 +56,7 @@ for marker in shell_required:
 for required_file in [
     Path('web/enochian-test/stem-separator-control.js'),
     Path('web/enochian-test/transport-stem-sync.js'),
+    Path('web/enochian-test/analyser-data-bus.js'),
     Path('web/enochian-test/analyser-composite-signal.js'),
     Path('web/enochian-test/analyser-signal-glide.js'),
     Path('web/enochian-test/analyser-signal-3d.js'),
@@ -61,4 +64,15 @@ for required_file in [
     if not required_file.is_file() or required_file.stat().st_size == 0:
         raise SystemExit(f'missing Enochian repair layer: {required_file}')
 
-print('Enochian runtime verified: master transport, default-on stems, loop sync, explicit signal modulation, 3D analyser, navigation and fullscreen.')
+bus = Path('web/enochian-test/analyser-data-bus.js').read_text(encoding='utf-8')
+composite = Path('web/enochian-test/analyser-composite-signal.js').read_text(encoding='utf-8')
+three_d = Path('web/enochian-test/analyser-signal-3d.js').read_text(encoding='utf-8')
+transport = Path('web/enochian-test/transport-stem-sync.js').read_text(encoding='utf-8')
+if "__enochAnalyserBus" not in bus or "__enochAnalyserBus" not in composite or "__enochAnalyserBus" not in three_d:
+    raise SystemExit('unified analyser bus contract missing')
+if "transportStemSync='v2'" not in transport or 'hardLoopSync' not in transport:
+    raise SystemExit('hard loop synchronization contract missing')
+if '__compositeCapture' in composite or '__enoch3dCapture' in three_d:
+    raise SystemExit('legacy independent analyser wrappers unexpectedly present')
+
+print('Enochian runtime verified: master transport, default-on stems, hard loop sync, unified analyser bus, explicit signal modulation, 3D analyser, navigation and fullscreen.')
