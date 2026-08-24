@@ -1,5 +1,5 @@
 import 'package:flutter/services.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/card_image_model.dart';
 import '../models/deck_model.dart';
@@ -18,12 +18,15 @@ typedef MultiDeckNativeSharer =
 typedef MultiDeckLinkCopier = Future<void> Function(String value);
 
 abstract final class MultiDeckCardShareService {
-  static const socialPreviewShareCountKey = 'social_preview_share_count';
-
   static Future<void> _incrementShareCount() async {
-    final preferences = await SharedPreferences.getInstance();
-    final current = preferences.getInt(socialPreviewShareCountKey) ?? 0;
-    await preferences.setInt(socialPreviewShareCountKey, current + 1);
+    try {
+      await Supabase.instance.client.rpc(
+        'record_social_preview_share',
+        params: const {'p_share_kind': 'card'},
+      );
+    } on Object {
+      // Sharing must still succeed if analytics is temporarily unavailable.
+    }
   }
 
   static Uri shareUrlFor({
@@ -92,9 +95,6 @@ abstract final class MultiDeckCardShareService {
       applicationUri: applicationUri,
     ).toString();
 
-    // Keep the raw card asset available for the native image attachment, but do
-    // not put that asset URL in the message. The canonical share URL is the
-    // single public link and carries the social preview metadata for every deck.
     final result = await nativeShare(
       title: title,
       text: title,
