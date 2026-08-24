@@ -1,4 +1,5 @@
 from pathlib import Path
+import subprocess
 
 runtime_path = Path('web/enochian-test/live-copy.html')
 s = runtime_path.read_text(encoding='utf-8')
@@ -77,6 +78,9 @@ required_files = [
 for required_file in required_files:
     if not required_file.is_file() or required_file.stat().st_size == 0:
         raise SystemExit(f'missing Enochian runtime layer: {required_file}')
+
+for js_file in [Path('web/enochian-test/authoritative-runtime.js'), Path('web/enochian-test/outer-analyser-panel.js')]:
+    subprocess.run(['node', '--check', str(js_file)], check=True)
 
 authority = Path('web/enochian-test/authoritative-runtime.js').read_text(encoding='utf-8')
 outer_panel = Path('web/enochian-test/outer-analyser-panel.js').read_text(encoding='utf-8')
