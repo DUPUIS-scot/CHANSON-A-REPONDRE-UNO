@@ -18,6 +18,8 @@ runtime_required = [
     "masterGate",
     "ensureMasterGate",
     "setMasterRoute",
+    "diff*.16",
+    "Math.abs(diff)>.75",
     "window.__enochToggleFullscreen",
     "fullBtn.dataset.terminalFullscreen='1'",
     "FULL SCREEN",
@@ -34,7 +36,7 @@ if 'requestAnimationFrame(stemDriftTick)' in s:
     raise SystemExit('RAF stem drift loop unexpectedly present')
 
 shell_required = [
-    "live-copy.html?v=20260824-stem-clock-v4",
+    "live-copy.html?v=20260824-stem-rate-v5",
     "installReliableNavigation",
     "home.href='/#/home'",
     "go('#/home')",
@@ -42,7 +44,7 @@ shell_required = [
     "installConsoleAuthority",
     "installReliableFullscreen",
     "syncResponsiveLayout",
-    "authoritative-runtime.js?v=20260824-v6",
+    "authoritative-runtime.js?v=20260824-v7",
     "outer-analyser-panel.js?v=20260824-v2",
     "analyser-data-bus.js?v=20260824-v2",
     "analyser-composite-signal.js?v=20260824-v9",
