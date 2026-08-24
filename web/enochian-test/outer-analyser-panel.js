@@ -1,0 +1,64 @@
+(()=>{
+  const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
+  function install(frame){
+    try{
+      const outer=document,live=frame.contentDocument,deck=live&&live.getElementById('deck'),d=deck&&deck.contentDocument,w=d&&d.defaultView;
+      const innerWave=d&&d.querySelector('.stage .wave'),inner3d=d&&d.querySelector('.analyser-3d');
+      if(!d||!w||!innerWave||!inner3d||!w.__enochAnalyserGesture||!w.__enochAnalyser3D)return false;
+      if(outer.documentElement.dataset.outerAnalyserPanel==='v1')return true;
+      outer.documentElement.dataset.outerAnalyserPanel='v1';
+
+      const style=outer.createElement('style');style.id='outerAnalyserPanelStyle';style.textContent=`
+        #outerAnalyserPanel{position:fixed;left:50%;top:70px;width:min(760px,72vw);height:min(430px,58vh);min-width:320px;min-height:220px;max-width:calc(100vw - 8px);max-height:calc(100dvh - 8px);z-index:2147483000;display:none;grid-template-rows:34px minmax(0,1fr) 64px;background:linear-gradient(180deg,#03100df8,#010504fd);border:1px solid #68d8bd;border-radius:8px;box-shadow:0 18px 60px #000e;overflow:hidden;resize:both;color:#d7fff8;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+        #outerAnalyserPanel.open{display:grid}#outerAnalyserPanel.moving .outer-analyser-bar{cursor:grabbing;background:#0a251ef8}
+        .outer-analyser-bar{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;padding:0 8px;border-bottom:1px solid #17332e;background:linear-gradient(180deg,#071713f5,#020706e8);cursor:grab;touch-action:none;user-select:none;color:#f0c97e;font-size:8px;font-weight:900;letter-spacing:.14em}
+        .outer-analyser-bar button{border:1px solid #315b56;border-radius:4px;background:#06110f;color:#a9eee7;padding:4px 7px;font:800 7px/1 inherit;cursor:pointer}.outer-analyser-bar button.active{background:#083128;color:#63f5cf;border-color:#68d8bd}.outer-analyser-title{text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .outer-analyser-body{position:relative;min-height:0;background:#010504}.outer-analyser-body canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}.outer-analyser-body.sculpt canvas{cursor:crosshair}.outer-analyser-readout{position:absolute;right:8px;top:7px;padding:3px 5px;border:1px solid #315b56;border-radius:4px;background:#020706cc;color:#d5aa63;font-size:7px;pointer-events:none}
+        .outer-analyser-signals{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;padding:5px 8px;background:#020706;border-top:1px solid #17332e}.outer-analyser-sig{border:1px solid #1a3c35;background:#020807dd;padding:4px;text-align:center;overflow:hidden}.outer-analyser-sig span{display:block;font-size:7px;color:#789f99}.outer-analyser-sig b{display:block;font-size:8px;color:#79eadb;white-space:nowrap}.outer-analyser-sig img{width:24px;height:24px;object-fit:contain;filter:invert(89%) sepia(20%) saturate(859%) hue-rotate(113deg) brightness(99%) contrast(91%)}
+        .outer-float-launch{position:absolute!important;right:8px!important;top:5px!important;z-index:80!important;min-height:22px!important;padding:3px 7px!important;font-size:7px!important;color:#f0c97e!important;border-color:#7b6339!important;background:#171308!important}
+        @media(max-width:620px){#outerAnalyserPanel{min-width:250px;min-height:190px}.outer-analyser-bar{font-size:6px}.outer-analyser-signals{height:54px}.outer-analyser-sig img{width:19px;height:19px}}
+      `;outer.head.appendChild(style);
+
+      const panel=outer.createElement('section');panel.id='outerAnalyserPanel';panel.setAttribute('role','dialog');panel.setAttribute('aria-label','Floating Enochian analyser');
+      panel.innerHTML='<div class="outer-analyser-bar"><button type="button" id="outerSignalMod">SIGNAL MOD OFF</button><div class="outer-analyser-title">DRAG ANALYSER WINDOW</div><button type="button" id="outerRestore">RESTORE</button></div><div class="outer-analyser-body"><canvas id="outerAnalyserCanvas"></canvas><div class="outer-analyser-readout">3D SIGNAL · LIVE</div></div><div class="outer-analyser-signals"></div>';
+      outer.body.appendChild(panel);
+      const bar=panel.querySelector('.outer-analyser-bar'),body=panel.querySelector('.outer-analyser-body'),canvas=panel.querySelector('#outerAnalyserCanvas'),ctx=canvas.getContext('2d'),restore=panel.querySelector('#outerRestore'),modBtn=panel.querySelector('#outerSignalMod'),readout=panel.querySelector('.outer-analyser-readout'),signals=panel.querySelector('.outer-analyser-signals');
+      ['0','1','2','3'].forEach((n,i)=>{const div=outer.createElement('div');div.className='outer-analyser-sig';div.innerHTML=`<span>${['BASS','MID','HIGH','BEAT'][i]}</span><b id="outerB${n}">00000000</b><img id="outerG${n}">`;signals.appendChild(div)});
+
+      let launch=innerWave.querySelector('.outer-float-launch');if(!launch){launch=d.createElement('button');launch.type='button';launch.className='btn outer-float-launch';launch.textContent='FLOAT';launch.setAttribute('aria-label','Float analyser over terminal viewport');innerWave.appendChild(launch)}
+      const saved=()=>{try{return JSON.parse(localStorage.getItem('enochianAnalyserPanelRect')||'null')}catch(_){return null}};
+      const store=()=>{const r=panel.getBoundingClientRect();try{localStorage.setItem('enochianAnalyserPanelRect',JSON.stringify({left:r.left,top:r.top,width:r.width,height:r.height}))}catch(_){}};
+      const clampPanel=()=>{const r=panel.getBoundingClientRect(),maxL=Math.max(4,innerWidth-r.width-4),maxT=Math.max(4,innerHeight-r.height-4);panel.style.left=Math.min(Math.max(4,r.left),maxL)+'px';panel.style.top=Math.min(Math.max(4,r.top),maxT)+'px'};
+      const open=()=>{const s=saved();panel.classList.add('open');if(s){panel.style.left=s.left+'px';panel.style.top=s.top+'px';panel.style.width=s.width+'px';panel.style.height=s.height+'px'}else{const r=panel.getBoundingClientRect();panel.style.left=Math.max(4,(innerWidth-r.width)/2)+'px'}innerWave.style.visibility='hidden';launch.textContent='FLOATING';clampPanel();resizeCanvas()};
+      const close=()=>{store();panel.classList.remove('open','moving');innerWave.style.visibility='';launch.textContent='FLOAT'};
+      launch.addEventListener('click',e=>{e.stopPropagation();open()});restore.addEventListener('click',e=>{e.stopPropagation();close()});
+
+      let move=null;bar.addEventListener('pointerdown',e=>{if(e.target.closest('button')||e.button>0)return;e.preventDefault();const r=panel.getBoundingClientRect();move={id:e.pointerId,dx:e.clientX-r.left,dy:e.clientY-r.top};panel.classList.add('moving')});
+      const movePanel=e=>{if(!move||e.pointerId!==move.id)return;e.preventDefault();const maxL=Math.max(4,innerWidth-panel.offsetWidth-4),maxT=Math.max(4,innerHeight-panel.offsetHeight-4);panel.style.left=Math.min(Math.max(4,e.clientX-move.dx),maxL)+'px';panel.style.top=Math.min(Math.max(4,e.clientY-move.dy),maxT)+'px'};
+      const endMove=e=>{if(!move||e.pointerId!==move.id)return;move=null;panel.classList.remove('moving');store()};
+      addEventListener('pointermove',movePanel,true);addEventListener('pointerup',endMove,true);addEventListener('pointercancel',endMove,true);
+
+      const resizeCanvas=()=>{const r=canvas.getBoundingClientRect(),dpr=Math.min(2,devicePixelRatio||1),cw=Math.max(1,Math.floor(r.width*dpr)),ch=Math.max(1,Math.floor(r.height*dpr));if(canvas.width!==cw||canvas.height!==ch){canvas.width=cw;canvas.height=ch}};
+      if(window.ResizeObserver)new ResizeObserver(()=>{resizeCanvas();clampPanel();store()}).observe(panel);addEventListener('resize',()=>{clampPanel();resizeCanvas()});
+
+      const state=w.__enochAnalyserGesture;let drag=null,momentum=0;
+      const invalidate=()=>{try{w.__enochAnalyser3D?.invalidate?.()}catch(_){}};
+      const innerPoint=(x,y)=>{const ir=inner3d.getBoundingClientRect(),or=canvas.getBoundingClientRect();return {x:ir.left+(x-or.left)/Math.max(1,or.width)*ir.width,y:ir.top+(y-or.top)/Math.max(1,or.height)*ir.height}};
+      const signalOn=()=>w.__enochSignalModulation===true;
+      const syncMod=()=>{const on=signalOn();modBtn.classList.toggle('active',on);modBtn.textContent=on?'SIGNAL MOD ON':'SIGNAL MOD OFF';body.classList.toggle('sculpt',on)};
+      modBtn.addEventListener('click',()=>{d.getElementById('signalModToggle')?.click();syncMod()});
+      const stopMomentum=()=>{if(momentum){cancelAnimationFrame(momentum);momentum=0}};
+      const glide=()=>{if(drag){momentum=0;return}if(state.mode==='deform'){state.deform.pullY=clamp(state.deform.pullY+state.deform.vY*16.67,-1.5,1.5);state.deform.pullZ=clamp(state.deform.pullZ+state.deform.vZ*16.67,-1.5,1.5);state.deform.twist=clamp(state.deform.twist+state.deform.vZ*7.5,-1.6,1.6);state.deform.vY*=.94;state.deform.vZ*=.94;if(Math.abs(state.deform.vY)<.00002)state.deform.vY=0;if(Math.abs(state.deform.vZ)<.00002)state.deform.vZ=0}else{state.view.yaw=clamp(state.view.yaw+state.view.yawV*16.67,-1.15,1.15);state.view.pitch=clamp(state.view.pitch+state.view.pitchV*16.67,-.72,.72);state.view.yawV*=.945;state.view.pitchV*=.945;if(Math.abs(state.view.yawV)<.00002)state.view.yawV=0;if(Math.abs(state.view.pitchV)<.00002)state.view.pitchV=0}invalidate();const moving=state.mode==='deform'?(state.deform.vY||state.deform.vZ):(state.view.yawV||state.view.pitchV);if(moving)momentum=requestAnimationFrame(glide);else momentum=0};
+      canvas.addEventListener('pointerdown',e=>{if(e.button>0)return;e.preventDefault();stopMomentum();const now=performance.now();drag={id:e.pointerId,x:e.clientX,y:e.clientY,t:now};state.dragging=true;if(signalOn()){state.mode='deform';const p=innerPoint(e.clientX,e.clientY),picked=w.__enochAnalyser3D.pick?.(p.x,p.y);if(picked){state.deform.grabBin=picked.bin;state.deform.grabRow=picked.row}state.deform.vY=state.deform.vZ=0}else{state.mode='view';state.view.yawV=state.view.pitchV=0}try{canvas.setPointerCapture(e.pointerId)}catch(_){}invalidate()});
+      canvas.addEventListener('pointermove',e=>{if(!drag||e.pointerId!==drag.id)return;e.preventDefault();const now=performance.now(),dt=Math.max(8,now-drag.t),dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(state.mode==='deform'){const sy=Math.max(120,canvas.clientHeight),sx=Math.max(160,canvas.clientWidth),dY=-dy/sy*1.8,dZ=dx/sx*1.8;state.deform.pullY=clamp(state.deform.pullY+dY,-1.5,1.5);state.deform.pullZ=clamp(state.deform.pullZ+dZ,-1.5,1.5);state.deform.twist=clamp(state.deform.twist+dZ*.55,-1.6,1.6);state.deform.vY=state.deform.vY*.45+(dY/dt)*.55;state.deform.vZ=state.deform.vZ*.45+(dZ/dt)*.55}else{const dYaw=dx*.006,dPitch=dy*.005;state.view.yaw=clamp(state.view.yaw+dYaw,-1.15,1.15);state.view.pitch=clamp(state.view.pitch+dPitch,-.72,.72);state.view.yawV=state.view.yawV*.45+(dYaw/dt)*.55;state.view.pitchV=state.view.pitchV*.45+(dPitch/dt)*.55}drag.x=e.clientX;drag.y=e.clientY;drag.t=now;invalidate()});
+      const release=e=>{if(!drag||e.pointerId!==drag.id)return;drag=null;state.dragging=false;try{canvas.releasePointerCapture(e.pointerId)}catch(_){}const moving=state.mode==='deform'?(Math.abs(state.deform.vY)>.00002||Math.abs(state.deform.vZ)>.00002):(Math.abs(state.view.yawV)>.00002||Math.abs(state.view.pitchV)>.00002);if(moving)momentum=requestAnimationFrame(glide)};
+      canvas.addEventListener('pointerup',release);canvas.addEventListener('pointercancel',release);
+      canvas.addEventListener('wheel',e=>{e.preventDefault();state.view.zoom=clamp(state.view.zoom*Math.exp(-e.deltaY*.0015),.55,2.6);invalidate()},{passive:false});
+      canvas.addEventListener('dblclick',()=>{stopMomentum();state.view.yaw=state.view.pitch=0;state.view.zoom=1;state.view.yawV=state.view.pitchV=0;if(signalOn())Object.assign(state.deform,{grabBin:null,grabRow:null,pullY:0,pullZ:0,twist:0,vY:0,vZ:0});invalidate()});
+
+      const paint=()=>{requestAnimationFrame(paint);if(!panel.classList.contains('open'))return;resizeCanvas();ctx.clearRect(0,0,canvas.width,canvas.height);try{ctx.drawImage(inner3d,0,0,canvas.width,canvas.height)}catch(_){}for(let i=0;i<4;i++){const b=d.getElementById('b'+i),g=d.getElementById('g'+i),ob=outer.getElementById('outerB'+i),og=outer.getElementById('outerG'+i);if(ob&&b)ob.textContent=b.textContent;if(og&&g&&g.src!==og.src)og.src=g.src}syncMod();const mode=state.dragging?(state.mode==='deform'?'SCULPT':'DRAG'):'LIVE';readout.textContent=`3D SIGNAL · ${mode} · Z${Number(state.view.zoom||1).toFixed(2)}`+(signalOn()?` · MOD ${d.getElementById('modWheelV')?.textContent||'0%'}`:'')};requestAnimationFrame(paint);
+      return true;
+    }catch(_){return false}
+  }
+  window.installEnochianOuterAnalyserPanel=frame=>{let n=0,t=setInterval(()=>{if(install(frame)||++n>240)clearInterval(t)},50)};
+})();
