@@ -44,7 +44,7 @@ shell_required = [
     "analyser-composite-signal.js?v=20260824-v9",
     "analyser-signal-glide.js?v=20260824-v5",
     "analyser-signal-3d.js?v=20260824-v5",
-    "sculpt-audio-mod.js?v=20260824-v1",
+    "sculpt-audio-mod.js?v=20260824-v2",
     "analyser-expand-overlay.js?v=20260824-v8",
     "installEnochianTransportStemSync",
     "installEnochianAnalyserDataBus",
@@ -90,9 +90,9 @@ if '__compositeCapture' in composite or '__enoch3dCapture' in three_d:
     raise SystemExit('legacy independent analyser wrappers unexpectedly present')
 if "analyserSignalGlide='v5'" not in glide or "analyserSignal3d='v5'" not in three_d:
     raise SystemExit('current sculptable 3D analyser contract missing')
-if "sculptAudioMod='v1'" not in sculpt_audio or '__enochSculptAudio' not in sculpt_audio or 'SCULPT AUDIO' not in sculpt_audio:
-    raise SystemExit('sculpt-to-audio modulation contract missing')
+if "sculptAudioMod='v2'" not in sculpt_audio or "version:'v2'" not in sculpt_audio or '__enochSculptAudio' not in sculpt_audio or 'restoreBase' not in sculpt_audio or 'SCULPT AUDIO' not in sculpt_audio:
+    raise SystemExit('sculpt-to-audio modulation v2 contract missing')
 if "analyserExpandOverlay='v8'" not in overlay or 'DRAG ANALYSER WINDOW' not in overlay or "addEventListener('pointermove',move,true)" not in overlay:
     raise SystemExit('full-viewport floating analyser drag contract missing')
 
-print('Enochian runtime verified: master transport, live stem operator, hard loop sync with timer, unified analyser bus, sculptable 3D analyser with live audio modulation, full-viewport floating analyser, navigation and fullscreen.')
+print('Enochian runtime verified: master transport, live stem operator, hard loop sync with timer, unified analyser bus, sculptable 3D analyser with reversible live audio modulation, full-viewport floating analyser, navigation and fullscreen.')
