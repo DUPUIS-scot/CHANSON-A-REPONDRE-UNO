@@ -1,14 +1,17 @@
 (function(){
   'use strict';
   const SHARE_BASE='https://www.chanson-a-repondre-uno.scot/share/enochian/';
-  const SHARE_COUNT_KEY='flutter.social_preview_share_count';
+  const SUPABASE_URL='https://dedwajzurhqrnyzrxouo.supabase.co';
+  const SUPABASE_KEY='sb_publishable_GY7s6hyG5qDHmQL1zHy1xA_y-67jVKZ';
   function ready(){return typeof a!=='undefined'&&a&&typeof idx!=='undefined'&&typeof tracks!=='undefined';}
   function fmt(t){t=Math.max(0,Number(t)||0);const m=Math.floor(t/60),s=(t-m*60).toFixed(1).padStart(4,'0');return String(m).padStart(2,'0')+':'+s;}
-  function incrementShareCount(){
+  async function incrementShareCount(){
     try{
-      const raw=localStorage.getItem(SHARE_COUNT_KEY);
-      const current=Math.max(0,Number.parseInt(raw||'0',10)||0);
-      localStorage.setItem(SHARE_COUNT_KEY,String(current+1));
+      await fetch(SUPABASE_URL+'/rest/v1/rpc/record_social_preview_share',{
+        method:'POST',
+        headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json'},
+        body:JSON.stringify({p_share_kind:'enochian_15s'})
+      });
     }catch(_){}
   }
   function makeUrl(){
@@ -34,7 +37,7 @@
         try{const ta=document.createElement('textarea');ta.value=clip.url;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();shared=true;}catch(__){}
       }
     }
-    if(shared)incrementShareCount();
+    if(shared)await incrementShareCount();
     const old=btn.textContent;
     btn.textContent=shared?'COPIED · 15 SEC':'SHARE LINK';
     btn.classList.add('active');
