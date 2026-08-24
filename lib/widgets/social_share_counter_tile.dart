@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SocialShareCounterTile extends StatefulWidget {
   const SocialShareCounterTile({super.key});
@@ -9,7 +9,6 @@ class SocialShareCounterTile extends StatefulWidget {
 }
 
 class _SocialShareCounterTileState extends State<SocialShareCounterTile> {
-  static const _key = 'social_preview_share_count';
   int? _count;
 
   @override
@@ -19,9 +18,16 @@ class _SocialShareCounterTileState extends State<SocialShareCounterTile> {
   }
 
   Future<void> _load() async {
-    final preferences = await SharedPreferences.getInstance();
-    if (!mounted) return;
-    setState(() => _count = preferences.getInt(_key) ?? 0);
+    try {
+      final value = await Supabase.instance.client.rpc(
+        'get_social_preview_share_count',
+      );
+      if (!mounted) return;
+      setState(() => _count = value is num ? value.toInt() : int.tryParse('$value'));
+    } on Object {
+      if (!mounted) return;
+      setState(() => _count = null);
+    }
   }
 
   String get _formatted {
@@ -39,7 +45,7 @@ class _SocialShareCounterTileState extends State<SocialShareCounterTile> {
       leading: const Icon(Icons.share_outlined),
       title: const Text('Social preview shares'),
       subtitle: const Text(
-        'Successful shares or copied social-preview links across Chanson à Répondre UNO.',
+        'Global successful shares or copied social-preview links across Chanson à Répondre UNO.',
       ),
       trailing: Text(
         _formatted,
