@@ -1,4 +1,5 @@
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/card_image_model.dart';
 import '../models/deck_model.dart';
@@ -17,6 +18,14 @@ typedef MultiDeckNativeSharer =
 typedef MultiDeckLinkCopier = Future<void> Function(String value);
 
 abstract final class MultiDeckCardShareService {
+  static const socialPreviewShareCountKey = 'social_preview_share_count';
+
+  static Future<void> _incrementShareCount() async {
+    final preferences = await SharedPreferences.getInstance();
+    final current = preferences.getInt(socialPreviewShareCountKey) ?? 0;
+    await preferences.setInt(socialPreviewShareCountKey, current + 1);
+  }
+
   static Uri shareUrlFor({
     required String cardId,
     required String deckId,
@@ -92,10 +101,14 @@ abstract final class MultiDeckCardShareService {
       url: url,
       imagePath: card.imagePath,
     );
-    if (result == NativeShareResult.shared) return CardShareResult.shared;
+    if (result == NativeShareResult.shared) {
+      await _incrementShareCount();
+      return CardShareResult.shared;
+    }
     if (result == NativeShareResult.cancelled) return CardShareResult.cancelled;
     try {
       await copyLink('$title\n$url');
+      await _incrementShareCount();
       return CardShareResult.copied;
     } on Object {
       return CardShareResult.failed;
