@@ -1,0 +1,1 @@
+Trigger one live Pages run for STEMS ON/OFF, Home main screen and fullscreen controls.
