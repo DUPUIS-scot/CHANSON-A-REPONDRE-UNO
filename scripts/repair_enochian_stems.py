@@ -41,9 +41,9 @@ shell_required = [
     "stem-separator-control.js?v=20260824-v6",
     "transport-stem-sync.js?v=20260824-v2",
     "analyser-data-bus.js?v=20260824-v1",
-    "analyser-composite-signal.js?v=20260824-v8",
-    "analyser-signal-glide.js?v=20260824-v4",
-    "analyser-signal-3d.js?v=20260824-v4",
+    "analyser-composite-signal.js?v=20260824-v9",
+    "analyser-signal-glide.js?v=20260824-v5",
+    "analyser-signal-3d.js?v=20260824-v5",
     "analyser-expand-overlay.js?v=20260824-v7",
     "installEnochianTransportStemSync",
     "installEnochianAnalyserDataBus",
@@ -81,7 +81,7 @@ if "transportStemSync='v2'" not in transport or 'hardLoopSync' not in transport:
     raise SystemExit('hard loop synchronization contract missing')
 if '__compositeCapture' in composite or '__enoch3dCapture' in three_d:
     raise SystemExit('legacy independent analyser wrappers unexpectedly present')
-if "analyserSignalGlide='v4'" not in glide or "analyserSignal3d='v4'" not in three_d:
+if "analyserSignalGlide='v5'" not in glide or "analyserSignal3d='v5'" not in three_d:
     raise SystemExit('current sculptable 3D analyser contract missing')
 if "analyserExpandOverlay='v7'" not in overlay or 'DRAG ANALYSER WINDOW' not in overlay:
     raise SystemExit('full-viewport floating analyser contract missing')
