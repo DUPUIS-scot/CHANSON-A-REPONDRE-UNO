@@ -1,0 +1,216 @@
+name: Patch Enochian target viewport once
+
+on:
+  push:
+    paths:
+      - '.github/workflows/patch-enochian-target-viewport-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Apply target viewport to test and terminal
+        shell: python
+        run: |
+          from pathlib import Path
+
+          targets = [
+              Path('web/enochian-test/live-copy.html'),
+              Path('web/enochian-terminal/index.html'),
+          ]
+
+          marker = "  function frameTick(now){"
+          stamp = "window.__enochTargetViewport='20260824-v1'"
+          patch = r'''
+  // TARGET FULL-VIEWPORT LAYOUT · 2026-08-24
+  if(!window.__enochTargetViewport){
+   window.__enochTargetViewport='20260824-v1';
+   document.documentElement.classList.add('target-viewport');
+
+   // Keep the three transport buttons together, then align four loop controls beneath them.
+   try{
+    if(transport){
+     transport.style.gridTemplateColumns='repeat(3,minmax(0,1fr))';
+     let loopRow=document.querySelector('.loop-controls');
+     if(!loopRow){loopRow=document.createElement('div');loopRow.className='loop-controls';transport.insertAdjacentElement('afterend',loopRow)}
+     [loopInBtn,loopOutBtn,loopBtn,loopResetBtn].forEach(b=>{if(b)loopRow.appendChild(b)});
+     const syncLoopUiTarget=syncLoopUi;
+     syncLoopUi=function(){
+      try{syncLoopUiTarget()}catch(_){}
+      if(loopInBtn){loopInBtn.textContent='LOOP IN';loopInBtn.title='Set loop start · '+loopLabelTime(loopStart)}
+      if(loopOutBtn){loopOutBtn.textContent='LOOP OUT';loopOutBtn.title='Set loop end · '+(loopEnd==null?'not set':loopLabelTime(loopEnd))}
+      if(loopBtn){loopBtn.textContent=loopEnabled?'STOP':'START';loopBtn.title=loopEnabled?'Stop loop':'Start loop'}
+      if(loopResetBtn){loopResetBtn.textContent='RESET';loopResetBtn.title='Reset loop points'}
+     };
+     syncLoopUi();
+    }
+   }catch(_){}
+
+   // Move MOD DEPTH into the compact lower FX strip, matching the target mockup.
+   try{
+    const mod=q('phrase')&&q('phrase').closest('.mod');
+    const modDepthBox=mod&&mod.querySelector(':scope > .wheelbox');
+    const lower=q('xyPad')&&q('xyPad').closest('.pad-panel');
+    if(modDepthBox&&lower){modDepthBox.classList.add('mod-depth-box');lower.appendChild(modDepthBox)}
+    if(mod)mod.classList.add('target-mod');
+   }catch(_){}
+
+   // Replace the legacy text footer with the target HOME / SHORTCUTS / VOLUME footer.
+   try{
+    const foot=document.querySelector('.foot');
+    if(foot){
+     foot.classList.add('target-footer');
+     foot.innerHTML='<a class="footer-home" href="/" aria-label="Home">⌂ <span>HOME</span></a><div class="footer-shortcuts"><b>SHORTCUTS</b><span>SPACE&nbsp; ▶/❚❚</span><span><kbd>L</kbd> LOOP</span><span><kbd>K</kbd> KILL FX</span><span><kbd>M</kbd> MOD OFF</span><span><kbd>F</kbd> FULL SCREEN</span><span><kbd>H</kbd> HOME</span></div><div class="footer-volume"><span>◖))</span><b>VOLUME</b><input id="footerVolume" type="range" min="0" max="100" value="82"><output id="footerVolumeV">82%</output></div>';
+     const fv=q('footerVolume'),fvo=q('footerVolumeV'),masterVol=q('vol');
+     const syncFooterVol=()=>{if(!fv||!masterVol)return;const pct=Math.round((parseFloat(masterVol.value)||0)*100);fv.value=pct;if(fvo)fvo.textContent=pct+'%'};
+     if(fv&&masterVol){syncFooterVol();fv.oninput=()=>{masterVol.value=(parseFloat(fv.value)||0)/100;masterVol.dispatchEvent(new Event('input',{bubbles:true}));syncFooterVol()};masterVol.addEventListener('input',syncFooterVol)}
+    }
+   }catch(_){}
+
+   const targetStyle=document.createElement('style');targetStyle.id='enoch-target-viewport-style';targetStyle.textContent=`
+    @media (min-width:1001px){
+     html.target-viewport,html.target-viewport body{width:100%!important;height:100%!important;min-height:0!important;overflow:hidden!important}
+     html.target-viewport body{background:#000!important}
+     html.target-viewport .app{width:100%!important;max-width:none!important;height:100dvh!important;min-height:0!important;margin:0!important;padding:8px!important;gap:8px!important;overflow:hidden!important;grid-template-rows:48px minmax(0,1fr) 64px!important}
+     html.target-viewport .top{height:48px!important;min-height:48px!important;padding:4px 10px!important;grid-template-columns:auto minmax(0,1fr) auto!important}
+     html.target-viewport .avatar{width:38px!important;height:38px!important}
+     html.target-viewport .home-link{width:38px!important;height:38px!important;font-size:18px!important}
+     html.target-viewport .title{font-size:13px!important;letter-spacing:.16em!important;color:#e8efed!important}
+     html.target-viewport .terminal-actions{gap:6px!important;flex-wrap:nowrap!important}
+     html.target-viewport #stemMasterToggle{display:none!important}
+     html.target-viewport .terminal-action{min-height:34px!important;padding:6px 8px!important;font-size:8px!important}
+     html.target-viewport .badge{padding:7px 9px!important;font-size:8px!important}
+
+     html.target-viewport .grid{height:100%!important;min-height:0!important;overflow:hidden!important;grid-template-columns:minmax(250px,20%) minmax(0,1fr) minmax(250px,20%)!important;gap:8px!important}
+     html.target-viewport .side{height:100%!important;min-height:0!important;padding:8px!important;gap:5px!important;overflow:hidden!important;align-content:start!important}
+     html.target-viewport .side .box,html.target-viewport .side .fxbox,html.target-viewport .stem-isolator{padding:5px 7px!important;gap:3px!important}
+     html.target-viewport .side .range{height:27px!important}
+     html.target-viewport .side .range::-webkit-slider-runnable-track{height:5px!important}
+     html.target-viewport .side .range::-webkit-slider-thumb{width:17px!important;height:17px!important;margin-top:-7px!important}
+     html.target-viewport .track{font-size:12px!important}
+     html.target-viewport .time{font-size:9px!important}
+     html.target-viewport .transport{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:5px!important}
+     html.target-viewport .transport .btn{min-height:42px!important;padding:6px 4px!important;font-size:13px!important}
+     html.target-viewport .loop-controls{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:4px!important;min-width:0!important}
+     html.target-viewport .loop-controls .btn{min-width:0!important;min-height:34px!important;padding:5px 2px!important;font-size:8px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+     html.target-viewport .stem-isolator{gap:3px!important}
+     html.target-viewport .stem-title{font-size:8px!important}
+     html.target-viewport .stem-row{grid-template-columns:80px minmax(0,1fr) 38px!important;gap:4px!important}
+     html.target-viewport .stem-toggle{padding:4px 3px!important;font-size:7px!important}
+     html.target-viewport .stem-note{display:none!important}
+
+     html.target-viewport .stage{height:100%!important;min-height:0!important;padding:7px!important;gap:6px!important;overflow:hidden!important;grid-template-rows:158px minmax(300px,1fr) 62px 205px!important}
+     html.target-viewport .wave{min-height:0!important}
+     html.target-viewport .wave h2{margin:6px!important;font-size:9px!important}
+     html.target-viewport .wave canvas{top:27px!important;height:67px!important}
+     html.target-viewport .signals{bottom:5px!important;gap:5px!important}
+     html.target-viewport .sig{padding:3px!important;min-height:48px!important}
+     html.target-viewport .sig img{width:20px!important;height:20px!important}
+
+     html.target-viewport .deckarea{min-height:0!important;height:100%!important;padding:0!important;gap:10px!important;grid-template-columns:128px minmax(280px,1fr) 128px!important}
+     html.target-viewport .wheelbox{padding:5px 3px!important;gap:5px!important;background:transparent!important}
+     html.target-viewport .wheel{width:110px!important;height:110px!important}
+     html.target-viewport .platter-wrap{width:min(35vh,360px)!important;max-width:360px!important}
+     html.target-viewport .platter-art{width:78%!important;height:78%!important}
+     html.target-viewport .seek{left:18%!important;right:18%!important;bottom:2px!important}
+     html.target-viewport .seek .btn{padding:6px 8px!important;font-size:9px!important}
+     html.target-viewport .seek .range{height:28px!important}
+
+     html.target-viewport .target-mod{display:block!important;padding:5px 7px!important;min-height:0!important;overflow:hidden!important}
+     html.target-viewport .target-mod .mod-main{gap:4px!important}
+     html.target-viewport .target-mod textarea{height:34px!important;min-height:34px!important;resize:none!important;padding:6px 8px!important}
+     html.target-viewport .target-mod .mod-glyphs,html.target-viewport .target-mod .mod-state{display:none!important}
+     html.target-viewport .target-mod .mod-head{grid-template-columns:1fr auto!important}
+     html.target-viewport .target-mod .fx-title{font-size:9px!important}
+     html.target-viewport .target-mod #modActivate{padding:5px 12px!important;font-size:8px!important}
+
+     html.target-viewport .pad-panel.instant-layout{height:100%!important;min-height:0!important;padding:6px!important;gap:5px!important;grid-template-columns:minmax(0,1.7fr) 68px minmax(130px,1fr) 118px!important;grid-template-rows:34px minmax(0,1fr)!important;align-items:stretch!important;overflow:hidden!important}
+     html.target-viewport .pad-panel.instant-layout>.pad-top{grid-column:1!important;grid-row:1!important;min-width:0!important}
+     html.target-viewport .pad-panel.instant-layout>.xy-pad{grid-column:1!important;grid-row:2!important;height:100%!important;min-height:0!important;border-radius:5px!important}
+     html.target-viewport .pad-mode{display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:3px!important}
+     html.target-viewport .pad-mode .btn{padding:4px 2px!important;font-size:6.5px!important;white-space:nowrap!important}
+     html.target-viewport .pad-readout-overlay{top:7px!important;right:7px!important;font-size:8px!important}
+     html.target-viewport .mixer-level{grid-column:2!important;grid-row:1/3!important;padding:5px 3px!important;gap:4px!important}
+     html.target-viewport .mixer-level-title{writing-mode:horizontal-tb!important;transform:none!important;font-size:7px!important;white-space:nowrap!important}
+     html.target-viewport .mixer-level-range{min-height:100px!important;height:100%!important}
+     html.target-viewport .mixer-level-value{min-width:40px!important;min-height:22px!important;padding:3px!important;font-size:9px!important}
+     html.target-viewport .instant-fx{grid-column:3!important;grid-row:1/3!important;padding-left:5px!important;gap:4px!important}
+     html.target-viewport .instant-fx-title{font-size:7px!important}
+     html.target-viewport .instant-fx-grid{gap:4px!important}
+     html.target-viewport .instant-fx-btn{min-height:42px!important;padding:4px!important}
+     html.target-viewport .instant-fx-btn span{font-size:10px!important}
+     html.target-viewport .instant-fx-btn small{margin-top:2px!important;font-size:7px!important}
+     html.target-viewport .mod-depth-box{grid-column:4!important;grid-row:1/3!important;align-self:stretch!important;background:transparent!important;padding:4px!important}
+     html.target-viewport .mod-depth-box .wheel{width:82px!important;height:82px!important}
+     html.target-viewport .mod-depth-box .wheel-label{font-size:7px!important}
+     html.target-viewport .mod-depth-box .wheel-value{font-size:10px!important}
+     html.target-viewport .mod-depth-box .wheel-hint{font-size:6px!important}
+
+     html.target-viewport .grid>aside:last-child{align-content:stretch!important;grid-template-rows:auto repeat(5,auto) auto minmax(0,1fr)!important}
+     html.target-viewport .grid>aside:last-child .fxbox{padding:5px 7px!important}
+     html.target-viewport #killfx{min-height:40px!important;padding:7px!important;font-size:12px!important;color:#ff9b28!important;border-color:#9d5218!important}
+     html.target-viewport .console{min-height:0!important;height:100%!important;padding:6px!important;overflow:hidden!important}
+     html.target-viewport .console-lines{height:100%!important;overflow:auto!important;font-size:8px!important;line-height:1.45!important}
+
+     html.target-viewport .target-footer{display:grid!important;grid-template-columns:21% minmax(0,1fr) 21%!important;align-items:center!important;height:64px!important;min-height:64px!important;padding:0!important;letter-spacing:0!important;text-align:left!important;overflow:hidden!important}
+     html.target-viewport .footer-home{height:100%!important;display:flex!important;align-items:center!important;gap:10px!important;padding:0 18px!important;color:#e9efed!important;text-decoration:none!important;border-right:1px solid #17332e!important;font-size:12px!important}
+     html.target-viewport .footer-home:first-letter{color:#ff8b16!important;font-size:24px!important}
+     html.target-viewport .footer-shortcuts{display:flex!important;align-items:center!important;justify-content:center!important;gap:14px!important;min-width:0!important;color:#a8b6b2!important;font-size:7px!important;white-space:nowrap!important}
+     html.target-viewport .footer-shortcuts b{position:absolute!important;margin-top:-31px!important;color:#40e6b4!important;font-size:9px!important;letter-spacing:.16em!important}
+     html.target-viewport .footer-shortcuts kbd{display:inline-flex!important;align-items:center!important;justify-content:center!important;min-width:20px!important;height:20px!important;border:1px solid #744215!important;border-radius:3px!important;color:#ff8b16!important;background:#080a09!important;font:inherit!important}
+     html.target-viewport .footer-volume{height:100%!important;display:grid!important;grid-template-columns:auto auto minmax(80px,1fr) auto!important;align-items:center!important;gap:7px!important;padding:0 14px!important;border-left:1px solid #17332e!important;color:#40e6b4!important;font-size:8px!important}
+     html.target-viewport .footer-volume>span{color:#ff8b16!important;font-size:18px!important}
+     html.target-viewport .footer-volume input{width:100%!important;accent-color:#ff8b16!important}
+     html.target-viewport .footer-volume output{color:#ff8b16!important;font-size:9px!important}
+    }
+   `;
+   document.head.appendChild(targetStyle);
+   try{window.dispatchEvent(new Event('resize'))}catch(_){}
+   try{log('TARGET VIEWPORT V1 · 4 LOOP CONTROLS UNDER PLAY · SINGLE-SCREEN DESKTOP')}catch(_){}
+  }
+'''
+
+          for p in targets:
+              s = p.read_text(encoding='utf-8')
+              if stamp in s:
+                  print(f'{p}: already patched')
+                  continue
+              if marker not in s:
+                  raise SystemExit(f'{p}: insertion marker not found; refusing unsafe patch')
+              s = s.replace(marker, patch + '\n' + marker, 1)
+              # Cache-bust the shared base iframe so both test and production receive the viewport patch immediately.
+              s = s.replace('/enochian-test/base.html?v=20260824-stem-lazy-v5', '/enochian-test/base.html?v=20260824-target-viewport-v1', 1)
+              p.write_text(s, encoding='utf-8')
+              print(f'{p}: patched')
+
+      - name: Verify target viewport
+        shell: bash
+        run: |
+          for f in web/enochian-test/live-copy.html web/enochian-terminal/index.html; do
+            grep -q "20260824-v1" "$f"
+            grep -q "className='loop-controls'" "$f"
+            grep -q "loopInBtn.textContent='LOOP IN'" "$f"
+            grep -q "loopOutBtn.textContent='LOOP OUT'" "$f"
+            grep -q "loopBtn.textContent=loopEnabled?'STOP':'START'" "$f"
+            grep -q "loopResetBtn.textContent='RESET'" "$f"
+            grep -q "grid-template-rows:158px minmax(300px,1fr) 62px 205px" "$f"
+            grep -q "target-footer" "$f"
+          done
+
+      - name: Commit viewport patch
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo 'No changes needed'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add web/enochian-test/live-copy.html web/enochian-terminal/index.html
+          git commit -m 'Implement Enochian single-viewport target layout'
+          git push
