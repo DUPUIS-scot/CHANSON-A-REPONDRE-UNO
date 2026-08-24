@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Chanson à Répondre UNO! · ENOCHIAN TERMINAL · Last 15 Seconds</title>
+<meta name="description" content="A 15-second DJ WHO performance captured from the Chanson à Répondre UNO! Enochian Terminal.">
+<link rel="canonical" href="https://www.chanson-a-repondre-uno.scot/share/enochian/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Chanson à Répondre UNO!">
+<meta property="og:title" content="Chanson à Répondre UNO! · ENOCHIAN TERMINAL">
+<meta property="og:description" content="Listen to the last 15 seconds captured from the Enochian Terminal.">
+<meta property="og:url" content="https://www.chanson-a-repondre-uno.scot/share/enochian/">
+<meta property="og:image" content="https://www.chanson-a-repondre-uno.scot/social/chanson-a-repondre-uno-share.png">
+<meta property="og:image:secure_url" content="https://www.chanson-a-repondre-uno.scot/social/chanson-a-repondre-uno-share.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Chanson à Répondre UNO!">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Chanson à Répondre UNO! · ENOCHIAN TERMINAL">
+<meta name="twitter:description" content="Listen to the last 15 seconds captured from the Enochian Terminal.">
+<meta name="twitter:image" content="https://www.chanson-a-repondre-uno.scot/social/chanson-a-repondre-uno-share.png">
+<style>
+:root{color-scheme:dark;--bg:#010403;--panel:#030807;--line:#315b56;--cyan:#79eadb;--gold:#d5aa63;--text:#d7fff8;--dim:#789f99}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#000;color:var(--text);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}body{min-height:100dvh;display:grid;place-items:center;padding:18px;background:radial-gradient(circle at 50% 0,#0d3129 0,#010403 44%,#000 100%)}
+.card{width:min(860px,100%);border:1px solid var(--line);border-radius:18px;overflow:hidden;background:linear-gradient(180deg,#07110f,#010403);box-shadow:0 30px 80px #000c}
+.hero{aspect-ratio:1200/630;background:#030706 url('/social/chanson-a-repondre-uno-share.png') center/cover no-repeat;border-bottom:1px solid var(--line)}
+.body{padding:22px;display:grid;gap:14px}.eyebrow{color:var(--cyan);font-size:11px;letter-spacing:.22em}.title{font-size:clamp(22px,4vw,42px);font-weight:900;line-height:1.05}.meta{color:var(--gold);font-weight:800}.range{color:var(--dim);font-size:12px}.controls{display:flex;gap:10px;flex-wrap:wrap}.btn{appearance:none;border:1px solid var(--line);border-radius:8px;background:#06110f;color:var(--text);padding:12px 16px;font:inherit;font-weight:800;cursor:pointer;text-decoration:none}.btn.primary{background:#0b3027;border-color:#68d8bd;color:#d7fff8}.btn:hover{border-color:#79eadb}.status{font-size:11px;color:var(--dim);min-height:1.2em}audio{width:100%;margin-top:2px}.foot{padding:0 22px 22px;color:#557c76;font-size:10px;letter-spacing:.12em}
+</style>
+</head>
+<body>
+<main class="card">
+  <div class="hero" role="img" aria-label="Chanson à Répondre UNO social preview"></div>
+  <section class="body">
+    <div class="eyebrow">CHANSON À RÉPONDRE UNO · ENOCHIAN TERMINAL</div>
+    <div class="title" id="trackName">DJ WHO · LAST 15 SEC</div>
+    <div class="meta">DJ WHO · ENOCHIAN SIGNAL CAPTURE</div>
+    <div class="range" id="range">00:00.0 → 00:15.0</div>
+    <audio id="clip" controls preload="metadata"></audio>
+    <div class="controls"><button class="btn primary" id="play">▶ PLAY 15 SEC</button><a class="btn" href="/enochian-terminal/">OPEN TERMINAL</a></div>
+    <div class="status" id="status"></div>
+  </section>
+  <div class="foot">CHanson à Répondre UNO! · shared from the live Enochian Terminal</div>
+</main>
+<script>
+(function(){
+ const tracks=[['AI Comptroller','/assets/assets/audio/ai_comptroller.mp3'],['Caesar-Spitter','/assets/assets/audio/caesar_spitter.mp3'],['The Kraken','/assets/assets/audio/the_kraken.mp3'],['HELIOGABAL//DESIGN','/assets/assets/audio/heliogabal_design.mp3'],['Vivid Void','/assets/assets/audio/vivid_void.mp3']];
+ const p=new URLSearchParams(location.search);let i=Number.parseInt(p.get('track')||'0',10);if(!Number.isFinite(i)||i<0||i>=tracks.length)i=0;
+ let start=Math.max(0,Number(p.get('start'))||0),end=Math.max(start,Number(p.get('end'))||start+15);if(end-start>15.25)start=Math.max(0,end-15);
+ const audio=document.getElementById('clip'),play=document.getElementById('play'),status=document.getElementById('status');audio.src=tracks[i][1];
+ const fmt=t=>{t=Math.max(0,Number(t)||0);const m=Math.floor(t/60),s=(t-m*60).toFixed(1).padStart(4,'0');return String(m).padStart(2,'0')+':'+s};
+ document.getElementById('trackName').textContent='DJ WHO · '+tracks[i][0];document.getElementById('range').textContent=fmt(start)+' → '+fmt(end)+' · 15 SEC';
+ function cue(){try{audio.currentTime=start}catch(_){}}
+ audio.addEventListener('loadedmetadata',()=>{end=Math.min(end,audio.duration||end);start=Math.min(start,end);cue();});
+ audio.addEventListener('timeupdate',()=>{if(audio.currentTime>=end-.03){audio.pause();cue();play.textContent='▶ REPLAY 15 SEC';status.textContent='ENOCHIAN CAPTURE COMPLETE';}});
+ audio.addEventListener('play',()=>{play.textContent='❚❚ PAUSE';status.textContent='PLAYING SHARED ENOCHIAN CAPTURE';});
+ audio.addEventListener('pause',()=>{if(audio.currentTime<end-.03)play.textContent='▶ PLAY 15 SEC';});
+ play.addEventListener('click',async()=>{if(!audio.paused){audio.pause();return;}if(audio.currentTime<start||audio.currentTime>=end-.03)cue();try{await audio.play();}catch(_){status.textContent='PRESS THE AUDIO PLAYER TO START';}});
+})();
+</script>
+</body>
+</html>
