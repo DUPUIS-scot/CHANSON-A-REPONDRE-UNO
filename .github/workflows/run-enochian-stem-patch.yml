@@ -1,0 +1,36 @@
+name: Run Enochian stem patch
+
+on:
+  push:
+    paths:
+      - '.stems-trigger'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch terminal stems
+        run: python .github/scripts/patch_enochian_stems.py
+      - name: Verify stem patch
+        run: |
+          grep -q 'STEM ISOLATOR · AI COMPTROLLER' web/enochian-terminal/index.html
+          grep -q 'ai_comptroller_vocals.mp3' web/enochian-terminal/index.html
+          grep -q 'ai_comptroller_drums.mp3' web/enochian-terminal/index.html
+          grep -q 'ai_comptroller_bass.mp3' web/enochian-terminal/index.html
+          grep -q 'ai_comptroller_other.mp3' web/enochian-terminal/index.html
+          grep -q 'node.connect(gain).connect(low)' web/enochian-terminal/index.html
+      - name: Commit stem isolator
+        run: |
+          if git diff --quiet; then
+            echo 'No changes needed'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add web/enochian-terminal/index.html
+          git commit -m 'Add AI Comptroller synchronized stem isolator'
+          git push
