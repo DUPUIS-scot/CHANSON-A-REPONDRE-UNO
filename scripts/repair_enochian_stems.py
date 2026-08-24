@@ -40,13 +40,14 @@ shell_required = [
     "go('#/djwho')",
     "installConsoleAuthority",
     "installReliableFullscreen",
+    "syncResponsiveLayout",
     "stem-separator-control.js?v=20260824-v5",
     "analyser-composite-signal.js?v=20260824-v5",
-    "target-viewport.js?v=20260824-v8",
-    "iphone-landscape-layout-v2.js?v=20260824-deep-v18",
+    "target-viewport.js?v=20260824-v9",
+    "iphone-landscape-layout-v2.js?v=20260824-deep-v19",
 ]
 for marker in shell_required:
     if marker not in shell:
         raise SystemExit(f'missing terminal shell marker: {marker}')
 
-print('Enochian runtime verified: reliable PLAY, stems, Flutter navigation, fullscreen, loop, analyser and platter.')
+print('Enochian runtime verified: reliable PLAY, stems, Flutter navigation, fullscreen, responsive layout, analyser and platter.')
