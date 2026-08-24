@@ -5,8 +5,8 @@
       const outer=document,live=frame.contentDocument,deck=live&&live.getElementById('deck'),d=deck&&deck.contentDocument,w=d&&d.defaultView;
       const innerWave=d&&d.querySelector('.stage .wave'),inner3d=d&&d.querySelector('.analyser-3d');
       if(!d||!w||!innerWave||!inner3d||!w.__enochAnalyserGesture||!w.__enochAnalyser3D)return false;
-      if(outer.documentElement.dataset.outerAnalyserPanel==='v1')return true;
-      outer.documentElement.dataset.outerAnalyserPanel='v1';
+      if(outer.documentElement.dataset.outerAnalyserPanel==='v2')return true;
+      outer.documentElement.dataset.outerAnalyserPanel='v2';
 
       const style=outer.createElement('style');style.id='outerAnalyserPanelStyle';style.textContent=`
         #outerAnalyserPanel{position:fixed;left:50%;top:70px;width:min(760px,72vw);height:min(430px,58vh);min-width:320px;min-height:220px;max-width:calc(100vw - 8px);max-height:calc(100dvh - 8px);z-index:2147483000;display:none;grid-template-rows:34px minmax(0,1fr) 64px;background:linear-gradient(180deg,#03100df8,#010504fd);border:1px solid #68d8bd;border-radius:8px;box-shadow:0 18px 60px #000e;overflow:hidden;resize:both;color:#d7fff8;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
@@ -15,9 +15,9 @@
         .outer-analyser-bar button{border:1px solid #315b56;border-radius:4px;background:#06110f;color:#a9eee7;padding:4px 7px;font:800 7px/1 inherit;cursor:pointer}.outer-analyser-bar button.active{background:#083128;color:#63f5cf;border-color:#68d8bd}.outer-analyser-title{text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
         .outer-analyser-body{position:relative;min-height:0;background:#010504}.outer-analyser-body canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}.outer-analyser-body.sculpt canvas{cursor:crosshair}.outer-analyser-readout{position:absolute;right:8px;top:7px;padding:3px 5px;border:1px solid #315b56;border-radius:4px;background:#020706cc;color:#d5aa63;font-size:7px;pointer-events:none}
         .outer-analyser-signals{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;padding:5px 8px;background:#020706;border-top:1px solid #17332e}.outer-analyser-sig{border:1px solid #1a3c35;background:#020807dd;padding:4px;text-align:center;overflow:hidden}.outer-analyser-sig span{display:block;font-size:7px;color:#789f99}.outer-analyser-sig b{display:block;font-size:8px;color:#79eadb;white-space:nowrap}.outer-analyser-sig img{width:24px;height:24px;object-fit:contain;filter:invert(89%) sepia(20%) saturate(859%) hue-rotate(113deg) brightness(99%) contrast(91%)}
-        .outer-float-launch{position:absolute!important;right:8px!important;top:5px!important;z-index:80!important;min-height:22px!important;padding:3px 7px!important;font-size:7px!important;color:#f0c97e!important;border-color:#7b6339!important;background:#171308!important}
         @media(max-width:620px){#outerAnalyserPanel{min-width:250px;min-height:190px}.outer-analyser-bar{font-size:6px}.outer-analyser-signals{height:54px}.outer-analyser-sig img{width:19px;height:19px}}
       `;outer.head.appendChild(style);
+      const innerStyle=d.createElement('style');innerStyle.id='outerAnalyserLaunchStyle';innerStyle.textContent='.outer-float-launch{position:absolute!important;right:8px!important;top:5px!important;z-index:80!important;min-height:22px!important;padding:3px 7px!important;font-size:7px!important;color:#f0c97e!important;border-color:#7b6339!important;background:#171308!important}.outer-float-launch:hover{border-color:#d5aa63!important;color:#ffe3a7!important}';d.head.appendChild(innerStyle);
 
       const panel=outer.createElement('section');panel.id='outerAnalyserPanel';panel.setAttribute('role','dialog');panel.setAttribute('aria-label','Floating Enochian analyser');
       panel.innerHTML='<div class="outer-analyser-bar"><button type="button" id="outerSignalMod">SIGNAL MOD OFF</button><div class="outer-analyser-title">DRAG ANALYSER WINDOW</div><button type="button" id="outerRestore">RESTORE</button></div><div class="outer-analyser-body"><canvas id="outerAnalyserCanvas"></canvas><div class="outer-analyser-readout">3D SIGNAL · LIVE</div></div><div class="outer-analyser-signals"></div>';
@@ -28,7 +28,8 @@
       let launch=innerWave.querySelector('.outer-float-launch');if(!launch){launch=d.createElement('button');launch.type='button';launch.className='btn outer-float-launch';launch.textContent='FLOAT';launch.setAttribute('aria-label','Float analyser over terminal viewport');innerWave.appendChild(launch)}
       const saved=()=>{try{return JSON.parse(localStorage.getItem('enochianAnalyserPanelRect')||'null')}catch(_){return null}};
       const store=()=>{const r=panel.getBoundingClientRect();try{localStorage.setItem('enochianAnalyserPanelRect',JSON.stringify({left:r.left,top:r.top,width:r.width,height:r.height}))}catch(_){}};
-      const clampPanel=()=>{const r=panel.getBoundingClientRect(),maxL=Math.max(4,innerWidth-r.width-4),maxT=Math.max(4,innerHeight-r.height-4);panel.style.left=Math.min(Math.max(4,r.left),maxL)+'px';panel.style.top=Math.min(Math.max(4,r.top),maxT)+'px'};
+      const clampPanel=()=>{if(!panel.classList.contains('open'))return;const r=panel.getBoundingClientRect(),maxL=Math.max(4,innerWidth-r.width-4),maxT=Math.max(4,innerHeight-r.height-4);panel.style.left=Math.min(Math.max(4,r.left),maxL)+'px';panel.style.top=Math.min(Math.max(4,r.top),maxT)+'px'};
+      const resizeCanvas=()=>{const r=canvas.getBoundingClientRect(),dpr=Math.min(2,devicePixelRatio||1),cw=Math.max(1,Math.floor(r.width*dpr)),ch=Math.max(1,Math.floor(r.height*dpr));if(canvas.width!==cw||canvas.height!==ch){canvas.width=cw;canvas.height=ch}};
       const open=()=>{const s=saved();panel.classList.add('open');if(s){panel.style.left=s.left+'px';panel.style.top=s.top+'px';panel.style.width=s.width+'px';panel.style.height=s.height+'px'}else{const r=panel.getBoundingClientRect();panel.style.left=Math.max(4,(innerWidth-r.width)/2)+'px'}innerWave.style.visibility='hidden';launch.textContent='FLOATING';clampPanel();resizeCanvas()};
       const close=()=>{store();panel.classList.remove('open','moving');innerWave.style.visibility='';launch.textContent='FLOAT'};
       launch.addEventListener('click',e=>{e.stopPropagation();open()});restore.addEventListener('click',e=>{e.stopPropagation();close()});
@@ -37,8 +38,6 @@
       const movePanel=e=>{if(!move||e.pointerId!==move.id)return;e.preventDefault();const maxL=Math.max(4,innerWidth-panel.offsetWidth-4),maxT=Math.max(4,innerHeight-panel.offsetHeight-4);panel.style.left=Math.min(Math.max(4,e.clientX-move.dx),maxL)+'px';panel.style.top=Math.min(Math.max(4,e.clientY-move.dy),maxT)+'px'};
       const endMove=e=>{if(!move||e.pointerId!==move.id)return;move=null;panel.classList.remove('moving');store()};
       addEventListener('pointermove',movePanel,true);addEventListener('pointerup',endMove,true);addEventListener('pointercancel',endMove,true);
-
-      const resizeCanvas=()=>{const r=canvas.getBoundingClientRect(),dpr=Math.min(2,devicePixelRatio||1),cw=Math.max(1,Math.floor(r.width*dpr)),ch=Math.max(1,Math.floor(r.height*dpr));if(canvas.width!==cw||canvas.height!==ch){canvas.width=cw;canvas.height=ch}};
       if(window.ResizeObserver)new ResizeObserver(()=>{resizeCanvas();clampPanel();store()}).observe(panel);addEventListener('resize',()=>{clampPanel();resizeCanvas()});
 
       const state=w.__enochAnalyserGesture;let drag=null,momentum=0;
