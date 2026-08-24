@@ -44,11 +44,13 @@ shell_required = [
     "analyser-composite-signal.js?v=20260824-v9",
     "analyser-signal-glide.js?v=20260824-v5",
     "analyser-signal-3d.js?v=20260824-v5",
+    "sculpt-audio-mod.js?v=20260824-v1",
     "analyser-expand-overlay.js?v=20260824-v8",
     "installEnochianTransportStemSync",
     "installEnochianAnalyserDataBus",
     "installEnochianAnalyserSignalGlide",
     "installEnochianAnalyserSignal3D",
+    "installEnochianSculptAudioMod",
     "installEnochianAnalyserExpandOverlay",
     "target-viewport.js?v=20260824-v9",
     "iphone-landscape-layout-v2.js?v=20260824-deep-v19",
@@ -64,6 +66,7 @@ for required_file in [
     Path('web/enochian-test/analyser-composite-signal.js'),
     Path('web/enochian-test/analyser-signal-glide.js'),
     Path('web/enochian-test/analyser-signal-3d.js'),
+    Path('web/enochian-test/sculpt-audio-mod.js'),
     Path('web/enochian-test/analyser-expand-overlay.js'),
 ]:
     if not required_file.is_file() or required_file.stat().st_size == 0:
@@ -74,6 +77,7 @@ bus = Path('web/enochian-test/analyser-data-bus.js').read_text(encoding='utf-8')
 composite = Path('web/enochian-test/analyser-composite-signal.js').read_text(encoding='utf-8')
 three_d = Path('web/enochian-test/analyser-signal-3d.js').read_text(encoding='utf-8')
 glide = Path('web/enochian-test/analyser-signal-glide.js').read_text(encoding='utf-8')
+sculpt_audio = Path('web/enochian-test/sculpt-audio-mod.js').read_text(encoding='utf-8')
 overlay = Path('web/enochian-test/analyser-expand-overlay.js').read_text(encoding='utf-8')
 transport = Path('web/enochian-test/transport-stem-sync.js').read_text(encoding='utf-8')
 if "__enochAnalyserBus" not in bus or "__enochAnalyserBus" not in composite or "__enochAnalyserBus" not in three_d:
@@ -86,7 +90,9 @@ if '__compositeCapture' in composite or '__enoch3dCapture' in three_d:
     raise SystemExit('legacy independent analyser wrappers unexpectedly present')
 if "analyserSignalGlide='v5'" not in glide or "analyserSignal3d='v5'" not in three_d:
     raise SystemExit('current sculptable 3D analyser contract missing')
+if "sculptAudioMod='v1'" not in sculpt_audio or '__enochSculptAudio' not in sculpt_audio or 'SCULPT AUDIO' not in sculpt_audio:
+    raise SystemExit('sculpt-to-audio modulation contract missing')
 if "analyserExpandOverlay='v8'" not in overlay or 'DRAG ANALYSER WINDOW' not in overlay or "addEventListener('pointermove',move,true)" not in overlay:
     raise SystemExit('full-viewport floating analyser drag contract missing')
 
-print('Enochian runtime verified: master transport, live stem operator, hard loop sync with timer, unified analyser bus, sculptable 3D analyser, full-viewport floating analyser, navigation and fullscreen.')
+print('Enochian runtime verified: master transport, live stem operator, hard loop sync with timer, unified analyser bus, sculptable 3D analyser with live audio modulation, full-viewport floating analyser, navigation and fullscreen.')
