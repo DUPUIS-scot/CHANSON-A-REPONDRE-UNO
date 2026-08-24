@@ -1,11 +1,9 @@
-# retrigger existing one-shot workflow via explicit ref update
 name: Patch Enochian stems compression once
 
 on:
-  push:
+  pull_request:
     branches: [main]
-    paths:
-      - '.github/workflows/patch-enochian-stems-compress-once.yml'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -17,6 +15,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.head_ref || github.ref_name }}
 
       - name: Install ffmpeg
         shell: bash
@@ -46,14 +45,7 @@ jobs:
               -ac 2 \
               "$tmp"
             after=$(stat -c%s "$tmp")
-            if [ "$after" -lt "$before" ]; then
-              mv "$tmp" "$src"
-            else
-              rm -f "$tmp"
-            fi
-            ffprobe -v error -select_streams a:0 \
-              -show_entries stream=codec_name,bit_rate,sample_rate,channels \
-              -of default=nw=1 "$src"
+            if [ "$after" -lt "$before" ]; then mv "$tmp" "$src"; else rm -f "$tmp"; fi
             echo "$(basename "$src"): $before -> $(stat -c%s "$src") bytes"
           done
 
@@ -65,7 +57,10 @@ jobs:
           s = p.read_text(encoding='utf-8')
           s = s.replace('v=20260824-runtime-fixes-v3', 'v=20260824-stem-lazy-v5')
           s = s.replace('v=20260824-canonical-play-v4', 'v=20260824-stem-lazy-v5')
-          s = s.replace("Object.entries(stemFiles).forEach(([key,url])=>{const m=document.createElement('audio');m.preload='auto';m.src=url;m.setAttribute('aria-hidden','true');m.style.display='none';document.body.appendChild(m);stemMedia[key]=m});", "Object.entries(stemFiles).forEach(([key,url])=>{const m=document.createElement('audio');m.preload='none';m.dataset.src=url;m.setAttribute('aria-hidden','true');m.style.display='none';document.body.appendChild(m);stemMedia[key]=m});", 1)
+          old_create = "Object.entries(stemFiles).forEach(([key,url])=>{const m=document.createElement('audio');m.preload='auto';m.src=url;m.setAttribute('aria-hidden','true');m.style.display='none';document.body.appendChild(m);stemMedia[key]=m});"
+          new_create = "Object.entries(stemFiles).forEach(([key,url])=>{const m=document.createElement('audio');m.preload='none';m.dataset.src=url;m.setAttribute('aria-hidden','true');m.style.display='none';document.body.appendChild(m);stemMedia[key]=m});"
+          if old_create not in s: raise SystemExit('Stem media creation anchor missing')
+          s = s.replace(old_create, new_create, 1)
           old_ready = "async function ensureStemGraph(){if(stemsReady)return;if(typeof ctx==='undefined'||!ctx||typeof low==='undefined'||!low)return;Object.keys(stemMedia).forEach(key=>{const node=ctx.createMediaElementSource(stemMedia[key]);const gain=ctx.createGain();gain.gain.value=stemGainValue(key);node.connect(gain).connect(low);stemSources[key]=node;stemGains[key]=gain});stemsReady=true;applyStemGains();try{log('STEMS READY · VOCALS / DRUMS / BASS / OTHER')}catch(_){}}"
           new_ready = "async function ensureStemMediaLoaded(){const waits=Object.values(stemMedia).map(m=>new Promise((resolve,reject)=>{if(m.readyState>=2)return resolve();const ok=()=>{cleanup();resolve()},bad=()=>{cleanup();reject(new Error('STEM LOAD FAILED'))},cleanup=()=>{m.removeEventListener('loadeddata',ok);m.removeEventListener('error',bad)};m.addEventListener('loadeddata',ok,{once:true});m.addEventListener('error',bad,{once:true});if(!m.src){m.src=m.dataset.src||'';m.load()}}));await Promise.all(waits)}\n  async function ensureStemGraph(){if(stemsReady)return;if(typeof ctx==='undefined'||!ctx||typeof low==='undefined'||!low)return;Object.keys(stemMedia).forEach(key=>{const node=ctx.createMediaElementSource(stemMedia[key]);const gain=ctx.createGain();gain.gain.value=stemGainValue(key);node.connect(gain).connect(low);stemSources[key]=node;stemGains[key]=gain});stemsReady=true;applyStemGains();try{log('STEMS READY · VOCALS / DRUMS / BASS / OTHER')}catch(_){}}"
           if old_ready not in s: raise SystemExit('Stem graph anchor missing')
@@ -84,23 +79,21 @@ jobs:
           s = s.replace(old_events, new_events, 1)
           p.write_text(s, encoding='utf-8')
 
-      - name: Verify patch
+      - name: Verify
         shell: bash
         run: |
           set -euo pipefail
-          grep -q "v=20260824-stem-lazy-v5" web/enochian-terminal/index.html
           grep -q "m.preload='none'" web/enochian-terminal/index.html
-          grep -q "ensureStemMediaLoaded" web/enochian-terminal/index.html
           grep -q "STEM FALLBACK · MASTER AUDIO" web/enochian-terminal/index.html
-          grep -q "setTimeout(stemDriftTick,1000)" web/enochian-terminal/index.html
           ! grep -q "requestAnimationFrame(stemDriftTick)" web/enochian-terminal/index.html
 
-      - name: Commit compressed stems and terminal repair
+      - name: Commit repair to branch
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add assets/audio/stems/ai_comptroller/*.mp3 web/enochian-terminal/index.html
+          if git diff --cached --quiet; then exit 0; fi
           git commit -m 'Compress Enochian stems and restore reliable playback'
-          git push
+          git push origin HEAD:${{ github.head_ref || github.ref_name }}
