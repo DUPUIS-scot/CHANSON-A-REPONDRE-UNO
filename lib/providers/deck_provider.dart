@@ -111,7 +111,10 @@ class DeckProvider extends ChangeNotifier {
         ),
     ];
     final knownPaths = cards.map((card) => card.path).toSet();
-    final discovered = await _bundledImagesUnder('assets/cards/final_import/');
+    final discovered = await _bundledImagesUnder(
+      'assets/cards/final_import/',
+      excludedBasenames: const {'deck_cover.png'},
+    );
     for (final path in discovered.where((path) => !knownPaths.contains(path))) {
       final index = cards.length;
       final number = index + 1;

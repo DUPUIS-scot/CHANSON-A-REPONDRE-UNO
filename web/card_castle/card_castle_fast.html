@@ -37,13 +37,12 @@
   source=source.replaceAll("emit('cardLongPress'","emit('cardLongPressed'");
   source=source.replaceAll("emit('backToCategories'","emit('categoriesRequested'");
 
-  // Android uses castle_cards_direct.js as the single card-texture owner.
-  // Keep the legacy meshes available for compatibility, but prevent their
-  // four-way TextureLoader queue from competing with environment and jester
-  // decoding during startup.
+  // castle_cards_direct.js is the single card-texture owner on every platform.
+  // Keep legacy meshes for compatibility, but disable their duplicate texture
+  // queue so card decoding cannot compete with environment and jester loading.
   source=source.replace(
     'function pumpTextureQueue(){while(state.activeLoads<4&&state.loadQueue.length){',
-    'function pumpTextureQueue(){const legacyLimit='+String(isAndroid?0:4)+';document.body.dataset.legacyCardTextureConcurrency=String(legacyLimit);while(state.activeLoads<legacyLimit&&state.loadQueue.length){'
+    'function pumpTextureQueue(){const legacyLimit=0;document.body.dataset.legacyCardTextureConcurrency=String(legacyLimit);while(state.activeLoads<legacyLimit&&state.loadQueue.length){'
   );
 
   const inlineJesterScript='<script type="module" src="./castle_jester_overlay.js"></scr'+'ipt>';

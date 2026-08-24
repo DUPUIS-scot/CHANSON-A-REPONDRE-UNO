@@ -88,6 +88,19 @@ void main() {
     }
   });
 
+  test('production deck excludes its cover from the 84 searchable cards', () async {
+    final decks = await loadDecks();
+    addTearDown(decks.dispose);
+    await decks.select(AppConstants.productionDeckId);
+
+    final activeDeck = decks.activeDeck!;
+    expect(activeDeck.cards, hasLength(AppConstants.productionDeckSize));
+    expect(
+      activeDeck.cards.any((card) => card.path.endsWith('/deck_cover.png')),
+      isFalse,
+    );
+  });
+
   test('BRIO Search uses category-specific verso artwork', () async {
     final decks = await loadDecks();
     addTearDown(decks.dispose);

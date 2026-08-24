@@ -57,7 +57,8 @@ void main() {
       contains("source=source.replace(inlineJesterScript,'')"),
     );
     expect(fastLoader, contains('legacyCardTextureConcurrency'));
-    expect(fastLoader, contains('String(isAndroid?0:4)'));
+    expect(fastLoader, contains('const legacyLimit=0'));
+    expect(fastLoader, isNot(contains('String(isAndroid?0:4)')));
     expect(fastLoader, contains('baseExteriorView'));
     expect(fastLoader, contains('iosExteriorView'));
     expect(fastLoader, contains('ios-portrait-balanced-v39'));
@@ -106,6 +107,7 @@ void main() {
     expect(directCards, contains('const isAndroid = /Android/i'));
     expect(directCards, contains('isAndroid ? 2'));
     expect(directCards, contains('directCardTextureConcurrency'));
+    expect(directCards, contains("sceneMode==='exterior'"));
     expect(
       directCards,
       contains("directCardPreviewMode = 'rampart-textures-v40-staged'"),

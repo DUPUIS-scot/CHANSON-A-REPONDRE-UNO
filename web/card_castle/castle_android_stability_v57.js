@@ -94,11 +94,8 @@ if (isAndroid && !window.__castleAndroidStabilityV57Installed) {
   }
 
   function scheduleStatueFocus() {
-    if (mode() !== 'laboratory') return;
-    requestAnimationFrame(() => requestAnimationFrame(focusLaboratoryOnWalkingStatue));
-    setTimeout(focusLaboratoryOnWalkingStatue, 180);
-    setTimeout(focusLaboratoryOnWalkingStatue, 500);
-    setTimeout(focusLaboratoryOnWalkingStatue, 1000);
+    // The whole-room v70 camera is the sole laboratory entry/reset owner.
+    document.body.dataset.laboratoryFocus = 'whole-room-camera-owner-v72';
   }
 
   function enterLaboratoryFromPassage() {

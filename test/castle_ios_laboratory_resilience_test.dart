@@ -8,19 +8,20 @@ void main() {
     final overlay = File('web/card_castle/castle_navigation_overlay.js').readAsStringSync();
     final resilience = File('web/card_castle/castle_ios_laboratory_resilience_v62.js').readAsStringSync();
     final eventBridge = File('web/card_castle/castle_laboratory_event_bridge_v69.js').readAsStringSync();
+    final navigationCore = File('web/card_castle/castle_navigation_overlay_core.js').readAsStringSync();
     final sharedLoader = File('web/card_castle/castle_shared_transition_loader_v64.js').readAsStringSync();
     final bridge = File('web/card_castle/castle_bureau_video_bridge.js').readAsStringSync();
     final medallion = File('web/card_castle/castle_laboratory_medallion_button.js').readAsStringSync();
     final resetView = File('web/card_castle/castle_laboratory_entry_reset_v70.js').readAsStringSync();
 
-    expect(bootstrap, contains("const castleRuntimeRevision = '70';"));
+    expect(bootstrap, contains("const castleRuntimeRevision = '72';"));
     expect(bootstrap, contains("url.searchParams.set('v', buildId || castleRuntimeRevision)"));
     expect(bootstrap, contains('card_castle/card_castle_fast.html'));
     expect(bootstrap, contains('optimized = url.href'));
 
-    final sharedImport = overlay.indexOf('castle_shared_transition_loader_v64.js?v=68');
+    final sharedImport = overlay.indexOf('castle_shared_transition_loader_v64.js?v=72');
     final resilienceImport = overlay.indexOf('castle_ios_laboratory_resilience_v62.js?v=65');
-    final coreImport = overlay.indexOf('castle_navigation_overlay_core.js?v=62');
+    final coreImport = overlay.indexOf('castle_navigation_overlay_core.js?v=72');
     final eventBridgeImport = overlay.indexOf('castle_laboratory_event_bridge_v69.js?v=69');
     expect(sharedImport, greaterThanOrEqualTo(0));
     expect(resilienceImport, greaterThan(sharedImport));
@@ -48,10 +49,13 @@ void main() {
     expect(sharedLoader, contains("show('INTERIOR LOADING')"));
     expect(sharedLoader, contains('scene-loader-fill'));
     expect(sharedLoader, contains('scene-loader-percent'));
-    expect(sharedLoader, contains("runtime.switchToInterior()"));
-    expect(sharedLoader, contains("interior-ready-direct-v68"));
+    expect(sharedLoader, isNot(contains("runtime.switchToInterior()")));
+    expect(sharedLoader, contains("interior-ready-awaiting-video-v72"));
     expect(sharedLoader, contains("laboratory-visible-v68"));
     expect(sharedLoader, contains("35000"));
+
+    expect(navigationCore, contains('window.__castleOpenLaboratory ??= switchToLaboratory'));
+    expect(navigationCore, contains('window.__castleRestoreInteriorFromLaboratory ??= restoreInterior'));
 
     expect(resetView, contains("laboratoryStartingView = 'reset-identical-v70'"));
     expect(resetView, contains("laboratory-entry-v70"));

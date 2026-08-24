@@ -483,6 +483,11 @@ if (!window.__castleNavigationOverlayInstalled) {
     }
   });
 
+  // Publish the core laboratory entry for desktop and Android. The dedicated
+  // iOS resilience owner is imported first and remains authoritative there.
+  window.__castleOpenLaboratory ??= switchToLaboratory;
+  window.__castleRestoreInteriorFromLaboratory ??= restoreInterior;
+
   window.addEventListener('castleRuntimeReady', () => install(window.__castleSearchRuntime));
   if (!install(window.__castleSearchRuntime)) {
     let attempts = 0;
