@@ -1,0 +1,66 @@
+name: Patch Enochian fullscreen viewport fit once
+
+on:
+  push:
+    paths:
+      - '.github/workflows/patch-enochian-fullscreen-fit-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Patch fullscreen viewport fit
+        shell: python
+        run: |
+          from pathlib import Path
+
+          p = Path('web/enochian-terminal/index.html')
+          s = p.read_text(encoding='utf-8')
+
+          old = """ html.terminal-fullscreen,html.terminal-fullscreen body{width:100%!important;height:100%!important;min-height:100%!important;overflow:auto!important}\n html.terminal-fullscreen .app{width:100%!important;max-width:none!important;min-height:100dvh!important;padding:6px!important;gap:6px!important}\n html.terminal-fullscreen .top{min-height:54px!important;padding:5px 8px!important}\n html.terminal-fullscreen .avatar{width:40px!important;height:40px!important}\n html.terminal-fullscreen .grid{grid-template-columns:minmax(190px,20vw) minmax(0,1fr) minmax(220px,22vw)!important;gap:6px!important}\n html.terminal-fullscreen .side{padding:7px!important;gap:5px!important}\n html.terminal-fullscreen .stage{padding:7px!important;gap:6px!important;grid-template-rows:minmax(120px,18vh) minmax(260px,1fr) auto auto auto!important}\n html.terminal-fullscreen .platter-wrap{width:min(38vw,48vh,430px)!important}\n html.terminal-fullscreen .console{min-height:110px!important}\n html.terminal-fullscreen .console-lines{height:82px!important}\n"""
+
+          new = """ html.terminal-fullscreen,html.terminal-fullscreen body{width:100%!important;height:100%!important;min-height:0!important;overflow:hidden!important}\n html.terminal-fullscreen .app{width:100%!important;max-width:none!important;height:100dvh!important;min-height:0!important;padding:4px!important;gap:4px!important;overflow:hidden!important;grid-template-rows:auto minmax(0,1fr) auto!important}\n html.terminal-fullscreen .top{min-height:42px!important;height:42px!important;padding:3px 7px!important}\n html.terminal-fullscreen .avatar{width:32px!important;height:32px!important}\n html.terminal-fullscreen .home-link{width:34px!important;height:34px!important;font-size:17px!important}\n html.terminal-fullscreen .grid{min-height:0!important;height:100%!important;grid-template-columns:minmax(180px,18vw) minmax(0,1fr) minmax(205px,20vw)!important;gap:4px!important;overflow:hidden!important}\n html.terminal-fullscreen .side{min-height:0!important;padding:5px!important;gap:3px!important;overflow:hidden!important;align-content:start!important}\n html.terminal-fullscreen .side .box,html.terminal-fullscreen .side .fxbox,html.terminal-fullscreen .stem-isolator{padding:5px!important;gap:3px!important}\n html.terminal-fullscreen .stem-row{grid-template-columns:72px minmax(0,1fr) 34px!important;gap:3px!important}\n html.terminal-fullscreen .stem-toggle{padding:4px 3px!important;font-size:7px!important}\n html.terminal-fullscreen .stage{min-height:0!important;height:100%!important;padding:5px!important;gap:4px!important;grid-template-rows:minmax(82px,12vh) minmax(0,34vh) minmax(68px,10vh) minmax(118px,18vh) minmax(58px,9vh)!important;overflow:hidden!important}\n html.terminal-fullscreen .wave{min-height:0!important}\n html.terminal-fullscreen .wave h2{margin:4px!important;font-size:8px!important}\n html.terminal-fullscreen .wave canvas{top:22px!important}\n html.terminal-fullscreen .deckarea{min-height:0!important;gap:6px!important;grid-template-columns:96px minmax(230px,1fr) 96px!important}\n html.terminal-fullscreen .wheelbox{padding:4px 2px!important;gap:4px!important}\n html.terminal-fullscreen .wheel{width:78px!important;height:78px!important}\n html.terminal-fullscreen .wheel:before{top:7px!important;height:20px!important;transform-origin:2px 32px!important}\n html.terminal-fullscreen .platter-wrap{width:min(32vh,320px)!important;max-width:320px!important}\n html.terminal-fullscreen .seek{left:20%!important;right:20%!important}\n html.terminal-fullscreen .mod{padding:5px!important;gap:4px!important;grid-template-columns:minmax(0,1fr) 92px!important}\n html.terminal-fullscreen .mod textarea{min-height:34px!important;padding:5px!important}\n html.terminal-fullscreen .mod-state{gap:3px!important}\n html.terminal-fullscreen .mod-state div{padding:3px!important}\n html.terminal-fullscreen .mod>.wheelbox .wheel{width:72px!important;height:72px!important}\n html.terminal-fullscreen .pad-panel{padding:5px!important;gap:4px!important}\n html.terminal-fullscreen .pad-panel.instant-layout{grid-template-rows:auto minmax(0,1fr)!important}\n html.terminal-fullscreen .pad-panel.instant-layout>.xy-pad{min-height:0!important;height:100%!important}\n html.terminal-fullscreen .mixer-level-range{min-height:78px!important}\n html.terminal-fullscreen .instant-fx{gap:3px!important;padding-left:6px!important}\n html.terminal-fullscreen .instant-fx-grid{gap:3px!important}\n html.terminal-fullscreen .instant-fx-btn{min-height:34px!important;padding:4px!important}\n html.terminal-fullscreen .instant-fx-btn small{margin-top:2px!important}\n html.terminal-fullscreen .console{min-height:0!important;padding:4px!important;gap:2px!important}\n html.terminal-fullscreen .console-lines{height:42px!important}\n html.terminal-fullscreen .foot{padding:2px!important;font-size:7px!important}\n"""
+
+          if old not in s:
+              raise SystemExit('Expected fullscreen CSS block not found; refusing unsafe patch')
+          s = s.replace(old, new, 1)
+
+          old_media = "@media(max-width:1000px){.stage{grid-template-rows:200px auto auto auto auto!important}.pad-panel.instant-layout{grid-template-columns:minmax(0,1fr) 58px minmax(0,1fr)!important}.instant-fx-btn{min-height:54px}html.terminal-fullscreen .grid{display:flex!important;flex-direction:column!important}html.terminal-fullscreen .platter-wrap{width:min(76vw,42vh,420px)!important}}"
+          new_media = "@media(max-width:1000px){.stage{grid-template-rows:200px auto auto auto auto!important}.pad-panel.instant-layout{grid-template-columns:minmax(0,1fr) 58px minmax(0,1fr)!important}.instant-fx-btn{min-height:54px}html.terminal-fullscreen,html.terminal-fullscreen body{overflow:auto!important}html.terminal-fullscreen .app{height:auto!important;min-height:100dvh!important;overflow:visible!important}html.terminal-fullscreen .grid{display:flex!important;flex-direction:column!important;overflow:visible!important}html.terminal-fullscreen .stage{height:auto!important;grid-template-rows:120px auto auto auto auto!important;overflow:visible!important}html.terminal-fullscreen .platter-wrap{width:min(60vw,32vh,320px)!important}}"
+          if old_media not in s:
+              raise SystemExit('Expected <=1000px media rule not found; refusing unsafe patch')
+          s = s.replace(old_media, new_media, 1)
+
+          old_mobile = "html.terminal-fullscreen .platter-wrap{width:min(90vw,42vh,360px)!important}"
+          new_mobile = "html.terminal-fullscreen .platter-wrap{width:min(82vw,30vh,300px)!important}"
+          if old_mobile not in s:
+              raise SystemExit('Expected mobile platter rule not found; refusing unsafe patch')
+          s = s.replace(old_mobile, new_mobile, 1)
+
+          p.write_text(s, encoding='utf-8')
+
+      - name: Verify fullscreen fit patch
+        shell: bash
+        run: |
+          grep -q 'height:100dvh!important;min-height:0!important' web/enochian-terminal/index.html
+          grep -q 'width:min(32vh,320px)!important' web/enochian-terminal/index.html
+          grep -q 'overflow:hidden!important' web/enochian-terminal/index.html
+          grep -q 'console-lines{height:42px!important}' web/enochian-terminal/index.html
+
+      - name: Commit fullscreen fit
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo 'No changes needed'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add web/enochian-terminal/index.html
+          git commit -m 'Fit Enochian terminal to fullscreen viewport'
+          git push
