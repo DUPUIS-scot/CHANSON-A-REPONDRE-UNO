@@ -39,7 +39,7 @@ shell_required = [
     "installConsoleAuthority",
     "installReliableFullscreen",
     "syncResponsiveLayout",
-    "authoritative-runtime.js?v=20260824-v4",
+    "authoritative-runtime.js?v=20260824-v5",
     "outer-analyser-panel.js?v=20260824-v2",
     "analyser-data-bus.js?v=20260824-v2",
     "analyser-composite-signal.js?v=20260824-v9",
@@ -65,6 +65,7 @@ for stale in [
     "transport-stem-sync.js?v=20260824-v3",
     "analyser-expand-overlay.js?v=20260824-v8",
     "authoritative-runtime.js?v=20260824-v3",
+    "authoritative-runtime.js?v=20260824-v4",
 ]:
     if stale in shell:
         raise SystemExit(f'legacy competing runtime still loaded: {stale}')
@@ -102,8 +103,9 @@ sculpt_audio = Path('web/enochian-test/sculpt-audio-mod.js').read_text(encoding=
 touch = Path('web/enochian-test/ios-touch-tuning.js').read_text(encoding='utf-8')
 
 required_authority = [
-    "authoritativeRuntime==='v4'",
-    "__enochStemAuthority={version:'v4'",
+    "authoritativeRuntime==='v5'",
+    "__enochStemAuthority={version:'v5'",
+    "__enochLoopAuthority={version:'v5'",
     "__enochNativeStemEngine={version:'v2'",
     "masterConnected",
     "routed:",
@@ -115,10 +117,15 @@ required_authority = [
     "setLevel(key,value)",
     "STEMS FALLBACK",
     "LOOP CYCLE",
+    "remainingMs",
+    "master.addEventListener('ended'",
+    "wrap(true)",
 ]
 for marker in required_authority:
     if marker not in authority:
-        raise SystemExit(f'native Web Audio stem authority marker missing: {marker}')
+        raise SystemExit(f'native Web Audio stem/loop authority marker missing: {marker}')
+if 'requestAnimationFrame' in authority:
+    raise SystemExit('authoritative loop unexpectedly depends on requestAnimationFrame')
 if 'master.muted=true' in authority or 'm.volume=' in authority or 'createMediaElementSource' in authority:
     raise SystemExit('secondary stem mixer/audio graph unexpectedly present')
 if "VERSION='v2'" not in touch or 'installStemMasterPanel' not in touch or 'stem-master-slot' not in touch or 'stem-master-in-panel' not in touch or "getElementById('stemMasterToggle')" not in touch:
@@ -136,4 +143,4 @@ if "analyserSignalGlide='v5'" not in glide or "analyserSignal3d='v6'" not in thr
 if "sculptAudioMod='v2'" not in sculpt_audio or "version:'v2'" not in sculpt_audio or '__enochSculptAudio' not in sculpt_audio or 'restoreBase' not in sculpt_audio or 'SCULPT AUDIO' not in sculpt_audio:
     raise SystemExit('sculpt-to-audio modulation v2 contract missing')
 
-print('Enochian runtime verified: persistent stem master ON/OFF inside isolator, native Web Audio stem bridge with exclusive master/stem routing and smoothed GainNode mix, one loop controller, outer floating analyser, unified FFT analyser bus, ring-buffered 3D signal history, reversible sculpt-to-audio, navigation and outer fullscreen.')
+print('Enochian runtime verified: persistent stem master ON/OFF inside isolator, native Web Audio stem bridge with exclusive master/stem routing and smoothed GainNode mix, authoritative transport-clock loop with forced end wrap, outer floating analyser, unified FFT analyser bus, ring-buffered 3D signal history, reversible sculpt-to-audio, navigation and outer fullscreen.')
