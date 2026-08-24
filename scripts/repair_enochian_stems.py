@@ -34,7 +34,7 @@ if 'requestAnimationFrame(stemDriftTick)' in s:
     raise SystemExit('RAF stem drift loop unexpectedly present')
 
 shell_required = [
-    "live-copy.html?v=20260824-master-gate-v3",
+    "live-copy.html?v=20260824-stem-clock-v4",
     "installReliableNavigation",
     "home.href='/#/home'",
     "go('#/home')",
@@ -42,7 +42,7 @@ shell_required = [
     "installConsoleAuthority",
     "installReliableFullscreen",
     "syncResponsiveLayout",
-    "authoritative-runtime.js?v=20260824-v5",
+    "authoritative-runtime.js?v=20260824-v6",
     "outer-analyser-panel.js?v=20260824-v2",
     "analyser-data-bus.js?v=20260824-v2",
     "analyser-composite-signal.js?v=20260824-v9",
@@ -123,6 +123,8 @@ required_authority = [
     "remainingMs",
     "master.addEventListener('ended'",
     "wrap(true)",
+    "sync(force=false)",
+    "engine.sync(true)",
 ]
 for marker in required_authority:
     if marker not in authority:
