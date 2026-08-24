@@ -22,7 +22,7 @@ class _EnochianTerminalScreenState extends State<EnochianTerminalScreen> {
 
   Future<void> _openTerminal() async {
     if (!kIsWeb) return;
-    final uri = Uri.base.resolve('/enochian-terminal-live/');
+    final uri = Uri.base.resolve('/enochian-terminal/');
     await launchUrl(uri, webOnlyWindowName: '_self');
   }
 
