@@ -3,19 +3,22 @@ name: Patch Enochian stems compression once
 on:
   pull_request:
     branches: [main]
+    types: [closed]
   workflow_dispatch:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   patch:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.head_ref || github.ref_name }}
+          ref: main
 
       - name: Install ffmpeg
         shell: bash
@@ -46,6 +49,7 @@ jobs:
               "$tmp"
             after=$(stat -c%s "$tmp")
             if [ "$after" -lt "$before" ]; then mv "$tmp" "$src"; else rm -f "$tmp"; fi
+            ffprobe -v error -select_streams a:0 -show_entries stream=codec_name,bit_rate,sample_rate,channels -of default=nw=1 "$src"
             echo "$(basename "$src"): $before -> $(stat -c%s "$src") bytes"
           done
 
@@ -66,7 +70,7 @@ jobs:
           if old_ready not in s: raise SystemExit('Stem graph anchor missing')
           s = s.replace(old_ready, new_ready, 1)
           old_mode = "async function setStemMode(){const ai=isAiComptroller();if(ai===stemMode){updateStemUi();return}try{await ensureAudio()}catch(_){};await ensureStemGraph();stemMode=ai;if(ai){try{if(originalDeckConnected&&src){src.disconnect();originalDeckConnected=false}}catch(_){};syncStemTimes(true);setStemRate();applyStemGains();if(!a.paused)Object.values(stemMedia).forEach(m=>Promise.resolve(m.play()).catch(()=>{}));try{log('STEM MODE · AI COMPTROLLER')}catch(_){}}else{Object.values(stemMedia).forEach(m=>{try{m.pause()}catch(_){}});try{if(!originalDeckConnected&&src&&low){src.connect(low);originalDeckConnected=true}}catch(_){};try{log('STEM MODE · OFF')}catch(_){}}updateStemUi()}"
-          new_mode = "async function setStemMode(){const ai=isAiComptroller();if(!ai){stemMode=false;Object.values(stemMedia).forEach(m=>{try{m.pause()}catch(_){}});try{if(!originalDeckConnected&&src&&low){src.connect(low);originalDeckConnected=true}}catch(_){};updateStemUi();return}if(stemMode){updateStemUi();return}try{if(typeof originalEnsureAudio==='function'&&originalEnsureAudio)await originalEnsureAudio();else if(typeof ensureAudio==='function')await ensureAudio()}catch(_){};try{await ensureStemMediaLoaded();await ensureStemGraph();stemMode=true;syncStemTimes(true);setStemRate();applyStemGains();if(!a.paused){await Promise.all(Object.values(stemMedia).map(m=>m.play()));try{if(originalDeckConnected&&src){src.disconnect();originalDeckConnected=false}}catch(_){}}try{log('STEM MODE · AI COMPTROLLER')}catch(_){}}catch(error){stemMode=false;Object.values(stemMedia).forEach(m=>{try{m.pause()}catch(_){}});try{if(!originalDeckConnected&&src&&low){src.connect(low);originalDeckConnected=true}}catch(_){};try{log('STEM FALLBACK · MASTER AUDIO')}catch(_){}}updateStemUi()}"
+          new_mode = "async function setStemMode(){const ai=isAiComptroller();if(!ai){stemMode=false;Object.values(stemMedia).forEach(m=>{try{m.pause()}catch(_){}});try{if(!originalDeckConnected&&src&&low){src.connect(low);originalDeckConnected=true}}catch(_){};updateStemUi();return}if(stemMode){updateStemUi();return}try{if(typeof originalEnsureAudio==='function'&&originalEnsureAudio)await originalEnsureAudio();else if(typeof ensureAudio==='function')await ensureAudio()}catch(_){};try{await ensureStemMediaLoaded();await ensureStemGraph();stemMode=true;syncStemTimes(true);setStemRate();applyStemGains();if(!a.paused){await Promise.all(Object.values(stemMedia).map(m=>m.play()));try{if(originalDeckConnected&&src){src.disconnect();originalDeckConnected=false}}catch(_){} }try{log('STEM MODE · AI COMPTROLLER')}catch(_){}}catch(error){stemMode=false;Object.values(stemMedia).forEach(m=>{try{m.pause()}catch(_){}});try{if(!originalDeckConnected&&src&&low){src.connect(low);originalDeckConnected=true}}catch(_){};try{log('STEM FALLBACK · MASTER AUDIO')}catch(_){}}updateStemUi()}"
           if old_mode not in s: raise SystemExit('Stem mode anchor missing')
           s = s.replace(old_mode, new_mode, 1)
           old_wrap = "const originalEnsureAudio=typeof ensureAudio==='function'?ensureAudio:null;\n  if(originalEnsureAudio)ensureAudio=async function(){await originalEnsureAudio();await ensureStemGraph();if(isAiComptroller()&&!stemMode)await setStemMode();return ctx};"
@@ -79,21 +83,30 @@ jobs:
           s = s.replace(old_events, new_events, 1)
           p.write_text(s, encoding='utf-8')
 
-      - name: Verify
+      - name: Verify repair
         shell: bash
         run: |
           set -euo pipefail
+          grep -q "v=20260824-stem-lazy-v5" web/enochian-terminal/index.html
           grep -q "m.preload='none'" web/enochian-terminal/index.html
           grep -q "STEM FALLBACK · MASTER AUDIO" web/enochian-terminal/index.html
           ! grep -q "requestAnimationFrame(stemDriftTick)" web/enochian-terminal/index.html
 
-      - name: Commit repair to branch
+      - name: Commit repair to main
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git pull --ff-only origin main
           git add assets/audio/stems/ai_comptroller/*.mp3 web/enochian-terminal/index.html
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m 'Compress Enochian stems and restore reliable playback'
-          git push origin HEAD:${{ github.head_ref || github.ref_name }}
+          if ! git diff --cached --quiet; then
+            git commit -m 'Compress Enochian stems and restore reliable playback'
+            git push origin HEAD:main
+          fi
+
+      - name: Deploy live site
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: gh workflow run deploy-pages.yml --ref main
