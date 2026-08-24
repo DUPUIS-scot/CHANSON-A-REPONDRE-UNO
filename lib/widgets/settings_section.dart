@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'social_share_counter_tile.dart';
+
 class SettingsSection extends StatelessWidget {
   const SettingsSection({
     required this.title,
@@ -20,7 +22,10 @@ class SettingsSection extends StatelessWidget {
       title: Text(title),
       initiallyExpanded: initiallyExpanded,
       childrenPadding: const EdgeInsets.only(bottom: 8),
-      children: children,
+      children: [
+        ...children,
+        if (title == 'VISITORS') const SocialShareCounterTile(),
+      ],
     ),
   );
 }
