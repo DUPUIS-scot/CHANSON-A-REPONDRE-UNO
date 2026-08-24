@@ -9,15 +9,15 @@
       const loop=d.getElementById('loopToggle'),loopIn=d.getElementById('loopIn'),loopOut=d.getElementById('loopOut'),loopReset=d.getElementById('loopReset');
       const stemMaster=d.getElementById('stemMasterToggle');
       if(!master||!isolator||!loop||!loopIn||!loopOut||!loopReset||!stemMaster)return false;
-      if(d.documentElement.dataset.authoritativeRuntime==='v1')return true;
-      d.documentElement.dataset.authoritativeRuntime='v1';
+      if(d.documentElement.dataset.authoritativeRuntime==='v2')return true;
+      d.documentElement.dataset.authoritativeRuntime='v2';
 
       const style=d.createElement('style');
       style.textContent=`#loopToggle.loop-authority-on{color:#f0c97e!important;border-color:#7b6339!important;background:#171308!important;box-shadow:0 0 12px #d5aa6355!important;font-weight:900!important}#stemMasterToggle.stem-loading{color:#f0c97e!important;border-color:#7b6339!important;background:#171308!important}#stemMasterToggle.stem-fallback{color:#ffb2a5!important;border-color:#633c35!important;background:#170806!important}.stem-value{color:#f0c97e!important}`;
       d.head.appendChild(style);
 
-      // One authoritative loop controller. Native loop onclick handlers are detached;
-      // the older native timer remains inert because its private loopEnabled flag is never toggled.
+      // One authoritative loop controller. The older native handlers are detached so only
+      // this controller owns loop state, timer, labels and wrap timing.
       loop.onclick=loopIn.onclick=loopOut.onclick=loopReset.onclick=null;
       let loopEnabled=false,loopStart=0,loopEnd=null,loopTimer=0,lastWrap=0;
       const loopUi=()=>{
@@ -33,11 +33,7 @@
         try{master.currentTime=loopStart}catch(_){}
         try{d.getElementById('log')?.prepend(Object.assign(d.createElement('div'),{className:'signal-flow-line',textContent:'LOOP CYCLE · '+fmt(loopStart)+' → '+fmt(loopEnd)}))}catch(_){}
       };
-      const loopTick=()=>{
-        if(loopTimer)w.clearTimeout(loopTimer);
-        if(loopEnabled&&loopEnd!=null&&!master.paused&&master.currentTime>=loopEnd-.025)wrap();
-        loopUi();loopTimer=w.setTimeout(loopTick,40);
-      };
+      const loopTick=()=>{if(loopTimer)w.clearTimeout(loopTimer);if(loopEnabled&&loopEnd!=null&&!master.paused&&master.currentTime>=loopEnd-.025)wrap();loopUi();loopTimer=w.setTimeout(loopTick,40)};
       loopIn.addEventListener('click',()=>{loopStart=Math.max(0,Number(master.currentTime)||0);if(loopEnd!=null&&loopEnd<=loopStart+.05)loopEnd=null;loopUi()});
       loopOut.addEventListener('click',()=>{const out=Math.max(0,Number(master.currentTime)||0);if(out<=loopStart+.05)return;loopEnd=out;loopEnabled=true;loopUi()});
       loop.addEventListener('click',()=>{if(loopEnd==null){loopStart=0;loopEnd=Number.isFinite(master.duration)&&master.duration>0?master.duration:null}loopEnabled=!loopEnabled;loopUi()});
@@ -45,57 +41,77 @@
       master.addEventListener('timeupdate',()=>{if(loopEnabled&&loopEnd!=null&&master.currentTime>=loopEnd-.025)wrap();loopUi()});
       master.addEventListener('ended',()=>{if(!loopEnabled)return;wrap();Promise.resolve(master.play()).catch(()=>{})});
 
-      // Audible stem authority. The master transport remains the clock; when all stems are
-      // actually running the full mixed master is muted, so stem gains truly define the output.
+      // Sole stem authority: reuse the native Web Audio stem graph, but capture its handlers
+      // as internal engine calls and remove their direct UI ownership. This preserves the
+      // desired route: MASTER TRANSPORT clock -> (master full mix OR stem GainNodes) -> EQ/FX -> output.
       const rows=()=>[...isolator.querySelectorAll('.stem-toggle')];
+      const ranges=()=>[...isolator.querySelectorAll('.stem-range')];
       const active=b=>!!b&&(b.classList.contains('active')||b.getAttribute('aria-pressed')==='true');
       const media=()=>[...d.querySelectorAll('audio')].filter(m=>m!==master&&/(vocals|drums|bass|other)/i.test(String(m.dataset?.src||m.src||'')));
-      const keyOfMedia=m=>{const s=String(m.dataset?.src||m.src||'').toLowerCase();return s.includes('vocals')?'vocals':s.includes('drums')?'drums':s.includes('bass')?'bass':s.includes('other')?'other':''};
-      const rowOn=key=>active(isolator.querySelector(`[data-stem-toggle="${key}"]`));
-      const level=key=>clamp((parseFloat(isolator.querySelector(`[data-stem-range="${key}"]`)?.value)||0)/100,0,1);
-      const wanted=key=>key==='bass'||key==='other'?rowOn('instruments'):rowOn(key);
-      const gain=key=>key==='bass'||key==='other'?level('instruments'):level(key);
-      let stemEnabled=stemMaster.getAttribute('aria-pressed')!=='false',stemReady=false,activating=false;
-      const applyStemMix=()=>media().forEach(m=>{const k=keyOfMedia(m);try{m.volume=wanted(k)?gain(k):0;m.muted=!wanted(k)}catch(_){}});
-      const alignStems=force=>media().forEach(m=>{try{m.playbackRate=master.playbackRate||1;m.preservesPitch=false;m.webkitPreservesPitch=false;const drift=Math.abs((m.currentTime||0)-(master.currentTime||0));if(force||drift>.055)m.currentTime=Math.max(0,master.currentTime||0)}catch(_){}});
-      const pauseStems=()=>media().forEach(m=>{try{m.pause()}catch(_){}});
-      const setStemStatus=(state)=>{
-        stemMaster.classList.toggle('stem-loading',state==='loading');stemMaster.classList.toggle('stem-fallback',state==='fallback');
-        if(state==='on'){stemMaster.classList.add('active');stemMaster.setAttribute('aria-pressed','true');stemMaster.textContent=rows().every(active)?'STEMS ON':'STEMS MIX'}
-        else if(state==='off'){stemMaster.classList.remove('active');stemMaster.setAttribute('aria-pressed','false');stemMaster.textContent='STEMS OFF'}
-        else if(state==='loading'){stemMaster.textContent='STEMS LOADING'}
-        else {stemMaster.classList.remove('active');stemMaster.setAttribute('aria-pressed','false');stemMaster.textContent='STEMS FALLBACK'}
-      };
+      const nativeMasterHandler=stemMaster.onclick;
+      const nativeRowHandlers=new Map(rows().map(b=>[b,b.onclick]));
+      const nativeRangeHandlers=new Map(ranges().map(r=>[r,r.oninput]));
+      if(typeof nativeMasterHandler!=='function'||nativeRowHandlers.size<3||nativeRangeHandlers.size<3)return false;
+      stemMaster.onclick=null;rows().forEach(b=>b.onclick=null);ranges().forEach(r=>r.oninput=null);
+
+      let stemEnabled=stemMaster.getAttribute('aria-pressed')!=='false',stemReady=false,activating=false,lastStemState='';
       const prepare=()=>media().forEach(m=>{try{if(!m.src&&m.dataset.src){m.src=m.dataset.src;m.preload='auto';m.load()}}catch(_){}});
-      const activateStems=async()=>{
-        if(!stemEnabled||master.paused||activating)return;activating=true;setStemStatus('loading');prepare();applyStemMix();alignStems(true);
-        const ms=media();
+      const align=force=>media().forEach(m=>{try{m.playbackRate=master.playbackRate||1;const drift=Math.abs((m.currentTime||0)-(master.currentTime||0));if(force||drift>.055)m.currentTime=Math.max(0,master.currentTime||0)}catch(_){}});
+      const allStemMediaRunning=()=>{const ms=media();return ms.length>=4&&ms.every(m=>!m.paused&&!m.ended&&m.readyState>=2)};
+      const isCustomMix=()=>rows().some(b=>!active(b))||ranges().some(r=>(parseFloat(r.value)||0)<99.5);
+      const setStemStatus=state=>{
+        lastStemState=state;stemMaster.classList.toggle('stem-loading',state==='loading');stemMaster.classList.toggle('stem-fallback',state==='fallback');
+        const routed=state==='on'||state==='mix';stemMaster.classList.toggle('active',routed);stemMaster.setAttribute('aria-pressed',String(routed));
+        stemMaster.textContent=state==='loading'?'STEMS LOADING':state==='fallback'?'STEMS FALLBACK':state==='off'?'STEMS OFF':state==='mix'?'STEMS MIX':'STEMS ON';
+      };
+      const refreshRoutedStatus=()=>{if(!stemEnabled){setStemStatus('off');return}if(stemReady&&allStemMediaRunning())setStemStatus(isCustomMix()?'mix':'on')};
+      const callNativeMaster=async()=>{const result=nativeMasterHandler.call(stemMaster);if(result&&typeof result.then==='function')await result};
+      const activate=async()=>{
+        if(!stemEnabled||master.paused||activating)return;activating=true;setStemStatus('loading');prepare();align(true);
         try{
-          if(ms.length<4)throw new Error('missing stem media');
-          const results=await Promise.allSettled(ms.map(m=>m.play()));
-          if(results.some(r=>r.status!=='fulfilled'))throw new Error('stem playback rejected');
-          alignStems(true);applyStemMix();master.muted=true;stemReady=true;setStemStatus('on');
-        }catch(_){stemReady=false;master.muted=false;pauseStems();setStemStatus('fallback')}
+          // Native handler toggles its private stemsEnabled and setStemMode. Only that engine
+          // disconnects the master source after every stem has successfully entered the shared Web Audio graph.
+          if(stemMaster.getAttribute('aria-pressed')!=='true')stemMaster.setAttribute('aria-pressed','true');
+          await callNativeMaster();
+          await new Promise(resolve=>w.setTimeout(resolve,40));
+          stemReady=allStemMediaRunning();
+          if(!stemReady)throw new Error('native stem graph did not become audible');
+          align(true);refreshRoutedStatus();
+        }catch(_){stemReady=false;stemEnabled=false;setStemStatus('fallback')}
         activating=false;
       };
-      const deactivateStems=()=>{stemReady=false;activating=false;pauseStems();master.muted=false;setStemStatus('off')};
+      const deactivate=async()=>{
+        if(activating)return;activating=true;
+        try{await callNativeMaster()}catch(_){}
+        stemReady=false;stemEnabled=false;setStemStatus('off');activating=false;
+      };
 
-      // Preserve the native master toggle because it reconnects/disconnects its Web Audio source.
-      stemMaster.addEventListener('click',()=>setTimeout(()=>{
-        stemEnabled=stemMaster.getAttribute('aria-pressed')==='true';
-        if(stemEnabled){prepare();if(!master.paused)activateStems()}else deactivateStems();
-      },0));
-      rows().forEach(b=>b.addEventListener('click',()=>setTimeout(()=>{applyStemMix();if(stemReady)setStemStatus('on')},0)));
-      isolator.querySelectorAll('.stem-range').forEach(r=>r.addEventListener('input',()=>{const out=isolator.querySelector(`[data-stem-value="${r.dataset.stemRange}"]`);if(out)out.textContent=Math.round(parseFloat(r.value)||0)+'%';applyStemMix()}));
+      // The UI only requests state changes; captured native handlers perform the actual private
+      // stemState/GainNode mutations. No HTML-media volume layer and no master.muted layer remain.
+      stemMaster.addEventListener('click',async e=>{
+        e.preventDefault();e.stopPropagation();
+        if(activating)return;
+        if(stemEnabled){await deactivate()}else{stemEnabled=true;if(master.paused){setStemStatus(isCustomMix()?'mix':'on');prepare()}else await activate()}
+      });
+      rows().forEach(b=>b.addEventListener('click',async e=>{
+        e.preventDefault();e.stopPropagation();const fn=nativeRowHandlers.get(b);if(typeof fn==='function'){const r=fn.call(b,e);if(r&&typeof r.then==='function')await r}refreshRoutedStatus()
+      }));
+      ranges().forEach(r=>r.addEventListener('input',async e=>{
+        const fn=nativeRangeHandlers.get(r);if(typeof fn==='function'){const x=fn.call(r,e);if(x&&typeof x.then==='function')await x}const out=isolator.querySelector(`[data-stem-value="${r.dataset.stemRange}"]`);if(out)out.textContent=Math.round(parseFloat(r.value)||0)+'%';refreshRoutedStatus()
+      }));
       if(play)play.addEventListener('pointerdown',prepare,true);
-      master.addEventListener('play',()=>{if(stemEnabled)activateStems();else master.muted=false});
-      master.addEventListener('pause',pauseStems);
-      master.addEventListener('seeking',()=>alignStems(true));
-      master.addEventListener('seeked',()=>{alignStems(true);if(stemEnabled&&!master.paused)activateStems()});
-      master.addEventListener('ratechange',()=>alignStems(false));
-      const drift=()=>{if(stemReady&&!master.paused){alignStems(false);applyStemMix()}w.setTimeout(drift,250)};w.setTimeout(drift,250);
-      prepare();applyStemMix();loopUi();loopTick();
-      w.addEventListener('pagehide',()=>{if(loopTimer)w.clearTimeout(loopTimer);master.muted=false},{once:true});
+      master.addEventListener('play',()=>{if(stemEnabled)activate()});
+      master.addEventListener('pause',()=>{stemReady=false;if(stemEnabled)setStemStatus(isCustomMix()?'mix':'on')});
+      master.addEventListener('seeking',()=>align(true));
+      master.addEventListener('seeked',()=>align(true));
+      master.addEventListener('ratechange',()=>align(false));
+      const drift=()=>{if(stemEnabled&&!master.paused){align(false);stemReady=allStemMediaRunning();if(stemReady)refreshRoutedStatus()}w.setTimeout(drift,250)};w.setTimeout(drift,250);
+
+      // Native default is stems enabled. Do not invoke the captured toggle here because that
+      // would invert its private state; PLAY will let the native engine start them once.
+      prepare();setStemStatus(stemEnabled?(isCustomMix()?'mix':'on'):'off');loopUi();loopTick();
+      w.__enochStemAuthority={version:'v2',get state(){return lastStemState},get enabled(){return stemEnabled},get ready(){return stemReady},isCustomMix};
+      w.addEventListener('pagehide',()=>{if(loopTimer)w.clearTimeout(loopTimer)},{once:true});
       return true;
     }catch(_){return false}
   }
