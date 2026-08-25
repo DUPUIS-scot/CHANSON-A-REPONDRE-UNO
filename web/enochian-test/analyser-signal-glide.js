@@ -5,8 +5,8 @@
       const live=frame.contentDocument,deck=live&&live.getElementById('deck'),d=deck&&deck.contentDocument,w=d&&d.defaultView;
       const wave=d&&d.querySelector('.wave'),canvas=d&&d.getElementById('wave');
       if(!d||!w||!wave||!canvas)return false;
-      if(d.documentElement.dataset.analyserSignalGlide==='v5')return true;
-      d.documentElement.dataset.analyserSignalGlide='v5';
+      if(d.documentElement.dataset.analyserSignalGlide==='v6')return true;
+      d.documentElement.dataset.analyserSignalGlide='v6';
 
       const style=d.createElement('style');
       style.textContent=`
@@ -27,7 +27,7 @@
 
       const prior=w.__enochAnalyserGesture||{};
       const state=w.__enochAnalyserGesture={
-        version:'v5',dragging:false,mode:'view',pointerCount:0,x:0,y:0,vx:0,vy:0,
+        version:'v6',dragging:false,mode:'view',pointerCount:0,x:0,y:0,vx:0,vy:0,
         view:Object.assign({yaw:0,pitch:0,zoom:1,yawV:0,pitchV:0},prior.view||{}),
         deform:Object.assign({grabBin:null,grabRow:null,pullY:0,pullZ:0,twist:0,radius:.22,strength:1,vY:0,vZ:0},prior.deform||{})
       };
@@ -58,17 +58,19 @@
           state.deform.pullY=clamp(state.deform.pullY+state.deform.vY*16.67,-1.5,1.5);
           state.deform.pullZ=clamp(state.deform.pullZ+state.deform.vZ*16.67,-1.5,1.5);
           state.deform.twist=clamp(state.deform.twist+state.deform.vZ*7.5,-1.6,1.6);
-          state.deform.vY*=.94;state.deform.vZ*=.94;
-          if(Math.abs(state.deform.vY)<.00002)state.deform.vY=0;
-          if(Math.abs(state.deform.vZ)<.00002)state.deform.vZ=0;
+          state.deform.vY=(state.deform.vY-(state.deform.pullY||0)*.000075)*.925;state.deform.vZ=(state.deform.vZ-(state.deform.pullZ||0)*.000075)*.925;
+          state.deform.twist+=(0-state.deform.twist)*.045;
+          if(Math.abs(state.deform.vY)<.00002&&Math.abs(state.deform.pullY)<.006){state.deform.vY=0;state.deform.pullY=0}
+          if(Math.abs(state.deform.vZ)<.00002&&Math.abs(state.deform.pullZ)<.006){state.deform.vZ=0;state.deform.pullZ=0}
+          if(Math.abs(state.deform.twist)<.006)state.deform.twist=0;
           render();
           if(state.deform.vY||state.deform.vZ)raf=w.requestAnimationFrame(momentum);else raf=0;
         }else{
           state.view.yaw=clamp(state.view.yaw+state.view.yawV*16.67,-1.15,1.15);
           state.view.pitch=clamp(state.view.pitch+state.view.pitchV*16.67,-.72,.72);
-          state.view.yawV*=.945;state.view.pitchV*=.945;
-          if(Math.abs(state.view.yawV)<.00002)state.view.yawV=0;
-          if(Math.abs(state.view.pitchV)<.00002)state.view.pitchV=0;
+          state.view.yawV=(state.view.yawV-state.view.yaw*.000075)*.925;state.view.pitchV=(state.view.pitchV-state.view.pitch*.000075)*.925;
+          if(Math.abs(state.view.yawV)<.00002&&Math.abs(state.view.yaw)<.006){state.view.yawV=0;state.view.yaw=0}
+          if(Math.abs(state.view.pitchV)<.00002&&Math.abs(state.view.pitch)<.006){state.view.pitchV=0;state.view.pitch=0}
           render();
           if(state.view.yawV||state.view.pitchV)raf=w.requestAnimationFrame(momentum);else raf=0;
         }
