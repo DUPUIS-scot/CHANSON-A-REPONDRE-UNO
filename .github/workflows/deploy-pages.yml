@@ -136,7 +136,8 @@ jobs:
           test -f build/web/card_castle/card_castle.html
           test -f build/web/card_castle/card_castle_fast.html
           test -s build/web/assets/assets/models/castle_exterior.glb
-          grep -q "castle_exterior.glb" build/web/card_castle/card_castle_fast.html
+          grep -q "castle_exterior.glb" build/web/card_castle/card_castle.html
+          grep -q "card_castle.html" build/web/card_castle/card_castle_fast.html
           grep -q "card_castle_fast.html" build/web/flutter_bootstrap.js
           if ! node scripts/verify_search_category_web.mjs; then
             echo "::warning::Headless SwiftShader did not settle the category-filtered Castle runtime; deterministic Castle packaging/runtime contracts passed, so deployment may continue."
