@@ -99,3 +99,9 @@ protected reference baseline.
 This baseline includes the Home and Play experiences, 3D Browse/Search castle,
 Deck path, DJ Who integration, Journal, Rules, Settings, Profile, application
 navigation, card interactions and animations, 2:3 card proportions,
+category-specific card versos, permanent rectos, presentation assets,
+backgrounds, startup presentation, 3D environment, and puppet/live-dealer
+implementation.
+
+Future development must retain the certified baselines as identifiable and
+restorable reference points in Git history.
