@@ -70,9 +70,8 @@ jobs:
           flutter pub get
           flutter analyze
 
-      - name: Test castle runtime ownership
-        run: |
-          flutter test test/castle_jester_gatekeeper_integration_test.dart test/castle_laboratory_video_ownership_test.dart test/castle_laboratory_asset_contract_test.dart test/castle_ios_laboratory_resilience_test.dart
+      - name: Run Flutter regression suite
+        run: flutter test
 
       - name: Validate production configuration
         shell: bash
@@ -123,6 +122,18 @@ jobs:
           cp build/web/index.html build/web/404.html
           dart run scripts/generate_multideck_share_pages.dart --catalog assets/json/cards.json --brio assets/decks/chanson_a_repondre_brio/deck.json --build-dir build/web --public-base https://www.chanson-a-repondre-uno.scot/
           python3 scripts/apply_global_share_previews.py build/web https://www.chanson-a-repondre-uno.scot/
+
+      - name: Verify every social preview and share page
+        shell: bash
+        run: python3 scripts/verify_share_previews.py
+
+      - name: Browser smoke test for Search route
+        shell: bash
+        run: node scripts/verify_search_category_web.mjs
+
+      - name: Browser smoke test for Play, Castle, and mobile Home
+        shell: bash
+        run: node scripts/verify_dealer_web.mjs
 
       - name: Verify deployable output
         shell: bash
