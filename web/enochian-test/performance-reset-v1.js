@@ -77,6 +77,7 @@
       const resetPerformanceState=async(fromKill=false)=>{
         if(!fromKill&&typeof nativeKill==='function'){try{await nativeKill.call(kill)}catch(_){}}
         cancelPitchReturn();setPitch(0);
+        try{w.__enochSculptAudio?.restore?.()}catch(_){}
 
         resetEqKills();
         if(w.__enochEqAuthority?.set)w.__enochEqAuthority.set(0);else ['low','mid','high'].forEach(id=>setInput(id,0));
@@ -86,7 +87,7 @@
         if(fxWheel){fxWheel.style.setProperty('--angle','-135deg');fxWheel.classList.remove('active');fxWheel.setAttribute('aria-valuenow','0')}
         if(fxWheelV)fxWheelV.textContent='0%';
         setInput('mixerLevel',50);const mixerV=d.getElementById('mixerLevelV');if(mixerV)mixerV.textContent='50%';
-        const pad=d.getElementById('xyPad'),dot=d.getElementById('padDot'),padReadout=d.getElementById('padReadout');
+        const dot=d.getElementById('padDot'),padReadout=d.getElementById('padReadout');
         if(dot){dot.style.left='50%';dot.style.top='50%'}if(padReadout)padReadout.textContent='X 50 · Y 50';
         d.querySelectorAll('[data-pad-fx],.instant-fx-btn').forEach(button=>button.classList.remove('active'));
         const padActivate=d.getElementById('padActivate');if(padActivate?.classList.contains('active'))try{padActivate.click()}catch(_){}
@@ -103,15 +104,14 @@
         if(signal){signal.classList.remove('active');signal.setAttribute('aria-pressed','false');if(/ON/i.test(signal.textContent||''))signal.textContent=(signal.textContent||'SIGNAL MOD').replace(/ON/ig,'OFF')}
         if(w.__enochSignalEngagement){w.__enochSignalEngagement.grabs=0;w.__enochSignalEngagement.lastGrabAt=0}
         if(w.__enochAnalyserGesture?.deform)Object.assign(w.__enochAnalyserGesture.deform,{pullY:0,pullZ:0,twist:0,vY:0,vZ:0,grabBin:null,grabRow:null});
-        try{w.__enochSculptAudio?.restore?.()}catch(_){}
 
-        if(w.__enochLoopAuthority?.enabled||Number(w.__enochLoopAuthority?.start)||w.__enochLoopAuthority?.end!=null){try{loopReset.click()}catch(_){}}
-        else{try{loopReset.click()}catch(_){}}
+        try{loopReset.click()}catch(_){}
         ensureLoopRow();
 
         const stemMaster=d.getElementById('stemMasterToggle');
         if(w.__enochStemAuthority?.desired===true){try{stemMaster?.click()}catch(_){}}
         else if(w.__enochNativeStemEngine?.status?.().enabled){try{await w.__enochNativeStemEngine.setEnabled(false)}catch(_){}}
+        try{['vocals','drums','bass','other'].forEach(key=>{w.__enochNativeStemEngine?.setRow?.(key,true);w.__enochNativeStemEngine?.setLevel?.(key,1)})}catch(_){}
         if(stemMaster){stemMaster.classList.remove('active','stem-loading');stemMaster.setAttribute('aria-pressed','false');stemMaster.textContent='STEMS OFF'}
         d.querySelectorAll('[data-stem-toggle]').forEach(button=>{button.classList.add('active');button.setAttribute('aria-pressed','true')});
         d.querySelectorAll('[data-stem-range]').forEach(range=>{range.value='100';const key=range.dataset.stemRange,out=d.querySelector(`[data-stem-value="${key}"]`);if(out)out.textContent='100%'});
