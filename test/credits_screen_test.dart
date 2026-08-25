@@ -47,5 +47,4 @@ void main() {
     expect(find.text('Version: 3.7.3+1'), findsOneWidget);
     expect(find.text('BACK TO SETTINGS'), findsOneWidget);
   });
-
 }
