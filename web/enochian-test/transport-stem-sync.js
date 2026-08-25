@@ -12,10 +12,10 @@
       const buttons=()=>[...isolator.querySelectorAll('.stem-toggle')],keyOf=b=>b?.dataset?.stemToggle||'',allStemMedia=()=>[...d.querySelectorAll('audio')].filter(a=>a!==master);
       const mediaFor=(button,index)=>{const key=keyOf(button),all=allStemMedia();if(key){const keys=key==='instruments'?['bass','other']:[key];const exact=all.find(m=>keys.some(k=>String(m.dataset?.src||m.src||'').toLowerCase().includes(k)));if(exact)return exact}return all[index]||null};
       const safeTime=(m,t)=>Number.isFinite(m.duration)&&m.duration>0?Math.max(0,Math.min(t,Math.max(0,m.duration-.015))):Math.max(0,t);
-      const alignOne=(m,on,force=false)=>{if(!m)return;try{m.playbackRate=master.playbackRate||1;const mt=master.currentTime||0,drift=Math.abs((m.currentTime||0)-mt);if(force||drift>.06)m.currentTime=safeTime(m,mt);if(master.paused||!on){if(!m.paused)m.pause()}else if(m.paused){const p=m.play();if(p&&p.catch)p.catch(()=>{})}}catch(_){}};
+      const alignOne=(m,on,force=false)=>{if(!m)return;try{m.playbackRate=master.playbackRate||1;const mt=master.currentTime||0,drift=Math.abs((m.currentTime||0)-mt);if(force||master.paused||drift>.02)m.currentTime=safeTime(m,mt);if(master.paused||!on){if(!m.paused)m.pause()}else if(m.paused){const p=m.play();if(p&&p.catch)p.catch(()=>{})}}catch(_){}};
       const sync=(force=false)=>buttons().forEach((b,i)=>alignOne(mediaFor(b,i),active(b),force));
       const hardLoopSync=()=>{const mt=master.currentTime||0;allStemMedia().forEach(m=>{try{m.pause();m.currentTime=safeTime(m,mt);m.playbackRate=master.playbackRate||1}catch(_){}});sync(true)};
-      const refreshLoop=()=>{const on=active(loop);loop.classList.toggle('loop-timing',on);if(on)loop.textContent='LOOP '+timeLabel(master.currentTime||0);else if(loop.textContent.startsWith('LOOP ')&&loop.textContent!=='LOOP OFF')loop.textContent='LOOP OFF'};
+      const refreshLoop=()=>{const on=active(loop);loop.classList.toggle('loop-timing',on);loop.textContent=on?'LOOP ON':'LOOP OFF'};
       let lastTime=master.currentTime||0,timer=0;
       const schedule=()=>{if(timer)w.clearTimeout(timer);timer=w.setTimeout(tick,master.paused?500:100)};
       const tick=()=>{const mt=master.currentTime||0,wrapped=active(loop)&&lastTime-mt>.35;if(wrapped)hardLoopSync();else sync(false);lastTime=mt;refreshLoop();schedule()};

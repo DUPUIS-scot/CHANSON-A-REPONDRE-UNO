@@ -13,7 +13,7 @@ void main() {
     isAnonymous: true,
   );
 
-  test('failed startup guest auth can retry without sign-in', () async {
+  test('guest auth is deferred until protected AI is requested', () async {
     final service = _RetryGuestAuthService(guest);
     final controller = AuthController(
       service,
@@ -22,9 +22,12 @@ void main() {
     addTearDown(controller.dispose);
     addTearDown(service.dispose);
 
-    await Future<void>.delayed(Duration.zero);
     expect(controller.status, AuthStatus.unauthenticated);
     expect(controller.canUseProtectedAi, isFalse);
+    expect(service.attempts, 0);
+
+    expect(await controller.ensureAnonymousSession(), isFalse);
+    expect(controller.status, AuthStatus.unauthenticated);
     expect(service.attempts, 1);
 
     expect(await controller.ensureAnonymousSession(), isTrue);

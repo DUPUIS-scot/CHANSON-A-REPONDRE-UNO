@@ -22,17 +22,13 @@ class AuthController extends ChangeNotifier {
     this.anonymousGuestEnabled = false,
   }) {
     _user = service.currentUser;
+    // Keep the public application immediately usable. Anonymous authentication
+    // (and its interactive Turnstile challenge) is created only when a
+    // protected AI action explicitly calls ensureAnonymousSession().
     status = _user != null
         ? AuthStatus.authenticated
-        : anonymousGuestEnabled &&
-              !configurationError &&
-              !developmentBypassEnabled
-        ? AuthStatus.loading
         : AuthStatus.unauthenticated;
     _subscription = service.authStateChanges.listen(_onAuthState);
-    if (_user == null && status == AuthStatus.loading) {
-      unawaited(_startGuestSession());
-    }
   }
 
   final AuthService service;
@@ -88,11 +84,6 @@ class AuthController extends ChangeNotifier {
   Future<void> signOut() async {
     await service.signOut();
     _onAuthState(null);
-    if (anonymousGuestEnabled &&
-        !configurationError &&
-        !developmentBypassEnabled) {
-      await _startGuestSession();
-    }
   }
 
   Future<bool> refreshSession() async {
