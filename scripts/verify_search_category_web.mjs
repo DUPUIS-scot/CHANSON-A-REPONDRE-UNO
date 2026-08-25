@@ -225,8 +225,8 @@ async function main() {
     // Seed SharedPreferences before Flutter initializes. Writing after the first
     // flutter-view exists is racy because SharedPreferences may already have
     // cached the empty Search state for that page load.
-    const activeDeckPreference = JSON.stringify(JSON.stringify(productionDeckId));
-    const searchPreference = JSON.stringify(JSON.stringify(searchState));
+    const activeDeckPreference = JSON.stringify(productionDeckId);
+    const searchPreference = JSON.stringify(searchState);
     const seedSource = `
       (() => {
         localStorage.setItem('flutter.active_deck', ${JSON.stringify(activeDeckPreference)});
