@@ -14,25 +14,20 @@
       if(d.documentElement.dataset.authoritativeRuntime==='v6')return true;
 
       if(!w.__enochNativeStemEngine||w.__enochNativeStemEngine.version!=='v2'){
-        const bridge=d.createElement('script');
-        bridge.textContent=`(()=>{try{
-          if(window.__enochNativeStemEngine?.version==='v2')return;
-          if(typeof setStemMode!=='function'||typeof applyStemGains!=='function'||typeof stemState==='undefined'||typeof stemGains==='undefined')return;
-          const rawSetStemMode=setStemMode;let operation=null;
-          setStemMode=async function(){if(operation)return operation;operation=Promise.resolve().then(()=>rawSetStemMode()).finally(()=>{operation=null});return operation};
-          const keys=['vocals','drums','bass','other'];
-          const smoothApply=()=>{try{const now=(typeof ctx!=='undefined'&&ctx)?ctx.currentTime:0;keys.forEach(key=>{const node=stemGains[key],st=stemState[key];if(!node||!st)return;const target=st.on?Math.max(0,Math.min(1,Number(st.level)||0)):0;const p=node.gain;if(typeof p.cancelScheduledValues==='function')p.cancelScheduledValues(now);if(typeof p.setTargetAtTime==='function')p.setTargetAtTime(target,now,.018);else p.value=target})}catch(_){try{applyStemGains()}catch(__){}}};
-          const status=()=>({enabled:typeof stemsEnabled!=='undefined'?!!stemsEnabled:false,mode:typeof stemMode!=='undefined'?!!stemMode:false,ready:typeof stemsReady!=='undefined'?!!stemsReady:false,masterConnected:typeof originalDeckConnected!=='undefined'?!!originalDeckConnected:true,routed:typeof stemMode!=='undefined'&&!!stemMode&&typeof originalDeckConnected!=='undefined'&&!originalDeckConnected,states:Object.fromEntries(keys.map(k=>[k,{on:!!stemState[k]?.on,level:Number(stemState[k]?.level)||0}]))});
-          window.__enochNativeStemEngine={version:'v2',status,
-            async setEnabled(on){stemsEnabled=!!on;if(!on){await setStemMode();return status()}if(typeof a!=='undefined'&&a?.paused){stemMode=false;return status()}await setStemMode();return status()},
-            async activate(){stemsEnabled=true;if(typeof a!=='undefined'&&a?.paused)return status();if(typeof originalDeckConnected!=='undefined'&&originalDeckConnected)stemMode=false;await setStemMode();return status()},
-            setRow(key,on){const value=!!on;if(key==='instruments'){stemState.bass.on=value;stemState.other.on=value}else if(stemState[key])stemState[key].on=value;smoothApply();return status()},
-            setLevel(key,value){const v=Math.max(0,Math.min(1,Number(value)||0));if(key==='instruments'){stemState.bass.level=v;stemState.other.level=v}else if(stemState[key])stemState[key].level=v;smoothApply();return status()},
-            smoothApply,
-            sync(force=false){try{if(force)setStemRate();syncStemTimes(!!force)}catch(_){}return status()}
-          };
-        }catch(_){}})();`;
-        d.documentElement.appendChild(bridge);bridge.remove();
+        const api=w.__enochStemRuntimeApi;
+        if(!api||api.version!=='v1')return false;
+        const keys=['vocals','drums','bass','other'];let operation=null;
+        const runStemMode=async()=>{if(operation)return operation;operation=Promise.resolve().then(()=>api.setStemMode()).finally(()=>{operation=null});return operation};
+        const smoothApply=()=>{try{const now=api.context?.currentTime||0;keys.forEach(key=>{const node=api.gains[key],st=api.state[key];if(!node||!st)return;const target=st.on?Math.max(0,Math.min(1,Number(st.level)||0)):0;const p=node.gain;if(typeof p.cancelScheduledValues==='function')p.cancelScheduledValues(now);if(typeof p.setTargetAtTime==='function')p.setTargetAtTime(target,now,.018);else p.value=target})}catch(_){try{api.applyStemGains()}catch(__){}}};
+        const status=()=>({enabled:!!api.enabled,mode:!!api.mode,ready:!!api.ready,masterConnected:!!api.masterConnected,routed:!!api.mode&&!api.masterConnected,states:Object.fromEntries(keys.map(k=>[k,{on:!!api.state[k]?.on,level:Number(api.state[k]?.level)||0}]))});
+        w.__enochNativeStemEngine={version:'v2',status,
+          async setEnabled(on){api.enabled=!!on;if(!on){await runStemMode();return status()}if(api.audio?.paused){api.mode=false;return status()}await runStemMode();return status()},
+          async activate(){api.enabled=true;if(api.audio?.paused)return status();if(api.masterConnected)api.mode=false;await runStemMode();return status()},
+          setRow(key,on){const value=!!on;if(key==='instruments'){api.state.bass.on=value;api.state.other.on=value}else if(api.state[key])api.state[key].on=value;smoothApply();return status()},
+          setLevel(key,value){const v=Math.max(0,Math.min(1,Number(value)||0));if(key==='instruments'){api.state.bass.level=v;api.state.other.level=v}else if(api.state[key])api.state[key].level=v;smoothApply();return status()},
+          smoothApply,
+          sync(force=false){try{if(force)api.setStemRate();api.syncStemTimes(!!force)}catch(_){}return status()}
+        };
       }
       const engine=w.__enochNativeStemEngine;
       if(!engine||engine.version!=='v2')return false;

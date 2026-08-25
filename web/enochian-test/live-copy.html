@@ -201,6 +201,24 @@ frame.addEventListener('load',()=>{
    }
    return await setStemModeCore();
   };
+  // Stable bridge for runtime layers loaded by the parent terminal page. Keep
+  // the stem implementation private while exposing the operations and state
+  // that the authoritative controller must coordinate.
+  window.__enochStemRuntimeApi={
+   version:'v1',
+   get enabled(){return stemsEnabled},set enabled(value){stemsEnabled=!!value},
+   get mode(){return stemMode},set mode(value){stemMode=!!value},
+   get ready(){return stemsReady},
+   get masterConnected(){return originalDeckConnected},
+   get audio(){return typeof a!=='undefined'?a:null},
+   get context(){return typeof ctx!=='undefined'?ctx:null},
+   get state(){return stemState},
+   get gains(){return stemGains},
+   setStemMode:()=>setStemMode(),
+   applyStemGains,
+   setStemRate,
+   syncStemTimes,
+  };
   const leftSide=q('track')&&q('track').closest('.side');
   if(leftSide&&!q('stemIsolator')){const box=document.createElement('div');box.id='stemIsolator';box.className='stem-isolator';box.innerHTML='<div class="stem-title">STEM ISOLATOR · AI COMPTROLLER</div><div class="stem-row"><button class="btn stem-toggle active" data-stem-toggle="vocals">VOCALS</button><input class="stem-range" data-stem-range="vocals" type="range" min="0" max="100" value="100"><output class="stem-value" data-stem-value="vocals">100%</output></div><div class="stem-row"><button class="btn stem-toggle active" data-stem-toggle="drums">DRUMS</button><input class="stem-range" data-stem-range="drums" type="range" min="0" max="100" value="100"><output class="stem-value" data-stem-value="drums">100%</output></div><div class="stem-row"><button class="btn stem-toggle active" data-stem-toggle="instruments">INSTRUMENTS</button><input class="stem-range" data-stem-range="instruments" type="range" min="0" max="100" value="100"><output class="stem-value" data-stem-value="instruments">100%</output></div><div id="stemNote" class="stem-note">BASS + OTHERS = INSTRUMENTS</div>';q('track').insertAdjacentElement('afterend',box);
    box.querySelectorAll('[data-stem-toggle]').forEach(b=>b.onclick=async()=>{await ensureAudio();const key=b.dataset.stemToggle;if(key==='instruments'){const next=!(stemState.bass.on&&stemState.other.on);stemState.bass.on=next;stemState.other.on=next;b.classList.toggle('active',next)}else{stemState[key].on=!stemState[key].on;b.classList.toggle('active',stemState[key].on)}applyStemGains();try{log('STEM '+key.toUpperCase()+' · '+(b.classList.contains('active')?'ON':'OFF'))}catch(_){}});

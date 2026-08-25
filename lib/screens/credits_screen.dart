@@ -63,6 +63,15 @@ class _CreditsScreenState extends State<CreditsScreen>
     );
   }
 
+  Future<void> _toggleCurtain() async {
+    if (_leaving) return;
+    await _curtainController.animateTo(
+      _curtainController.value >= .5 ? 0 : 1,
+      curve: Curves.easeInOutCubic,
+      duration: const Duration(milliseconds: 520),
+    );
+  }
+
   Future<void> _backToSettings() async {
     if (_leaving) return;
     setState(() => _leaving = true);
@@ -135,6 +144,7 @@ class _CreditsScreenState extends State<CreditsScreen>
                       child: GestureDetector(
                         key: const ValueKey('credits-curtain-left'),
                         behavior: HitTestBehavior.translucent,
+                        onTap: _toggleCurtain,
                         onHorizontalDragUpdate: (e) =>
                             _dragCurtain(e.delta.dx, fullWidth, true),
                         onHorizontalDragEnd: (e) =>
@@ -149,6 +159,7 @@ class _CreditsScreenState extends State<CreditsScreen>
                       child: GestureDetector(
                         key: const ValueKey('credits-curtain-right'),
                         behavior: HitTestBehavior.translucent,
+                        onTap: _toggleCurtain,
                         onHorizontalDragUpdate: (e) =>
                             _dragCurtain(e.delta.dx, fullWidth, false),
                         onHorizontalDragEnd: (e) =>
@@ -163,6 +174,7 @@ class _CreditsScreenState extends State<CreditsScreen>
                         height: double.infinity,
                         child: GestureDetector(
                           behavior: HitTestBehavior.translucent,
+                          onTap: _toggleCurtain,
                           onHorizontalDragUpdate: (e) =>
                               _dragCurtain(e.delta.dx, fullWidth, true),
                           onHorizontalDragEnd: (e) =>
@@ -177,6 +189,7 @@ class _CreditsScreenState extends State<CreditsScreen>
                         height: double.infinity,
                         child: GestureDetector(
                           behavior: HitTestBehavior.translucent,
+                          onTap: _toggleCurtain,
                           onHorizontalDragUpdate: (e) =>
                               _dragCurtain(e.delta.dx, fullWidth, false),
                           onHorizontalDragEnd: (e) =>

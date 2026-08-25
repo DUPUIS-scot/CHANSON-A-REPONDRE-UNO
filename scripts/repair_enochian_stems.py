@@ -14,6 +14,7 @@ runtime_required = [
     "setTimeout(stemDriftTick,500)",
     "RELIABLE BASE TRANSPORT",
     "MASTER STEM TOGGLE",
+    "window.__enochStemRuntimeApi=",
     "stemMasterToggle",
     "masterGate",
     "ensureMasterGate",
@@ -36,7 +37,7 @@ if 'requestAnimationFrame(stemDriftTick)' in s:
     raise SystemExit('RAF stem drift loop unexpectedly present')
 
 shell_required = [
-    "live-copy.html?v=20260825-deep-repair-v1",
+    "live-copy.html?v=20260825-runtime-api-v2",
     "installReliableNavigation",
     "home.href='/#/home'",
     "go('#/home')",
@@ -44,7 +45,7 @@ shell_required = [
     "installConsoleAuthority",
     "installReliableFullscreen",
     "syncResponsiveLayout",
-    "authoritative-runtime.js?v=20260825-deep-repair-v1",
+    "authoritative-runtime.js?v=20260825-runtime-api-v2",
     "outer-analyser-panel.js?v=20260824-v2",
     "analyser-data-bus.js?v=20260824-v2",
     "analyser-composite-signal.js?v=20260824-v9",
@@ -112,10 +113,11 @@ required_authority = [
     "__enochStemAuthority={version:'v6'",
     "__enochLoopAuthority={version:'v6'",
     "__enochNativeStemEngine={version:'v2'",
+    "const api=w.__enochStemRuntimeApi",
     "masterConnected",
     "routed:",
-    "stemGains",
-    "stemState",
+    "api.gains",
+    "api.state",
     "setTargetAtTime",
     "setEnabled(on)",
     "setRow(key,on)",
@@ -131,6 +133,8 @@ required_authority = [
 for marker in required_authority:
     if marker not in authority:
         raise SystemExit(f'native Web Audio stem/loop authority marker missing: {marker}')
+if "typeof setStemMode!=='function'" in authority:
+    raise SystemExit('authoritative runtime still depends on private IIFE globals')
 if 'requestAnimationFrame' in authority:
     raise SystemExit('authoritative loop unexpectedly depends on requestAnimationFrame')
 if 'master.muted=true' in authority or 'm.volume=' in authority or 'createMediaElementSource' in authority:

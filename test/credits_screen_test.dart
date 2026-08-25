@@ -16,7 +16,7 @@ void main() {
     );
   });
 
-  testWidgets('curtain stays closed until dragged, then reveals dynamic credits', (
+  testWidgets('curtain starts closed, opens on tap, and reveals dynamic credits', (
     tester,
   ) async {
     await tester.pumpWidget(const MaterialApp(home: CreditsScreen()));
@@ -29,18 +29,15 @@ void main() {
     expect(find.byKey(const ValueKey('credits-curtain-right')), findsOneWidget);
     expect(find.byIcon(Icons.play_arrow), findsNothing);
 
-    // Entry remains theatrically closed until the user directly drags a curtain.
+    // Entry remains theatrically closed until the user directly interacts.
     await tester.pump(const Duration(seconds: 2));
     credits = tester.widget<AnimatedOpacity>(
       find.byKey(const ValueKey('credits-content')),
     );
     expect(credits.opacity, 0);
 
-    // Pull the left curtain outward far enough to cross the open threshold.
-    await tester.drag(
-      find.byKey(const ValueKey('credits-curtain-left')),
-      const Offset(-500, 0),
-    );
+    // A normal tap opens the curtain; dragging remains available for direct posing.
+    await tester.tap(find.byKey(const ValueKey('credits-curtain-left')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 450));
     await tester.pumpAndSettle();
@@ -51,5 +48,13 @@ void main() {
     expect(credits.opacity, 1);
     expect(find.text('Version: 3.7.3+1'), findsOneWidget);
     expect(find.text('BACK TO SETTINGS'), findsOneWidget);
+
+    // The exposed edge remains tappable and closes the curtain again.
+    await tester.tapAt(const Offset(10, 300));
+    await tester.pumpAndSettle();
+    credits = tester.widget<AnimatedOpacity>(
+      find.byKey(const ValueKey('credits-content')),
+    );
+    expect(credits.opacity, 0);
   });
 }
