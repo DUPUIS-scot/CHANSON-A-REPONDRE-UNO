@@ -168,12 +168,11 @@ void main() {
         imageWidth: 600,
         imageHeight: 900,
       );
-      final socialPath = previewPath ?? path;
       final imageUrl = base.replace(
         pathSegments: [
           'CHANSON-A-REPONDRE-UNO',
           'assets',
-          ...socialPath.split('/'),
+          ...previewPath.split('/'),
         ],
       );
 
