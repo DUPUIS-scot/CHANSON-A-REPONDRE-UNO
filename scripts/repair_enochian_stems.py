@@ -11,15 +11,15 @@ runtime_required = [
     "m.preload='none'",
     "ensureStemMediaLoaded",
     "STEM FALLBACK · MASTER AUDIO",
-    "setTimeout(stemDriftTick,1000)",
+    "setTimeout(stemDriftTick,500)",
     "RELIABLE BASE TRANSPORT",
     "MASTER STEM TOGGLE",
     "stemMasterToggle",
     "masterGate",
     "ensureMasterGate",
     "setMasterRoute",
-    "diff*.16",
-    "Math.abs(diff)>.75",
+    "diff*.12",
+    "Math.abs(diff)>.035",
     "window.__enochToggleFullscreen",
     "fullBtn.dataset.terminalFullscreen='1'",
     "FULL SCREEN",
@@ -36,7 +36,7 @@ if 'requestAnimationFrame(stemDriftTick)' in s:
     raise SystemExit('RAF stem drift loop unexpectedly present')
 
 shell_required = [
-    "live-copy.html?v=20260824-stem-rate-v5",
+    "live-copy.html?v=20260825-deep-repair-v1",
     "installReliableNavigation",
     "home.href='/#/home'",
     "go('#/home')",
@@ -44,7 +44,7 @@ shell_required = [
     "installConsoleAuthority",
     "installReliableFullscreen",
     "syncResponsiveLayout",
-    "authoritative-runtime.js?v=20260824-v7",
+    "authoritative-runtime.js?v=20260825-deep-repair-v1",
     "outer-analyser-panel.js?v=20260824-v2",
     "analyser-data-bus.js?v=20260824-v2",
     "analyser-composite-signal.js?v=20260824-v9",
@@ -59,7 +59,7 @@ shell_required = [
     "installEnochianAnalyserSignal3D",
     "installEnochianSculptAudioMod",
     "installEnochianIOSTouchTuning",
-    "target-viewport.js?v=20260824-v9",
+    "target-viewport.js?v=20260825-deep-repair-v1",
     "iphone-landscape-layout-v2.js?v=20260824-deep-v19",
 ]
 for marker in shell_required:
