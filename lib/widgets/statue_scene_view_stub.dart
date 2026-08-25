@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 class StatueSceneView extends StatelessWidget {
-  const StatueSceneView({super.key});
+  const StatueSceneView({super.key, this.interactive = true});
+
+  final bool interactive;
 
   @override
   Widget build(BuildContext context) => const ColoredBox(
@@ -17,4 +19,3 @@ class StatueSceneView extends StatelessWidget {
     ),
   );
 }
-
