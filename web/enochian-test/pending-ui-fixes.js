@@ -1,9 +1,20 @@
 (()=>{
+  const armRecovery=(frame,live,deck)=>{
+    try{
+      const lw=live.defaultView;if(!lw)return;
+      const reinstall=()=>setTimeout(()=>{window.installEnochianSculptAudioMod?.(frame);window.installEnochianPendingUiFixes?.(frame)},0);
+      if(deck&&!deck.dataset.enochRecoveryHook){deck.dataset.enochRecoveryHook='v1';deck.addEventListener('load',reinstall)}
+      if(lw.__enochPendingRecoveryV1)return;
+      const observer=new lw.MutationObserver(()=>{const next=live.getElementById('deck');if(next&&!next.dataset.enochRecoveryHook){next.dataset.enochRecoveryHook='v1';next.addEventListener('load',reinstall)}reinstall()});
+      observer.observe(live.documentElement,{childList:true,subtree:true});lw.__enochPendingRecoveryV1={observer};
+    }catch(_){}
+  };
   function install(frame){
     try{
       const live=frame.contentDocument,deck=live&&live.getElementById('deck'),d=deck&&deck.contentDocument,w=d&&d.defaultView;
       if(!d||!w)return false;
-      if(d.documentElement.dataset.pendingUiFixes==='v2')return true;
+      armRecovery(frame,live,deck);
+      if(d.documentElement.dataset.pendingUiFixes==='v2'){window.installEnochianSculptAudioMod?.(frame);return true}
       const play=d.getElementById('play'),loop=d.getElementById('loopToggle'),loopIn=d.getElementById('loopIn'),loopOut=d.getElementById('loopOut'),loopReset=d.getElementById('loopReset');
       const mod=d.querySelector('.mod'),modWheel=d.getElementById('modWheel'),wave=d.querySelector('.wave');
       const eqIds=['low','mid','high'];
@@ -31,28 +42,27 @@
       }
       [loop,loopIn,loopOut,loopReset].forEach(el=>loopRow.appendChild(el));
 
+      const kills=w.__enochEqKills={version:'v2',bands:{}};
       eqIds.forEach(id=>{
         const range=d.getElementById(id),box=range.closest('.fxbox');if(!box)return;
         const row=box.querySelector('.row');if(!row||row.querySelector(`[data-eq-kill="${id}"]`))return;
         row.classList.add('eq-kill-row');
         const button=d.createElement('button');button.type='button';button.className='btn eq-kill-btn';button.dataset.eqKill=id;button.textContent='KILL';button.setAttribute('aria-pressed','false');button.setAttribute('aria-label',id.toUpperCase()+' EQ kill');
-        let saved=Number(range.value)||0,killed=false;
+        const state=kills.bands[id]={killed:false,saved:Number(range.value)||0,min:Number(range.min)||-18};
+        const paint=()=>{button.classList.toggle('active',state.killed);button.setAttribute('aria-pressed',String(state.killed));button.textContent=state.killed?'KILLED':'KILL';range.dataset.eqKilled=String(state.killed)};
         const setValue=value=>{range.value=String(value);range.dispatchEvent(new w.Event('input',{bubbles:true}))};
-        button.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();if(!killed){saved=Number(range.value)||0;setValue(Number(range.min)||-18);killed=true}else{setValue(saved);killed=false}button.classList.toggle('active',killed);button.setAttribute('aria-pressed',String(killed));button.textContent=killed?'KILLED':'KILL'});
-        range.addEventListener('input',()=>{if(killed&&Number(range.value)!==(Number(range.min)||-18)){killed=false;button.classList.remove('active');button.setAttribute('aria-pressed','false');button.textContent='KILL'}});
-        row.appendChild(button);
+        button.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();if(!state.killed){state.saved=Number(range.value)||0;state.killed=true;paint();setValue(state.min)}else{state.killed=false;paint();setValue(state.saved)}});
+        range.addEventListener('input',()=>{if(!state.killed)state.saved=Number(range.value)||0});
+        paint();row.appendChild(button);
       });
 
-      const engagement=w.__enochSignalEngagement={version:'v1',grabs:0,lastGrabAt:0};
-      wave.addEventListener('pointerdown',e=>{
-        if(w.__enochSignalModulation!==true||e.target.closest('button,input,textarea,select'))return;
-        let picked=null;try{picked=w.__enochAnalyser3D?.pick?.(e.clientX,e.clientY)||null}catch(_){}
-        if(!picked)return;
-        engagement.grabs=Math.min(5,engagement.grabs+1);engagement.lastGrabAt=performance.now();
-      });
+      const previous=w.__enochSignalEngagement;
+      const engagement=w.__enochSignalEngagement={version:'v2',grabs:Math.min(5,Math.max(0,previous?.grabs||0)),lastGrabAt:previous?.lastGrabAt||0,sessionMs:5000};
+      const registerGrab=(x,y)=>{let picked=null;try{picked=w.__enochAnalyser3D?.pick?.(x,y)||null}catch(_){}if(!picked)return false;engagement.grabs=Math.min(5,engagement.grabs+1);engagement.lastGrabAt=performance.now();return true};
+      wave.addEventListener('pointerdown',e=>{if(w.__enochSignalModulation!==true||e.target.closest('button,input,textarea,select'))return;const x=e.clientX,y=e.clientY;if(!registerGrab(x,y))w.requestAnimationFrame(()=>{if(w.__enochSignalModulation===true)registerGrab(x,y)})});
       const decay=()=>{
         const def=w.__enochAnalyserGesture?.deform;
-        if(engagement.grabs&&performance.now()-engagement.lastGrabAt>1400&&def){
+        if(engagement.grabs&&performance.now()-engagement.lastGrabAt>engagement.sessionMs&&def){
           const energy=Math.abs(def.pullY||0)+Math.abs(def.pullZ||0)+Math.abs(def.twist||0)+Math.abs(def.vY||0)*150+Math.abs(def.vZ||0)*150;
           if(energy<.08)engagement.grabs=0;
         }
@@ -60,8 +70,15 @@
       };
       w.setTimeout(decay,180);
       d.getElementById('signalModToggle')?.addEventListener('click',()=>{if(w.__enochSignalModulation!==true)engagement.grabs=0});
+      window.installEnochianSculptAudioMod?.(frame);
       return true;
     }catch(_){return false}
   }
-  window.installEnochianPendingUiFixes=frame=>{let n=0,t=setInterval(()=>{if(install(frame)||++n>240)clearInterval(t)},50)};
+  let retryTimer=0,retryFrame=null;
+  window.installEnochianPendingUiFixes=frame=>{
+    if(install(frame)){if(retryTimer){clearInterval(retryTimer);retryTimer=0}return true}
+    retryFrame=frame;
+    if(!retryTimer){let n=0;retryTimer=setInterval(()=>{if(install(retryFrame)||++n>240){clearInterval(retryTimer);retryTimer=0}},50)}
+    return false;
+  };
 })();

@@ -18,15 +18,16 @@
       const current={low:base.low,mid:base.mid,high:base.high,mix:base.mix};
       const grabCurve=[0,.28,.48,.67,.87,1];
       let writing=false,raf=0,lastLog=0;
+      const eqKilled=el=>el?.dataset?.eqKilled==='true';
 
       const setControl=(el,value)=>{
-        if(!el)return;
+        if(!el||eqKilled(el))return;
         const min=Number.isFinite(parseFloat(el.min))?parseFloat(el.min):-Infinity,max=Number.isFinite(parseFloat(el.max))?parseFloat(el.max):Infinity;
         const next=clamp(value,min,max);
         if(Math.abs((parseFloat(el.value)||0)-next)<.02)return;
         writing=true;el.value=String(next);el.dispatchEvent(new Event('input',{bubbles:true}));writing=false;
       };
-      const bindBase=(el,key)=>{if(!el)return;const capture=()=>{if(!writing){base[key]=n(el);current[key]=base[key]}};el.addEventListener('input',capture);el.addEventListener('change',capture)};
+      const bindBase=(el,key)=>{if(!el)return;const capture=()=>{if(!writing&&!eqKilled(el)){base[key]=n(el);current[key]=base[key]}};el.addEventListener('input',capture);el.addEventListener('change',capture)};
       bindBase(low,'low');bindBase(mid,'mid');bindBase(high,'high');bindBase(fxMix,'mix');
 
       const restoreBase=()=>{
@@ -69,5 +70,11 @@
       raf=w.requestAnimationFrame(update);return true;
     }catch(_){return false}
   }
-  window.installEnochianSculptAudioMod=frame=>{let n=0,t=setInterval(()=>{if(install(frame)||++n>240)clearInterval(t)},50)};
+  let retryTimer=0,retryFrame=null;
+  window.installEnochianSculptAudioMod=frame=>{
+    if(install(frame)){if(retryTimer){clearInterval(retryTimer);retryTimer=0}return true}
+    retryFrame=frame;
+    if(!retryTimer){let n=0;retryTimer=setInterval(()=>{if(install(retryFrame)||++n>240){clearInterval(retryTimer);retryTimer=0}},50)}
+    return false;
+  };
 })();
