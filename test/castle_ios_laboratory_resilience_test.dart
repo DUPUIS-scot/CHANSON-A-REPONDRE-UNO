@@ -19,7 +19,7 @@ void main() {
     expect(bootstrap, contains('card_castle/card_castle_fast.html'));
     expect(bootstrap, contains('optimized = url.href'));
 
-    final sharedImport = overlay.indexOf('castle_shared_transition_loader_v64.js?v=72');
+    final sharedImport = overlay.indexOf('castle_shared_transition_loader_v64.js?v=73');
     final resilienceImport = overlay.indexOf('castle_ios_laboratory_resilience_v62.js?v=65');
     final coreImport = overlay.indexOf('castle_navigation_overlay_core.js?v=72');
     final eventBridgeImport = overlay.indexOf('castle_laboratory_event_bridge_v69.js?v=69');
@@ -70,7 +70,7 @@ void main() {
     expect(bridge, contains('video.autoplay = false'));
     expect(bridge, contains('texture.needsUpdate = true'));
     expect(medallion, contains('window.__castleBureauVideoPrime?.()'));
-    expect(overlay, contains("castle_bureau_video_bridge.js?v=75"));
+    expect(overlay, contains("castle_bureau_video_bridge.js?v=76"));
     expect(overlay, isNot(contains('castle_bureau_video_refresh_v70.js')));
     expect(overlay, contains("castle_visual_regression_v55.js?v=70"));
 
