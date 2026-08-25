@@ -33,6 +33,7 @@ jobs:
             integration_test
             scripts
             tool
+            supabase
             pubspec.yaml
             pubspec.lock
             analysis_options.yaml
