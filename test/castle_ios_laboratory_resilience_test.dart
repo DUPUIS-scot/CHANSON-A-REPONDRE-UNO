@@ -63,12 +63,14 @@ void main() {
 
     expect(bridge, contains(r'const SCREEN_NAME = /^VideoScreen_(Left|Right)$/i'));
     expect(bridge, contains('window.__castleBureauVideoPrime = primeFromGesture'));
-    expect(bridge, contains('PRIME_WINDOW_MS = 60000'));
-    expect(bridge, contains('keepPrimedDuringEntry()'));
+    expect(bridge, contains('raycaster.intersectObjects([...boundMeshes], false)'));
+    expect(bridge, contains("bureauVideoInteraction = 'mirror-click-v73'"));
+    expect(bridge, contains("bureauVideoPlayback = 'paused-awaiting-mirror-click-v73'"));
+    expect(bridge, contains("bureauVideoPlayback = 'playing-loop-v73'"));
+    expect(bridge, contains('video.autoplay = false'));
     expect(bridge, contains('texture.needsUpdate = true'));
-    expect(bridge, contains("bureauVideoPlayback = 'playing-loop-v72'"));
     expect(medallion, contains('window.__castleBureauVideoPrime?.()'));
-    expect(overlay, contains("castle_bureau_video_bridge.js?v=74"));
+    expect(overlay, contains("castle_bureau_video_bridge.js?v=75"));
     expect(overlay, isNot(contains('castle_bureau_video_refresh_v70.js')));
     expect(overlay, contains("castle_visual_regression_v55.js?v=70"));
 
