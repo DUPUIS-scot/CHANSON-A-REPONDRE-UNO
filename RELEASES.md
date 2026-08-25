@@ -1,5 +1,26 @@
 # Chanson à Répondre UNO releases
 
+## v3.073 — Approved / Certified
+
+- Version: 3.073
+- Status: APPROVED
+- Status: CERTIFIED
+- Package version: 3.7.3+1
+- Deck: 84 permanent cards across five permanent categories
+- Search: five individual categories + ALL CATEGORIES
+- Castle: real 3D / 84-card capable
+- Utility design: unified theatrical background for Decks, Cards, Journal,
+  Rules, and Settings
+- Home: specialised environment preserved
+- Play: specialised environment preserved
+- Search: specialised 3D environment preserved
+- Profile: independent
+
+The v3.073 release is the current protected reference baseline for the certified
+webapp. Deployment validation is performed by the GitHub Pages workflow on the
+main branch. The historical `v3.072`, `v3.071`, `v3.07`, and `v2.5`
+baselines remain identifiable and restorable in Git history.
+
 ## v3.072 — Approved / Certified
 
 - Version: 3.072
@@ -78,9 +99,3 @@ protected reference baseline.
 This baseline includes the Home and Play experiences, 3D Browse/Search castle,
 Deck path, DJ Who integration, Journal, Rules, Settings, Profile, application
 navigation, card interactions and animations, 2:3 card proportions,
-category-specific card versos, permanent rectos, presentation assets,
-backgrounds, startup presentation, 3D environment, and puppet/live-dealer
-implementation.
-
-Future development must retain the certified baselines as identifiable and
-restorable reference points in Git history.
