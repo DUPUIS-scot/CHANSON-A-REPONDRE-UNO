@@ -165,12 +165,8 @@ void main() {
         title: title,
         imagePath: path,
         previewImagePath: previewPath,
-        imageWidth: previewPath != null
-            ? 600
-            : (card['imageWidth'] as num?)?.toInt(),
-        imageHeight: previewPath != null
-            ? 900
-            : (card['imageHeight'] as num?)?.toInt(),
+        imageWidth: 600,
+        imageHeight: 900,
       );
       final socialPath = previewPath ?? path;
       final imageUrl = base.replace(
