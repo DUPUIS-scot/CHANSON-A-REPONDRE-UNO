@@ -25,21 +25,27 @@ void main() {
       find.byKey(const ValueKey('credits-content')),
     );
     expect(credits.opacity, 0);
-    expect(find.byKey(const ValueKey('credits-curtain-left')), findsOneWidget);
-    expect(find.byKey(const ValueKey('credits-curtain-right')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('credits-curtain-open-surface')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('credits-curtain-left')), findsNothing);
+    expect(find.byKey(const ValueKey('credits-curtain-right')), findsNothing);
     expect(find.byIcon(Icons.play_arrow), findsNothing);
 
-    // Entry remains theatrically closed until the user directly interacts.
+    // Entry remains closed until the user directly interacts.
     await tester.pump(const Duration(seconds: 2));
     credits = tester.widget<AnimatedOpacity>(
       find.byKey(const ValueKey('credits-content')),
     );
     expect(credits.opacity, 0);
 
-    // A normal tap opens the curtain; dragging remains available for direct posing.
-    await tester.tap(find.byKey(const ValueKey('credits-curtain-left')));
+    // The full closed surface opens the curtain reliably.
+    await tester.tap(
+      find.byKey(const ValueKey('credits-curtain-open-surface')),
+    );
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 450));
+    await tester.pump(const Duration(milliseconds: 700));
     await tester.pumpAndSettle();
 
     credits = tester.widget<AnimatedOpacity>(
@@ -49,7 +55,7 @@ void main() {
     expect(find.text('Version: 3.7.3+1'), findsOneWidget);
     expect(find.text('BACK TO SETTINGS'), findsOneWidget);
 
-    // The exposed edge remains tappable and closes the curtain again.
+    // The exposed curtain edge remains tappable and closes it again.
     await tester.tapAt(const Offset(10, 300));
     await tester.pumpAndSettle();
     credits = tester.widget<AnimatedOpacity>(
