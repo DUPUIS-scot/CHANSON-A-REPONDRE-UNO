@@ -52,7 +52,7 @@ shell_required = [
     "analyser-signal-glide.js?v=20260825-v6",
     "analyser-signal-3d.js?v=20260824-v6",
     "sculpt-audio-mod.js?v=20260825-v3",
-    "pending-ui-fixes.js?v=20260825-v1",
+    "pending-ui-fixes.js?v=20260825-v2",
     "ios-touch-tuning.js?v=20260824-v1",
     "installEnochianAuthoritativeRuntime",
     "installEnochianOuterAnalyserPanel",
@@ -75,6 +75,7 @@ for stale in [
     "authoritative-runtime.js?v=20260824-v3",
     "authoritative-runtime.js?v=20260824-v4",
     "sculpt-audio-mod.js?v=20260824-v2",
+    "pending-ui-fixes.js?v=20260825-v1",
 ]:
     if stale in shell:
         raise SystemExit(f'legacy competing runtime still loaded: {stale}')
@@ -160,7 +161,7 @@ if "analyserSignalGlide='v6'" not in glide or "analyserSignal3d='v6'" not in thr
     raise SystemExit('current FFT sculptable 3D analyser contract missing')
 if "sculptAudioMod='v3'" not in sculpt_audio or "version:'v3'" not in sculpt_audio or '__enochSculptAudio' not in sculpt_audio or 'grabCurve=[0,.28,.48,.67,.87,1]' not in sculpt_audio or 'restoreBase' not in sculpt_audio or 'SCULPT AUDIO' not in sculpt_audio:
     raise SystemExit('sculpt-to-audio modulation v3 engagement contract missing')
-if "pendingUiFixes==='v1'" not in pending_ui or 'loop-control-row' not in pending_ui or 'eq-kill-btn' not in pending_ui:
-    raise SystemExit('pending terminal UI fixes contract missing')
+if "pendingUiFixes==='v2'" not in pending_ui or "dataset.pendingUiFixes='v2'" not in pending_ui or 'loop-control-row' not in pending_ui or 'eq-kill-btn' not in pending_ui:
+    raise SystemExit('pending terminal UI fixes v2 contract missing')
 
 print('Enochian runtime verified: persistent stem master ON/OFF inside isolator, native Web Audio stem bridge with exclusive master/stem routing and smoothed GainNode mix, authoritative transport-clock loop with forced end wrap, outer floating analyser, unified FFT analyser bus, ring-buffered 3D signal history, v3 grab-engagement sculpt-to-audio, EQ kills, aligned MOD wheel, loop row, navigation and outer fullscreen.')
