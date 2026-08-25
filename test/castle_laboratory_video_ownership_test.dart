@@ -9,6 +9,7 @@ void main() {
     final regression = File('web/card_castle/castle_regression_hotfix.js').readAsStringSync();
     final visual = File('web/card_castle/castle_visual_regression_v55.js').readAsStringSync();
     final overlay = File('web/card_castle/castle_navigation_overlay.js').readAsStringSync();
+    final videoOrientation = File('web/card_castle/castle_video_surface_invert_v71.js').readAsStringSync();
     final sharedLoader = File('web/card_castle/castle_shared_transition_loader_v64.js').readAsStringSync();
     final resetView = File('web/card_castle/castle_laboratory_entry_reset_v70.js').readAsStringSync();
 
@@ -27,7 +28,10 @@ void main() {
     expect(overlay, contains("castle_shared_transition_loader_v64.js?v=72"));
     expect(overlay, contains("castle_ios_laboratory_resilience_v62.js?v=65"));
     expect(overlay, contains("castle_laboratory_medallion_button.js?v=66"));
-    expect(overlay, contains("castle_bureau_video_bridge.js?v=73"));
+    expect(overlay, contains("castle_bureau_video_bridge.js?v=74"));
+    expect(overlay, contains("castle_video_surface_invert_v71.js?v=74"));
+    expect(videoOrientation, contains("bureauVideoSurfaceOrientation = 'laboratory-facing'"));
+    expect(videoOrientation, contains('object.rotation.y -= Math.PI'));
     expect(overlay, isNot(contains('castle_bureau_video_refresh_v70.js')));
     expect(overlay, contains("castle_laboratory_entry_reset_v70.js?v=70"));
     expect(resetView, contains("laboratoryStartingView = 'reset-identical-v70'"));
