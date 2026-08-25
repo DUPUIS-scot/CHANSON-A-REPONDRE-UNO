@@ -25,6 +25,19 @@ jobs:
         with:
           fetch-depth: 1
           filter: blob:none
+          sparse-checkout: |
+            assets
+            lib
+            web
+            test
+            integration_test
+            scripts
+            tool
+            pubspec.yaml
+            pubspec.lock
+            analysis_options.yaml
+            .metadata
+          sparse-checkout-cone-mode: false
 
       - name: Verify Enochian runtime
         shell: bash
