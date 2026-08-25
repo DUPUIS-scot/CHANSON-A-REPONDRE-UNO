@@ -274,9 +274,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ],
               ),
               SettingsSection(
-                title: 'EXPERIENCES',
-                icon: Icons.auto_awesome_outlined,
-                initiallyExpanded: true,
+                title: 'INTERACTIVE',
+                icon: Icons.view_in_ar_outlined,
+                initiallyExpanded: false,
                 children: [
                   SettingsActionTile(
                     title: 'Interactive detective statue',
@@ -284,12 +284,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         '30-second salute, articulated controls and 360° rotation.',
                     icon: Icons.view_in_ar_outlined,
                     onTap: () => context.push(AppRoutes.statueExperience),
-                  ),
-                  SettingsActionTile(
-                    title: 'GÉNÉRIQUE / CREDITS',
-                    subtitle: 'Close the red curtain and view the credits.',
-                    icon: Icons.theater_comedy_outlined,
-                    onTap: () => context.push(AppRoutes.credits),
                   ),
                 ],
               ),
@@ -351,6 +345,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         }
                       }
                     },
+                  ),
+                ],
+              ),
+              SettingsSection(
+                title: 'GÉNÉRIQUE / CREDITS',
+                icon: Icons.theater_comedy_outlined,
+                initiallyExpanded: false,
+                children: [
+                  SettingsActionTile(
+                    title: 'Open GÉNÉRIQUE / CREDITS',
+                    subtitle: 'Curtain starts closed; tap or drag it open.',
+                    icon: Icons.theater_comedy_outlined,
+                    onTap: () => context.push(AppRoutes.credits),
                   ),
                 ],
               ),
@@ -482,4 +489,3 @@ class _VisitorStat extends StatelessWidget {
     );
   }
 }
-
