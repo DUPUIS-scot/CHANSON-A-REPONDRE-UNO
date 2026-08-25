@@ -112,11 +112,19 @@ class _CreditsScreenState extends State<CreditsScreen>
               final progress = _curtainController.value;
               final fullWidth = constraints.maxWidth;
               final panelWidth = fullWidth * .5;
+              final statueInteractive = progress >= .985 && !_leaving;
               return Stack(
                 fit: StackFit.expand,
                 children: [
                   const ColoredBox(color: Color(0xFF090201)),
-                  StatueSceneView(interactive: progress >= .985 && !_leaving),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: SizedBox(
+                      width: fullWidth * .54,
+                      height: double.infinity,
+                      child: StatueSceneView(interactive: statueInteractive),
+                    ),
+                  ),
                   AnimatedOpacity(
                     key: const ValueKey('credits-content'),
                     opacity: progress > .58 && !_leaving ? 1 : 0,
