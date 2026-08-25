@@ -20,6 +20,7 @@ class _CreditsScreenState extends State<CreditsScreen>
   String _version = '…';
   bool _showCredits = false;
   bool _leaving = false;
+  bool _opening = false;
 
   @override
   void initState() {
@@ -30,7 +31,6 @@ class _CreditsScreenState extends State<CreditsScreen>
       value: 1,
     );
     unawaited(_loadVersion());
-    WidgetsBinding.instance.addPostFrameCallback((_) => _openCurtain());
   }
 
   Future<void> _loadVersion() async {
@@ -47,15 +47,20 @@ class _CreditsScreenState extends State<CreditsScreen>
   }
 
   Future<void> _openCurtain() async {
-    await Future<void>.delayed(const Duration(milliseconds: 450));
-    if (!mounted) return;
+    if (_opening || _showCredits || _leaving) return;
+    setState(() => _opening = true);
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
     if (reduceMotion) {
       _curtainController.value = 0;
     } else {
       await _curtainController.reverse();
     }
-    if (mounted) setState(() => _showCredits = true);
+    if (mounted) {
+      setState(() {
+        _opening = false;
+        _showCredits = true;
+      });
+    }
   }
 
   Future<void> _backToSettings() async {
@@ -122,6 +127,18 @@ class _CreditsScreenState extends State<CreditsScreen>
                   child: _CreditsCurtainPanel(width: width, left: false),
                 ),
               ),
+              if (!_showCredits && !_opening)
+                Positioned.fill(
+                  child: Semantics(
+                    button: true,
+                    label: 'Open credits',
+                    child: GestureDetector(
+                      key: const ValueKey('open-credits-curtain'),
+                      behavior: HitTestBehavior.opaque,
+                      onTap: _openCurtain,
+                    ),
+                  ),
+                ),
             ],
           );
         },

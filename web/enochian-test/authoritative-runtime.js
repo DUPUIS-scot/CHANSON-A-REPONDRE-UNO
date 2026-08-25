@@ -8,8 +8,10 @@
       const master=d.getElementById('audio'),play=d.getElementById('play'),isolator=d.querySelector('.stem-isolator');
       const loop=d.getElementById('loopToggle'),loopIn=d.getElementById('loopIn'),loopOut=d.getElementById('loopOut'),loopReset=d.getElementById('loopReset');
       const stemMaster=d.getElementById('stemMasterToggle');
-      if(!master||!isolator||!loop||!loopIn||!loopOut||!loopReset||!stemMaster)return false;
-      if(d.documentElement.dataset.authoritativeRuntime==='v5')return true;
+      const eqWheel=d.getElementById('eqWheel'),eqReadout=d.getElementById('eqWheelV');
+      const eqControls=['low','mid','high'].map(id=>d.getElementById(id));
+      if(!master||!isolator||!loop||!loopIn||!loopOut||!loopReset||!stemMaster||!eqWheel||!eqReadout||eqControls.some(control=>!control))return false;
+      if(d.documentElement.dataset.authoritativeRuntime==='v6')return true;
 
       if(!w.__enochNativeStemEngine||w.__enochNativeStemEngine.version!=='v2'){
         const bridge=d.createElement('script');
@@ -34,13 +36,48 @@
       }
       const engine=w.__enochNativeStemEngine;
       if(!engine||engine.version!=='v2')return false;
-      d.documentElement.dataset.authoritativeRuntime='v5';
+      d.documentElement.dataset.authoritativeRuntime='v6';
 
       const style=d.createElement('style');
       style.textContent=`#loopToggle.loop-authority-on{color:#f0c97e!important;border-color:#7b6339!important;background:#171308!important;box-shadow:0 0 12px #d5aa6355!important;font-weight:900!important}#loopIn,#loopOut{color:#f0c97e!important}#stemMasterToggle.stem-loading{color:#f0c97e!important;border-color:#7b6339!important;background:#171308!important}#stemMasterToggle.stem-fallback{color:#ffb2a5!important;border-color:#633c35!important;background:#170806!important}.stem-value{color:#f0c97e!important}`;
       d.head.appendChild(style);
 
+      // One authoritative EQ owner. Native range events still feed the established audio graph.
+      let eqValue=0,eqDrag=null,lastEqTap=0;
+      const eqProfile=value=>{const u=value/100;return[-u*10,-Math.abs(u)*3,u*10]};
+      const renderEq=(value,custom=false)=>{
+        eqValue=clamp(Number(value)||0,-100,100);
+        eqWheel.style.setProperty('--angle',(-135+(eqValue+100)/200*270)+'deg');
+        eqWheel.setAttribute('role','slider');eqWheel.setAttribute('tabindex','0');
+        eqWheel.setAttribute('aria-label','Channel EQ');eqWheel.setAttribute('aria-valuemin','-100');
+        eqWheel.setAttribute('aria-valuemax','100');eqWheel.setAttribute('aria-valuenow',String(Math.round(eqValue)));
+        const u=eqValue/100;
+        eqReadout.textContent=custom?'CUSTOM':Math.abs(u)<.03?'FLAT':u<0?'BASS '+Math.round(-u*100)+'%':'BRIGHT '+Math.round(u*100)+'%';
+      };
+      const syncEqFromFine=()=>{
+        const actual=eqControls.map(control=>Number(control.value)||0);
+        let best=0,bestError=Infinity;
+        for(let candidate=-100;candidate<=100;candidate++){const profile=eqProfile(candidate),error=actual.reduce((sum,value,index)=>sum+Math.abs(value-profile[index]),0);if(error<bestError){bestError=error;best=candidate}}
+        renderEq(best,bestError>2.25);
+      };
+      const applyEq=value=>{
+        const next=clamp(value,-100,100),profile=eqProfile(next);
+        eqControls.forEach((control,index)=>{control.value=String(Math.round(profile[index]));control.dispatchEvent(new w.Event('input',{bubbles:true}))});
+        renderEq(next);
+      };
+      eqWheel.onpointerdown=eqWheel.onpointermove=eqWheel.onpointerup=eqWheel.onpointercancel=null;
+      eqWheel.addEventListener('pointerdown',async event=>{event.preventDefault();try{if(typeof w.ensureAudio==='function')await w.ensureAudio()}catch(_){};eqWheel.setPointerCapture(event.pointerId);eqDrag={y:event.clientY,value:eqValue};eqWheel.classList.add('active')});
+      eqWheel.addEventListener('pointermove',event=>{if(!eqDrag)return;event.preventDefault();applyEq(eqDrag.value+(eqDrag.y-event.clientY)/140*200)});
+      const endEqDrag=event=>{if(!eqDrag)return;eqDrag=null;eqWheel.classList.remove('active');try{if(eqWheel.hasPointerCapture(event.pointerId))eqWheel.releasePointerCapture(event.pointerId)}catch(_){};const now=performance.now();if(now-lastEqTap<400)applyEq(0);lastEqTap=now};
+      eqWheel.addEventListener('pointerup',endEqDrag);eqWheel.addEventListener('pointercancel',endEqDrag);
+      eqWheel.addEventListener('keydown',event=>{const step=event.shiftKey?10:2;if(event.key==='ArrowUp'||event.key==='ArrowRight'){event.preventDefault();applyEq(eqValue+step)}else if(event.key==='ArrowDown'||event.key==='ArrowLeft'){event.preventDefault();applyEq(eqValue-step)}else if(event.key==='Home'){event.preventDefault();applyEq(0)}});
+      eqControls.forEach(control=>control.addEventListener('input',()=>w.queueMicrotask(syncEqFromFine)));
+      syncEqFromFine();
+
       // One authoritative loop owner. The audio transport is the clock; visual RAF is never used.
+      [loopIn,loopOut].forEach(control=>{control.classList.add('loop-timer');control.hidden=false;control.style.removeProperty('display');control.setAttribute('aria-live','polite')});
+      [loop,loopIn,loopOut,loopReset].forEach(control=>control.style.removeProperty('display'));
+      const loopTransport=loop.parentElement;if(loopTransport)loopTransport.style.gridTemplateColumns='repeat(4,minmax(0,1fr))';
       loop.onclick=loopIn.onclick=loopOut.onclick=loopReset.onclick=null;
       let loopEnabled=false,loopStart=0,loopEnd=null,loopTimer=0,lastWrapAt=0,wrapping=false;
       const validDuration=()=>Number.isFinite(master.duration)&&master.duration>0?master.duration:null;
@@ -101,8 +138,9 @@
       const drift=()=>{if(desiredEnabled&&engine.status().routed&&!master.paused)engine.sync(false);refresh();w.setTimeout(drift,300)};w.setTimeout(drift,300);
 
       refresh();loopUi();loopTick();
-      w.__enochStemAuthority={version:'v5',get state(){return lastStemState},get desired(){return desiredEnabled},get native(){return engine.status()},isCustomMix};
-      w.__enochLoopAuthority={version:'v5',get enabled(){return loopEnabled},get start(){return loopStart},get end(){return loopEnd},wrap:()=>wrap(true)};
+      w.__enochEqAuthority={version:'v1',get value(){return eqValue},sync:syncEqFromFine,set:applyEq};
+      w.__enochStemAuthority={version:'v6',get state(){return lastStemState},get desired(){return desiredEnabled},get native(){return engine.status()},isCustomMix};
+      w.__enochLoopAuthority={version:'v6',get enabled(){return loopEnabled},get start(){return loopStart},get end(){return loopEnd},wrap:()=>wrap(true)};
       w.addEventListener('pagehide',()=>{if(loopTimer)w.clearTimeout(loopTimer)},{once:true});return true;
     }catch(_){return false}
   }

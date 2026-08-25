@@ -16,7 +16,7 @@ void main() {
     );
   });
 
-  testWidgets('curtain opens before credits appear with dynamic version', (
+  testWidgets('curtain stays closed until tapped, then reveals dynamic credits', (
     tester,
   ) async {
     await tester.pumpWidget(const MaterialApp(home: CreditsScreen()));
@@ -25,28 +25,27 @@ void main() {
       find.byKey(const ValueKey('credits-content')),
     );
     expect(credits.opacity, 0);
+    expect(find.byKey(const ValueKey('open-credits-curtain')), findsOneWidget);
+    expect(find.byIcon(Icons.play_arrow), findsNothing);
 
-    // The opening sequence intentionally waits 450 ms before reversing the
-    // 1150 ms curtain animation. Credits must remain hidden throughout it.
-    await tester.pump(const Duration(milliseconds: 450));
+    // Entry remains theatrically closed until the curtain itself is tapped.
+    await tester.pump(const Duration(seconds: 2));
     credits = tester.widget<AnimatedOpacity>(
       find.byKey(const ValueKey('credits-content')),
     );
     expect(credits.opacity, 0);
 
-    // Future.delayed resumes on the next pump. Start the curtain reverse,
-    // advance its full duration, then settle the awaited controller completion, credits
-    // rebuild/fade, and asynchronous PackageInfo lookup before asserting.
+    await tester.tap(find.byKey(const ValueKey('open-credits-curtain')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 1150));
     await tester.pumpAndSettle();
+
     credits = tester.widget<AnimatedOpacity>(
       find.byKey(const ValueKey('credits-content')),
     );
     expect(credits.opacity, 1);
-
     expect(find.text('Version: 3.7.3+1'), findsOneWidget);
-    expect(find.byIcon(Icons.play_arrow), findsNothing);
     expect(find.text('BACK TO SETTINGS'), findsOneWidget);
   });
+
 }
