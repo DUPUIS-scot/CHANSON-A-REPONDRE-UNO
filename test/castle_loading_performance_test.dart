@@ -17,6 +17,7 @@ void main() {
     final directCards = File(
       'web/card_castle/castle_cards_direct.js',
     ).readAsStringSync();
+    final compactDirectCards = directCards.replaceAll(RegExp(r'\s+'), '');
     final jesterOverlay = File(
       'web/card_castle/castle_jester_overlay.js',
     ).readAsStringSync();
@@ -89,30 +90,33 @@ void main() {
     );
     expect(previewFix, isNot(contains('if (!isIOS')));
 
-    expect(directCards, contains('const xSamples = 18;'));
-    expect(directCards, contains('const ySamples = 7;'));
-    expect(directCards, contains('const zSamples = 11;'));
+    // Keep this contract resilient to source formatting/minification while
+    // still verifying the current v42 all-deck anchor and staged texture path.
     expect(
-      directCards,
-      contains("surfaceAnchorMode = 'direct-raycast-desktop-density-v39'"),
+      compactDirectCards,
+      contains('constxSamples=18,ySamples=7,zSamples=11'),
     );
-    expect(directCards, contains('function postJesterStageReady()'));
     expect(
-      directCards,
-      contains("directCardsStage = 'waiting-for-environment-and-jester'"),
+      compactDirectCards,
+      contains("surfaceAnchorMode='direct-raycast-all-decks-v42'"),
     );
-    expect(directCards, contains("environment === 'ready'"));
-    expect(directCards, contains("jester === 'ready'"));
-    expect(directCards, contains("fallback === 'jester-timeout'"));
-    expect(directCards, contains('const isAndroid = /Android/i'));
-    expect(directCards, contains('isAndroid ? 2'));
+    expect(compactDirectCards, contains('functionpostJesterStageReady()'));
+    expect(
+      compactDirectCards,
+      contains("directCardsStage='waiting-for-environment-and-jester'"),
+    );
+    expect(compactDirectCards, contains("e==='ready'"));
+    expect(compactDirectCards, contains("j==='ready'"));
+    expect(compactDirectCards, contains("f==='jester-timeout'"));
+    expect(compactDirectCards, contains('isAndroid=/Android/i'));
+    expect(compactDirectCards, contains('isAndroid?2'));
     expect(directCards, contains('directCardTextureConcurrency'));
-    expect(directCards, contains("sceneMode==='exterior'"));
+    expect(compactDirectCards, contains("sceneMode==='exterior'"));
     expect(
-      directCards,
-      contains("directCardPreviewMode = 'rampart-textures-v40-staged'"),
+      compactDirectCards,
+      contains("directCardPreviewMode='all-decks-rampart-textures-v42'"),
     );
-    expect(directCards, isNot(contains('const xSamples = isIOS ?')));
+    expect(compactDirectCards, isNot(contains('xSamples=isIOS?')));
 
     expect(jesterOverlay, contains('rotateExistingCardAnchorsWithCastle'));
     expect(jesterOverlay, contains('pivot=castleRoot.getWorldPosition'));
