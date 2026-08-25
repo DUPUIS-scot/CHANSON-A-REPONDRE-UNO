@@ -199,7 +199,8 @@
         rightArm: new THREE.Vector3(-0.18 * salute, 0.10 * salute, -0.10 * salute + 0.10 * flourish),
         leftHand: new THREE.Vector3(0.08 * salute, -0.06 * flourish, 0.04 * salute),
         rightHand: new THREE.Vector3(-0.22 * salute, 0.08 * flourish, -0.08 * salute),
-        rightForearm: new THREE.Vector3(0.22 * salute, 0.04 * flourish, -2.10 * salute),
+        // Keep the elbow on a restrained hinge-like arc; the previous −120° Z twist collapsed the skinned arm.
+        rightForearm: new THREE.Vector3(0.22 * salute, 0.02 * flourish, 0.05 * flourish),
         leftForearm: new THREE.Vector3(-0.18 * salute, 0, -0.05 * flourish),
       };
     }
