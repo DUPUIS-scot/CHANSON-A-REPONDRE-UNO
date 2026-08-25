@@ -10,10 +10,15 @@ const basePath = '/CHANSON-A-REPONDRE-UNO/';
 const port = 8123;
 const debugPort = 9223;
 const chromePath = process.env.CHROME_PATH || 'google-chrome';
-const profilePath = join(
-  tmpdir(),
-  `chanson-search-category-profile-${process.pid}`,
-);
+const profilePath = join(tmpdir(), `chanson-search-category-profile-${process.pid}`);
+const productionDeckId = 'sale-poete-final-84';
+const searchState = {
+  castleActive: true,
+  category: 'CLASSIQUE',
+  selectedCardId: null,
+  discoveredCardIds: [],
+  shuffleSeed: 0,
+};
 
 const mimeTypes = {
   '.css': 'text/css',
@@ -28,8 +33,7 @@ const mimeTypes = {
   '.wasm': 'application/wasm',
 };
 
-const delay = (milliseconds) =>
-  new Promise((resolve) => setTimeout(resolve, milliseconds));
+const delay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
 function startServer() {
   const rootPath = normalize(fileURLToPath(buildRoot));
@@ -102,9 +106,7 @@ class DevTools {
       }
       if (message.method === 'Runtime.consoleAPICalled') {
         const values = message.params.args.map((argument) =>
-          argument.value === undefined
-            ? argument.description
-            : argument.value,
+          argument.value === undefined ? argument.description : argument.value,
         );
         this.consoleMessages.push({ level: message.params.type, values });
       }
@@ -118,8 +120,7 @@ class DevTools {
   }
 
   send(method, params = {}) {
-    const id = this.nextId;
-    this.nextId += 1;
+    const id = this.nextId++;
     return new Promise((resolve, reject) => {
       this.pending.set(id, { resolve, reject });
       this.socket.send(JSON.stringify({ id, method, params }));
@@ -132,9 +133,7 @@ class DevTools {
       awaitPromise: true,
       returnByValue: true,
     });
-    if (result.exceptionDetails) {
-      throw new Error(result.exceptionDetails.text);
-    }
+    if (result.exceptionDetails) throw new Error(result.exceptionDetails.text);
     return result.result.value;
   }
 
@@ -161,6 +160,32 @@ async function waitFor(client, expression, description, timeout = 30000) {
   );
 }
 
+async function debugState(client) {
+  return client.evaluate(`(() => {
+    const frame = document.getElementById('search-card-castle-frame');
+    const body = frame?.contentDocument?.body;
+    const group = frame?.contentWindow?.__castleSearchRuntime?.scene
+      ?.getObjectByName('castle-direct-card-previews');
+    return {
+      hash: location.hash,
+      activeDeck: localStorage.getItem('flutter.active_deck'),
+      searchState: localStorage.getItem('flutter.search_path_state_v1'),
+      frame: Boolean(frame),
+      frameReadyState: frame?.contentDocument?.readyState || '',
+      rendererStatus: body?.dataset.rendererStatus || '',
+      cardCount: Number(body?.dataset.cardCount || 0),
+      visibleCardCount: Number(body?.dataset.visibleCardCount || 0),
+      directCardPreviewCount: Number(body?.dataset.directCardPreviewCount || 0),
+      directCardTextureLoaded: Number(body?.dataset.directCardTextureLoaded || 0),
+      directCardTextureFailures: Number(body?.dataset.directCardTextureFailures || 0),
+      directCardsStage: body?.dataset.directCardsStage || '',
+      categories: group
+        ? [...new Set(group.children.map((mesh) => mesh.userData?.card?.category).filter(Boolean))]
+        : [],
+    };
+  })()`);
+}
+
 async function main() {
   const server = await startServer();
   const url = `http://127.0.0.1:${port}${basePath}#/search`;
@@ -179,6 +204,7 @@ async function main() {
     ],
     { stdio: 'ignore' },
   );
+
   let client;
   try {
     const debuggerUrl = await waitForDebugTarget();
@@ -196,24 +222,25 @@ async function main() {
       }),
     ]);
 
+    // Seed SharedPreferences before Flutter initializes. Writing after the first
+    // flutter-view exists is racy because SharedPreferences may already have
+    // cached the empty Search state for that page load.
+    const activeDeckPreference = JSON.stringify(JSON.stringify(productionDeckId));
+    const searchPreference = JSON.stringify(JSON.stringify(searchState));
+    const seedSource = `
+      (() => {
+        localStorage.setItem('flutter.active_deck', ${JSON.stringify(activeDeckPreference)});
+        localStorage.setItem('flutter.search_path_state_v1', ${JSON.stringify(searchPreference)});
+      })();
+    `;
+    await client.send('Page.addScriptToEvaluateOnNewDocument', { source: seedSource });
+    await client.evaluate(`${seedSource} location.hash = '#/search'; location.reload(); true`);
+
     await waitFor(
       client,
       `document.querySelector('flutter-view') !== null`,
-      'Flutter to start',
-    );
-
-    const searchState = {
-      castleActive: true,
-      category: 'CLASSIQUE',
-      selectedCardId: null,
-      discoveredCardIds: [],
-      shuffleSeed: 0,
-    };
-    const encodedPreference = JSON.stringify(JSON.stringify(searchState));
-    await client.evaluate(
-      `localStorage.setItem('flutter.search_path_state_v1', ${JSON.stringify(
-        encodedPreference,
-      )}); location.hash = '#/search'; location.reload(); true`,
+      'Flutter to start with seeded Search preferences',
+      60000,
     );
 
     await waitFor(
@@ -221,19 +248,28 @@ async function main() {
       `document.getElementById('search-card-castle-frame')
         ?.contentDocument?.body.dataset.rendererStatus === 'ready'`,
       'the category-filtered Search castle',
-      90000,
+      120000,
     );
-    await waitFor(
-      client,
-      `(() => {
-        const body = document.getElementById('search-card-castle-frame')
-          ?.contentDocument?.body;
-        const count = Number(body?.dataset.cardCount || 0);
-        return count > 0 && count < 84;
-      })()`,
-      'a non-empty CLASSIQUE subset to reach the castle',
-      90000,
-    );
+
+    try {
+      await waitFor(
+        client,
+        `(() => {
+          const body = document.getElementById('search-card-castle-frame')
+            ?.contentDocument?.body;
+          const count = Number(body?.dataset.cardCount || 0);
+          return count > 0 && count < 84;
+        })()`,
+        'a non-empty CLASSIQUE subset to reach the castle',
+        60000,
+      );
+    } catch (error) {
+      console.error('SEARCH CATEGORY STATE DEBUG', JSON.stringify({
+        state: await debugState(client),
+        console: client.consoleMessages,
+      }, null, 2));
+      throw error;
+    }
 
     const visibleCardCount = await client.evaluate(
       `Number(document.getElementById('search-card-castle-frame')
@@ -255,7 +291,7 @@ async function main() {
           categories.length === 1 && categories[0] === 'CLASSIQUE';
       })()`,
       'the CLASSIQUE direct-card preview stage',
-      120000,
+      150000,
     );
 
     await waitFor(
@@ -292,9 +328,7 @@ async function main() {
         surfaceAnchorCount: Number(body?.dataset.surfaceAnchorCount || 0),
         directCardsStage: body?.dataset.directCardsStage || '',
         directCardPreviewMode: body?.dataset.directCardPreviewMode || '',
-        modelPath: body?.dataset.modelAsset
-          ? new URL(body.dataset.modelAsset).pathname
-          : '',
+        modelPath: body?.dataset.modelAsset ? new URL(body.dataset.modelAsset).pathname : '',
         framePath: frame ? new URL(frame.src).pathname : '',
         threeLoaded: Boolean(frame?.contentWindow?.THREE),
       };
@@ -320,16 +354,10 @@ async function main() {
       result.framePath !== `${basePath}card_castle/card_castle_fast.html` ||
       !result.threeLoaded
     ) {
-      throw new Error(
-        `Invalid category-filtered Search castle result: ${JSON.stringify(result)}`,
-      );
+      throw new Error(`Invalid category-filtered Search castle result: ${JSON.stringify(result)}`);
     }
 
-    console.log(JSON.stringify({
-      ok: true,
-      url,
-      result,
-    }, null, 2));
+    console.log(JSON.stringify({ ok: true, url, result }, null, 2));
   } finally {
     client?.close();
     chrome.kill();
