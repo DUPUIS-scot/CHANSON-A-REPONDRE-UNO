@@ -25,12 +25,17 @@
       style.textContent=`
         .loop-control-row{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:5px!important;width:100%!important;margin-top:0!important}
         .loop-control-row .btn{min-width:0!important;padding:7px 4px!important;font-size:8px!important;white-space:nowrap!important}
-        .mod{grid-template-columns:minmax(0,1fr) 110px!important;align-items:start!important}
-        .mod>.wheelbox{align-self:start!important;margin-top:34px!important;justify-self:center!important;width:110px!important}
+        .mod{grid-template-columns:minmax(0,1fr) 96px!important;align-items:start!important}
+        .mod>.wheelbox{align-self:start!important;margin:0!important;justify-self:center!important;width:96px!important;padding:4px 2px!important;gap:3px!important}
+        .mod>.wheelbox .wheel{width:78px!important;height:78px!important}
+        .mod>.wheelbox .wheel:before{top:7px!important;height:20px!important;transform-origin:2px 32px!important}
+        .mod>.wheelbox .wheel-label{font-size:8px!important}
+        .mod>.wheelbox .wheel-value{font-size:10px!important;min-height:12px!important}
+        .mod>.wheelbox .wheel-hint{font-size:6px!important;line-height:1.2!important}
         .eq-kill-btn{min-width:52px!important;padding:4px 6px!important;font-size:7px!important;letter-spacing:.08em!important}
         .eq-kill-btn.active{background:#4a0909!important;color:#ffd5cf!important;border-color:#b74d45!important;box-shadow:0 0 10px #d14a3f44!important}
         .eq-kill-row{grid-template-columns:1fr auto auto!important}
-        @media(max-width:1000px){.mod{grid-template-columns:1fr!important}.mod>.wheelbox{margin:0 auto!important;width:auto!important}}
+        @media(max-width:1000px){.mod{grid-template-columns:1fr!important}.mod>.wheelbox{margin:0 auto!important;width:auto!important}.mod>.wheelbox .wheel{width:110px!important;height:110px!important}.mod>.wheelbox .wheel:before{top:9px!important;height:29px!important;transform-origin:2px 46px!important}}
       `;
       d.head.appendChild(style);
 
