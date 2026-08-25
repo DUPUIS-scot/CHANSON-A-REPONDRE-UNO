@@ -38,6 +38,20 @@ abstract final class CardShareIdentity {
     required String deckId,
   }) => deckId == AppConstants.productionDeckId ? cardId : null;
 
+  /// Built-in decks receive a compact, crawler-safe copy of every recto.
+  /// Unknown/custom decks retain their original card asset instead.
+  static String? previewImagePathFor({
+    required String cardId,
+    required String deckId,
+  }) {
+    if (deckId != AppConstants.productionDeckId &&
+        deckId != AppConstants.brioDeckId &&
+        deckId != AppConstants.hpDeckId) {
+      return null;
+    }
+    return 'share-previews/${canonicalSlugFor(cardId: cardId, deckId: deckId)}.jpg';
+  }
+
   static String deckShareNameFor({
     required String deckId,
     required String fallbackName,

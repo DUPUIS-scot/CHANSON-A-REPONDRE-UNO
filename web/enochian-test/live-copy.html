@@ -49,6 +49,8 @@ frame.addEventListener('load',()=>{
  .terminal-actions{display:flex;gap:6px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
  .terminal-action{min-height:34px!important;padding:7px 9px!important;font-size:8px!important;letter-spacing:.08em!important;white-space:nowrap!important}
  .terminal-action.active{background:#083128!important;color:#63f5cf!important;border-color:#68d8bd!important;box-shadow:0 0 12px #40e6b422!important}
+ .loop-timer{color:#f0c97e!important;border-color:#7b6339!important;background:#100c07!important;font-variant-numeric:tabular-nums!important;box-shadow:0 0 10px #d5aa6333!important}
+ .loop-timer:hover,.loop-timer:focus-visible{color:#ffe4a4!important;border-color:#f0c97e!important;background:#171005!important}
  html.terminal-fullscreen,html.terminal-fullscreen body{width:100%!important;height:100%!important;min-height:0!important;overflow:hidden!important}
  html.terminal-fullscreen .app{width:100%!important;max-width:none!important;height:100dvh!important;min-height:0!important;padding:4px!important;gap:4px!important;overflow:hidden!important;grid-template-rows:auto minmax(0,1fr) auto!important}
  html.terminal-fullscreen .top{min-height:42px!important;height:42px!important;padding:3px 7px!important}
@@ -186,7 +188,8 @@ frame.addEventListener('load',()=>{
    };
   }
   // MASTER STEM TOGGLE: enable/disable the complete stem engine without affecting master playback.
-  let stemsEnabled=true;
+  // The master programme stays active until stem separation is deliberately enabled.
+  let stemsEnabled=false;
   const setStemModeCore=setStemMode;
   setStemMode=async function(){
    if(!stemsEnabled){
@@ -263,7 +266,9 @@ frame.addEventListener('load',()=>{
    restorePadCenter();
    instantSnapshot=null;instantOwner=null;activeInstant=null;document.querySelectorAll('.instant-fx-btn.active').forEach(b=>b.classList.remove('active'));
    if(mixRange&&mixValue){mixRange.value='50';fxMix=.5;mixValue.textContent='50%'}
-   try{log('KILL FX · NO PAD FX SELECTED · INSTANT FX RESET · PAD READY')}catch(_){}
+   stemsEnabled=false;try{await setStemMode()}catch(_){}
+   const stemMaster=q('stemMasterToggle');if(stemMaster){stemMaster.classList.remove('active');stemMaster.textContent='STEMS OFF';stemMaster.setAttribute('aria-pressed','false')}
+   try{log('KILL FX · STEMS OFF · NO PAD FX SELECTED · INSTANT FX RESET · PAD READY')}catch(_){}
   };
 
   let loopEnabled=false,loopStart=0,loopEnd=null,loopTimer=0;
@@ -274,8 +279,8 @@ frame.addEventListener('load',()=>{
   function armLoopTimer(){if(loopTimer){clearTimeout(loopTimer);loopTimer=0}if(!loopEnabled||loopEnd==null||typeof a==='undefined'||!a||a.paused)return;const remaining=(loopEnd-a.currentTime)/Math.max(.01,a.playbackRate||1);if(remaining<=.015){try{a.currentTime=loopStart}catch(_){};try{log('LOOP CYCLE · '+loopLabelTime(loopStart)+' → '+loopLabelTime(loopEnd))}catch(_){};armLoopTimer();return}loopTimer=setTimeout(()=>{loopTimer=0;if(loopEnabled&&loopEnd!=null&&a.currentTime>=loopEnd-.03){try{a.currentTime=loopStart}catch(_){};try{log('LOOP CYCLE · '+loopLabelTime(loopStart)+' → '+loopLabelTime(loopEnd))}catch(_){}}armLoopTimer()},Math.max(8,Math.min(250,remaining*1000-8)))}
   if(transport){
    transport.style.gridTemplateColumns='repeat(4,minmax(0,1fr))';
-   loopInBtn=document.createElement('button');loopInBtn.type='button';loopInBtn.className='btn';loopInBtn.id='loopIn';loopInBtn.textContent='IN 00:00.0';loopInBtn.onclick=()=>{loopStart=Math.max(0,Number(a.currentTime)||0);if(loopEnd!=null&&loopEnd<=loopStart+.05)loopEnd=null;syncLoopUi();armLoopTimer();try{log('LOOP IN · '+loopLabelTime(loopStart))}catch(_){}};
-   loopOutBtn=document.createElement('button');loopOutBtn.type='button';loopOutBtn.className='btn';loopOutBtn.id='loopOut';loopOutBtn.textContent='OUT --:--.-';loopOutBtn.onclick=()=>{const out=Math.max(0,Number(a.currentTime)||0);if(out<=loopStart+.05){try{log('LOOP OUT MUST BE AFTER LOOP IN')}catch(_){};return}loopEnd=out;loopEnabled=true;syncLoopUi();armLoopTimer();try{log('LOOP OUT · '+loopLabelTime(loopEnd))}catch(_){}};
+   loopInBtn=document.createElement('button');loopInBtn.type='button';loopInBtn.className='btn loop-timer';loopInBtn.id='loopIn';loopInBtn.textContent='IN 00:00.0';loopInBtn.onclick=()=>{loopStart=Math.max(0,Number(a.currentTime)||0);if(loopEnd!=null&&loopEnd<=loopStart+.05)loopEnd=null;syncLoopUi();armLoopTimer();try{log('LOOP IN · '+loopLabelTime(loopStart))}catch(_){}};
+   loopOutBtn=document.createElement('button');loopOutBtn.type='button';loopOutBtn.className='btn loop-timer';loopOutBtn.id='loopOut';loopOutBtn.textContent='OUT --:--.-';loopOutBtn.onclick=()=>{const out=Math.max(0,Number(a.currentTime)||0);if(out<=loopStart+.05){try{log('LOOP OUT MUST BE AFTER LOOP IN')}catch(_){};return}loopEnd=out;loopEnabled=true;syncLoopUi();armLoopTimer();try{log('LOOP OUT · '+loopLabelTime(loopEnd))}catch(_){}};
    loopBtn=document.createElement('button');loopBtn.type='button';loopBtn.className='btn';loopBtn.id='loopToggle';loopBtn.textContent='LOOP OFF';loopBtn.setAttribute('aria-pressed','false');loopBtn.onclick=()=>{if(loopEnd==null){loopStart=0;loopEnd=Number.isFinite(a.duration)&&a.duration>0?a.duration:null}loopEnabled=!loopEnabled;syncLoopUi();armLoopTimer();try{log('LOOP '+(loopEnabled?'ON':'OFF'))}catch(_){}};
    loopResetBtn=document.createElement('button');loopResetBtn.type='button';loopResetBtn.className='btn';loopResetBtn.id='loopReset';loopResetBtn.textContent='RESET LOOP';loopResetBtn.onclick=()=>{loopEnabled=false;loopStart=0;loopEnd=null;if(loopTimer){clearTimeout(loopTimer);loopTimer=0}syncLoopUi();try{log('LOOP RESET')}catch(_){}};
    transport.appendChild(loopInBtn);transport.appendChild(loopOutBtn);transport.appendChild(loopBtn);transport.appendChild(loopResetBtn);syncLoopUi();
@@ -286,7 +291,7 @@ frame.addEventListener('load',()=>{
   let fullBtn=null;
   if(top){
    const badgeEl=q('badge');const actions=document.createElement('div');actions.className='terminal-actions';
-   let stemBtn=document.createElement('button');stemBtn.type='button';stemBtn.className='btn terminal-action active';stemBtn.id='stemMasterToggle';stemBtn.textContent='STEMS ON';stemBtn.setAttribute('aria-pressed','true');
+   let stemBtn=document.createElement('button');stemBtn.type='button';stemBtn.className='btn terminal-action';stemBtn.id='stemMasterToggle';stemBtn.textContent='STEMS OFF';stemBtn.setAttribute('aria-pressed','false');
    stemBtn.onclick=async()=>{stemsEnabled=!stemsEnabled;stemBtn.classList.toggle('active',stemsEnabled);stemBtn.textContent=stemsEnabled?'STEMS ON':'STEMS OFF';stemBtn.setAttribute('aria-pressed',String(stemsEnabled));try{await setStemMode()}catch(_){};try{log('STEMS '+(stemsEnabled?'ON':'OFF'))}catch(_){}};
    fullBtn=document.createElement('button');fullBtn.type='button';fullBtn.className='btn terminal-action';fullBtn.dataset.terminalFullscreen='1';fullBtn.textContent='FULL SCREEN';fullBtn.setAttribute('aria-pressed','false');
    actions.appendChild(stemBtn);actions.appendChild(fullBtn);if(badgeEl)actions.appendChild(badgeEl);top.appendChild(actions);

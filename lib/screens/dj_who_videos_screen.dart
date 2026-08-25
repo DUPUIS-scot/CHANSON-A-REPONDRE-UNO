@@ -149,8 +149,12 @@ class _Playlist extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scrollbar(
+    thumbVisibility: true,
+    interactive: true,
     child: ListView.separated(
       primary: true,
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.only(right: 10, bottom: 18),
       itemCount: videos.length,
       separatorBuilder: (_, _) => const SizedBox(height: 10),
       itemBuilder: (_, index) => VideoPlaylistTile(

@@ -98,9 +98,9 @@ Future<void> main(List<String> arguments) async {
         ),
       )
       .toSet();
-  if (cards.length < 101 || slugs.length != cards.length) {
+  if (slugs.length != cards.length) {
     throw FormatException(
-      'Built-in cards must include the base decks and unique share slugs; '
+      'Every bundled card must have a unique share slug; '
       'found ${cards.length} cards and ${slugs.length} slugs.',
     );
   }
@@ -166,17 +166,23 @@ Future<List<_ShareCard>> _loadUno(String path) async {
       .firstWhere((entry) => entry['id'] == AppConstants.productionDeckId);
   final cards = (deck['cards'] as List)
       .whereType<Map<String, dynamic>>()
-      .map(
-        (card) => _ShareCard(
-          id: card['id'] ?? '',
+      .map((card) {
+        final id = card['id'] as String? ?? '';
+        final slug = CardShareIdentity.canonicalSlugFor(
+          cardId: id,
+          deckId: AppConstants.productionDeckId,
+        );
+        return _ShareCard(
+          id: id,
           deckId: AppConstants.productionDeckId,
           deckName: deck['name'] ?? 'Chanson à répondre UNO',
           imagePath: _assetRelative((card['path'] ?? card['image']) ?? ''),
+          previewImagePath: 'share-previews/$slug.jpg',
           transcription: _shareTranscriptionFromJson(card),
-          imageWidth: (card['imageWidth'] as num?)?.toInt(),
-          imageHeight: (card['imageHeight'] as num?)?.toInt(),
-        ),
-      )
+          imageWidth: 600,
+          imageHeight: 900,
+        );
+      })
       .toList();
   if (cards.length < 84) {
     throw const FormatException('Expected at least 84 UNO cards.');
@@ -184,6 +190,7 @@ Future<List<_ShareCard>> _loadUno(String path) async {
 
   final known = cards.map((card) => 'assets/${card.imagePath}').toSet();
   final extras = _imageFiles('assets/cards/final_import')
+      .where((file) => file.uri.pathSegments.last != 'deck_cover.png')
       .where((file) => !known.contains(file.path.replaceAll('\\', '/')))
       .toList();
   for (final file in extras) {
@@ -194,6 +201,9 @@ Future<List<_ShareCard>> _loadUno(String path) async {
         deckId: AppConstants.productionDeckId,
         deckName: deck['name'] ?? 'Chanson à répondre UNO',
         imagePath: _assetRelative(file.path),
+        previewImagePath: 'share-previews/UNO-${number.toString().padLeft(3, '0')}.jpg',
+        imageWidth: 600,
+        imageHeight: 900,
       ),
     );
   }

@@ -12,7 +12,7 @@ void main() {
     'https://dupuis-scot.github.io/CHANSON-A-REPONDRE-UNO/',
   );
 
-  test('several UNO cards produce canonical titles and exact recto metadata', () {
+  test('several UNO cards produce canonical titles and compact preview metadata', () {
     final catalog =
         jsonDecode(File(AppConstants.cardsAsset).readAsStringSync())
             as Map<String, dynamic>;
@@ -40,11 +40,12 @@ void main() {
         shareSlug: slug,
         title: title,
         imagePath: path,
-        imageWidth: (card['imageWidth'] as num?)?.toInt(),
-        imageHeight: (card['imageHeight'] as num?)?.toInt(),
+        previewImagePath: 'share-previews/$slug.jpg',
+        imageWidth: 600,
+        imageHeight: 900,
       );
       final imageUrl = base.replace(
-        pathSegments: ['CHANSON-A-REPONDRE-UNO', 'assets', ...path.split('/')],
+        pathSegments: ['CHANSON-A-REPONDRE-UNO', 'assets', 'share-previews', '$slug.jpg'],
       );
 
       expect(slug, startsWith('UNO-'));
@@ -114,7 +115,7 @@ void main() {
     expect(html, isNot(contains('http-equiv="refresh"')));
   });
 
-  test('all 100 built-in card links expose their exact thumbnail metadata', () {
+  test('every bundled deck card exposes its exact thumbnail metadata', () {
     final catalog =
         jsonDecode(File(AppConstants.cardsAsset).readAsStringSync())
             as Map<String, dynamic>;
@@ -124,6 +125,19 @@ void main() {
     final brioDeck =
         jsonDecode(File(AppConstants.brioDeckAsset).readAsStringSync())
             as Map<String, dynamic>;
+    final hpCards = Directory('assets/hp')
+        .listSync(recursive: false)
+        .whereType<File>()
+        .where((file) {
+          final name = file.uri.pathSegments.last.toLowerCase();
+          return const ['.png', '.jpg', '.jpeg', '.webp'].any(
+                (extension) => name.endsWith(extension),
+              ) &&
+              name != 'verso.png' &&
+              name != 'work_in_progress_ribbon.webp';
+        })
+        .toList()
+      ..sort((a, b) => a.path.toLowerCase().compareTo(b.path.toLowerCase()));
 
     var checked = 0;
 
@@ -143,9 +157,7 @@ void main() {
         deckId: deckId,
         deckName: deckName,
       );
-      final previewPath = deckId == AppConstants.brioDeckId
-          ? 'share-previews/$slug.jpg'
-          : null;
+      final previewPath = 'share-previews/$slug.jpg';
       final html = buildCanonicalShareHtml(
         publicBase: base,
         cardId: id,
@@ -153,10 +165,10 @@ void main() {
         title: title,
         imagePath: path,
         previewImagePath: previewPath,
-        imageWidth: deckId == AppConstants.brioDeckId
+        imageWidth: previewPath != null
             ? 600
             : (card['imageWidth'] as num?)?.toInt(),
-        imageHeight: deckId == AppConstants.brioDeckId
+        imageHeight: previewPath != null
             ? 900
             : (card['imageHeight'] as num?)?.toInt(),
       );
@@ -201,6 +213,23 @@ void main() {
       );
     }
 
-    expect(checked, 100);
+    for (var index = 0; index < hpCards.length; index++) {
+      final file = hpCards[index];
+      expectThumbnail(
+        card: {
+          'id': 'hp-${(index + 1).toString().padLeft(3, '0')}',
+          'path': file.path.substring('assets/'.length),
+        },
+        deckId: AppConstants.hpDeckId,
+        deckName: 'Chanson à répondre HP',
+      );
+    }
+
+    expect(
+      checked,
+      (unoDeck['cards'] as List<dynamic>).length +
+          (brioDeck['cards'] as List<dynamic>).length +
+          hpCards.length,
+    );
   });
 }

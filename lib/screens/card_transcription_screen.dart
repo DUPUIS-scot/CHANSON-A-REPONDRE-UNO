@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/deck_provider.dart';
+import '../services/card_share_identity.dart';
 import '../services/external_ai_handoff_service.dart';
 import '../widgets/home_navigation_button.dart';
 import '../widgets/transcription_jester_scene.dart';
@@ -35,12 +36,16 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
     super.dispose();
   }
 
-  String _jesterTexturePath(String cardId, String imagePath) {
-    final match = RegExp(r'^final-84-(\d{2})$').firstMatch(cardId);
-    if (match == null) return imagePath;
-    final number = int.tryParse(match.group(1) ?? '');
-    if (number == null || number < 1 || number > 84) return imagePath;
-    return 'share-previews/UNO-${number.toString().padLeft(3, '0')}.jpg';
+  String _jesterTexturePath({
+    required String cardId,
+    required String deckId,
+    required String imagePath,
+  }) {
+    return CardShareIdentity.previewImagePathFor(
+          cardId: cardId,
+          deckId: deckId,
+        ) ??
+        imagePath;
   }
 
   ButtonStyle _primaryStyle() => FilledButton.styleFrom(
@@ -73,7 +78,11 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
       return const Scaffold(body: Center(child: Text('This card no longer exists.')));
     }
 
-    final jesterTexturePath = _jesterTexturePath(card.id, card.imagePath);
+    final jesterTexturePath = _jesterTexturePath(
+      cardId: card.id,
+      deckId: card.deckId,
+      imagePath: card.imagePath,
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       TranscriptionJesterScene.setSelectedCard(cardId: card.id, imagePath: jesterTexturePath);
