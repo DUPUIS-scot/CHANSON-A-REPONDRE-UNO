@@ -1,0 +1,48 @@
+name: Bake Sherlock GLB
+
+on:
+  push:
+    branches:
+      - bake-sherlock-glb
+    paths:
+      - 'tool/bake_sherlock_glb.py'
+      - '.github/workflows/bake-sherlock-glb.yml'
+      - 'assets/models/detective_statue_rigged_web.glb'
+
+permissions:
+  contents: read
+
+env:
+  PYTHONUNBUFFERED: '1'
+
+jobs:
+  bake:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Bake 30-second Sherlock animation
+        run: python3 tool/bake_sherlock_glb.py
+
+      - name: Verify GLB
+        run: |
+          test -s build/sherlock_damaged_salute_cone_30s.glb
+          python3 - <<'PY'
+          import struct, pathlib
+          p=pathlib.Path('build/sherlock_damaged_salute_cone_30s.glb')
+          d=p.read_bytes()
+          magic,version,total=struct.unpack_from('<4sII',d,0)
+          assert magic==b'glTF' and version==2 and total==len(d)
+          print('Verified', p, len(d), 'bytes')
+          PY
+
+      - name: Upload baked Sherlock GLB
+        uses: actions/upload-artifact@v4
+        with:
+          name: sherlock-damaged-salute-cone-30s
+          path: build/sherlock_damaged_salute_cone_30s.glb
+          if-no-files-found: error
+          retention-days: 1
