@@ -34,6 +34,9 @@ void main() {
     );
     expect(credits.opacity, 0);
 
+    // Future.delayed resumes on the next pump; start the curtain reverse,
+    // then advance its full duration before checking the credits state.
+    await tester.pump();
     await tester.pump(const Duration(milliseconds: 1150));
     await tester.pump();
     credits = tester.widget<AnimatedOpacity>(
