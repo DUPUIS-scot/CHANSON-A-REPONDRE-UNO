@@ -20,25 +20,18 @@ jobs:
     name: Build web
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-        timeout-minutes: 8
-        with:
-          fetch-depth: 1
-          sparse-checkout: |
-            assets
-            lib
-            web
-            test
-            integration_test
-            scripts
-            tool
-            supabase
-            pubspec.yaml
-            pubspec.lock
-            analysis_options.yaml
-            .metadata
-          sparse-checkout-cone-mode: false
+      - name: Download source snapshot
+        timeout-minutes: 6
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/source-${GITHUB_SHA}.tar.gz"
+          curl --fail --location --silent --show-error \
+            --retry 4 --retry-delay 2 --retry-all-errors \
+            "https://codeload.github.com/${GITHUB_REPOSITORY}/tar.gz/${GITHUB_SHA}" \
+            --output "$archive"
+          tar -xzf "$archive" --strip-components=1
+          rm -f "$archive"
 
       - name: Verify checkout
         shell: bash
@@ -48,7 +41,7 @@ jobs:
           test -d lib
           test -d web
           test -d scripts
-          echo "Sparse checkout ready: $(git rev-parse --short HEAD)"
+          echo "Source snapshot ready: ${GITHUB_SHA:0:12}"
 
       - name: Verify Enochian runtime
         shell: bash
