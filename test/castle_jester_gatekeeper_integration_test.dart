@@ -51,8 +51,9 @@ void main() {
     expect(fastLoader, isNot(contains('interiorRoot.rotation.y=Math.PI*3.5')));
     expect(fastLoader, contains('castle_interior_jester_orientation.js'));
     expect(interiorOrientation, contains("track?.name?.endsWith('.position')"));
+    expect(interiorOrientation, contains('horizontalTravel(track) < MIN_ROOT_MOTION'));
     expect(interiorOrientation, contains("track?.name?.endsWith('.quaternion')"));
     expect(interiorOrientation, contains('q.multiply(correction).normalize()'));
-    expect(interiorOrientation, isNot(contains("values[i + 2] =")));
+    expect(interiorOrientation, contains("interiorJesterOrientation = 'root-motion-yaw-180-v71'"));
   });
 }
