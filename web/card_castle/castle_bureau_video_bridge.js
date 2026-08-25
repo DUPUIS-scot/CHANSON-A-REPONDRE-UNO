@@ -8,7 +8,9 @@ if (!window.__castleBureauVideoBridgeInstalled) {
     document.baseURI,
   ).href;
   const SCREEN_NAME = /^VideoScreen_(Left|Right)$/i;
-  const CLICK_SLOP_PX = 6;
+  const CLICK_SLOP_MOUSE_PX = 8;
+  const CLICK_SLOP_TOUCH_PX = 18;
+  const HIT_TOLERANCE_PX = 10;
 
   let video = null;
   let texture = null;
@@ -184,13 +186,28 @@ if (!window.__castleBureauVideoBridgeInstalled) {
 
     const rect = canvas.getBoundingClientRect();
     if (!rect.width || !rect.height) return false;
-    if (clientX < rect.left || clientX > rect.right || clientY < rect.top || clientY > rect.bottom) return false;
+    const samples = [
+      [0, 0],
+      [HIT_TOLERANCE_PX, 0],
+      [-HIT_TOLERANCE_PX, 0],
+      [0, HIT_TOLERANCE_PX],
+      [0, -HIT_TOLERANCE_PX],
+      [HIT_TOLERANCE_PX * 0.7, HIT_TOLERANCE_PX * 0.7],
+      [-HIT_TOLERANCE_PX * 0.7, HIT_TOLERANCE_PX * 0.7],
+      [HIT_TOLERANCE_PX * 0.7, -HIT_TOLERANCE_PX * 0.7],
+      [-HIT_TOLERANCE_PX * 0.7, -HIT_TOLERANCE_PX * 0.7],
+    ];
 
-    pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
-    pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
-    raycaster.setFromCamera(pointer, runtime.camera);
-    const hits = raycaster.intersectObjects([...boundMeshes], false);
-    return hits.length > 0;
+    for (const [offsetX, offsetY] of samples) {
+      const x = clientX + offsetX;
+      const y = clientY + offsetY;
+      if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) continue;
+      pointer.x = ((x - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((y - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(pointer, runtime.camera);
+      if (raycaster.intersectObjects([...boundMeshes], false).length > 0) return true;
+    }
+    return false;
   }
 
   function onPointerDown(event) {
@@ -200,6 +217,7 @@ if (!window.__castleBureauVideoBridgeInstalled) {
     }
     pointerDown = {
       pointerId: event.pointerId,
+      pointerType: event.pointerType,
       x: event.clientX,
       y: event.clientY,
     };
@@ -209,11 +227,12 @@ if (!window.__castleBureauVideoBridgeInstalled) {
     const down = pointerDown;
     pointerDown = null;
     if (!down || down.pointerId !== event.pointerId || !isLaboratoryActive()) return;
-    if (Math.hypot(event.clientX - down.x, event.clientY - down.y) > CLICK_SLOP_PX) return;
+    const clickSlop = down.pointerType === 'touch' ? CLICK_SLOP_TOUCH_PX : CLICK_SLOP_MOUSE_PX;
+    if (Math.hypot(event.clientX - down.x, event.clientY - down.y) > clickSlop) return;
 
     const root = findBureauRoot();
     if (root) bindScreens(root);
-    if (!mirrorHit(event.clientX, event.clientY)) return;
+    if (!mirrorHit(event.clientX, event.clientY) && !mirrorHit(down.x, down.y)) return;
 
     document.body.dataset.bureauVideoInteraction = 'mirror-click-v73';
     attemptPlay('mirror-click');
