@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  // Keep the cache-busted video bridge and laboratory-facing orientation module paired.
   test('laboratory video has one owner and Safari-safe playback', () {
     final bridge = File('web/card_castle/castle_bureau_video_bridge.js').readAsStringSync();
     final medallion = File('web/card_castle/castle_laboratory_medallion_button.js').readAsStringSync();
