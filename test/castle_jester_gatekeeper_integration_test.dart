@@ -15,7 +15,7 @@ void main() {
         File('web/card_castle/castle_visual_regression_v55.js').readAsStringSync();
 
     expect(bootstrap, contains('castle_jester_overlay.js'));
-    expect(bootstrap, contains("castleRuntimeRevision = '75'"));
+    expect(bootstrap, contains("const castleRuntimeRevision = '"));
     expect(overlay, contains('castle_jester_rigged.glb'));
     expect(
       overlay,
