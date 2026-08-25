@@ -65,8 +65,8 @@ void main() {
     expect(bridge, contains('window.__castleBureauVideoPrime = primeFromGesture'));
     expect(bridge, contains('raycaster.intersectObjects([...boundMeshes], false)'));
     expect(bridge, contains("bureauVideoInteraction = 'mirror-click-v73'"));
-    expect(bridge, contains("bureauVideoPlayback = 'paused-awaiting-mirror-click-v73'"));
-    expect(bridge, contains("bureauVideoPlayback = 'playing-loop-v73'"));
+    expect(bridge, contains("bureauVideoPlayback = 'paused-awaiting-mirror-click-v74'"));
+    expect(bridge, contains("bureauVideoPlayback = 'playing-loop-v74'"));
     expect(bridge, contains('video.autoplay = false'));
     expect(bridge, contains('texture.needsUpdate = true'));
     expect(medallion, contains('window.__castleBureauVideoPrime?.()'));
