@@ -27,6 +27,9 @@ void main() {
     final navigation = File(
       'web/card_castle/castle_navigation_overlay.js',
     ).readAsStringSync();
+    final navigationCore = File(
+      'web/card_castle/castle_navigation_overlay_core.js',
+    ).readAsStringSync();
 
     expect(bootstrap, contains("'card_castle/card_castle_fast.html'"));
     expect(bootstrap, contains('requestIdleCallback'));
@@ -146,15 +149,20 @@ void main() {
     expect(jesterGatekeeper, isNot(contains('unpkg.com')));
     expect(jesterGatekeeper, contains("castleJesterDraco=isIOS?'shared-js-worker-1'"));
 
-    expect(navigation, contains("addEventListener('pointerdown'"));
-    expect(navigation, contains("addEventListener('pointermove'"));
-    expect(navigation, contains("addEventListener('wheel'"));
-    expect(navigation, contains("addEventListener('keydown'"));
-    expect(navigation, contains("pinch-pan-zoom"));
-    expect(navigation, contains("orbit-pan-zoom-wasd-v27"));
-    expect(navigation, contains("return-exterior"));
-    expect(navigation, contains("sceneMode() === 'interior'"));
+    // The navigation overlay is now an orchestration wrapper; interaction
+    // ownership lives in the core module it imports.
+    expect(navigation, contains('castle_navigation_overlay_core.js'));
+    expect(navigation, isNot(contains("addEventListener('pointerdown'")));
     expect(navigation, isNot(contains('DRACOLoader')));
     expect(navigation, isNot(contains('.glb')));
+
+    expect(navigationCore, contains("addEventListener('pointerdown'"));
+    expect(navigationCore, contains("addEventListener('pointermove'"));
+    expect(navigationCore, contains("addEventListener('wheel'"));
+    expect(navigationCore, contains("addEventListener('keydown'"));
+    expect(navigationCore, contains('pinch-pan-zoom'));
+    expect(navigationCore, contains('orbit-pan-zoom-wasd-bureau-v46'));
+    expect(navigationCore, contains('return-exterior'));
+    expect(navigationCore, contains("sceneMode() === 'interior'"));
   });
 }
