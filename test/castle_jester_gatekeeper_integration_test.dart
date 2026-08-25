@@ -8,23 +8,27 @@ void main() {
     final overlay = File('web/card_castle/castle_jester_overlay.js').readAsStringSync();
     final controller = File('web/card_castle/castle_jester_gatekeeper.js').readAsStringSync();
     final fastLoader = File('web/card_castle/card_castle_fast.html').readAsStringSync();
+    final castleSource = File('web/card_castle/card_castle.html').readAsStringSync();
     final interiorOrientation =
         File('web/card_castle/castle_interior_jester_orientation.js').readAsStringSync();
     final visualRegression =
         File('web/card_castle/castle_visual_regression_v55.js').readAsStringSync();
 
     expect(bootstrap, contains('castle_jester_overlay.js'));
-    expect(bootstrap, contains("castleRuntimeRevision = '74'"));
+    expect(bootstrap, contains("castleRuntimeRevision = '75'"));
     expect(overlay, contains('castle_jester_rigged.glb'));
     expect(
       overlay,
-      contains("castleEntranceTrigger='rigged-jester-single-click'"),
+      contains("castleEntranceTrigger='castle-anywhere-single-click'"),
     );
-    expect(overlay, contains("castleJesterGesture='single-click-full-rig-v72'"));
+    expect(overlay, contains("castleJesterGesture='single-click-anywhere-v73'"));
     expect(
       overlay,
       contains("window.dispatchEvent(new CustomEvent('castleJesterEnter'))"),
     );
+    expect(overlay, contains('if(!down||down.pointerId!==event.pointerId||down.moved)return'));
+    expect(overlay, isNot(contains('||!down.jester||down.moved')));
+    expect(castleSource, contains("castleEntranceTransition='shared-loader-only-v73'"));
     expect(controller, contains("dataset.castleJesterState='looping'"));
     expect(controller, contains('onEnterRequested?.()'));
 
@@ -57,6 +61,9 @@ void main() {
     expect(fastLoader, contains("interiorRoot.rotation.y=Math.PI*2.5;"));
     expect(fastLoader, isNot(contains('interiorRoot.rotation.y=Math.PI*3.5')));
     expect(fastLoader, contains('castle_interior_jester_orientation.js'));
+    expect(fastLoader, contains('<script type="module" src="./castle_interior_jester_orientation.js'));
+    expect(interiorOrientation, contains("import * as THREE from 'three';"));
+    expect(interiorOrientation, isNot(contains("interiorJesterOrientation = 'three-unavailable'")));
     expect(interiorOrientation, contains("track?.name?.endsWith('.position')"));
     expect(interiorOrientation, contains('horizontalTravel(track) < MIN_ROOT_MOTION'));
     expect(interiorOrientation, contains("track?.name?.endsWith('.quaternion')"));

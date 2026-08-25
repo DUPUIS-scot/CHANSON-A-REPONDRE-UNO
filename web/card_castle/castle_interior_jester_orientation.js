@@ -1,12 +1,8 @@
+import * as THREE from 'three';
+
 (() => {
   if (window.__castleInteriorJesterOrientationInstalled) return;
   window.__castleInteriorJesterOrientationInstalled = true;
-
-  const THREE = window.THREE;
-  if (!THREE?.AnimationMixer?.prototype) {
-    document.body.dataset.interiorJesterOrientation = 'three-unavailable';
-    return;
-  }
 
   const prototype = THREE.AnimationMixer.prototype;
   if (prototype.__castleJesterOrientationPatched) return;

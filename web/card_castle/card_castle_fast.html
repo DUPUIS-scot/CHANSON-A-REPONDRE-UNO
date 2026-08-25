@@ -111,7 +111,7 @@
   const directVersion=new URLSearchParams(location.search).get('v');
   const directSuffix=directVersion?`?v=${encodeURIComponent(directVersion)}`:'';
   const directScripts=
-    '<script src="./castle_interior_jester_orientation.js'+directSuffix+'"></scr'+'ipt>'+
+    '<script type="module" src="./castle_interior_jester_orientation.js'+directSuffix+'"></scr'+'ipt>'+
     '<script src="./castle_environment_direct.js'+directSuffix+'"></scr'+'ipt>'+
     '<script src="./castle_ios_uno_preview_fix.js'+directSuffix+'"></scr'+'ipt>'+
     '<script src="./castle_cards_direct.js'+directSuffix+'"></scr'+'ipt>';

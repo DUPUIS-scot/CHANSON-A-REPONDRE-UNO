@@ -14,7 +14,7 @@ void main() {
     final medallion = File('web/card_castle/castle_laboratory_medallion_button.js').readAsStringSync();
     final resetView = File('web/card_castle/castle_laboratory_entry_reset_v70.js').readAsStringSync();
 
-    expect(bootstrap, contains("const castleRuntimeRevision = '74';"));
+    expect(bootstrap, contains("const castleRuntimeRevision = '75';"));
     expect(bootstrap, contains("url.searchParams.set('v', buildId || castleRuntimeRevision)"));
     expect(bootstrap, contains('card_castle/card_castle_fast.html'));
     expect(bootstrap, contains('optimized = url.href'));
@@ -70,7 +70,7 @@ void main() {
     expect(bridge, contains('video.autoplay = false'));
     expect(bridge, contains('texture.needsUpdate = true'));
     expect(medallion, contains('window.__castleBureauVideoPrime?.()'));
-    expect(overlay, contains("castle_bureau_video_bridge.js?v=76"));
+    expect(overlay, contains("castle_bureau_video_bridge.js?v=77"));
     expect(overlay, isNot(contains('castle_bureau_video_refresh_v70.js')));
     expect(overlay, contains("castle_visual_regression_v55.js?v=70"));
 

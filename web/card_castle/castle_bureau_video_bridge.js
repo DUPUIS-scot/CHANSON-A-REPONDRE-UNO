@@ -21,6 +21,7 @@ if (!window.__castleBureauVideoBridgeInstalled) {
   let playPromise = null;
   let textureFrame = 0;
   let pointerDown = null;
+  let playRequested = false;
 
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
@@ -126,21 +127,23 @@ if (!window.__castleBureauVideoBridgeInstalled) {
     video.volume = 0;
 
     if (!video.paused && !video.ended) {
-      document.body.dataset.bureauVideoPlayback = 'playing-loop-v73';
+      document.body.dataset.bureauVideoPlayback = 'playing-loop-v74';
       delete document.body.dataset.bureauVideoError;
       return Promise.resolve(true);
     }
     if (playPromise) return playPromise;
 
-    document.body.dataset.bureauVideoPlayback = `${reason}-attempt-v73`;
+    playRequested = true;
+    document.body.dataset.bureauVideoPlayback = `${reason}-attempt-v74`;
     playPromise = Promise.resolve(video.play())
       .then(() => {
-        document.body.dataset.bureauVideoPlayback = 'playing-loop-v73';
+        document.body.dataset.bureauVideoPlayback = 'playing-loop-v74';
         delete document.body.dataset.bureauVideoError;
         return true;
       })
       .catch(error => {
-        document.body.dataset.bureauVideoPlayback = 'mirror-click-blocked-v73';
+        playRequested = false;
+        document.body.dataset.bureauVideoPlayback = 'mirror-click-blocked-v74';
         document.body.dataset.bureauVideoError = String(error?.message || error);
         return false;
       })
@@ -154,7 +157,7 @@ if (!window.__castleBureauVideoBridgeInstalled) {
       try { video.currentTime = 0; } catch (_) {}
     }
     document.body.dataset.bureauVideoPlayback = isLaboratoryActive()
-      ? 'paused-awaiting-mirror-click-v73'
+      ? 'paused-awaiting-mirror-click-v74'
       : 'preloaded-v73';
     return Promise.resolve(true);
   }
@@ -163,13 +166,18 @@ if (!window.__castleBureauVideoBridgeInstalled) {
     if (isLaboratoryActive()) {
       const root = findBureauRoot();
       if (root) bindScreens(root);
-      if (video && !video.paused) video.pause();
-      document.body.dataset.bureauVideoPlayback = 'paused-awaiting-mirror-click-v73';
+      if (!playRequested) {
+        if (video && !video.paused) video.pause();
+        document.body.dataset.bureauVideoPlayback = 'paused-awaiting-mirror-click-v74';
+      } else if (video && !video.paused && !video.ended) {
+        document.body.dataset.bureauVideoPlayback = 'playing-loop-v74';
+      }
       return;
     }
 
+    playRequested = false;
     if (video && !video.paused) video.pause();
-    document.body.dataset.bureauVideoPlayback = 'paused-v73';
+    document.body.dataset.bureauVideoPlayback = 'paused-v74';
   }
 
   function hydrate() {
@@ -248,6 +256,7 @@ if (!window.__castleBureauVideoBridgeInstalled) {
     networkState: video?.networkState,
     currentTime: video?.currentTime,
     interaction: document.body.dataset.bureauVideoInteraction || '',
+    playRequested,
     boundNames: [...boundMeshes].map(object => object.name || '(unnamed)'),
   });
 
