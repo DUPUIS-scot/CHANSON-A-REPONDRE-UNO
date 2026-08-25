@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 
 import '../providers/background_provider.dart';
 import '../providers/home_experience_provider.dart';
@@ -13,6 +14,7 @@ import '../widgets/settings_action_tile.dart';
 import '../widgets/settings_section.dart';
 import '../widgets/startup_video_viewport.dart';
 import '../widgets/utility_page_background.dart';
+import '../core/app_router.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -272,6 +274,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ],
               ),
               SettingsSection(
+                title: 'EXPERIENCES',
+                icon: Icons.auto_awesome_outlined,
+                initiallyExpanded: true,
+                children: [
+                  SettingsActionTile(
+                    title: 'Interactive detective statue',
+                    subtitle:
+                        '30-second salute, articulated controls and 360° rotation.',
+                    icon: Icons.view_in_ar_outlined,
+                    onTap: () => context.push(AppRoutes.statueExperience),
+                  ),
+                  SettingsActionTile(
+                    title: 'GÉNÉRIQUE / CREDITS',
+                    subtitle: 'Close the red curtain and view the credits.',
+                    icon: Icons.theater_comedy_outlined,
+                    onTap: () => context.push(AppRoutes.credits),
+                  ),
+                ],
+              ),
+              SettingsSection(
                 title: 'RESTORE',
                 icon: Icons.restore_rounded,
                 initiallyExpanded: false,
@@ -341,7 +363,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
 }
 
 class VisitorStatsPanel extends StatelessWidget {
-  const VisitorStatsPanel({required this.stats, required this.loading, super.key});
+  const VisitorStatsPanel({
+    required this.stats,
+    required this.loading,
+    super.key,
+  });
 
   final VisitorStats? stats;
   final bool loading;
@@ -370,14 +396,20 @@ class VisitorStatsPanel extends StatelessWidget {
                 return Column(
                   children: [
                     for (final value in values)
-                      _VisitorStat(label: value.$1, value: value.$2, horizontal: true),
+                      _VisitorStat(
+                        label: value.$1,
+                        value: value.$2,
+                        horizontal: true,
+                      ),
                   ],
                 );
               }
               return Row(
                 children: [
                   for (final value in values)
-                    Expanded(child: _VisitorStat(label: value.$1, value: value.$2)),
+                    Expanded(
+                      child: _VisitorStat(label: value.$1, value: value.$2),
+                    ),
                 ],
               );
             },
@@ -397,7 +429,11 @@ class VisitorStatsPanel extends StatelessWidget {
 }
 
 class _VisitorStat extends StatelessWidget {
-  const _VisitorStat({required this.label, required this.value, this.horizontal = false});
+  const _VisitorStat({
+    required this.label,
+    required this.value,
+    this.horizontal = false,
+  });
 
   final String label;
   final int? value;
@@ -415,7 +451,11 @@ class _VisitorStat extends StatelessWidget {
   Widget build(BuildContext context) {
     final labelWidget = Text(
       label,
-      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1),
+      style: const TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 1,
+      ),
     );
     final valueWidget = Text(
       formattedValue,
@@ -429,8 +469,17 @@ class _VisitorStat extends StatelessWidget {
     return SizedBox(
       height: horizontal ? 48 : 58,
       child: horizontal
-          ? Row(children: [Expanded(child: labelWidget), valueWidget])
-          : Column(mainAxisAlignment: MainAxisAlignment.center, children: [labelWidget, valueWidget]),
+          ? Row(
+              children: [
+                Expanded(child: labelWidget),
+                valueWidget,
+              ],
+            )
+          : Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [labelWidget, valueWidget],
+            ),
     );
   }
 }
+

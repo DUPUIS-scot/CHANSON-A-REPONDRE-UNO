@@ -34,6 +34,7 @@ dependencies:
   path: ^1.9.1
   supabase_flutter: ^2.16.0
   youtube_player_iframe: 6.0.2
+  package_info_plus: ^9.0.1
 
 dev_dependencies:
   flutter_test:
@@ -64,3 +65,4 @@ flutter:
     - assets/json/the_kraken_enochian_compact.json
     - assets/json/heliogabal_design_enochian_compact.json
     - assets/json/vivid_void_enochian_compact.json
+

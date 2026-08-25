@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Interactive Detective Statue</title>
+  <style>
+    :root { color-scheme: dark; font-family: Inter, system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #090604; }
+    body { touch-action: none; user-select: none; }
+    #stage { position: fixed; inset: 0; }
+    canvas { display: block; width: 100%; height: 100%; cursor: grab; }
+    canvas.dragging { cursor: grabbing; }
+    #hud { position: fixed; left: 14px; right: 14px; bottom: 14px; display: grid; gap: 8px; pointer-events: none; }
+    #instructions, #status { width: fit-content; max-width: min(720px, 100%); padding: 8px 12px; border: 1px solid rgba(255,201,40,.62); border-radius: 12px; background: rgba(18,7,4,.82); color: #fff4d2; box-shadow: 0 8px 24px #0009; font-size: 13px; line-height: 1.35; }
+    #status { color: #ffc928; font-weight: 800; }
+    #zones { display: flex; gap: 6px; flex-wrap: wrap; pointer-events: auto; }
+    button { border: 1px solid #c18a27; border-radius: 999px; padding: 7px 10px; background: rgba(61,12,9,.88); color: #fff4d2; font: inherit; font-size: 12px; font-weight: 800; cursor: pointer; }
+    button:hover, button:focus-visible, button.active { background: #8d251a; color: #ffc928; outline: none; }
+    #loading { position: fixed; inset: 0; display: grid; place-items: center; background: radial-gradient(circle at 50% 35%, #43100c, #090604 70%); color: #ffc928; font-weight: 900; letter-spacing: .08em; transition: opacity .4s; }
+    #loading.hidden { opacity: 0; pointer-events: none; }
+    @media (max-width: 560px) { #instructions { font-size: 11px; } button { font-size: 10px; padding: 6px 8px; } }
+  </style>
+  <script type="importmap">{"imports":{"three":"../vendor/three.module.js"}}</script>
+</head>
+<body>
+  <div id="stage" aria-label="Interactive 3D detective statue"></div>
+  <div id="loading" role="status">PREPARING THE STATUE…</div>
+  <div id="hud">
+    <div id="status" aria-live="polite">Loading rig…</div>
+    <div id="zones" aria-label="Selectable body controls"></div>
+    <div id="instructions">Drag a body part to pose it. Drag empty space to rotate the whole statue 360°. The 30-second theatrical salute keeps looping underneath your adjustments.</div>
+  </div>
+  <script type="module">
+    import * as THREE from 'three';
+    import { GLTFLoader } from '../vendor/GLTFLoader.js';
+    import { MeshoptDecoder } from '../vendor/meshopt_decoder.module.js';
+
+    const stage = document.querySelector('#stage');
+    const loading = document.querySelector('#loading');
+    const status = document.querySelector('#status');
+    const zones = document.querySelector('#zones');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x090604);
+    scene.fog = new THREE.FogExp2(0x090604, 0.55);
+
+    const camera = new THREE.PerspectiveCamera(34, 1, 0.01, 20);
+    camera.position.set(0, 0.58, 2.05);
+    camera.lookAt(0, 0.5, 0);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.18;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    stage.append(renderer.domElement);
+
+    scene.add(new THREE.HemisphereLight(0xffe7bd, 0x190605, 1.65));
+    const key = new THREE.DirectionalLight(0xffd39b, 4.2);
+    key.position.set(2.1, 3.2, 2.4);
+    key.castShadow = true;
+    scene.add(key);
+    const rim = new THREE.DirectionalLight(0x9bb9ff, 2.0);
+    rim.position.set(-2.2, 1.6, -2.4);
+    scene.add(rim);
+    const floor = new THREE.Mesh(
+      new THREE.CircleGeometry(0.82, 96),
+      new THREE.MeshStandardMaterial({ color: 0x210a06, roughness: 0.78, metalness: 0.18 }),
+    );
+    floor.rotation.x = -Math.PI / 2;
+    floor.receiveShadow = true;
+    scene.add(floor);
+
+    const modelRoot = new THREE.Group();
+    const initialYaw = -Math.PI / 2;
+    modelRoot.rotation.y = initialYaw;
+    scene.add(modelRoot);
+    const loader = new GLTFLoader();
+    loader.setMeshoptDecoder(MeshoptDecoder);
+    const load = (url) => new Promise((resolve, reject) => loader.load(url, resolve, undefined, reject));
+
+    const targetDefinitions = {
+      head: { label: 'Head', bone: 'Head', limits: [20, 35, 15] },
+      torso: { label: 'Torso', bone: 'Spine02', limits: [15, 25, 12] },
+      leftArm: { label: 'Left arm', bone: 'L_Upperarm', limits: [70, 55, 70] },
+      rightArm: { label: 'Right arm', bone: 'R_Upperarm', limits: [70, 55, 70] },
+      leftHand: { label: 'Left hand', bone: 'L_Hand', limits: [35, 25, 30] },
+      rightHand: { label: 'Right hand', bone: 'R_Hand', limits: [35, 25, 30] },
+    };
+    const targets = new Map();
+    const motionBones = new Map();
+    const interactiveMeshes = [];
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
+    const scratchPoint = new THREE.Vector3();
+    const scratchBonePoint = new THREE.Vector3();
+    const scratchQuat = new THREE.Quaternion();
+    const scratchEuler = new THREE.Euler();
+    let selected = null;
+    let forcedSelection = null;
+    let dragging = false;
+    let previousX = 0;
+    let previousY = 0;
+    let statueReady = false;
+
+    const clampRadians = (value, degrees) => THREE.MathUtils.clamp(value, -THREE.MathUtils.degToRad(degrees), THREE.MathUtils.degToRad(degrees));
+    const smoother = (value) => value * value * (3 - 2 * value);
+    const ramp = (time, start, end) => smoother(THREE.MathUtils.clamp((time - start) / (end - start), 0, 1));
+    const pulse = (time, upStart, upEnd, downStart, downEnd) => ramp(time, upStart, upEnd) * (1 - ramp(time, downStart, downEnd));
+
+    function registerTargets(root) {
+      for (const [id, definition] of Object.entries(targetDefinitions)) {
+        const bone = root.getObjectByName(definition.bone);
+        if (!bone) continue;
+        targets.set(id, {
+          ...definition,
+          id,
+          bone,
+          base: bone.quaternion.clone(),
+          user: new THREE.Vector3(),
+        });
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = definition.label;
+        button.dataset.zone = id;
+        button.addEventListener('click', () => {
+          forcedSelection = forcedSelection === id ? null : id;
+          updateButtons();
+          status.textContent = forcedSelection ? `${definition.label} selected — drag the statue to adjust` : 'Direct body selection enabled';
+        });
+        zones.append(button);
+      }
+      const reset = document.createElement('button');
+      reset.type = 'button';
+      reset.textContent = 'Reset pose';
+      reset.addEventListener('click', () => {
+        for (const target of targets.values()) target.user.set(0, 0, 0);
+        modelRoot.rotation.y = initialYaw;
+        forcedSelection = null;
+        updateButtons();
+        status.textContent = 'Pose reset — animation continues';
+      });
+      zones.append(reset);
+      for (const [id, boneName] of Object.entries({
+        rightForearm: 'R_Forearm',
+        leftForearm: 'L_Forearm',
+      })) {
+        const bone = root.getObjectByName(boneName);
+        if (bone) motionBones.set(id, { bone, base: bone.quaternion.clone() });
+      }
+    }
+
+    function updateButtons() {
+      for (const button of zones.querySelectorAll('[data-zone]')) {
+        button.classList.toggle('active', button.dataset.zone === forcedSelection);
+      }
+    }
+
+    function attachConeToLeftHand(coneScene) {
+      const hand = targets.get('leftHand')?.bone;
+      if (!hand) throw new Error('Left hand bone was not found.');
+      hand.updateWorldMatrix(true, false);
+      const handWorld = new THREE.Quaternion();
+      hand.getWorldQuaternion(handWorld);
+      const holder = new THREE.Group();
+      holder.name = 'TrafficConeBaseGrip';
+      holder.position.set(0, 0.048, 0);
+      holder.quaternion.copy(handWorld).invert();
+      hand.add(holder);
+
+      const bounds = new THREE.Box3().setFromObject(coneScene);
+      const center = bounds.getCenter(new THREE.Vector3());
+      const size = bounds.getSize(new THREE.Vector3());
+      const desiredHeight = 0.26;
+      const scale = desiredHeight / Math.max(size.y, 0.0001);
+      const coneContent = new THREE.Group();
+      coneContent.scale.setScalar(scale);
+      coneScene.position.set(-center.x, -bounds.min.y, -center.z);
+      coneContent.add(coneScene);
+      holder.add(coneContent);
+      coneScene.traverse((object) => {
+        if (!object.isMesh) return;
+        object.castShadow = true;
+        object.receiveShadow = true;
+      });
+    }
+
+    function animatedOffsets(time) {
+      const salute = pulse(time, 2.0, 7.0, 24.0, 29.0);
+      const flourish = pulse(time, 10.0, 12.5, 19.5, 22.0);
+      const derelictSway = Math.sin((time / 30) * Math.PI * 6) * 0.045;
+      return {
+        head: new THREE.Vector3(-0.06 * salute, 0.18 * salute + derelictSway, -0.035 * salute),
+        torso: new THREE.Vector3(0.07 * salute, -0.08 * flourish, derelictSway * 0.72),
+        leftArm: new THREE.Vector3(-0.12 * salute, 0.08 * flourish, 0.22 * salute),
+        rightArm: new THREE.Vector3(-0.18 * salute, 0.10 * salute, -0.10 * salute + 0.10 * flourish),
+        leftHand: new THREE.Vector3(0.08 * salute, -0.06 * flourish, 0.04 * salute),
+        rightHand: new THREE.Vector3(-0.22 * salute, 0.08 * flourish, -0.08 * salute),
+        rightForearm: new THREE.Vector3(0.22 * salute, 0.04 * flourish, -2.10 * salute),
+        leftForearm: new THREE.Vector3(-0.18 * salute, 0, -0.05 * flourish),
+      };
+    }
+
+    function applyPose(time) {
+      const animation = animatedOffsets(time);
+      for (const [id, target] of targets) {
+        const offset = animation[id] ?? scratchPoint.set(0, 0, 0);
+        scratchEuler.set(offset.x, offset.y, offset.z, 'XYZ');
+        target.bone.quaternion.copy(target.base).multiply(scratchQuat.setFromEuler(scratchEuler));
+        scratchEuler.set(target.user.x, target.user.y, target.user.z, 'XYZ');
+        target.bone.quaternion.multiply(scratchQuat.setFromEuler(scratchEuler));
+      }
+      for (const [id, target] of motionBones) {
+        const offset = animation[id];
+        scratchEuler.set(offset.x, offset.y, offset.z, 'XYZ');
+        target.bone.quaternion
+          .copy(target.base)
+          .multiply(scratchQuat.setFromEuler(scratchEuler));
+      }
+    }
+
+    function resolveTarget(event) {
+      if (forcedSelection && targets.has(forcedSelection)) return forcedSelection;
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointer.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1);
+      raycaster.setFromCamera(pointer, camera);
+      const hit = raycaster.intersectObjects(interactiveMeshes, false)[0];
+      if (!hit) return null;
+      scratchPoint.copy(hit.point);
+      let nearest = null;
+      let nearestDistance = Infinity;
+      for (const [id, target] of targets) {
+        target.bone.getWorldPosition(scratchBonePoint);
+        const distance = scratchBonePoint.distanceToSquared(scratchPoint);
+        if (distance < nearestDistance) {
+          nearestDistance = distance;
+          nearest = id;
+        }
+      }
+      return nearestDistance < 0.11 ? nearest : null;
+    }
+
+    renderer.domElement.addEventListener('pointerdown', (event) => {
+      if (!statueReady) return;
+      selected = resolveTarget(event);
+      dragging = true;
+      previousX = event.clientX;
+      previousY = event.clientY;
+      renderer.domElement.setPointerCapture(event.pointerId);
+      renderer.domElement.classList.add('dragging');
+      status.textContent = selected ? `${targets.get(selected).label} — anatomically constrained` : 'Whole statue — 360° rotation';
+    });
+    renderer.domElement.addEventListener('pointermove', (event) => {
+      if (!dragging) return;
+      const dx = event.clientX - previousX;
+      const dy = event.clientY - previousY;
+      previousX = event.clientX;
+      previousY = event.clientY;
+      if (!selected) {
+        modelRoot.rotation.y += dx * 0.009;
+        return;
+      }
+      const target = targets.get(selected);
+      if (selected === 'head' || selected === 'torso') {
+        target.user.y += dx * 0.006;
+        target.user.x += dy * 0.006;
+      } else if (selected.endsWith('Arm')) {
+        target.user.y += dx * 0.006;
+        target.user.z += dy * 0.006;
+      } else {
+        target.user.y += dx * 0.005;
+        target.user.x += dy * 0.005;
+      }
+      target.user.x = clampRadians(target.user.x, target.limits[0]);
+      target.user.y = clampRadians(target.user.y, target.limits[1]);
+      target.user.z = clampRadians(target.user.z, target.limits[2]);
+    });
+    const endDrag = (event) => {
+      dragging = false;
+      selected = null;
+      renderer.domElement.classList.remove('dragging');
+      if (renderer.domElement.hasPointerCapture(event.pointerId)) renderer.domElement.releasePointerCapture(event.pointerId);
+    };
+    renderer.domElement.addEventListener('pointerup', endDrag);
+    renderer.domElement.addEventListener('pointercancel', endDrag);
+
+    function resize() {
+      const width = stage.clientWidth;
+      const height = stage.clientHeight;
+      renderer.setSize(width, height, false);
+      camera.aspect = width / Math.max(height, 1);
+      camera.updateProjectionMatrix();
+    }
+    addEventListener('resize', resize);
+    resize();
+
+    try {
+      const [statue, cone] = await Promise.all([
+        load('../assets/assets/models/detective_statue_rigged_web.glb'),
+        load('../assets/assets/models/traffic_cone_web.glb'),
+      ]);
+      modelRoot.add(statue.scene);
+      statue.scene.traverse((object) => {
+        if (!object.isMesh) return;
+        object.castShadow = true;
+        object.receiveShadow = true;
+        interactiveMeshes.push(object);
+      });
+      registerTargets(statue.scene);
+      attachConeToLeftHand(cone.scene);
+      statueReady = true;
+      loading.classList.add('hidden');
+      status.textContent = 'Looping 30-second theatrical salute';
+    } catch (error) {
+      console.error(error);
+      loading.textContent = 'THE STATUE COULD NOT BE LOADED';
+      status.textContent = '3D scene unavailable';
+    }
+
+    const clock = new THREE.Clock();
+    renderer.setAnimationLoop(() => {
+      const elapsed = clock.getElapsedTime();
+      if (statueReady) applyPose(elapsed % 30);
+      renderer.render(scene, camera);
+    });
+  </script>
+</body>
+</html>
+
