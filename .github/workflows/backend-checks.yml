@@ -17,7 +17,16 @@ jobs:
       run:
         working-directory: server
     steps:
-      - uses: actions/checkout@v6
+      - name: Checkout backend
+        uses: actions/checkout@v6
+        timeout-minutes: 8
+        with:
+          fetch-depth: 1
+          fetch-tags: false
+          persist-credentials: false
+          sparse-checkout: |
+            server
+          sparse-checkout-cone-mode: true
       - uses: actions/setup-node@v4
         with:
           node-version: 22
