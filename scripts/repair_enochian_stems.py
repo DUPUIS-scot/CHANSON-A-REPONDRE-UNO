@@ -51,7 +51,8 @@ shell_required = [
     "analyser-composite-signal.js?v=20260824-v9",
     "analyser-signal-glide.js?v=20260825-v6",
     "analyser-signal-3d.js?v=20260824-v6",
-    "sculpt-audio-mod.js?v=20260824-v2",
+    "sculpt-audio-mod.js?v=20260825-v3",
+    "pending-ui-fixes.js?v=20260825-v1",
     "ios-touch-tuning.js?v=20260824-v1",
     "installEnochianAuthoritativeRuntime",
     "installEnochianOuterAnalyserPanel",
@@ -59,6 +60,7 @@ shell_required = [
     "installEnochianAnalyserSignalGlide",
     "installEnochianAnalyserSignal3D",
     "installEnochianSculptAudioMod",
+    "installEnochianPendingUiFixes",
     "installEnochianIOSTouchTuning",
     "target-viewport.js?v=20260825-deep-repair-v1",
     "iphone-landscape-layout-v2.js?v=20260824-deep-v19",
@@ -72,6 +74,7 @@ for stale in [
     "analyser-expand-overlay.js?v=20260824-v8",
     "authoritative-runtime.js?v=20260824-v3",
     "authoritative-runtime.js?v=20260824-v4",
+    "sculpt-audio-mod.js?v=20260824-v2",
 ]:
     if stale in shell:
         raise SystemExit(f'legacy competing runtime still loaded: {stale}')
@@ -84,6 +87,7 @@ required_files = [
     Path('web/enochian-test/analyser-signal-glide.js'),
     Path('web/enochian-test/analyser-signal-3d.js'),
     Path('web/enochian-test/sculpt-audio-mod.js'),
+    Path('web/enochian-test/pending-ui-fixes.js'),
     Path('web/enochian-test/ios-touch-tuning.js'),
 ]
 for required_file in required_files:
@@ -95,6 +99,8 @@ for js_file in [
     Path('web/enochian-test/outer-analyser-panel.js'),
     Path('web/enochian-test/analyser-data-bus.js'),
     Path('web/enochian-test/analyser-signal-3d.js'),
+    Path('web/enochian-test/sculpt-audio-mod.js'),
+    Path('web/enochian-test/pending-ui-fixes.js'),
     Path('web/enochian-test/ios-touch-tuning.js'),
 ]:
     subprocess.run(['node', '--check', str(js_file)], check=True)
@@ -106,6 +112,7 @@ composite = Path('web/enochian-test/analyser-composite-signal.js').read_text(enc
 three_d = Path('web/enochian-test/analyser-signal-3d.js').read_text(encoding='utf-8')
 glide = Path('web/enochian-test/analyser-signal-glide.js').read_text(encoding='utf-8')
 sculpt_audio = Path('web/enochian-test/sculpt-audio-mod.js').read_text(encoding='utf-8')
+pending_ui = Path('web/enochian-test/pending-ui-fixes.js').read_text(encoding='utf-8')
 touch = Path('web/enochian-test/ios-touch-tuning.js').read_text(encoding='utf-8')
 
 required_authority = [
@@ -151,7 +158,9 @@ if '__compositeCapture' in composite or '__enoch3dCapture' in three_d:
     raise SystemExit('legacy independent analyser wrappers unexpectedly present')
 if "analyserSignalGlide='v6'" not in glide or "analyserSignal3d='v6'" not in three_d or "latestSource='none'" not in three_d or "writeIndex" not in three_d or "rowAt" not in three_d:
     raise SystemExit('current FFT sculptable 3D analyser contract missing')
-if "sculptAudioMod='v2'" not in sculpt_audio or "version:'v2'" not in sculpt_audio or '__enochSculptAudio' not in sculpt_audio or 'restoreBase' not in sculpt_audio or 'SCULPT AUDIO' not in sculpt_audio:
-    raise SystemExit('sculpt-to-audio modulation v2 contract missing')
+if "sculptAudioMod='v3'" not in sculpt_audio or "version:'v3'" not in sculpt_audio or '__enochSculptAudio' not in sculpt_audio or 'grabCurve=[0,.28,.48,.67,.87,1]' not in sculpt_audio or 'restoreBase' not in sculpt_audio or 'SCULPT AUDIO' not in sculpt_audio:
+    raise SystemExit('sculpt-to-audio modulation v3 engagement contract missing')
+if "pendingUiFixes='v1'" not in pending_ui or 'loop-control-row' not in pending_ui or 'eq-kill-btn' not in pending_ui:
+    raise SystemExit('pending terminal UI fixes contract missing')
 
-print('Enochian runtime verified: persistent stem master ON/OFF inside isolator, native Web Audio stem bridge with exclusive master/stem routing and smoothed GainNode mix, authoritative transport-clock loop with forced end wrap, outer floating analyser, unified FFT analyser bus, ring-buffered 3D signal history, reversible sculpt-to-audio, navigation and outer fullscreen.')
+print('Enochian runtime verified: persistent stem master ON/OFF inside isolator, native Web Audio stem bridge with exclusive master/stem routing and smoothed GainNode mix, authoritative transport-clock loop with forced end wrap, outer floating analyser, unified FFT analyser bus, ring-buffered 3D signal history, v3 grab-engagement sculpt-to-audio, EQ kills, aligned MOD wheel, loop row, navigation and outer fullscreen.')
