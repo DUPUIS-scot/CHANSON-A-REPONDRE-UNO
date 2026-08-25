@@ -12,7 +12,17 @@ jobs:
   patch:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout stem patch sources
+        uses: actions/checkout@v6
+        timeout-minutes: 8
+        with:
+          fetch-depth: 1
+          fetch-tags: false
+          persist-credentials: true
+          sparse-checkout: |
+            .github/scripts
+            web
+          sparse-checkout-cone-mode: true
       - name: Patch terminal stems
         run: python .github/scripts/patch_enochian_stems.py
       - name: Verify stem patch
