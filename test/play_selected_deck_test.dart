@@ -47,7 +47,7 @@ void main() {
       state.players.first.hand.map((card) => card.category),
       everyElement(predicate<String>(isKnownCardCategory)),
     );
-    expect(selectedDeck.hasExplicitCategories, isFalse);
+    expect(selectedDeck.hasExplicitCategories, isTrue);
     expect(
       selectedDeck.cardBack,
       'assets/decks/chanson_a_repondre_brio/card_back.jpeg',

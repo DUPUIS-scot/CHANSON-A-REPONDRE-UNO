@@ -43,9 +43,9 @@ void main() {
     expect(persistentPlayer, contains('TAP TO RESUME DJ WHO'));
     expect(persistentPlayer, contains('Resume DJ WHO on iOS'));
 
-    expect(castleView, contains('player.suspendForCastleLoad()'));
+    expect(castleView, contains('djWhoPlayer!.suspendForCastleLoad()'));
     expect(castleView, contains("case 'castleLoadingComplete':"));
-    expect(castleView, contains('player.resumeAfterCastleLoad()'));
+    expect(castleView, contains('p.resumeAfterCastleLoad(isIos:isIos)'));
     expect(castleView, isNot(contains('Timer.periodic')));
     expect(castleView, isNot(contains('ensureCastlePlaybackContinuity')));
 

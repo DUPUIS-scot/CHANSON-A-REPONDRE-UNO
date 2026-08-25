@@ -21,14 +21,15 @@ void main() {
     controller.dispose();
   });
 
-  test('anonymous guest session authenticates without login', () async {
+  test('anonymous guest session is created only for a protected action', () async {
     final service = _FakeAuthService(guestResult: guest);
     final controller = AuthController(
       service,
       anonymousGuestEnabled: true,
     );
-    expect(controller.status, AuthStatus.loading);
-    await Future<void>.delayed(Duration.zero);
+    expect(controller.status, AuthStatus.unauthenticated);
+    expect(service.guestSignIns, 0);
+    expect(await controller.ensureAnonymousSession(), isTrue);
     expect(controller.status, AuthStatus.authenticated);
     expect(controller.isAnonymous, isTrue);
     expect(controller.canUseProtectedAi, isTrue);
@@ -75,7 +76,7 @@ void main() {
     controller.dispose();
   });
 
-  test('logout falls back to a fresh guest session when guest mode is on', () async {
+  test('logout keeps guest creation deferred when guest mode is on', () async {
     final service = _FakeAuthService(current: user, guestResult: guest);
     final controller = AuthController(
       service,
@@ -83,9 +84,9 @@ void main() {
     );
     await controller.signOut();
     expect(service.signedOut, isTrue);
-    expect(controller.status, AuthStatus.authenticated);
-    expect(controller.isAnonymous, isTrue);
-    expect(service.guestSignIns, 1);
+    expect(controller.status, AuthStatus.unauthenticated);
+    expect(controller.isAnonymous, isFalse);
+    expect(service.guestSignIns, 0);
     controller.dispose();
   });
 

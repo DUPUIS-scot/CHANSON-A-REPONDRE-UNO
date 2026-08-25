@@ -78,7 +78,7 @@ void main() {
 
     expect(environment, contains('castle_exterior_ground.png'));
     expect(environment, contains('castle_exterior_atmosphere.png'));
-    expect(environment, contains("type || '') !== 'SphereGeometry'"));
+    expect(environment, contains("type === 'SphereGeometry'"));
     expect(environment, contains("exteriorEnvironment = 'ready'"));
 
     expect(previewFix, contains('__castleUnoPreviewFixInstalled'));

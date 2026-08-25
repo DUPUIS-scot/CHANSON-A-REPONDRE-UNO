@@ -66,7 +66,7 @@ void main() {
       'lib/screens/card_transcription_screen.dart',
     ).readAsStringSync();
 
-    expect(screen, contains('deckForCard(cardId)'));
+    expect(screen, contains('deckForCard(widget.cardId)'));
     expect(sheet, contains('card: card'));
     expect(sheet, contains('deck: deck'));
     expect(sheet, contains('imagePath: card.imagePath'));

@@ -5,6 +5,7 @@ import '../providers/deck_provider.dart';
 import '../services/card_share_identity.dart';
 import '../services/external_ai_handoff_service.dart';
 import '../widgets/home_navigation_button.dart';
+import '../widgets/transcription_ai_provider_sheet.dart';
 import '../widgets/transcription_jester_scene.dart';
 
 const _gold = Color(0xFFE7A62C);
@@ -93,17 +94,12 @@ class _CardTranscriptionScreenState extends State<CardTranscriptionScreen> {
 
     Future<void> openAi(CardAiHandoffMode mode) async {
       if (deck == null) return;
-      final service = const ExternalAiHandoffService();
-      final prompt = ExternalAiHandoffService.buildPrompt(mode: mode, card: card, deck: deck);
-      try {
-        await service.copyPrompt(prompt);
-        await service.openProviderWithoutCopy(provider: ExternalAiProvider.chatgpt);
-      } on Object {
-        if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Card context copied. Open ChatGPT and paste it into the conversation.')),
-        );
-      }
+      await showTranscriptionAiProviderSheet(
+        context: context,
+        card: card,
+        deck: deck,
+        mode: mode,
+      );
     }
 
     return Scaffold(
