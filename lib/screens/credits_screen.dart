@@ -72,6 +72,15 @@ class _CreditsScreenState extends State<CreditsScreen>
     );
   }
 
+  Future<void> _openCurtain() async {
+    if (_leaving || _curtainController.value >= .985) return;
+    await _curtainController.animateTo(
+      1,
+      curve: Curves.easeOutCubic,
+      duration: const Duration(milliseconds: 620),
+    );
+  }
+
   Future<void> _backToSettings() async {
     if (_leaving) return;
     setState(() => _leaving = true);
@@ -107,8 +116,6 @@ class _CreditsScreenState extends State<CreditsScreen>
                 fit: StackFit.expand,
                 children: [
                   const ColoredBox(color: Color(0xFF090201)),
-                  // The 3D runtime keeps its 30-second salute running while the
-                  // user directly poses the exposed model or rotates it 360°.
                   const StatueSceneView(),
                   AnimatedOpacity(
                     key: const ValueKey('credits-content'),
@@ -133,9 +140,23 @@ class _CreditsScreenState extends State<CreditsScreen>
                     fullWidth: fullWidth,
                     offset: panelWidth * progress,
                   ),
-                  // Only the curtain-covered portions own curtain gestures.
-                  // Exposed centre remains available to the Three.js model.
-                  if (progress < .985) ...[
+                  if (progress <= .04)
+                    Positioned.fill(
+                      child: Semantics(
+                        button: true,
+                        label: 'Open credits curtain',
+                        child: GestureDetector(
+                          key: const ValueKey('credits-curtain-open-surface'),
+                          behavior: HitTestBehavior.opaque,
+                          onTap: _openCurtain,
+                          onHorizontalDragEnd: (details) {
+                            final velocity = details.primaryVelocity ?? 0;
+                            if (velocity.abs() > 120) _openCurtain();
+                          },
+                        ),
+                      ),
+                    )
+                  else if (progress < .985) ...[
                     Positioned(
                       left: 0,
                       top: 0,
