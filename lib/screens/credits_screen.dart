@@ -116,7 +116,7 @@ class _CreditsScreenState extends State<CreditsScreen>
                 fit: StackFit.expand,
                 children: [
                   const ColoredBox(color: Color(0xFF090201)),
-                  const StatueSceneView(),
+                  StatueSceneView(interactive: progress >= .985 && !_leaving),
                   AnimatedOpacity(
                     key: const ValueKey('credits-content'),
                     opacity: progress > .58 && !_leaving ? 1 : 0,
