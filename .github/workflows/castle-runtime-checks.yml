@@ -19,8 +19,19 @@ jobs:
   castle:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout Castle runtime
         uses: actions/checkout@v6
+        timeout-minutes: 8
+        with:
+          fetch-depth: 1
+          fetch-tags: false
+          persist-credentials: false
+          sparse-checkout: |
+            assets
+            lib
+            web
+            test
+          sparse-checkout-cone-mode: true
 
       - name: JavaScript syntax
         run: |
