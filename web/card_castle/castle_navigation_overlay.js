@@ -1,10 +1,10 @@
-import './castle_shared_transition_loader_v64.js?v=72';
+import './castle_shared_transition_loader_v64.js?v=73';
 import './castle_android_stability_v57.js?v=72';
 import './castle_ios_laboratory_resilience_v62.js?v=65';
 import './castle_navigation_overlay_core.js?v=72';
 import './castle_laboratory_event_bridge_v69.js?v=69';
 import './castle_laboratory_medallion_button.js?v=66';
-import './castle_bureau_video_bridge.js?v=75';
+import './castle_bureau_video_bridge.js?v=76';
 import './castle_video_surface_invert_v71.js?v=74';
 import './castle_scene_lighting_fix.js';
 import './castle_regression_hotfix.js?v=60';
