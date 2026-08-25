@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   // Keep the cache-busted video bridge and laboratory-facing orientation module paired.
-  test('laboratory video has one owner and Safari-safe playback', () {
+  test('laboratory video has one owner and starts only from mirror click', () {
     final bridge = File('web/card_castle/castle_bureau_video_bridge.js').readAsStringSync();
     final medallion = File('web/card_castle/castle_laboratory_medallion_button.js').readAsStringSync();
     final regression = File('web/card_castle/castle_regression_hotfix.js').readAsStringSync();
@@ -14,12 +14,17 @@ void main() {
     final sharedLoader = File('web/card_castle/castle_shared_transition_loader_v64.js').readAsStringSync();
     final resetView = File('web/card_castle/castle_laboratory_entry_reset_v70.js').readAsStringSync();
 
-    expect(bridge, contains("bureauVideoOwner = 'castle-bureau-video-bridge-v72'"));
+    expect(bridge, contains("bureauVideoOwner = 'castle-bureau-video-bridge-v73'"));
     expect(bridge, contains(r'const SCREEN_NAME = /^VideoScreen_(Left|Right)$/i'));
     expect(bridge, contains('window.__castleBureauVideoPrime = primeFromGesture'));
-    expect(bridge, contains('keepPrimedDuringEntry()'));
+    expect(bridge, contains('raycaster.intersectObjects([...boundMeshes], false)'));
+    expect(bridge, contains("bureauVideoInteraction = 'mirror-click-v73'"));
+    expect(bridge, contains("attemptPlay('mirror-click')"));
+    expect(bridge, contains("bureauVideoPlayback = 'paused-awaiting-mirror-click-v73'"));
+    expect(bridge, contains("bureauVideoPlayback = 'playing-loop-v73'"));
+    expect(bridge, contains('video.autoplay = false'));
+    expect(bridge, isNot(contains("window.addEventListener('click', gestureResume")));
     expect(bridge, contains('texture.needsUpdate = true'));
-    expect(bridge, contains("bureauVideoPlayback = 'playing-loop-v72'"));
     expect(medallion, contains("host.addEventListener('pointerdown',primeVideo"));
     expect(medallion, contains('window.__castleBureauVideoPrime?.()'));
     expect(medallion, contains("typeof window.__castleOpenLaboratory==='function'"));
@@ -29,7 +34,7 @@ void main() {
     expect(overlay, contains("castle_shared_transition_loader_v64.js?v=72"));
     expect(overlay, contains("castle_ios_laboratory_resilience_v62.js?v=65"));
     expect(overlay, contains("castle_laboratory_medallion_button.js?v=66"));
-    expect(overlay, contains("castle_bureau_video_bridge.js?v=74"));
+    expect(overlay, contains("castle_bureau_video_bridge.js?v=75"));
     expect(overlay, contains("castle_video_surface_invert_v71.js?v=74"));
     expect(videoOrientation, contains("bureauVideoSurfaceOrientation = 'laboratory-facing'"));
     expect(videoOrientation, contains('object.rotation.y -= Math.PI'));
