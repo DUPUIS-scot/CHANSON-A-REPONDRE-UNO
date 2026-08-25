@@ -27,7 +27,7 @@ void main() {
     expect(overlay, contains("castle_shared_transition_loader_v64.js?v=72"));
     expect(overlay, contains("castle_ios_laboratory_resilience_v62.js?v=65"));
     expect(overlay, contains("castle_laboratory_medallion_button.js?v=66"));
-    expect(overlay, contains("castle_bureau_video_bridge.js?v=72"));
+    expect(overlay, contains("castle_bureau_video_bridge.js?v=73"));
     expect(overlay, isNot(contains('castle_bureau_video_refresh_v70.js')));
     expect(overlay, contains("castle_laboratory_entry_reset_v70.js?v=70"));
     expect(resetView, contains("laboratoryStartingView = 'reset-identical-v70'"));
