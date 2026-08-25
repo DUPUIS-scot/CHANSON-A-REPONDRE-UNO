@@ -6,7 +6,9 @@ import 'dart:ui_web' as ui_web;
 import 'package:flutter/material.dart';
 
 class StatueSceneView extends StatefulWidget {
-  const StatueSceneView({super.key});
+  const StatueSceneView({super.key, this.interactive = true});
+
+  final bool interactive;
 
   @override
   State<StatueSceneView> createState() => _StatueSceneViewState();
@@ -14,6 +16,7 @@ class StatueSceneView extends StatefulWidget {
 
 class _StatueSceneViewState extends State<StatueSceneView> {
   late final String _viewType;
+  html.IFrameElement? _iframe;
 
   @override
   void initState() {
@@ -21,7 +24,7 @@ class _StatueSceneViewState extends State<StatueSceneView> {
     _viewType = 'interactive-statue-${DateTime.now().microsecondsSinceEpoch}';
     ui_web.platformViewRegistry.registerViewFactory(_viewType, (_) {
       final uri = Uri.base.resolve('statue_scene/index.html');
-      return html.IFrameElement()
+      final iframe = html.IFrameElement()
         ..src = uri.toString()
         ..title = 'Interactive detective statue holding a traffic cone'
         ..setAttribute('allow', 'fullscreen')
@@ -31,10 +34,26 @@ class _StatueSceneViewState extends State<StatueSceneView> {
         ..style.height = '100%'
         ..style.display = 'block'
         ..style.backgroundColor = '#090604';
+      _iframe = iframe;
+      _syncPointerOwnership();
+      return iframe;
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant StatueSceneView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.interactive != widget.interactive) {
+      _syncPointerOwnership();
+    }
+  }
+
+  void _syncPointerOwnership() {
+    final iframe = _iframe;
+    if (iframe == null) return;
+    iframe.style.pointerEvents = widget.interactive ? 'auto' : 'none';
   }
 
   @override
   Widget build(BuildContext context) => HtmlElementView(viewType: _viewType);
 }
-
