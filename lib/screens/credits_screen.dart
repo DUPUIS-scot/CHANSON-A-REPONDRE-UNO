@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../core/app_router.dart';
+import '../widgets/statue_scene_view.dart';
 
 class CreditsScreen extends StatefulWidget {
   const CreditsScreen({super.key});
@@ -18,6 +19,7 @@ class _CreditsScreenState extends State<CreditsScreen>
   late final AnimationController _curtainController;
   String _version = '…';
   bool _showCredits = false;
+  bool _leaving = false;
 
   @override
   void initState() {
@@ -25,9 +27,10 @@ class _CreditsScreenState extends State<CreditsScreen>
     _curtainController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1150),
+      value: 1,
     );
     unawaited(_loadVersion());
-    WidgetsBinding.instance.addPostFrameCallback((_) => _closeCurtain());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _openCurtain());
   }
 
   Future<void> _loadVersion() async {
@@ -43,14 +46,31 @@ class _CreditsScreenState extends State<CreditsScreen>
     }
   }
 
-  Future<void> _closeCurtain() async {
+  Future<void> _openCurtain() async {
+    await Future<void>.delayed(const Duration(milliseconds: 450));
+    if (!mounted) return;
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    if (reduceMotion) {
+      _curtainController.value = 0;
+    } else {
+      await _curtainController.reverse();
+    }
+    if (mounted) setState(() => _showCredits = true);
+  }
+
+  Future<void> _backToSettings() async {
+    if (_leaving) return;
+    setState(() {
+      _leaving = true;
+      _showCredits = false;
+    });
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
     if (reduceMotion) {
       _curtainController.value = 1;
     } else {
       await _curtainController.forward();
     }
-    if (mounted) setState(() => _showCredits = true);
+    if (mounted) context.go(AppRoutes.settings);
   }
 
   @override
@@ -67,12 +87,27 @@ class _CreditsScreenState extends State<CreditsScreen>
       builder: (context, child) => LayoutBuilder(
         builder: (context, constraints) {
           final width = constraints.maxWidth * .58;
-          final openOffset = width;
-          final travel = openOffset * (1 - _curtainController.value);
+          final travel = width * (1 - _curtainController.value);
           return Stack(
             fit: StackFit.expand,
             children: [
               const ColoredBox(color: Color(0xFF090201)),
+              const StatueSceneView(),
+              AnimatedOpacity(
+                key: const ValueKey('credits-content'),
+                opacity: _showCredits ? 1 : 0,
+                duration: const Duration(milliseconds: 650),
+                curve: Curves.easeOut,
+                child: IgnorePointer(
+                  ignoring: !_showCredits,
+                  child: SafeArea(
+                    child: _CreditsBody(
+                      version: _version,
+                      onBack: _backToSettings,
+                    ),
+                  ),
+                ),
+              ),
               Transform.translate(
                 offset: Offset(-travel, 0),
                 child: Align(
@@ -87,16 +122,6 @@ class _CreditsScreenState extends State<CreditsScreen>
                   child: _CreditsCurtainPanel(width: width, left: false),
                 ),
               ),
-              AnimatedOpacity(
-                key: const ValueKey('credits-content'),
-                opacity: _showCredits ? 1 : 0,
-                duration: const Duration(milliseconds: 650),
-                curve: Curves.easeOut,
-                child: IgnorePointer(
-                  ignoring: !_showCredits,
-                  child: SafeArea(child: _CreditsBody(version: _version)),
-                ),
-              ),
             ],
           );
         },
@@ -106,19 +131,21 @@ class _CreditsScreenState extends State<CreditsScreen>
 }
 
 class _CreditsBody extends StatelessWidget {
-  const _CreditsBody({required this.version});
+  const _CreditsBody({required this.version, required this.onBack});
 
   final String version;
+  final VoidCallback onBack;
 
   @override
-  Widget build(BuildContext context) => Center(
+  Widget build(BuildContext context) => Align(
+    alignment: Alignment.centerRight,
     child: ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 720),
+      constraints: const BoxConstraints(maxWidth: 600),
       child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: const Color(0xCC2A0705),
+            color: const Color(0xB82A0705),
             borderRadius: BorderRadius.circular(22),
             border: Border.all(color: const Color(0xFFC18A27), width: 2),
             boxShadow: const [
@@ -147,23 +174,13 @@ class _CreditsBody extends StatelessWidget {
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
                   ),
                   const SizedBox(height: 24),
-                  const _CreditLine(
-                    label: 'Concept & Artistic Direction',
-                    value: 'DUPUIS*',
-                  ),
-                  const _CreditLine(
-                    label: 'Design & Development',
-                    value: 'DUPUIS*',
-                  ),
+                  const _CreditLine(label: 'Concept & Artistic Direction', value: 'DUPUIS*'),
+                  const _CreditLine(label: 'Design & Development', value: 'DUPUIS*'),
                   const _CreditLine(label: 'Music / Sound', value: 'DJ WHO'),
-                  const _CreditLine(
-                    label: '3D / Interactive Environments',
-                    value: 'DUPUIS*',
-                  ),
+                  const _CreditLine(label: '3D / Interactive Environments', value: 'DUPUIS*'),
                   const _CreditLine(
                     label: 'AI-assisted development & creative tools',
-                    value:
-                        'OpenAI / ChatGPT and other credited tools where applicable',
+                    value: 'OpenAI / ChatGPT and other credited tools where applicable',
                   ),
                   const SizedBox(height: 16),
                   const SelectableText(
@@ -175,10 +192,7 @@ class _CreditsBody extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  Text(
-                    'Version: $version',
-                    key: const ValueKey('credits-version'),
-                  ),
+                  Text('Version: $version', key: const ValueKey('credits-version')),
                   const SizedBox(height: 10),
                   const Text('© 2026 DUPUIS*'),
                   const SizedBox(height: 10),
@@ -189,7 +203,7 @@ class _CreditsBody extends StatelessWidget {
                   const SizedBox(height: 26),
                   FilledButton.tonalIcon(
                     key: const ValueKey('credits-back-to-settings'),
-                    onPressed: () => context.go(AppRoutes.settings),
+                    onPressed: onBack,
                     icon: const Icon(Icons.arrow_back_rounded),
                     label: const Text('BACK TO SETTINGS'),
                   ),
@@ -205,7 +219,6 @@ class _CreditsBody extends StatelessWidget {
 
 class _CreditLine extends StatelessWidget {
   const _CreditLine({required this.label, required this.value});
-
   final String label;
   final String value;
 
@@ -213,22 +226,16 @@ class _CreditLine extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 5),
     child: Text.rich(
-      TextSpan(
-        children: [
-          TextSpan(
-            text: '$label: ',
-            style: const TextStyle(fontWeight: FontWeight.w800),
-          ),
-          TextSpan(text: value),
-        ],
-      ),
+      TextSpan(children: [
+        TextSpan(text: '$label: ', style: const TextStyle(fontWeight: FontWeight.w800)),
+        TextSpan(text: value),
+      ]),
     ),
   );
 }
 
 class _CreditsCurtainPanel extends StatelessWidget {
   const _CreditsCurtainPanel({required this.width, required this.left});
-
   final double width;
   final bool left;
 
@@ -242,42 +249,26 @@ class _CreditsCurtainPanel extends StatelessWidget {
 
 class _CreditsCurtainPainter extends CustomPainter {
   const _CreditsCurtainPainter({required this.left});
-
   final bool left;
 
   @override
   void paint(Canvas canvas, Size size) {
-    canvas.drawRect(
-      Offset.zero & size,
-      Paint()..color = const Color(0xFF65150F),
-    );
+    canvas.drawRect(Offset.zero & size, Paint()..color = const Color(0xFF65150F));
     for (var index = 0; index < 10; index++) {
-      final rect = Rect.fromLTWH(
-        index * size.width / 10,
-        0,
-        size.width / 10 + 2,
-        size.height,
-      );
+      final rect = Rect.fromLTWH(index * size.width / 10, 0, size.width / 10 + 2, size.height);
       canvas.drawRect(
         rect,
-        Paint()
-          ..color = index.isEven
-              ? const Color(0xFF8D251A)
-              : const Color(0xFF3D0C09),
+        Paint()..color = index.isEven ? const Color(0xFF8D251A) : const Color(0xFF3D0C09),
       );
     }
     final x = left ? size.width - 2 : 2.0;
     canvas.drawLine(
       Offset(x, 0),
       Offset(x, size.height),
-      Paint()
-        ..color = const Color(0xFFC18A27)
-        ..strokeWidth = 3,
+      Paint()..color = const Color(0xFFC18A27)..strokeWidth = 3,
     );
   }
 
   @override
-  bool shouldRepaint(covariant _CreditsCurtainPainter oldDelegate) =>
-      oldDelegate.left != left;
+  bool shouldRepaint(covariant _CreditsCurtainPainter oldDelegate) => oldDelegate.left != left;
 }
-
