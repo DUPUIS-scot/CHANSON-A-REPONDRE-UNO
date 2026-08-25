@@ -14,8 +14,13 @@
         style=d.createElement('style');style.id='enochPerformanceLayoutV1';style.textContent=`
           #loopControlRow{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;grid-auto-flow:column!important;grid-auto-columns:minmax(0,1fr)!important;gap:3px!important;width:100%!important;max-width:100%!important;min-width:0!important;margin:0!important;overflow:hidden!important}
           #loopControlRow>.btn{display:block!important;min-width:0!important;max-width:100%!important;width:100%!important;padding:6px 2px!important;font-size:7px!important;letter-spacing:0!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:clip!important}
-          .mod{grid-template-columns:minmax(0,1fr) 110px!important;align-items:center!important}
-          .mod>.wheelbox{align-self:center!important;justify-self:center!important;margin:0!important;width:110px!important}
+          .mod{grid-template-columns:minmax(0,1fr) 96px!important;align-items:start!important}
+          .mod>.wheelbox{align-self:start!important;justify-self:center!important;margin:0!important;width:96px!important;padding:4px 2px!important;gap:3px!important}
+          .mod>.wheelbox .wheel{width:78px!important;height:78px!important}
+          .mod>.wheelbox .wheel:before{top:7px!important;height:20px!important;transform-origin:2px 32px!important}
+          .mod>.wheelbox .wheel-label{font-size:8px!important}
+          .mod>.wheelbox .wheel-value{font-size:10px!important;min-height:12px!important}
+          .mod>.wheelbox .wheel-hint{font-size:6px!important;line-height:1.2!important}
           @media(min-width:1001px){
             .grid>aside.side:first-child{padding:4px!important;gap:2px!important;align-content:start!important;overflow:hidden!important;grid-auto-rows:min-content!important}
             .grid>aside.side:first-child>.fx-title{font-size:7px!important;line-height:1.05!important;padding:1px 0!important}
@@ -33,7 +38,7 @@
             .grid>aside.side:first-child .eq-kill-row{gap:3px!important}
             .grid>aside.side:first-child .eq-kill-btn{min-width:42px!important;padding:3px!important;font-size:6px!important}
           }
-          @media(max-width:1000px){.mod{grid-template-columns:1fr!important}.mod>.wheelbox{margin:0 auto!important;width:auto!important}}
+          @media(max-width:1000px){.mod{grid-template-columns:1fr!important}.mod>.wheelbox{margin:0 auto!important;width:auto!important}.mod>.wheelbox .wheel{width:110px!important;height:110px!important}.mod>.wheelbox .wheel:before{top:9px!important;height:29px!important;transform-origin:2px 46px!important}}
         `;d.head.appendChild(style);
       }
 
@@ -78,10 +83,8 @@
         if(!fromKill&&typeof nativeKill==='function'){try{await nativeKill.call(kill)}catch(_){}}
         cancelPitchReturn();setPitch(0);
         try{w.__enochSculptAudio?.restore?.()}catch(_){}
-
         resetEqKills();
         if(w.__enochEqAuthority?.set)w.__enochEqAuthority.set(0);else ['low','mid','high'].forEach(id=>setInput(id,0));
-
         setInput('filter',1000);setInput('drive',0);setInput('delay',0);setInput('fb',.25);setInput('wet',0);
         const fxWheel=d.getElementById('fxWheel'),fxWheelV=d.getElementById('fxWheelV');
         if(fxWheel){fxWheel.style.setProperty('--angle','-135deg');fxWheel.classList.remove('active');fxWheel.setAttribute('aria-valuenow','0')}
@@ -91,23 +94,19 @@
         if(dot){dot.style.left='50%';dot.style.top='50%'}if(padReadout)padReadout.textContent='X 50 · Y 50';
         d.querySelectorAll('[data-pad-fx],.instant-fx-btn').forEach(button=>button.classList.remove('active'));
         const padActivate=d.getElementById('padActivate');if(padActivate?.classList.contains('active'))try{padActivate.click()}catch(_){}
-
         const modActivate=d.getElementById('modActivate');if(modActivate?.classList.contains('active'))try{modActivate.click()}catch(_){}
         const phrase=d.getElementById('phrase');if(phrase&&phrase.value){phrase.value='';phrase.dispatchEvent(new w.Event('input',{bubbles:true}))}
         modWheel.style.setProperty('--angle','-135deg');modWheel.classList.remove('active');modWheel.setAttribute('aria-valuenow','0');
         const modV=d.getElementById('modWheelV');if(modV)modV.textContent='0%';
         if(modActivate){modActivate.classList.remove('active');modActivate.textContent='MOD OFF';modActivate.setAttribute('aria-pressed','false')}
-
         const signal=d.getElementById('signalModToggle');
         if(w.__enochSignalModulation===true||signal?.getAttribute('aria-pressed')==='true'){try{signal?.click()}catch(_){}}
         w.__enochSignalModulation=false;
         if(signal){signal.classList.remove('active');signal.setAttribute('aria-pressed','false');if(/ON/i.test(signal.textContent||''))signal.textContent=(signal.textContent||'SIGNAL MOD').replace(/ON/ig,'OFF')}
         if(w.__enochSignalEngagement){w.__enochSignalEngagement.grabs=0;w.__enochSignalEngagement.lastGrabAt=0}
         if(w.__enochAnalyserGesture?.deform)Object.assign(w.__enochAnalyserGesture.deform,{pullY:0,pullZ:0,twist:0,vY:0,vZ:0,grabBin:null,grabRow:null});
-
         try{loopReset.click()}catch(_){}
         ensureLoopRow();
-
         const stemMaster=d.getElementById('stemMasterToggle');
         if(w.__enochStemAuthority?.desired===true){try{stemMaster?.click()}catch(_){}}
         else if(w.__enochNativeStemEngine?.status?.().enabled){try{await w.__enochNativeStemEngine.setEnabled(false)}catch(_){}}
@@ -115,14 +114,11 @@
         if(stemMaster){stemMaster.classList.remove('active','stem-loading');stemMaster.setAttribute('aria-pressed','false');stemMaster.textContent='STEMS OFF'}
         d.querySelectorAll('[data-stem-toggle]').forEach(button=>{button.classList.add('active');button.setAttribute('aria-pressed','true')});
         d.querySelectorAll('[data-stem-range]').forEach(range=>{range.value='100';const key=range.dataset.stemRange,out=d.querySelector(`[data-stem-value="${key}"]`);if(out)out.textContent='100%'});
-
         try{d.getElementById('log')?.prepend(Object.assign(d.createElement('div'),{className:'signal-flow-line',textContent:'GLOBAL RESET · FX / MOD / EQ / STEMS / LOOP / SIGNAL / PITCH → ORIGIN'}))}catch(_){}
         return true;
       };
-
       kill.addEventListener('click',()=>w.setTimeout(()=>{resetPerformanceState(true)},0));
       w.__enochPerformanceReset={version:'v1',reset:()=>resetPerformanceState(false),ensureLayout:ensureLoopRow,returnPitch};
-
       const guard=w.setInterval(ensureLoopRow,500);
       w.addEventListener('pagehide',()=>{w.clearInterval(guard);cancelPitchReturn();delete w.__enochPerformanceReset},{once:true});
       return true;
