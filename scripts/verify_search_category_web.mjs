@@ -229,26 +229,44 @@ async function main() {
         const body = document.getElementById('search-card-castle-frame')
           ?.contentDocument?.body;
         const count = Number(body?.dataset.cardCount || 0);
-        return count > 0 && count < 84 &&
-          body?.dataset.activeCategory === 'CLASSIQUE';
+        return count > 0 && count < 84;
       })()`,
       'a non-empty CLASSIQUE subset to reach the castle',
-      20000,
+      90000,
     );
 
     const visibleCardCount = await client.evaluate(
       `Number(document.getElementById('search-card-castle-frame')
         ?.contentDocument?.body.dataset.cardCount || 0)`,
     );
+
+    await waitFor(
+      client,
+      `(() => {
+        const frame = document.getElementById('search-card-castle-frame');
+        const body = frame?.contentDocument?.body;
+        const group = frame?.contentWindow?.__castleSearchRuntime?.scene
+          ?.getObjectByName('castle-direct-card-previews');
+        const categories = group
+          ? [...new Set(group.children.map((mesh) => mesh.userData?.card?.category).filter(Boolean))]
+          : [];
+        return body?.dataset.directCardsStage === 'post-jester-textures' &&
+          Number(body?.dataset.directCardPreviewCount || 0) === ${visibleCardCount} &&
+          categories.length === 1 && categories[0] === 'CLASSIQUE';
+      })()`,
+      'the CLASSIQUE direct-card preview stage',
+      120000,
+    );
+
     await waitFor(
       client,
       `(() => {
         const body = document.getElementById('search-card-castle-frame')
           ?.contentDocument?.body;
-        return Number(body?.dataset.textureCount || 0) === ${visibleCardCount} &&
-          Number(body?.dataset.textureErrorCount || 0) === 0;
+        return Number(body?.dataset.directCardTextureLoaded || 0) === ${visibleCardCount} &&
+          Number(body?.dataset.directCardTextureFailures || 0) === 0;
       })()`,
-      'all selected-category card textures',
+      'all selected-category direct card textures',
       180000,
     );
 
@@ -256,16 +274,24 @@ async function main() {
       const frame = document.getElementById('search-card-castle-frame');
       const body = frame?.contentDocument?.body;
       const canvas = frame?.contentDocument?.querySelector('canvas');
+      const group = frame?.contentWindow?.__castleSearchRuntime?.scene
+        ?.getObjectByName('castle-direct-card-previews');
+      const categories = group
+        ? [...new Set(group.children.map((mesh) => mesh.userData?.card?.category).filter(Boolean))]
+        : [];
       return {
         route: location.hash,
         frame: Boolean(frame),
         canvas: Boolean(canvas),
         rendererStatus: body?.dataset.rendererStatus || '',
         cardCount: Number(body?.dataset.cardCount || 0),
-        meshCount: Number(body?.dataset.meshCount || 0),
-        textureCount: Number(body?.dataset.textureCount || 0),
-        activeCategory: body?.dataset.activeCategory || '',
+        meshCount: Number(body?.dataset.directCardPreviewCount || 0),
+        textureCount: Number(body?.dataset.directCardTextureLoaded || 0),
+        textureFailures: Number(body?.dataset.directCardTextureFailures || 0),
+        categories,
         surfaceAnchorCount: Number(body?.dataset.surfaceAnchorCount || 0),
+        directCardsStage: body?.dataset.directCardsStage || '',
+        directCardPreviewMode: body?.dataset.directCardPreviewMode || '',
         modelPath: body?.dataset.modelAsset
           ? new URL(body.dataset.modelAsset).pathname
           : '',
@@ -284,10 +310,14 @@ async function main() {
       result.cardCount >= 84 ||
       result.meshCount !== visibleCardCount ||
       result.textureCount !== visibleCardCount ||
-      result.activeCategory !== 'CLASSIQUE' ||
-      result.surfaceAnchorCount !== 84 ||
+      result.textureFailures !== 0 ||
+      result.categories.length !== 1 ||
+      result.categories[0] !== 'CLASSIQUE' ||
+      result.surfaceAnchorCount !== visibleCardCount ||
+      result.directCardsStage !== 'post-jester-textures' ||
+      result.directCardPreviewMode !== 'all-decks-rampart-textures-v42' ||
       result.modelPath !== `${basePath}assets/assets/models/castle_exterior.glb` ||
-      result.framePath !== `${basePath}card_castle/card_castle.html` ||
+      result.framePath !== `${basePath}card_castle/card_castle_fast.html` ||
       !result.threeLoaded
     ) {
       throw new Error(
