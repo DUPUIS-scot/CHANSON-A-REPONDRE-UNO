@@ -35,7 +35,7 @@ void main() {
     expect(credits.opacity, 0);
 
     // Future.delayed resumes on the next pump. Start the curtain reverse,
-    // advance its full duration, then settle the awaited completion, credits
+    // advance its full duration, then settle the awaited controller completion, credits
     // rebuild/fade, and asynchronous PackageInfo lookup before asserting.
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 1150));
