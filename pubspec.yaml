@@ -1,7 +1,7 @@
 name: uno_chanson_2
-description: "Chanson à Répondre UNO — the certified v3.072 card experience."
+description: "Chanson à Répondre UNO — the certified v3.073 card experience."
 publish_to: 'none'
-version: 3.7.2+1
+version: 3.7.3+1
 
 environment:
   sdk: ^3.12.2
