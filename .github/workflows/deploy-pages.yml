@@ -129,18 +129,15 @@ jobs:
         shell: bash
         run: python3 scripts/verify_share_previews.py
 
-      - name: Browser smoke test for Search route
+      - name: Browser smoke test for Search Castle visibility
         shell: bash
-        run: |
-          if ! node scripts/verify_search_category_web.mjs; then
-            echo "::warning::Search Castle 3D smoke test did not settle in headless SwiftShader; production Flutter/search regressions and deployable assets already passed. Continuing deployment."
-          fi
+        run: node scripts/verify_search_category_web.mjs
 
       - name: Browser smoke test for Play, Castle, and mobile Home
         shell: bash
         run: |
           if ! node scripts/verify_dealer_web.mjs; then
-            echo "::warning::Composite browser smoke test did not settle in headless Chrome; Flutter analysis, regression tests, production build, Search smoke and deployable assets remain authoritative. Continuing deployment."
+            echo "::warning::Composite browser smoke test did not settle in headless Chrome; Flutter analysis, regression tests, production build, required Search Castle visibility check and deployable assets remain authoritative. Continuing deployment."
           fi
 
       - name: Verify deployable output
@@ -151,6 +148,9 @@ jobs:
           test -f build/web/404.html
           test -f build/web/main.dart.js
           test -f build/web/enochian/index.html
+          test -f build/web/card_castle/card_castle.html
+          test -f build/web/card_castle/card_castle_fast.html
+          test -s build/web/assets/assets/models/castle_exterior.glb
           test -f build/web/assets/assets/models/transcription_jester_rigged.glb
           test -s build/web/assets/assets/videos/bureau_screen_loop.mp4
           test -f build/web/assets/assets/hp/work_in_progress_ribbon.webp
