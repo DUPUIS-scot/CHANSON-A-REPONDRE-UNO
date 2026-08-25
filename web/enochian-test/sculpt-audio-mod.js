@@ -7,8 +7,8 @@
       if(!d||!w)return false;
       const low=d.getElementById('low'),mid=d.getElementById('mid'),high=d.getElementById('high');
       if(!low||!mid||!high)return false;
-      if(d.documentElement.dataset.sculptAudioMod==='v2')return true;
-      d.documentElement.dataset.sculptAudioMod='v2';
+      if(d.documentElement.dataset.sculptAudioMod==='v3')return true;
+      d.documentElement.dataset.sculptAudioMod='v3';
 
       const fxMix=d.getElementById('fxMix')||d.querySelector('.mixer-level-range');
       const modDepth=()=>clamp((parseFloat(d.getElementById('modWheelV')?.textContent||'0')||0)/100,0,1);
@@ -16,6 +16,7 @@
       const n=e=>parseFloat(e?.value)||0;
       const base={low:n(low),mid:n(mid),high:n(high),mix:fxMix?n(fxMix):50};
       const current={low:base.low,mid:base.mid,high:base.high,mix:base.mix};
+      const grabCurve=[0,.28,.48,.67,.87,1];
       let writing=false,raf=0,lastLog=0;
 
       const setControl=(el,value)=>{
@@ -32,26 +33,32 @@
         current.low=base.low;current.mid=base.mid;current.high=base.high;current.mix=base.mix;
         setControl(low,base.low);setControl(mid,base.mid);setControl(high,base.high);if(fxMix)setControl(fxMix,base.mix);
         if(w.__enochAnalyserGesture?.deform)Object.assign(w.__enochAnalyserGesture.deform,{pullY:0,pullZ:0,twist:0,vY:0,vZ:0,grabBin:null,grabRow:null});
+        if(w.__enochSignalEngagement)w.__enochSignalEngagement.grabs=0;
       };
 
       const update=()=>{
         const g=w.__enochAnalyserGesture||{},def=g.deform||{},depth=modDepth(),on=signalOn();
         const pullY=on?clamp(def.pullY||0,-1,1):0,pullZ=on?clamp(def.pullZ||0,-1,1):0,twist=on?clamp(def.twist||0,-1,1):0;
         const speed=on?clamp(Math.hypot(def.vY||0,def.vZ||0)*600,0,1):0;
-        const strength=on?depth:0;
+        const force=on?clamp((Math.abs(pullY)+Math.abs(pullZ)+Math.abs(twist)*.7+speed*.35)/2.15,0,1):0;
+        const tracked=clamp(Math.round(w.__enochSignalEngagement?.grabs||0),0,5);
+        const grabs=tracked||((on&&force>.04)?clamp(Math.ceil(force*5),1,5):0);
+        const baseEngagement=grabCurve[grabs]||0;
+        const engagement=on?clamp(baseEngagement+(grabs?force*.08:0),0,1):0;
+        const strength=depth*engagement;
 
-        const targetLow=base.low+(-pullY*5.5+Math.max(0,-pullZ)*2.0)*strength;
-        const targetMid=base.mid+(pullY*3.5-twist*4.0)*strength;
-        const targetHigh=base.high+(pullY*6.0+twist*4.5+speed*2.0)*strength;
-        const targetMix=base.mix+(Math.max(0,pullZ)*24-Math.max(0,-pullZ)*16+Math.abs(twist)*8+speed*6)*strength;
-        const smoothing=on?.18:.12;
+        const targetLow=base.low+(-pullY*9.0+Math.max(0,-pullZ)*3.0)*strength;
+        const targetMid=base.mid+(pullY*6.5-twist*7.0)*strength;
+        const targetHigh=base.high+(pullY*12.0+twist*7.0+speed*3.0)*strength;
+        const targetMix=base.mix+(Math.max(0,pullZ)*36-Math.max(0,-pullZ)*24+Math.abs(twist)*12+speed*9)*strength;
+        const smoothing=on?.20:.12;
         current.low=lerp(current.low,targetLow,smoothing);current.mid=lerp(current.mid,targetMid,smoothing);current.high=lerp(current.high,targetHigh,smoothing);current.mix=lerp(current.mix,targetMix,smoothing);
         setControl(low,current.low);setControl(mid,current.mid);setControl(high,current.high);if(fxMix)setControl(fxMix,current.mix);
 
-        w.__enochSculptAudio={version:'v2',active:on&&strength>0,strength,pullY,pullZ,twist,speed,offsets:{low:current.low-base.low,mid:current.mid-base.mid,high:current.high-base.high,mix:current.mix-base.mix},restore:restoreBase};
+        w.__enochSculptAudio={version:'v3',active:on&&strength>0,strength,depth,engagement,grabs,pullY,pullZ,twist,speed,offsets:{low:current.low-base.low,mid:current.mid-base.mid,high:current.high-base.high,mix:current.mix-base.mix},restore:restoreBase};
         const now=performance.now();
         if(now-lastLog>900&&on&&strength>.01&&(Math.abs(pullY)+Math.abs(pullZ)+Math.abs(twist)+speed)>.04){
-          lastLog=now;try{const log=d.getElementById('log');if(log){const row=d.createElement('div');row.className='signal-flow-line sculpt-audio-line';row.textContent='SCULPT AUDIO · Y '+Math.round(pullY*100)+' · Z '+Math.round(pullZ*100)+' · TWIST '+Math.round(twist*100)+' · SPEED '+Math.round(speed*100)+' · MOD '+Math.round(strength*100)+'%';log.prepend(row)}}catch(_){}
+          lastLog=now;try{const log=d.getElementById('log');if(log){const row=d.createElement('div');row.className='signal-flow-line sculpt-audio-line';row.textContent='SCULPT AUDIO · GRABS '+grabs+'/5 · ENG '+Math.round(engagement*100)+'% · DEPTH '+Math.round(depth*100)+'% · Y '+Math.round(pullY*100)+' · Z '+Math.round(pullZ*100);log.prepend(row)}}catch(_){}
         }
         raf=w.requestAnimationFrame(update);
       };
