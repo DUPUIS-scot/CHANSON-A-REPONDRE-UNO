@@ -3,12 +3,12 @@
     try{
       const live=frame.contentDocument,deck=live&&live.getElementById('deck'),d=deck&&deck.contentDocument,w=d&&d.defaultView;
       if(!d||!w)return false;
-      if(d.documentElement.dataset.pendingUiFixes==='v1')return true;
+      if(d.documentElement.dataset.pendingUiFixes==='v2')return true;
       const play=d.getElementById('play'),loop=d.getElementById('loopToggle'),loopIn=d.getElementById('loopIn'),loopOut=d.getElementById('loopOut'),loopReset=d.getElementById('loopReset');
-      const mod=d.querySelector('.mod'),modWheel=d.getElementById('modWheel');
+      const mod=d.querySelector('.mod'),modWheel=d.getElementById('modWheel'),wave=d.querySelector('.wave');
       const eqIds=['low','mid','high'];
-      if(!play||!loop||!loopIn||!loopOut||!loopReset||!mod||!modWheel||eqIds.some(id=>!d.getElementById(id)))return false;
-      d.documentElement.dataset.pendingUiFixes='v1';
+      if(!play||!loop||!loopIn||!loopOut||!loopReset||!mod||!modWheel||!wave||eqIds.some(id=>!d.getElementById(id)))return false;
+      d.documentElement.dataset.pendingUiFixes='v2';
 
       const style=d.createElement('style');
       style.textContent=`
@@ -42,6 +42,24 @@
         range.addEventListener('input',()=>{if(killed&&Number(range.value)!==(Number(range.min)||-18)){killed=false;button.classList.remove('active');button.setAttribute('aria-pressed','false');button.textContent='KILL'}});
         row.appendChild(button);
       });
+
+      const engagement=w.__enochSignalEngagement={version:'v1',grabs:0,lastGrabAt:0};
+      wave.addEventListener('pointerdown',e=>{
+        if(w.__enochSignalModulation!==true||e.target.closest('button,input,textarea,select'))return;
+        let picked=null;try{picked=w.__enochAnalyser3D?.pick?.(e.clientX,e.clientY)||null}catch(_){}
+        if(!picked)return;
+        engagement.grabs=Math.min(5,engagement.grabs+1);engagement.lastGrabAt=performance.now();
+      });
+      const decay=()=>{
+        const def=w.__enochAnalyserGesture?.deform;
+        if(engagement.grabs&&performance.now()-engagement.lastGrabAt>1400&&def){
+          const energy=Math.abs(def.pullY||0)+Math.abs(def.pullZ||0)+Math.abs(def.twist||0)+Math.abs(def.vY||0)*150+Math.abs(def.vZ||0)*150;
+          if(energy<.08)engagement.grabs=0;
+        }
+        w.setTimeout(decay,180);
+      };
+      w.setTimeout(decay,180);
+      d.getElementById('signalModToggle')?.addEventListener('click',()=>{if(w.__enochSignalModulation!==true)engagement.grabs=0});
       return true;
     }catch(_){return false}
   }
