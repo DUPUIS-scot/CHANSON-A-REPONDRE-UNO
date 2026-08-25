@@ -34,18 +34,17 @@ void main() {
     );
     expect(credits.opacity, 0);
 
-    // Future.delayed resumes on the next pump; start the curtain reverse,
-    // then advance its full duration before checking the credits state.
+    // Future.delayed resumes on the next pump. Start the curtain reverse,
+    // advance its full duration, then settle the awaited completion, credits
+    // rebuild/fade, and asynchronous PackageInfo lookup before asserting.
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 1150));
-    await tester.pump();
+    await tester.pumpAndSettle();
     credits = tester.widget<AnimatedOpacity>(
       find.byKey(const ValueKey('credits-content')),
     );
     expect(credits.opacity, 1);
 
-    // Allow the credits fade and asynchronous PackageInfo lookup to settle.
-    await tester.pumpAndSettle();
     expect(find.text('Version: 3.7.3+1'), findsOneWidget);
     expect(find.byIcon(Icons.play_arrow), findsNothing);
     expect(find.text('BACK TO SETTINGS'), findsOneWidget);
