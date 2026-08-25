@@ -117,12 +117,15 @@ class _CreditsScreenState extends State<CreditsScreen>
                 fit: StackFit.expand,
                 children: [
                   const ColoredBox(color: Color(0xFF090201)),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: SizedBox(
-                      width: fullWidth * .54,
-                      height: double.infinity,
-                      child: StatueSceneView(interactive: statueInteractive),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 34),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: SizedBox(
+                        width: (fullWidth * .54 - 34).clamp(0.0, fullWidth),
+                        height: double.infinity,
+                        child: StatueSceneView(interactive: statueInteractive),
+                      ),
                     ),
                   ),
                   AnimatedOpacity(
@@ -202,7 +205,8 @@ class _CreditsScreenState extends State<CreditsScreen>
                         width: 34,
                         height: double.infinity,
                         child: GestureDetector(
-                          behavior: HitTestBehavior.translucent,
+                          key: const ValueKey('credits-curtain-open-left-edge'),
+                          behavior: HitTestBehavior.opaque,
                           onTap: _toggleCurtain,
                           onHorizontalDragUpdate: (e) =>
                               _dragCurtain(e.delta.dx, fullWidth, true),
@@ -217,7 +221,8 @@ class _CreditsScreenState extends State<CreditsScreen>
                         width: 34,
                         height: double.infinity,
                         child: GestureDetector(
-                          behavior: HitTestBehavior.translucent,
+                          key: const ValueKey('credits-curtain-open-right-edge'),
+                          behavior: HitTestBehavior.opaque,
                           onTap: _toggleCurtain,
                           onHorizontalDragUpdate: (e) =>
                               _dragCurtain(e.delta.dx, fullWidth, false),
