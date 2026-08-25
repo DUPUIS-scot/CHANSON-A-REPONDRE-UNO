@@ -68,7 +68,7 @@ void main() {
     expect(bridge, contains('texture.needsUpdate = true'));
     expect(bridge, contains("bureauVideoPlayback = 'playing-loop-v72'"));
     expect(medallion, contains('window.__castleBureauVideoPrime?.()'));
-    expect(overlay, contains("castle_bureau_video_bridge.js?v=72"));
+    expect(overlay, contains("castle_bureau_video_bridge.js?v=73"));
     expect(overlay, isNot(contains('castle_bureau_video_refresh_v70.js')));
     expect(overlay, contains("castle_visual_regression_v55.js?v=70"));
 
