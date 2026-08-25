@@ -9,19 +9,20 @@ void main() {
     final resilience = File('web/card_castle/castle_ios_laboratory_resilience_v62.js').readAsStringSync();
     final eventBridge = File('web/card_castle/castle_laboratory_event_bridge_v69.js').readAsStringSync();
     final navigationCore = File('web/card_castle/castle_navigation_overlay_core.js').readAsStringSync();
+    final castle = File('web/card_castle/card_castle.html').readAsStringSync();
     final sharedLoader = File('web/card_castle/castle_shared_transition_loader_v64.js').readAsStringSync();
     final bridge = File('web/card_castle/castle_bureau_video_bridge.js').readAsStringSync();
     final medallion = File('web/card_castle/castle_laboratory_medallion_button.js').readAsStringSync();
     final resetView = File('web/card_castle/castle_laboratory_entry_reset_v70.js').readAsStringSync();
 
-    expect(bootstrap, contains("const castleRuntimeRevision = '75';"));
+    expect(bootstrap, contains("const castleRuntimeRevision = '76';"));
     expect(bootstrap, contains("url.searchParams.set('v', buildId || castleRuntimeRevision)"));
     expect(bootstrap, contains('card_castle/card_castle_fast.html'));
     expect(bootstrap, contains('optimized = url.href'));
 
-    final sharedImport = overlay.indexOf('castle_shared_transition_loader_v64.js?v=73');
+    final sharedImport = overlay.indexOf('castle_shared_transition_loader_v64.js?v=74');
     final resilienceImport = overlay.indexOf('castle_ios_laboratory_resilience_v62.js?v=65');
-    final coreImport = overlay.indexOf('castle_navigation_overlay_core.js?v=72');
+    final coreImport = overlay.indexOf('castle_navigation_overlay_core.js?v=73');
     final eventBridgeImport = overlay.indexOf('castle_laboratory_event_bridge_v69.js?v=69');
     expect(sharedImport, greaterThanOrEqualTo(0));
     expect(resilienceImport, greaterThan(sharedImport));
@@ -53,6 +54,16 @@ void main() {
     expect(sharedLoader, contains("interior-ready-awaiting-video-v72"));
     expect(sharedLoader, contains("laboratory-visible-v68"));
     expect(sharedLoader, contains("35000"));
+    expect(sharedLoader, contains("interior-retry-v74"));
+
+    expect(castle, contains('INTERIOR_LOAD_TIMEOUT_MS=26000'));
+    expect(castle, contains("interior-load-timeout-v74"));
+    expect(castle, contains("state.interiorLoadPromise=null"));
+    expect(castle, contains("dataset.interiorProgress"));
+
+    expect(navigationCore, contains('LABORATORY_LOAD_TIMEOUT_MS = 26000'));
+    expect(navigationCore, contains("laboratory-load-timeout-v74"));
+    expect(navigationCore, contains("dataset.laboratoryProgress"));
 
     expect(navigationCore, contains('window.__castleOpenLaboratory ??= switchToLaboratory'));
     expect(navigationCore, contains('window.__castleRestoreInteriorFromLaboratory ??= restoreInterior'));

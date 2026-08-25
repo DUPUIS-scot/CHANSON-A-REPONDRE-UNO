@@ -4,7 +4,7 @@
 // Forward the page cache-busting build ID to the compiled Flutter entrypoint.
 const searchParams = new URLSearchParams(window.location.search);
 const buildId = searchParams.get('v');
-const castleRuntimeRevision = '75';
+const castleRuntimeRevision = '76';
 const isWindows = /Windows/i.test(navigator.userAgent);
 if (buildId && globalThis._flutter?.buildConfig?.builds) {
   for (const build of globalThis._flutter.buildConfig.builds) {

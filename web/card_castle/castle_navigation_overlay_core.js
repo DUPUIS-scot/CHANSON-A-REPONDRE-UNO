@@ -10,6 +10,7 @@ if (!window.__castleNavigationOverlayInstalled) {
     document.baseURI,
   ).href;
   const LABORATORY_TARGET_SPAN = 50;
+  const LABORATORY_LOAD_TIMEOUT_MS = 26000;
   const touches = new Map();
   const keys = new Set();
   let runtime = null;
@@ -157,14 +158,39 @@ if (!window.__castleNavigationOverlayInstalled) {
     if (!runtime?.scene) return false;
     if (!laboratoryLoadPromise) {
       document.body.dataset.laboratoryReady = 'loading';
+      document.body.dataset.laboratoryProgress = '0';
+      delete document.body.dataset.laboratoryError;
       document.body.dataset.laboratoryAsset = LABORATORY_URL;
       syncBureauControl();
       laboratoryLoadPromise = new Promise((resolve, reject) => {
+        let settled = false;
+        const fail = error => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timeout);
+          reject(error instanceof Error ? error : new Error(String(error || 'laboratory-load-failed-v74')));
+        };
+        const timeout = setTimeout(
+          () => fail(new Error('laboratory-load-timeout-v74')),
+          LABORATORY_LOAD_TIMEOUT_MS,
+        );
         createLaboratoryLoader().load(
           LABORATORY_URL,
-          gltf => resolve(gltf.scene),
-          undefined,
-          reject,
+          gltf => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timeout);
+            document.body.dataset.laboratoryProgress = '100';
+            window.__castleSetSceneLoaderProgress?.(100);
+            resolve(gltf.scene);
+          },
+          event => {
+            if (settled || !event?.total) return;
+            const ratio = Math.min(1, event.loaded / event.total);
+            document.body.dataset.laboratoryProgress = String(Math.round(ratio * 100));
+            window.__castleSetSceneLoaderProgress?.(12 + ratio * 78);
+          },
+          fail,
         );
       })
         .then(root => {
