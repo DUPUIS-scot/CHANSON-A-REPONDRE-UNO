@@ -63,7 +63,7 @@ shell_required = [
     "installEnochianPendingUiFixes",
     "installEnochianIOSTouchTuning",
     "target-viewport.js?v=20260825-deep-repair-v1",
-    "iphone-landscape-layout-v2.js?v=20260824-deep-v19",
+    "iphone-landscape-layout-v2.js?v=20260826-two-viewport-v21",
 ]
 for marker in shell_required:
     if marker not in shell:
