@@ -37,7 +37,7 @@
           #doubleJeckerShield .s-vocals{top:14px;left:70px}.s-drums{right:14px;top:70px}.s-bass{bottom:14px;left:70px}.s-other{left:14px;top:70px}
           #doubleJeckerShield .djs-state{position:absolute;bottom:27px;left:30px;right:30px;text-align:center;color:#789f99;font:800 6px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;pointer-events:none;z-index:3}
           #doubleJeckerShield.engine-on .djs-state{color:#63f5cf}
-          #doubleJeckerShield.panel-open{opacity:.82}
+          #doubleJeckerShield.panel-open{opacity:.82}#doubleJeckerShield.takeover-active{opacity:0!important;pointer-events:none!important;transform:scale(.82)!important}
           @media(max-width:720px){#doubleJeckerShield{width:112px;height:112px;left:8px;top:8px}.djs-title{display:none!important}#doubleJeckerShield .djs-platter{inset:10px}#doubleJeckerShield .djs-center{width:48px;height:48px;font-size:14px}#doubleJeckerShield .djs-state{bottom:18px;font-size:5px}.s-vocals{top:9px!important;left:51px!important}.s-drums{right:9px!important;top:51px!important}.s-bass{bottom:9px!important;left:51px!important}.s-other{left:9px!important;top:51px!important}}
         `;document.head.appendChild(style);
       }
@@ -63,7 +63,7 @@
       const mask=()=>{const j=w.__enochStemJecker||w.__enochStemDecker;if(j&&typeof j.liveMask==='function')return j.liveMask();const on=(stem)=>api.state?.slots?.A?.[stem]?.on!==false||api.state?.slots?.B?.[stem]?.on!==false;return{vocals:on('vocals'),drums:on('drums'),bass:on('bass'),other:on('other')}};
       const paint=()=>{
         const engineOn=!!api.state?.enabled,playing=!master.paused&&!master.ended,linked=!!(w.__enochStemJecker||w.__enochStemDecker)?.linked,open=panel.classList.contains('open');
-        shield.classList.toggle('engine-on',engineOn);shield.classList.toggle('playing',playing);shield.classList.toggle('jecker-linked',linked);shield.classList.toggle('panel-open',open);
+        shield.classList.toggle('engine-on',engineOn);shield.classList.toggle('playing',playing);shield.classList.toggle('jecker-linked',linked);shield.classList.toggle('panel-open',open);shield.classList.toggle('takeover-active',engineOn&&panel.classList.contains('jecker-takeover'));
         const m=mask();Object.entries(m).forEach(([stem,on])=>shield.querySelector(`[data-jecker-stem="${stem}"]`)?.classList.toggle('live',!!on));
         const state=shield.querySelector('.djs-state');if(state)state.textContent=engineOn?(playing?'ENGINE · PLAY':'ENGINE · PAUSE'):(linked?'STEM JECKER':'READY');
         center.setAttribute('aria-expanded',String(open));center.title=open?'DOUBLE JECKER SPECIAL OPEN':'Open DOUBLE JECKER SPECIAL';
