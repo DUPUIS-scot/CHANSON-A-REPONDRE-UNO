@@ -144,27 +144,34 @@ frame.addEventListener('load',()=>{
    platter.addEventListener('keydown',e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();angularVelocity=0;platterAngle+=e.key==='ArrowLeft'?-15:15;syncPlatter()}});
    syncPlatter();requestAnimationFrame(platterTick);
   }
-  const stemFiles={
-   vocals:'/assets/assets/audio/stems/ai_comptroller/ai_comptroller_vocals.mp3',
-   drums:'/assets/assets/audio/stems/ai_comptroller/ai_comptroller_drums.mp3',
-   bass:'/assets/assets/audio/stems/ai_comptroller/ai_comptroller_bass.mp3',
-   other:'/assets/assets/audio/stems/ai_comptroller/ai_comptroller_other.mp3'
+  // MULTI TRACK STEM CATALOG v1
+  const stemCatalog={
+   0:{key:'ai_comptroller',label:'AI COMPTROLLER'},
+   1:{key:'caesar_spitter',label:'CAESAR-SPITTER'},
+   2:{key:'the_kraken',label:'THE KRAKEN'},
+   3:{key:'heliogabal_design',label:'HELIOGABAL//DESIGN'},
+   4:{key:'vivid_void',label:'VIVID VOID'}
   };
+  const stemPath=(track,stem)=>'/assets/assets/audio/stems/'+track+'/'+track+'_'+stem+'.mp3';
+  const stemFiles={vocals:'',drums:'',bass:'',other:''};
+  let activeStemKey=null;
+  function stemTrackInfo(){try{if(typeof idx!=='undefined'&&stemCatalog[idx])return stemCatalog[idx]}catch(_){}const name=(q('name')?.textContent||'').trim().toUpperCase();return Object.values(stemCatalog).find(x=>x.label===name)||null}
+  function selectStemSources(force=false){const info=stemTrackInfo();if(!info)return false;if(!force&&activeStemKey===info.key)return true;Object.keys(stemFiles).forEach(key=>{const url=stemPath(info.key,key);stemFiles[key]=url;const m=stemMedia&&stemMedia[key];if(m){try{m.pause()}catch(_){};try{m.removeAttribute('src');m.load()}catch(_){};m.dataset.src=url}});activeStemKey=info.key;stemMode=false;try{setMasterRoute(true)}catch(_){};return true}
   const stemMedia={},stemSources={},stemGains={};
   const stemState={vocals:{on:true,level:1},drums:{on:true,level:1},bass:{on:true,level:1},other:{on:true,level:1}};
   let stemsReady=false,stemMode=false,originalDeckConnected=true,lastStemSyncAt=0,masterGate=null;
-  Object.entries(stemFiles).forEach(([key,url])=>{const m=document.createElement('audio');m.preload='none';m.dataset.src=url;m.setAttribute('aria-hidden','true');m.style.display='none';document.body.appendChild(m);stemMedia[key]=m});
-  function isAiComptroller(){try{return typeof idx!=='undefined'&&idx===0}catch(_){return (q('name')?.textContent||'').trim()==='AI Comptroller'}}
+  Object.entries(stemFiles).forEach(([key,url])=>{const m=document.createElement('audio');m.preload='none';m.dataset.src=url;m.setAttribute('aria-hidden','true');m.style.display='none';document.body.appendChild(m);stemMedia[key]=m});selectStemSources(true);
+  function isAiComptroller(){return !!stemTrackInfo()}
   function stemGainValue(key){const st=stemState[key];return st.on?st.level:0}
   function applyStemGains(){Object.keys(stemGains).forEach(key=>{try{stemGains[key].gain.value=stemGainValue(key)}catch(_){}})}
   function setStemRate(){let rate=1;try{rate=a.playbackRate||1}catch(_){};Object.values(stemMedia).forEach(m=>{try{m.playbackRate=rate;m.preservesPitch=false;m.webkitPreservesPitch=false}catch(_){}})}
   function syncStemTimes(force=false){if(!stemMode)return;let master=0,base=1,paused=true;try{master=a.currentTime||0;base=Math.max(.25,Math.min(4,a.playbackRate||1));paused=!!a.paused}catch(_){};Object.values(stemMedia).forEach(m=>{try{const diff=master-(m.currentTime||0);if(force||paused||Math.abs(diff)>.035){m.currentTime=master;m.playbackRate=base;return}const trim=Math.max(-.012,Math.min(.012,diff*.12));m.playbackRate=Math.max(.25,Math.min(4,base*(1+trim)))}catch(_){}})}
   async function ensureStemMediaLoaded(){const waits=Object.values(stemMedia).map(m=>new Promise((resolve,reject)=>{if(m.readyState>=2)return resolve();const ok=()=>{cleanup();resolve()},bad=()=>{cleanup();reject(new Error('STEM LOAD FAILED'))},cleanup=()=>{m.removeEventListener('loadeddata',ok);m.removeEventListener('error',bad)};m.addEventListener('loadeddata',ok,{once:true});m.addEventListener('error',bad,{once:true});if(!m.src){m.src=m.dataset.src||'';m.load()}}));await Promise.all(waits)}
   async function ensureStemGraph(){if(stemsReady)return;if(typeof ctx==='undefined'||!ctx||typeof low==='undefined'||!low)return;Object.keys(stemMedia).forEach(key=>{const node=ctx.createMediaElementSource(stemMedia[key]);const gain=ctx.createGain();gain.gain.value=stemGainValue(key);node.connect(gain).connect(low);stemSources[key]=node;stemGains[key]=gain});stemsReady=true;applyStemGains();try{log('STEMS READY · VOCALS / DRUMS / BASS / OTHER')}catch(_){}}
-  function updateStemUi(){const box=q('stemIsolator');if(!box)return;const ai=isAiComptroller();box.classList.toggle('disabled',!ai);box.querySelectorAll('button,input').forEach(el=>el.disabled=!ai);const note=q('stemNote');if(note)note.textContent=ai?'BASS + OTHERS = INSTRUMENTS · ALL STEMS LOCKED TO MASTER TRANSPORT':'STEM ISOLATOR AVAILABLE ON AI COMPTROLLER'}
+  function updateStemUi(){const box=q('stemIsolator');if(!box)return;const info=stemTrackInfo(),available=!!info;box.classList.toggle('disabled',!available);box.querySelectorAll('button,input').forEach(el=>el.disabled=!available);const title=box.querySelector('.stem-title');if(title)title.textContent=available?'STEM ISOLATOR · '+info.label:'STEM ISOLATOR · NO STEMS';const note=q('stemNote');if(note)note.textContent=available?'BASS + OTHERS = INSTRUMENTS · ALL STEMS LOCKED TO MASTER TRANSPORT':'NO STEM SET FOR THIS TRACK'}
   function ensureMasterGate(){if(masterGate)return true;try{if(typeof ctx==='undefined'||!ctx||typeof src==='undefined'||!src||typeof low==='undefined'||!low)return false;const gate=ctx.createGain();gate.gain.value=originalDeckConnected?1:0;try{src.disconnect()}catch(_){}src.connect(gate);gate.connect(low);masterGate=gate;return true}catch(_){masterGate=null;return false}}
   function setMasterRoute(enabled){const on=!!enabled;if(!ensureMasterGate())return false;try{const p=masterGate.gain,now=ctx.currentTime,target=on?1:0;if(typeof p.cancelScheduledValues==='function')p.cancelScheduledValues(now);if(typeof p.setTargetAtTime==='function')p.setTargetAtTime(target,now,.008);else p.value=target;originalDeckConnected=on;return true}catch(_){return false}}
-  async function setStemMode(){const ai=isAiComptroller();if(!ai){stemMode=false;Object.values(stemMedia).forEach(m=>{try{m.pause()}catch(_){}});setMasterRoute(true);updateStemUi();return}if(stemMode){updateStemUi();return}try{if(originalEnsureAudio)await originalEnsureAudio();else if(typeof ensureAudio==='function')await ensureAudio()}catch(_){};ensureMasterGate();try{await ensureStemMediaLoaded();await ensureStemGraph();syncStemTimes(true);setStemRate();applyStemGains();if(a.paused){stemMode=false;setMasterRoute(true);try{log('STEMS ARMED · WAITING FOR PLAY')}catch(_){}}else{await Promise.all(Object.values(stemMedia).map(m=>m.play()));setMasterRoute(false);stemMode=true;try{log('STEM MODE · AI COMPTROLLER')}catch(_){}}}catch(error){stemMode=false;Object.values(stemMedia).forEach(m=>{try{m.pause()}catch(_){}});setMasterRoute(true);try{log('STEM FALLBACK · MASTER AUDIO · '+(error&&error.message?error.message:'UNKNOWN'))}catch(_){}}updateStemUi()}
+  async function setStemMode(){const info=stemTrackInfo();if(!info){stemMode=false;Object.values(stemMedia).forEach(m=>{try{m.pause()}catch(_){}});setMasterRoute(true);updateStemUi();return}if(activeStemKey!==info.key){Object.values(stemMedia).forEach(m=>{try{m.pause()}catch(_){}});stemMode=false;setMasterRoute(true);selectStemSources(true)}if(stemMode){updateStemUi();return}try{if(originalEnsureAudio)await originalEnsureAudio();else if(typeof ensureAudio==='function')await ensureAudio()}catch(_){};ensureMasterGate();try{await ensureStemMediaLoaded();await ensureStemGraph();syncStemTimes(true);setStemRate();applyStemGains();if(a.paused){stemMode=false;setMasterRoute(true);try{log('STEMS ARMED · '+info.label+' · WAITING FOR PLAY')}catch(_){}}else{await Promise.all(Object.values(stemMedia).map(m=>m.play()));setMasterRoute(false);stemMode=true;try{log('STEM MODE · '+info.label)}catch(_){}}}catch(error){stemMode=false;Object.values(stemMedia).forEach(m=>{try{m.pause()}catch(_){}});setMasterRoute(true);try{log('STEM FALLBACK · MASTER AUDIO · '+(error&&error.message?error.message:'UNKNOWN'))}catch(_){}}updateStemUi()}
   const originalEnsureAudio=typeof ensureAudio==='function'?ensureAudio:null;
   if(originalEnsureAudio)ensureAudio=async function(){return await originalEnsureAudio()};
   // RELIABLE BASE TRANSPORT: master playback must never depend on optional stems.

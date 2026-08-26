@@ -59,6 +59,10 @@ flutter:
     - assets/videos/
     - assets/audio/
     - assets/audio/stems/ai_comptroller/
+    - assets/audio/stems/caesar_spitter/
+    - assets/audio/stems/the_kraken/
+    - assets/audio/stems/heliogabal_design/
+    - assets/audio/stems/vivid_void/
     - assets/json/cards.json
     - assets/json/ai_comptroller_enochian.json
     - assets/json/caesar_spitter_enochian_compact.json
