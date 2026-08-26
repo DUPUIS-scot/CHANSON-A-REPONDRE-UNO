@@ -16,7 +16,7 @@ void main() {
     );
   });
 
-  testWidgets('curtain opens and reveals home links and visit card sharing', (
+  testWidgets('curtain opens and reveals home links and social preview sharing', (
     tester,
   ) async {
     await tester.pumpWidget(const MaterialApp(home: CreditsScreen()));
@@ -58,7 +58,7 @@ void main() {
       find.byKey(const ValueKey('credits-share-visit-card')),
       findsOneWidget,
     );
-    expect(find.text('SHARE VISIT CARD'), findsOneWidget);
+    expect(find.text('SHARE SOCIAL PREVIEW'), findsOneWidget);
 
     await tester.tapAt(const Offset(10, 300));
     await tester.pumpAndSettle();
