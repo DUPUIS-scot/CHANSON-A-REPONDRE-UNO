@@ -1,5 +1,14 @@
 # Chanson à Répondre UNO releases
 
+## v3.7.3.3 — Approved / Certified
+
+- Certificate version: 3.7.3.3
+- Status: APPROVED
+- Status: CERTIFIED
+- Package version: 3.7.3+3
+- Includes the live STEM JECKER routing repair and deployment workflow recovery.
+
+
 ## v3.073-SH — Approved / Certified
 
 - Certificate version: 3.073-SH
