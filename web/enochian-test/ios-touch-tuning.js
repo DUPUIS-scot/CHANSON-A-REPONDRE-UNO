@@ -80,8 +80,10 @@
   function installSpecialAuthorities(frame){
     loadAuthority('/enochian-test/double-decker-special-v2.js?v=20260826-v2','double-decker-special-v2-loader',()=>window.installEnochianDoubleDeckerSpecialV2?.(frame));
     loadAuthority('/enochian-test/pad-fx-authority-v2.js?v=20260826-v2','pad-fx-authority-v2-loader',()=>window.installEnochianPadFxAuthorityV2?.(frame));
+    loadAuthority('/enochian-test/two-mix-v1.js?v=20260826-v1','two-mix-v1-loader',()=>window.installEnochianTwoMix?.(frame));
     window.installEnochianDoubleDeckerSpecialV2?.(frame);
     window.installEnochianPadFxAuthorityV2?.(frame);
+    window.installEnochianTwoMix?.(frame);
   }
   window.installEnochianIOSTouchTuning=function(frame){let n=0;const run=()=>{if(tune(frame)||++n>160)return;setTimeout(run,50)};run();installSpecialAuthorities(frame)};
 })();
