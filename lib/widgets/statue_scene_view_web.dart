@@ -1,14 +1,22 @@
 // ignore_for_file: avoid_web_libraries_in_flutter, deprecated_member_use
 
+import 'dart:async';
 import 'dart:html' as html;
 import 'dart:ui_web' as ui_web;
 
 import 'package:flutter/material.dart';
 
 class StatueSceneView extends StatefulWidget {
-  const StatueSceneView({super.key, this.interactive = true});
+  const StatueSceneView({
+    super.key,
+    this.interactive = true,
+    this.onSwipeUp,
+    this.onSwipeDown,
+  });
 
   final bool interactive;
+  final VoidCallback? onSwipeUp;
+  final VoidCallback? onSwipeDown;
 
   @override
   State<StatueSceneView> createState() => _StatueSceneViewState();
@@ -17,11 +25,20 @@ class StatueSceneView extends StatefulWidget {
 class _StatueSceneViewState extends State<StatueSceneView> {
   late final String _viewType;
   html.IFrameElement? _iframe;
+  StreamSubscription<html.MessageEvent>? _messageSubscription;
 
   @override
   void initState() {
     super.initState();
     _viewType = 'interactive-statue-${DateTime.now().microsecondsSinceEpoch}';
+    _messageSubscription = html.window.onMessage.listen((event) {
+      final data = event.data;
+      if (data == 'statue-swipe-up') {
+        widget.onSwipeUp?.call();
+      } else if (data == 'statue-swipe-down') {
+        widget.onSwipeDown?.call();
+      }
+    });
     ui_web.platformViewRegistry.registerViewFactory(_viewType, (_) {
       final uri = Uri.base.resolve('statue_scene/index.html');
       final iframe = html.IFrameElement()
@@ -52,6 +69,12 @@ class _StatueSceneViewState extends State<StatueSceneView> {
     final iframe = _iframe;
     if (iframe == null) return;
     iframe.style.pointerEvents = widget.interactive ? 'auto' : 'none';
+  }
+
+  @override
+  void dispose() {
+    _messageSubscription?.cancel();
+    super.dispose();
   }
 
   @override
