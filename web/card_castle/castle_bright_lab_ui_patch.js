@@ -15,7 +15,6 @@ if (!window.__castleBrightLabUiPatchInstalled) {
   }
   function sync(){const r=window.__castleSearchRuntime;if(!r?.scene||!r?.renderer){if(attempts++<180)setTimeout(sync,100);return;}const mode=document.body.dataset.sceneMode||'exterior',lab=mode==='laboratory';const rig=ensureLabFillRig();if(rig)rig.visible=false;
     restoreJester(r,mode);
-    const bureau=document.getElementById('bureau-of-ai');if(bureau){bureau.hidden=true;bureau.style.display='none';bureau.setAttribute('aria-hidden','true');}
     const med=document.getElementById('laboratory-medallion-button');if(med)med.style.display=mode==='interior'?'':'none';const label=document.querySelector('#laboratory-medallion-button .lab-medallion-label');if(label){label.textContent='LABORATOIRE';label.style.display=mode==='interior'?'':'none';}const bureau=document.getElementById('bureau-of-ai');if(bureau){bureau.hidden=true;bureau.style.display='none';bureau.setAttribute('aria-hidden','true');}backButton().style.display=lab?'flex':'none';
     const canvas=r.renderer.domElement;
     if(lab){if(canvas)canvas.style.filter='';document.body.dataset.laboratoryLighting='delegated-to-scene-lighting-v72';}

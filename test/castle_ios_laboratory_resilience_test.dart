@@ -22,8 +22,8 @@ void main() {
     expect(bootstrap, contains('optimized = url.href'));
 
     final sharedImport = overlay.indexOf('castle_shared_transition_loader_v64.js?v=74');
-    final resilienceImport = overlay.indexOf('castle_ios_laboratory_resilience_v62.js?v=65');
-    final coreImport = overlay.indexOf('castle_navigation_overlay_core.js?v=73');
+    final resilienceImport = overlay.indexOf('castle_ios_laboratory_resilience_v62.js?v=66');
+    final coreImport = overlay.indexOf('castle_navigation_overlay_core.js?v=74');
     final eventBridgeImport = overlay.indexOf('castle_laboratory_event_bridge_v69.js?v=69');
     expect(sharedImport, greaterThanOrEqualTo(0));
     expect(resilienceImport, greaterThan(sharedImport));
