@@ -36,9 +36,6 @@
       let mode=engine.status?.().enabled?'on':'off';
       let bypassMasterClick=false;
       const setBoth=(stem,on)=>{api.setStemOn('A',stem,!!on);api.setStemOn('B',stem,!!on)};
-      // In STEM JECKER mode the native stem engine is deliberately held off.
-      // Its runtime status therefore cannot be the source of truth. Read the
-      // visible STEMS MIX switches, which are the live performance controls.
       const mainToggleOn=key=>!!d.querySelector(`[data-stem-toggle="${key}"]`)?.classList.contains('active');
       const mainLevel=key=>Math.max(0,Math.min(1,Number(d.querySelector(`[data-stem-range="${key}"]`)?.value||0)/100));
       const mainMask=()=>({vocals:mainToggleOn('vocals'),drums:mainToggleOn('drums'),bass:mainToggleOn('instruments'),other:mainToggleOn('instruments')});
@@ -101,8 +98,6 @@
       stemMaster.addEventListener('click',e=>{
         if(bypassMasterClick)return;
         e.preventDefault();e.stopImmediatePropagation();
-        // During a live 2JECKER set this is a protected state indicator,
-        // never a second mode switch that can break the performance route.
         if(mode==='jecker'&&api.state?.enabled){syncFromMain();paintMasterMode();return}
         void cycleMode();
       },true);
@@ -177,7 +172,7 @@
       let shuffleButton=panel.querySelector('[data-stem-jecker-shuffle]')||panel.querySelector('[data-stem-decker-shuffle]');
       if(!shuffleButton){shuffleButton=document.createElement('button');shuffleButton.type='button';shuffleButton.className='dds-deck-shuffle';if(center)center.insertBefore(shuffleButton,statusEl||null)}
       delete shuffleButton.dataset.stemDeckerShuffle;shuffleButton.dataset.stemJeckerShuffle='';shuffleButton.textContent='STEM JECKER SHUFFLE';
-      if(shuffleButton.dataset.stemJeckerBound!=='v8'{
+      if(shuffleButton.dataset.stemJeckerBound!=='v8'){
         shuffleButton.dataset.stemJeckerBound='v8';
         shuffleButton.addEventListener('click',async e=>{e.preventDefault();e.stopPropagation();shuffleButton.classList.add('active');try{await shuffleLive()}finally{w.setTimeout(()=>shuffleButton.classList.remove('active'),180)}});
       }
@@ -194,7 +189,7 @@
         if(!loader){loader=document.createElement('script');loader.src=src;loader.dataset.jeckerAddon=key;loader.onload=()=>run();document.head.appendChild(loader)}
         return false;
       };
-      loadAddon('shield','/enochian-test/double-jecker-turntable-shield-v1.js?v=20260826-v2','installEnochianDoubleJeckerTurntableShieldV1');
+      loadAddon('shield','/enochian-test/double-jecker-turntable-shield-v1.js?v=20260827-v3','installEnochianDoubleJeckerTurntableShieldV1');
       loadAddon('output','/enochian-test/double-jecker-output-v1.js?v=20260826-v2','installEnochianDoubleJeckerOutputV1');
       loadAddon('signal-relay','/enochian-test/double-jecker-signal-relay-v1.js?v=20260826-v1','installEnochianDoubleJeckerSignalRelayV1');
 
