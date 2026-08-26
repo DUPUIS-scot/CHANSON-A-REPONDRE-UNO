@@ -122,7 +122,24 @@
         const moving=state.mode==='deform'?(Math.abs(state.deform.vY)>.00002||Math.abs(state.deform.vZ)>.00002):(Math.abs(state.view.yawV)>.00002||Math.abs(state.view.pitchV)>.00002);if(moving)raf=w.requestAnimationFrame(momentum);
       };
       wave.addEventListener('pointerup',release);wave.addEventListener('pointercancel',release);wave.addEventListener('lostpointercapture',e=>{if(pointers.has(e.pointerId))release(e)});
-      wave.addEventListener('wheel',e=>{if(e.target.closest('button,input,textarea,select'))return;e.preventDefault();state.view.zoom=clamp(state.view.zoom*Math.exp(-e.deltaY*.0015),.55,2.6);render()},{passive:false});
+      wave.addEventListener('wheel',e=>{
+        if(e.target.closest('button,input,textarea,select'))return;
+        e.preventDefault();
+        const wheelMode=w.__enochAnalyserWheelMode||'zoom',sculpt=w.__enochSignalModulation===true&&wheelMode!=='zoom';
+        if(sculpt){
+          let picked=null;try{picked=w.__enochAnalyser3D?.pick?.(e.clientX,e.clientY)||null}catch(_){}
+          if(picked){state.deform.grabBin=picked.bin;state.deform.grabRow=picked.row}
+          if(Number.isFinite(state.deform.grabBin)){
+            const amount=clamp(-e.deltaY/420,-.32,.32);
+            if(wheelMode==='height')state.deform.pullY=clamp(state.deform.pullY+amount,-1.5,1.5);
+            else if(wheelMode==='depth')state.deform.pullZ=clamp(state.deform.pullZ+amount,-1.5,1.5);
+            else if(wheelMode==='twist')state.deform.twist=clamp(state.deform.twist+amount*.85,-1.6,1.6);
+            state.deform.vY=wheelMode==='height'?amount*.012:state.deform.vY*.6;
+            state.deform.vZ=wheelMode==='depth'||wheelMode==='twist'?amount*.012:state.deform.vZ*.6;
+          }
+        }else state.view.zoom=clamp(state.view.zoom*Math.exp(-e.deltaY*.0015),.55,2.6);
+        render()
+      },{passive:false});
       wave.addEventListener('dblclick',e=>{if(e.target.closest('button'))return;stop();state.view.yaw=state.view.pitch=0;state.view.zoom=1;state.view.yawV=state.view.pitchV=0;if(w.__enochSignalModulation===true)Object.assign(state.deform,{grabBin:null,grabRow:null,pullY:0,pullZ:0,twist:0,vY:0,vZ:0});render()});
       render();return true;
     }catch(_){return false}
