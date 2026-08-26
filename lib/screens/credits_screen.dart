@@ -289,7 +289,7 @@ class _CreditsScreenState extends State<CreditsScreen>
       );
 }
 
-class _IosCreditsPager extends StatefulWidget {
+class _IosCreditsPager extends StatelessWidget {
   const _IosCreditsPager({
     required this.version,
     required this.onBack,
@@ -305,90 +305,26 @@ class _IosCreditsPager extends StatefulWidget {
   final bool statueInteractive;
 
   @override
-  State<_IosCreditsPager> createState() => _IosCreditsPagerState();
-}
-
-class _IosCreditsPagerState extends State<_IosCreditsPager> {
-  late final PageController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = PageController();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  Future<void> _showPage(int page) async {
-    if (!widget.interactive || !_controller.hasClients) return;
-    await _controller.animateToPage(
-      page,
-      duration: const Duration(milliseconds: 420),
-      curve: Curves.easeInOutCubic,
-    );
-  }
-
-  @override
   Widget build(BuildContext context) => AnimatedOpacity(
         key: const ValueKey('credits-ios-two-viewport'),
-        opacity: widget.visible ? 1 : 0,
+        opacity: visible ? 1 : 0,
         duration: const Duration(milliseconds: 350),
         child: IgnorePointer(
-          ignoring: !widget.interactive,
+          ignoring: !interactive,
           child: PageView(
-            controller: _controller,
-            physics: const NeverScrollableScrollPhysics(),
+            scrollDirection: Axis.vertical,
+            physics: const PageScrollPhysics(),
             children: [
-              Stack(
-                fit: StackFit.expand,
-                children: [
-                  StatueSceneView(interactive: widget.statueInteractive),
-                  SafeArea(
-                    child: Align(
-                      alignment: Alignment.bottomRight,
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 16, 18, 22),
-                        child: FilledButton.tonalIcon(
-                          key: const ValueKey('credits-ios-show-credits'),
-                          onPressed: () => _showPage(1),
-                          icon: const Icon(Icons.keyboard_arrow_down_rounded),
-                          label: const Text('CREDITS'),
-                        ),
-                      ),
-                    ),
+              StatueSceneView(interactive: statueInteractive),
+              ColoredBox(
+                color: const Color(0xFF090201),
+                child: SafeArea(
+                  child: _CreditsBody(
+                    version: version,
+                    onBack: onBack,
+                    compact: true,
                   ),
-                ],
-              ),
-              Stack(
-                fit: StackFit.expand,
-                children: [
-                  const ColoredBox(color: Color(0xFF090201)),
-                  SafeArea(
-                    child: _CreditsBody(
-                      version: widget.version,
-                      onBack: widget.onBack,
-                      compact: true,
-                    ),
-                  ),
-                  SafeArea(
-                    child: Align(
-                      alignment: Alignment.topLeft,
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
-                        child: IconButton.filledTonal(
-                          key: const ValueKey('credits-ios-show-sherlock'),
-                          onPressed: () => _showPage(0),
-                          tooltip: 'Back to Sherlock',
-                          icon: const Icon(Icons.keyboard_arrow_up_rounded),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ],
           ),
@@ -410,7 +346,7 @@ class _CreditsBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final outerPadding = compact
-        ? const EdgeInsets.fromLTRB(14, 52, 14, 14)
+        ? const EdgeInsets.fromLTRB(14, 20, 14, 14)
         : const EdgeInsets.fromLTRB(24, 32, 24, 24);
     final innerPadding = compact ? 18.0 : 28.0;
     final titleSize = compact ? 24.0 : 30.0;
