@@ -36,7 +36,8 @@
 
       const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
       const point=p=>({x:p.x*w.innerWidth,y:p.y*w.innerHeight});
-      const resolve=p=>{const q=point(p),el=d.elementFromPoint(q.x,q.y);return el?.closest?.('input[type="range"],button,[role="button"],canvas,.wheel,.pad')||null};
+      const resolve=p=>{const q=point(p);const outer=document.elementFromPoint(q.x,q.y)?.closest?.('#outerAnalyserCanvas,#outerAnalyserPanel button');if(outer)return outer;const el=d.elementFromPoint(q.x,q.y);return el?.closest?.('input[type="range"],button,[role="button"],canvas,.wheel,.pad')||null};
+      const outerEvent=(type,p,base)=>{const el=p.target;if(!el||el.ownerDocument===d)return;const q=point(p);el.dispatchEvent(new PointerEvent(type,{bubbles:true,cancelable:true,clientX:q.x,clientY:q.y,pointerId:base,buttons:type==='pointerup'?0:1,pointerType:'mouse'}))};
       const dispatchInput=(el,value)=>{if(!el||el.tagName!=='INPUT')return;el.value=String(value);el.dispatchEvent(new w.Event('input',{bubbles:true}));el.dispatchEvent(new w.Event('change',{bubbles:true}))};
       const acquire=p=>{const el=resolve(p);p.target=el;p.start=Date.now();p.value=el?.tagName==='INPUT'?Number(el.value)||0:0;return el};
       const adjust=p=>{const el=p.target;if(!el||el.tagName!=='INPUT'||el.type!=='range')return;const max=Number(el.max)||100,min=Number(el.min)||0,step=Number(el.step)||1;const delta=(pair.moveX||0)-(pair.moveY||0);const next=clamp(p.value+delta*(max-min)/180,min,max);dispatchInput(el,Math.round(next/step)*step)};
@@ -60,13 +61,14 @@
       };
       const setEnabled=on=>{pair.enabled=!!on;pair.dragging=false;pair.last=null;button.classList.toggle('active',on);button.textContent=on?'CHANSON A REPONDRE UNO · LIVE':'CHANSON A REPONDRE UNO';button.setAttribute('aria-pressed',String(on));button.title=on?'CHANSON A REPONDRE UNO virtual mice active':'Enable CHANSON A REPONDRE UNO virtual mice';help.style.display='block';[a,b].forEach(el=>el.classList.toggle('active',on));tether.style.display=on?'block':'none';state.classList.toggle('active',on);render()};
       button.addEventListener('click',e=>{e.stopPropagation();setEnabled(!pair.enabled)});
-      d.addEventListener('pointerdown',e=>{if(!pair.enabled||e.target===button)return;pair.dragging=true;pair.last={x:e.clientX,y:e.clientY};pair.moveX=0;pair.moveY=0;acquire(pair.a);acquire(pair.b);e.preventDefault();e.stopImmediatePropagation()},{capture:true});
+      d.addEventListener('pointerdown',e=>{if(!pair.enabled||e.target===button)return;pair.dragging=true;pair.last={x:e.clientX,y:e.clientY};pair.moveX=0;pair.moveY=0;acquire(pair.a);acquire(pair.b);outerEvent('pointerdown',pair.a,71);outerEvent('pointerdown',pair.b,72);e.preventDefault();e.stopImmediatePropagation()},{capture:true});
       d.addEventListener('pointermove',e=>{if(!pair.enabled||!pair.last)return;const dx=e.clientX-pair.last.x,dy=e.clientY-pair.last.y;pair.last={x:e.clientX,y:e.clientY};pair.moveX+=dx;pair.moveY+=dy;
         if(e.shiftKey){pair.a.x=clamp(pair.a.x-dx/w.innerWidth,0.03,.97);pair.b.x=clamp(pair.b.x+dx/w.innerWidth,0.03,.97);pair.a.y=clamp(pair.a.y-dy/w.innerHeight,0.03,.97);pair.b.y=clamp(pair.b.y+dy/w.innerHeight,0.03,.97)}
         else if(e.altKey){const cx=(pair.a.x+pair.b.x)/2,cy=(pair.a.y+pair.b.y)/2,angle=dx*.012,rx=pair.a.x-cx,ry=pair.a.y-cy,co=Math.cos(angle),si=Math.sin(angle);pair.a.x=clamp(cx+rx*co-ry*si,.03,.97);pair.a.y=clamp(cy+rx*si+ry*co,.03,.97);pair.b.x=clamp(2*cx-pair.a.x,.03,.97);pair.b.y=clamp(2*cy-pair.a.y,.03,.97)}
         else {pair.a.x=clamp(pair.a.x+dx/w.innerWidth,.03,.97);pair.b.x=clamp(pair.b.x+dx/w.innerWidth,.03,.97);pair.a.y=clamp(pair.a.y+dy/w.innerHeight,.03,.97);pair.b.y=clamp(pair.b.y+dy/w.innerHeight,.03,.97)}
-        if(pair.dragging){adjust(pair.a);adjust(pair.b)}render();e.preventDefault();e.stopImmediatePropagation()},{capture:true});
-      d.addEventListener('pointerup',e=>{if(!pair.enabled||!pair.dragging)return;activateButton(pair.a);activateButton(pair.b);pair.dragging=false;pair.last=null;pair.a.target=null;pair.b.target=null;render();e.preventDefault();e.stopImmediatePropagation()},{capture:true});
+        if(pair.dragging){adjust(pair.a);adjust(pair.b);outerEvent('pointermove',pair.a,71);outerEvent('pointermove',pair.b,72)}render();e.preventDefault();e.stopImmediatePropagation()},{capture:true});
+      d.addEventListener('pointerup',e=>{if(!pair.enabled||!pair.dragging)return;activateButton(pair.a);activateButton(pair.b);outerEvent('pointerup',pair.a,71);outerEvent('pointerup',pair.b,72);pair.dragging=false;pair.last=null;pair.a.target=null;pair.b.target=null;render();e.preventDefault();e.stopImmediatePropagation()},{capture:true});
+      d.addEventListener('wheel',e=>{if(!pair.enabled)return;[pair.a,pair.b].forEach((p,i)=>{const el=resolve(p);if(el?.ownerDocument!==d)el?.dispatchEvent(new WheelEvent('wheel',{bubbles:true,cancelable:true,clientX:point(p).x,clientY:point(p).y,deltaY:e.deltaY}));else if(el?.type==='range'){const step=Number(el.step)||1;dispatchInput(el,clamp((Number(el.value)||0)+(e.deltaY<0?step:-step),Number(el.min)||0,Number(el.max)||100))}});e.preventDefault()},{capture:true,passive:false});
       d.addEventListener('keydown',e=>{if(e.key==='Escape'&&pair.enabled){pair.dragging=false;pair.last=null;pair.a.target=null;pair.b.target=null;render();e.preventDefault()}},{capture:true});
       w.__enochTwoMixVirtualMice={version:'v1',enable:()=>setEnabled(true),disable:()=>setEnabled(false),state:pair};
       setEnabled(false);return true;
