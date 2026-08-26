@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -113,32 +114,48 @@ class _CreditsScreenState extends State<CreditsScreen>
               final fullWidth = constraints.maxWidth;
               final panelWidth = fullWidth * .5;
               final statueInteractive = progress >= .985 && !_leaving;
+              final iosTwoViewport = defaultTargetPlatform == TargetPlatform.iOS &&
+                  fullWidth <= 900;
+
               return Stack(
                 fit: StackFit.expand,
                 children: [
                   const ColoredBox(color: Color(0xFF090201)),
-                  Padding(
-                    padding: const EdgeInsets.only(left: 34),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: SizedBox(
-                        width: (fullWidth * .54 - 34).clamp(0.0, fullWidth),
-                        height: double.infinity,
-                        child: StatueSceneView(interactive: statueInteractive),
+                  if (iosTwoViewport)
+                    _IosCreditsPager(
+                      version: _version,
+                      onBack: _backToSettings,
+                      visible: progress > .58 && !_leaving,
+                      interactive: progress > .72 && !_leaving,
+                      statueInteractive: statueInteractive,
+                    )
+                  else ...[
+                    Padding(
+                      padding: const EdgeInsets.only(left: 34),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: SizedBox(
+                          width: (fullWidth * .54 - 34).clamp(0.0, fullWidth),
+                          height: double.infinity,
+                          child: StatueSceneView(interactive: statueInteractive),
+                        ),
                       ),
                     ),
-                  ),
-                  AnimatedOpacity(
-                    key: const ValueKey('credits-content'),
-                    opacity: progress > .58 && !_leaving ? 1 : 0,
-                    duration: const Duration(milliseconds: 350),
-                    child: IgnorePointer(
-                      ignoring: progress <= .72 || _leaving,
-                      child: SafeArea(
-                        child: _CreditsBody(version: _version, onBack: _backToSettings),
+                    AnimatedOpacity(
+                      key: const ValueKey('credits-content'),
+                      opacity: progress > .58 && !_leaving ? 1 : 0,
+                      duration: const Duration(milliseconds: 350),
+                      child: IgnorePointer(
+                        ignoring: progress <= .72 || _leaving,
+                        child: SafeArea(
+                          child: _CreditsBody(
+                            version: _version,
+                            onBack: _backToSettings,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                   _curtainPanel(
                     left: true,
                     panelWidth: panelWidth,
@@ -272,62 +289,213 @@ class _CreditsScreenState extends State<CreditsScreen>
       );
 }
 
-class _CreditsBody extends StatelessWidget {
-  const _CreditsBody({required this.version, required this.onBack});
+class _IosCreditsPager extends StatefulWidget {
+  const _IosCreditsPager({
+    required this.version,
+    required this.onBack,
+    required this.visible,
+    required this.interactive,
+    required this.statueInteractive,
+  });
+
   final String version;
   final VoidCallback onBack;
+  final bool visible;
+  final bool interactive;
+  final bool statueInteractive;
 
   @override
-  Widget build(BuildContext context) => Align(
-        alignment: Alignment.centerRight,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 600),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: const Color(0xB82A0705),
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: const Color(0xFFC18A27), width: 2),
-                boxShadow: const [BoxShadow(color: Color(0x99000000), blurRadius: 28)],
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(28),
-                child: DefaultTextStyle(
-                  style: const TextStyle(color: Color(0xFFFFF4D2), height: 1.35),
-                  textAlign: TextAlign.center,
-                  child: Column(children: [
-                    const Text('GÉNÉRIQUE / CREDITS', style: TextStyle(color: Color(0xFFFFC928), fontSize: 30, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
-                    const SizedBox(height: 8),
-                    const Text('CHANSON À RÉPONDRE UNO', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
-                    const SizedBox(height: 24),
-                    const _CreditLine(label: 'Concept & Artistic Direction', value: 'DUPUIS*'),
-                    const _CreditLine(label: 'Design & Development', value: 'DUPUIS*'),
-                    const _CreditLine(label: 'Music / Sound', value: 'DJ WHO'),
-                    const _CreditLine(label: '3D / Interactive Environments', value: 'DUPUIS*'),
-                    const _CreditLine(label: 'AI-assisted development & creative tools', value: 'OpenAI / ChatGPT and other credited tools where applicable'),
-                    const SizedBox(height: 16),
-                    const SelectableText('www.chanson-a-repondre-uno.scot', style: TextStyle(color: Color(0xFFFFC928), decoration: TextDecoration.underline, decorationColor: Color(0xFFFFC928))),
-                    const SizedBox(height: 10),
-                    Text('Version: $version', key: const ValueKey('credits-version')),
-                    const SizedBox(height: 10),
-                    const Text('© 2026 DUPUIS*'),
-                    const SizedBox(height: 10),
-                    const Text('Technologies: Flutter, Three.js, GoRouter, Provider, Supabase, OpenAI APIs and the supporting packages used by the app.'),
-                    const SizedBox(height: 26),
-                    FilledButton.tonalIcon(
-                      key: const ValueKey('credits-back-to-settings'),
-                      onPressed: onBack,
-                      icon: const Icon(Icons.arrow_back_rounded),
-                      label: const Text('BACK TO SETTINGS'),
+  State<_IosCreditsPager> createState() => _IosCreditsPagerState();
+}
+
+class _IosCreditsPagerState extends State<_IosCreditsPager> {
+  late final PageController _controller;
+  int _page = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = PageController();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _showPage(int page) async {
+    if (!widget.interactive || !_controller.hasClients) return;
+    await _controller.animateToPage(
+      page,
+      duration: const Duration(milliseconds: 420),
+      curve: Curves.easeInOutCubic,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) => AnimatedOpacity(
+        key: const ValueKey('credits-ios-two-viewport'),
+        opacity: widget.visible ? 1 : 0,
+        duration: const Duration(milliseconds: 350),
+        child: IgnorePointer(
+          ignoring: !widget.interactive,
+          child: PageView(
+            controller: _controller,
+            physics: const NeverScrollableScrollPhysics(),
+            onPageChanged: (value) => setState(() => _page = value),
+            children: [
+              Stack(
+                fit: StackFit.expand,
+                children: [
+                  StatueSceneView(interactive: widget.statueInteractive),
+                  SafeArea(
+                    child: Align(
+                      alignment: Alignment.bottomRight,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 18, 22),
+                        child: FilledButton.tonalIcon(
+                          key: const ValueKey('credits-ios-show-credits'),
+                          onPressed: () => _showPage(1),
+                          icon: const Icon(Icons.keyboard_arrow_down_rounded),
+                          label: const Text('CREDITS'),
+                        ),
+                      ),
                     ),
-                  ]),
+                  ),
+                ],
+              ),
+              Stack(
+                fit: StackFit.expand,
+                children: [
+                  const ColoredBox(color: Color(0xFF090201)),
+                  SafeArea(
+                    child: _CreditsBody(
+                      version: widget.version,
+                      onBack: widget.onBack,
+                      compact: true,
+                    ),
+                  ),
+                  SafeArea(
+                    child: Align(
+                      alignment: Alignment.topLeft,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+                        child: IconButton.filledTonal(
+                          key: const ValueKey('credits-ios-show-sherlock'),
+                          onPressed: () => _showPage(0),
+                          tooltip: 'Back to Sherlock',
+                          icon: const Icon(Icons.keyboard_arrow_up_rounded),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+}
+
+class _CreditsBody extends StatelessWidget {
+  const _CreditsBody({
+    required this.version,
+    required this.onBack,
+    this.compact = false,
+  });
+
+  final String version;
+  final VoidCallback onBack;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final outerPadding = compact
+        ? const EdgeInsets.fromLTRB(14, 52, 14, 14)
+        : const EdgeInsets.fromLTRB(24, 32, 24, 24);
+    final innerPadding = compact ? 18.0 : 28.0;
+    final titleSize = compact ? 24.0 : 30.0;
+    final subtitleSize = compact ? 17.0 : 20.0;
+
+    return Align(
+      alignment: Alignment.centerRight,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 600),
+        child: SingleChildScrollView(
+          padding: outerPadding,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: const Color(0xB82A0705),
+              borderRadius: BorderRadius.circular(compact ? 18 : 22),
+              border: Border.all(color: const Color(0xFFC18A27), width: 2),
+              boxShadow: const [
+                BoxShadow(color: Color(0x99000000), blurRadius: 28),
+              ],
+            ),
+            child: Padding(
+              padding: EdgeInsets.all(innerPadding),
+              child: DefaultTextStyle(
+                style: TextStyle(
+                  color: const Color(0xFFFFF4D2),
+                  height: 1.35,
+                  fontSize: compact ? 13 : null,
                 ),
+                textAlign: TextAlign.center,
+                child: Column(children: [
+                  Text(
+                    'GÉNÉRIQUE / CREDITS',
+                    style: TextStyle(
+                      color: const Color(0xFFFFC928),
+                      fontSize: titleSize,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'CHANSON À RÉPONDRE UNO',
+                    style: TextStyle(
+                      fontSize: subtitleSize,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  SizedBox(height: compact ? 18 : 24),
+                  const _CreditLine(label: 'Concept & Artistic Direction', value: 'DUPUIS*'),
+                  const _CreditLine(label: 'Design & Development', value: 'DUPUIS*'),
+                  const _CreditLine(label: 'Music / Sound', value: 'DJ WHO'),
+                  const _CreditLine(label: '3D / Interactive Environments', value: 'DUPUIS*'),
+                  const _CreditLine(label: 'AI-assisted development & creative tools', value: 'OpenAI / ChatGPT and other credited tools where applicable'),
+                  const SizedBox(height: 16),
+                  const SelectableText(
+                    'www.chanson-a-repondre-uno.scot',
+                    style: TextStyle(
+                      color: Color(0xFFFFC928),
+                      decoration: TextDecoration.underline,
+                      decorationColor: Color(0xFFFFC928),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text('Version: $version', key: const ValueKey('credits-version')),
+                  const SizedBox(height: 10),
+                  const Text('© 2026 DUPUIS*'),
+                  const SizedBox(height: 10),
+                  const Text('Technologies: Flutter, Three.js, GoRouter, Provider, Supabase, OpenAI APIs and the supporting packages used by the app.'),
+                  SizedBox(height: compact ? 20 : 26),
+                  FilledButton.tonalIcon(
+                    key: const ValueKey('credits-back-to-settings'),
+                    onPressed: onBack,
+                    icon: const Icon(Icons.arrow_back_rounded),
+                    label: const Text('BACK TO SETTINGS'),
+                  ),
+                ]),
               ),
             ),
           ),
         ),
-      );
+      ),
+    );
+  }
 }
 
 class _CreditLine extends StatelessWidget {
@@ -339,7 +507,10 @@ class _CreditLine extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 5),
         child: Text.rich(TextSpan(children: [
-          TextSpan(text: '$label: ', style: const TextStyle(fontWeight: FontWeight.w800)),
+          TextSpan(
+            text: '$label: ',
+            style: const TextStyle(fontWeight: FontWeight.w800),
+          ),
           TextSpan(text: value),
         ])),
       );
