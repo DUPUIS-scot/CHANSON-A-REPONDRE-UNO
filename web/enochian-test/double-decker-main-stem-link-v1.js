@@ -12,8 +12,8 @@
       const panel=document.getElementById('doubleDeckerSpecial');
       const stemMaster=d.getElementById('stemMasterToggle');
       if(!api||!engine||typeof api.setStemOn!=='function'||!panel||!stemMaster)return false;
-      if(d.documentElement.dataset.stemJecker==='v7')return true;
-      d.documentElement.dataset.stemJecker='v7';
+      if(d.documentElement.dataset.stemJecker==='v8')return true;
+      d.documentElement.dataset.stemJecker='v8';
 
       let visualStyle=document.getElementById('stem-jecker-live-style');
       if(!visualStyle){
@@ -40,14 +40,17 @@
       // Its runtime status therefore cannot be the source of truth. Read the
       // visible STEMS MIX switches, which are the live performance controls.
       const mainToggleOn=key=>!!d.querySelector(`[data-stem-toggle="${key}"]`)?.classList.contains('active');
+      const mainLevel=key=>Math.max(0,Math.min(1,Number(d.querySelector(`[data-stem-range="${key}"]`)?.value||0)/100));
       const mainMask=()=>({vocals:mainToggleOn('vocals'),drums:mainToggleOn('drums'),bass:mainToggleOn('instruments'),other:mainToggleOn('instruments')});
+      const setBothLevel=(stem,level)=>{api.setStemLevel?.('A',stem,level);api.setStemLevel?.('B',stem,level)};
       const syncFromMain=()=>{
         if(!linked)return false;
         const s=mainMask();
-        setBoth('vocals',s.vocals);
-        setBoth('drums',s.drums);
-        setBoth('bass',s.bass);
-        setBoth('other',s.other);
+        setBoth('vocals',s.vocals);setBothLevel('vocals',mainLevel('vocals'));
+        setBoth('drums',s.drums);setBothLevel('drums',mainLevel('drums'));
+        const instruments=mainLevel('instruments');
+        setBoth('bass',s.bass);setBothLevel('bass',instruments);
+        setBoth('other',s.other);setBothLevel('other',instruments);
         api.enforceActivePlayback?.(false);
         return true;
       };
@@ -98,6 +101,9 @@
       stemMaster.addEventListener('click',e=>{
         if(bypassMasterClick)return;
         e.preventDefault();e.stopImmediatePropagation();
+        // During a live 2JECKER set this is a protected state indicator,
+        // never a second mode switch that can break the performance route.
+        if(mode==='jecker'&&api.state?.enabled){syncFromMain();paintMasterMode();return}
         void cycleMode();
       },true);
 
@@ -137,9 +143,14 @@
       };
 
       rows.forEach(button=>{
-        if(button.dataset.stemJeckerBound==='v7')return;
-        button.dataset.stemJeckerBound='v7';
+        if(button.dataset.stemJeckerBound==='v8')return;
+        button.dataset.stemJeckerBound='v8';
         button.addEventListener('click',()=>w.setTimeout(syncFromMain,0));
+      });
+      d.querySelectorAll('[data-stem-range]').forEach(range=>{
+        if(range.dataset.stemJeckerBound==='v8')return;
+        range.dataset.stemJeckerBound='v8';
+        range.addEventListener('input',()=>syncFromMain());
       });
 
       const center=panel.querySelector('.dds-center');
@@ -147,12 +158,15 @@
       let linkButton=panel.querySelector('[data-stem-jecker-toggle]');
       if(!linkButton){linkButton=document.createElement('button');linkButton.type='button';linkButton.className='stem-jecker-toggle';linkButton.dataset.stemJeckerToggle='';if(center)center.insertBefore(linkButton,statusEl||null)}
       const paintLink=()=>{
+        const live=!!api.state?.enabled;
         linkButton.classList.toggle('active',linked);
-        linkButton.textContent=linked?'STEM JECKER ON':'STEM JECKER OFF';
+        linkButton.disabled=live;
+        linkButton.textContent=live?'STEM JECKER LIVE':linked?'STEM JECKER READY':'STEM JECKER OFF';
+        linkButton.title=live?'Main STEMS MIX is the live 2JECKER authority':linked?'STEM JECKER is armed':'Arm STEM JECKER';
         linkButton.setAttribute('aria-pressed',String(linked));
       };
-      if(linkButton.dataset.stemJeckerBound!=='v7'){
-        linkButton.dataset.stemJeckerBound='v7';
+      if(linkButton.dataset.stemJeckerBound!=='v8'){
+        linkButton.dataset.stemJeckerBound='v8';
         linkButton.addEventListener('click',e=>{
           e.preventDefault();e.stopPropagation();
           if(linked){void enterOff()}else{void enterJecker()}
@@ -163,13 +177,13 @@
       let shuffleButton=panel.querySelector('[data-stem-jecker-shuffle]')||panel.querySelector('[data-stem-decker-shuffle]');
       if(!shuffleButton){shuffleButton=document.createElement('button');shuffleButton.type='button';shuffleButton.className='dds-deck-shuffle';if(center)center.insertBefore(shuffleButton,statusEl||null)}
       delete shuffleButton.dataset.stemDeckerShuffle;shuffleButton.dataset.stemJeckerShuffle='';shuffleButton.textContent='STEM JECKER SHUFFLE';
-      if(shuffleButton.dataset.stemJeckerBound!=='v7'){
-        shuffleButton.dataset.stemJeckerBound='v7';
+      if(shuffleButton.dataset.stemJeckerBound!=='v8'{
+        shuffleButton.dataset.stemJeckerBound='v8';
         shuffleButton.addEventListener('click',async e=>{e.preventDefault();e.stopPropagation();shuffleButton.classList.add('active');try{await shuffleLive()}finally{w.setTimeout(()=>shuffleButton.classList.remove('active'),180)}});
       }
 
       const syncUi=()=>{paintLink();paintMasterMode()};
-      w.__enochStemJecker={version:'v7',get linked(){return linked},get mode(){return mode},setLinked(on){if(on)void enterJecker();else void enterOff();w.setTimeout(syncUi,55);return !!on},setMode(next){if(next==='on')void enterOn();else if(next==='jecker')void enterJecker();else void enterOff();w.setTimeout(syncUi,55);return next},sync:syncFromMain,shuffle:shuffleLive,liveMask};
+      w.__enochStemJecker={version:'v8',get linked(){return linked},get mode(){return mode},setLinked(on){if(on)void enterJecker();else void enterOff();w.setTimeout(syncUi,55);return !!on},setMode(next){if(next==='on')void enterOn();else if(next==='jecker')void enterJecker();else void enterOff();w.setTimeout(syncUi,55);return next},sync:syncFromMain,syncUi,shuffle:shuffleLive,liveMask};
       w.__enochStemDecker=w.__enochStemJecker;
       syncUi();
 
