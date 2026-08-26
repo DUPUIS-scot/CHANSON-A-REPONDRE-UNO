@@ -4,6 +4,10 @@ window.shareChansonCard = async function (title, text, url, imagePath) {
   const resultForError = (error) =>
     error && error.name === 'AbortError' ? 'cancelled' : 'failed';
 
+  const isCreditsVisitCard = /\/share\/credits\/?(?:[?#].*)?$/.test(url || '');
+  const shareTitle = isCreditsVisitCard ? 'CARTE DE VISITE' : title;
+  const shareText = isCreditsVisitCard ? 'CARTE DE VISITE' : text;
+
   if (imagePath && typeof navigator.canShare === 'function') {
     try {
       const normalizedImagePath = imagePath.startsWith('assets/')
@@ -21,7 +25,7 @@ window.shareChansonCard = async function (title, text, url, imagePath) {
       const file = new File([blob], `chanson-card.${extension}`, {
         type: blob.type || 'image/png',
       });
-      const payload = { files: [file], title, text, url };
+      const payload = { files: [file], title: shareTitle, text: shareText, url };
       if (navigator.canShare(payload)) {
         try {
           await navigator.share(payload);
@@ -36,7 +40,7 @@ window.shareChansonCard = async function (title, text, url, imagePath) {
   }
 
   try {
-    await navigator.share({ title, text, url });
+    await navigator.share({ title: shareTitle, text: shareText, url });
     return 'shared';
   } catch (error) {
     return resultForError(error);
