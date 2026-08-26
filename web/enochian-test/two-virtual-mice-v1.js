@@ -51,7 +51,7 @@
         const x=clamp((A.x+B.x)/2+18,8,Math.max(8,w.innerWidth-248));
         const y=clamp((A.y+B.y)/2+18,8,Math.max(8,w.innerHeight-94));
         help.classList.add('live');help.style.left=x+'px';help.style.top=y+'px';help.style.right='auto';help.style.bottom='auto';
-        help.innerHTML='<b>A: '+targetName(resolve(pair.a))+' · B: '+targetName(resolve(pair.b))+'</b>DRAG BOTH · SHIFT SPREAD · ALT ROTATE · ESC RELEASE';
+        help.innerHTML='<b>A: '+targetName(resolve(pair.a))+' · B: '+targetName(resolve(pair.b))+'</b>HOLD CLICK + DRAG = CONTROL BOTH · RELEASE = STOP · SHIFT = SPREAD · ALT = ROTATE · ESC = RELEASE';
       };
       const render=()=>{
         const A=point(pair.a),B=point(pair.b);a.style.left=A.x+'px';a.style.top=A.y+'px';b.style.left=B.x+'px';b.style.top=B.y+'px';
