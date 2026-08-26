@@ -6,17 +6,18 @@
       if(!d||!w)return false;
       const api=w.__enochDoubleDeckerSpecial,panel=document.getElementById('doubleDeckerSpecial'),launcher=d.getElementById('doubleDeckerSpecialLaunch');
       if(!api||!panel||!launcher)return false;
-      if(panel.dataset.ddsControls==='v7')return true;
-      panel.dataset.ddsControls='v7';
+      if(panel.dataset.ddsControls==='v9')return true;
+      panel.dataset.ddsControls='v9';
       const catalog=['ai_comptroller','caesar_spitter','the_kraken','heliogabal_design','vivid_void'];
       const stems=['vocals','drums','bass','other'];
-      const master=d.getElementById('audio'),stemMaster=d.getElementById('stemMasterToggle');
+      const master=d.getElementById('audio'),stemMaster=d.getElementById('stemMasterToggle'),mainPlay=d.getElementById('play');
       const oldStyle=document.getElementById('dds-v2-controls-style');if(oldStyle)oldStyle.remove();
       const style=document.createElement('style');style.id='dds-v2-controls-style';style.textContent=`
         .dds-v2-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}.dds-v2-actions button{min-height:28px;border:1px solid #6d5836;border-radius:4px;background:#120d06;color:#f0c97e;font:900 7px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;cursor:pointer}.dds-v2-actions button:active{transform:translateY(1px)}
         .dds-deck-shuffle{width:100%;min-height:24px;border:1px solid #315b56;border-radius:4px;background:#06110f;color:#a9eee7;font:800 7px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;cursor:pointer}.dds-engine-live{box-shadow:0 0 16px #d5aa6366!important}
         .dds-slot{grid-template-columns:58px minmax(90px,1fr) 72px 34px 62px!important}.dds-slot .stem-toggle{min-width:0!important;padding:7px 5px!important;font-size:8px!important;white-space:nowrap!important;background:#07100e!important;color:#7a9a94!important;border-color:#315b56!important;box-shadow:none!important}.dds-slot .stem-toggle.active{background:#19c98f!important;color:#001f16!important;border-color:#63f5cf!important;box-shadow:0 0 12px #40e6b477!important;font-weight:1000!important}.dds-slot.stem-off select,.dds-slot.stem-off input,.dds-slot.stem-off output{opacity:.5}
         .dds-master-hold{color:#f0c97e!important;font-weight:900}.dds-master-hold.active{color:#ffe4a4!important;text-shadow:0 0 8px #d5aa6366}
+        #play.jecker-main-live{position:relative!important;border-color:#63f5cf!important;color:#63f5cf!important;background:#071d17!important;box-shadow:0 0 14px #19c98f66!important;text-shadow:0 0 8px #19c98f}.jecker-main-badge{position:absolute;right:-7px;top:-7px;min-width:18px;height:18px;padding:0 3px;border:1px solid #63f5cf;border-radius:999px;background:#06110f;color:#63f5cf;font:1000 7px/18px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;box-shadow:0 0 10px #19c98f77;pointer-events:none}
         .dds-performance{display:grid;gap:5px;border:1px solid #315b56;border-radius:4px;padding:6px;background:#020706}.dds-performance-row{display:grid;grid-template-columns:42px minmax(90px,1fr) 42px;gap:5px;align-items:center}.dds-performance label,.dds-performance output{font:900 7px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#f0c97e}.dds-performance output{text-align:right;color:#63f5cf}.dds-performance input{width:100%;accent-color:#19c98f}.dds-perf-buttons{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}.dds-perf-buttons button{min-height:25px;border:1px solid #315b56;border-radius:4px;background:#06110f;color:#a9eee7;font:900 7px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.dds-perf-buttons button.active{background:#19c98f;color:#001f16;border-color:#63f5cf}.dds-quantize{display:grid;grid-template-columns:auto 1fr;gap:5px;align-items:center}.dds-quantize select{min-height:24px;background:#07100e;color:#a9eee7;border:1px solid #315b56;border-radius:4px;font:800 7px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
         .double-jecker-takeover #terminalLive{opacity:1!important;filter:none!important;pointer-events:auto!important}.double-jecker-takeover #doubleDeckerSpecial{position:fixed!important;right:12px!important;bottom:12px!important;left:auto!important;top:auto!important;inset:auto!important;z-index:2147483190!important;width:min(680px,calc(100vw - 24px))!important;max-width:none!important;max-height:min(72dvh,760px)!important;border-radius:8px!important;overflow:auto!important;background:radial-gradient(circle at 50% 18%,#16382f 0,#06100d 31%,#020302 80%)!important;box-shadow:0 18px 55px #000b!important}.dds-takeover-hud{display:none}.jecker-takeover .dds-takeover-hud{display:grid;grid-template-columns:auto 1fr auto auto;gap:8px;align-items:center;margin:0 0 8px;padding:10px;border:1px solid #63f5cf;background:#06110f;color:#a9eee7;font:900 9px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.dds-takeover-hud strong{color:#63f5cf;letter-spacing:.13em}.dds-takeover-hud output{color:#f0c97e;text-align:center}.dds-takeover-hud button{min-height:30px;border:1px solid #63f5cf;border-radius:3px;background:#0b211a;color:#a9eee7;font:900 8px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;cursor:pointer}.dds-takeover-hud button[data-dds-return]{border-color:#8c7447;color:#f0c97e;background:#171006}.jecker-takeover .dds-grid{max-width:1180px;margin:auto}.jecker-takeover .dds-center{max-width:760px;margin:0 auto}.jecker-takeover .dds-foot{padding-bottom:24px}
         @media(max-width:720px){.dds-slot{grid-template-columns:43px minmax(72px,1fr) 56px!important;grid-template-rows:auto auto!important}.dds-slot [data-level],.dds-slot [data-value]{grid-row:2!important}.dds-slot .stem-toggle{grid-column:3!important;grid-row:1/3!important;align-self:stretch!important;padding:4px 3px!important;font-size:7px!important}.jecker-takeover .dds-takeover-hud{grid-template-columns:1fr 1fr;gap:5px;padding:7px}.jecker-takeover .dds-takeover-hud output{grid-column:1/-1;order:3}.jecker-takeover .dds-grid{padding:0 7px}}
@@ -85,6 +86,21 @@
           holdLine.textContent=on?'MAIN HOLD · 2JECKER LIVE':'MASTER LIVE';
         }
       };
+      const jeckerPlaying=()=>['A','B'].some(deckName=>stems.some(stem=>{const slot=slotState(deckName,stem);return slot?.on!==false&&slot?.media&&!slot.media.paused&&!slot.media.ended}));
+      const setMainPlayIndicator=on=>{
+        if(!mainPlay)return;
+        let badge=mainPlay.querySelector('.jecker-main-badge');
+        if(on){
+          if(!badge){badge=d.createElement('i');badge.className='jecker-main-badge';badge.setAttribute('aria-hidden','true');mainPlay.appendChild(badge)}
+          const playing=jeckerPlaying();mainPlay.classList.add('jecker-main-live');mainPlay.firstChild&&(mainPlay.firstChild.textContent=playing?'❚❚':'▶');badge.textContent='2J';
+          mainPlay.title=playing?'2JECKER LIVE · pause hybrid master':'2JECKER LIVE · play hybrid master';mainPlay.setAttribute('aria-label',mainPlay.title);
+        }else{badge?.remove();mainPlay.classList.remove('jecker-main-live');mainPlay.removeAttribute('title');mainPlay.removeAttribute('aria-label')}
+      };
+      const toggleJeckerTransport=async()=>{
+        if(!api.state?.enabled)return false;
+        if(jeckerPlaying())['A','B'].forEach(deckName=>stems.forEach(stem=>{try{slotState(deckName,stem)?.media?.pause()}catch(_){}}));else await enforceActivePlayback(true);
+        setMasterHold(true);setMainPlayIndicator(true);return jeckerPlaying();
+      };
       const setTakeover=on=>{
         // 2JECKER is a companion mixer: it never takes over or hides NOW PLAYING / transport.
         const active=false;
@@ -95,7 +111,8 @@
         if(phase)phase.textContent=active?(master?.paused?'2JECKER · PAUSED':'2JECKER · MASTER LIVE'):'ARMED · MASTER CLOCK';
         if(play)play.textContent=master?.paused?'PLAY':'PAUSE';
       };
-      const paint=()=>{const on=!!api.state?.enabled;setTakeover(on);const btn=panel.querySelector('[data-dds-enable]');btn?.classList.toggle('active',on);btn?.classList.toggle('dds-engine-live',on);if(btn)btn.textContent=on?'ENGINE ON · MAIN HOLD':'ENGINE OFF';launcher.classList.toggle('active',on);setMasterHold(on)};
+      const paint=()=>{const on=!!api.state?.enabled;setTakeover(on);const btn=panel.querySelector('[data-dds-enable]');btn?.classList.toggle('active',on);btn?.classList.toggle('dds-engine-live',on);if(btn)btn.textContent=on?'ENGINE ON · MAIN HOLD':'ENGINE OFF';launcher.classList.toggle('active',on);setMasterHold(on);setMainPlayIndicator(on)};
+      if(mainPlay&&mainPlay.dataset.ddsJeckerTransportBound!=='v9'){mainPlay.dataset.ddsJeckerTransportBound='v9';mainPlay.addEventListener('click',e=>{if(!api.state?.enabled)return;e.preventDefault();e.stopImmediatePropagation();void toggleJeckerTransport()},{capture:true})}
       takeoverHud?.querySelector('[data-dds-transport]')?.addEventListener('click',async()=>{if(!master)return;if(master.paused)await master.play();else master.pause();paint()});
       takeoverHud?.querySelector('[data-dds-return]')?.addEventListener('click',async()=>{if(api.state?.enabled){api.disable?.();await restoreNormalStems();setMasterHold(false)}paint();if(panel.classList.contains('open'))launcher.click()});
       const engineBtn=panel.querySelector('[data-dds-enable]');
@@ -123,7 +140,7 @@
       }
       panel.querySelectorAll('[data-source]').forEach(select=>{select.disabled=false;select.style.pointerEvents='auto'});panel.querySelectorAll('[data-level]').forEach(range=>{range.disabled=false;range.style.pointerEvents='auto'});
       launcher.disabled=false;launcher.style.pointerEvents='auto';setCrossfader(api.state.crossfader);paint();
-      api.version='v8';api.shuffle=shuffle;api.shuffleDeck=shuffleDeck;api.setStemOn=setStemOn;api.toggleStem=(deckName,stem)=>{const slot=slotState(deckName,stem);return quantized(()=>setStemOn(deckName,stem,slot?.on===false))};api.setMasterHold=setMasterHold;api.enforceActivePlayback=enforceActivePlayback;api.suspendNormalStems=suspendNormalStems;api.restoreNormalStems=restoreNormalStems;api.setCrossfader=setCrossfader;api.quantized=quantized;
+      api.version='v9';api.shuffle=shuffle;api.shuffleDeck=shuffleDeck;api.setStemOn=setStemOn;api.toggleStem=(deckName,stem)=>{const slot=slotState(deckName,stem);return quantized(()=>setStemOn(deckName,stem,slot?.on===false))};api.setMasterHold=setMasterHold;api.enforceActivePlayback=enforceActivePlayback;api.suspendNormalStems=suspendNormalStems;api.restoreNormalStems=restoreNormalStems;api.setCrossfader=setCrossfader;api.quantized=quantized;api.toggleTransport=toggleJeckerTransport;
       w.__enochDoubleJeckerEngine=api;
       return true;
     }catch(_){return false}
