@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../core/app_router.dart';
+import '../services/native_share.dart';
 import '../widgets/statue_scene_view.dart';
 
 class CreditsScreen extends StatefulWidget {
@@ -17,6 +18,8 @@ class CreditsScreen extends StatefulWidget {
 
 class _CreditsScreenState extends State<CreditsScreen>
     with SingleTickerProviderStateMixin {
+  static const _visitTitle =
+      'CHANSON À RÉPONDRE UNO — GENERIQUE / CREDITS';
   late final AnimationController _curtainController;
   String _version = '…';
   bool _leaving = false;
@@ -37,7 +40,8 @@ class _CreditsScreenState extends State<CreditsScreen>
       final info = await PackageInfo.fromPlatform();
       if (!mounted) return;
       final build = info.buildNumber.trim();
-      setState(() => _version = build.isEmpty ? info.version : '${info.version}+$build');
+      setState(() =>
+          _version = build.isEmpty ? info.version : '${info.version}+$build');
     } on Object {
       if (mounted) setState(() => _version = 'Unavailable');
     }
@@ -97,6 +101,16 @@ class _CreditsScreenState extends State<CreditsScreen>
     if (mounted) context.go(AppRoutes.home);
   }
 
+  Future<void> _shareVisitCard() async {
+    final shareUrl = Uri.base.resolve('share/credits/').toString();
+    await sharePublicCard(
+      title: _visitTitle,
+      text: '$_visitTitle\nDUPUIS* · interactive Sherlock 3D experience',
+      url: shareUrl,
+      imagePath: 'social/credits-sherlock-visit.jpg',
+    );
+  }
+
   @override
   void dispose() {
     _curtainController.dispose();
@@ -125,6 +139,7 @@ class _CreditsScreenState extends State<CreditsScreen>
                     _IosCreditsPager(
                       version: _version,
                       onHome: _goHome,
+                      onShare: _shareVisitCard,
                       visible: progress > .58 && !_leaving,
                       interactive: progress > .72 && !_leaving,
                       statueInteractive: statueInteractive,
@@ -151,6 +166,7 @@ class _CreditsScreenState extends State<CreditsScreen>
                           child: _CreditsBody(
                             version: _version,
                             onHome: _goHome,
+                            onShare: _shareVisitCard,
                           ),
                         ),
                       ),
@@ -293,6 +309,7 @@ class _IosCreditsPager extends StatefulWidget {
   const _IosCreditsPager({
     required this.version,
     required this.onHome,
+    required this.onShare,
     required this.visible,
     required this.interactive,
     required this.statueInteractive,
@@ -300,6 +317,7 @@ class _IosCreditsPager extends StatefulWidget {
 
   final String version;
   final VoidCallback onHome;
+  final VoidCallback onShare;
   final bool visible;
   final bool interactive;
   final bool statueInteractive;
@@ -354,6 +372,7 @@ class _IosCreditsPagerState extends State<_IosCreditsPager> {
                   child: _CreditsBody(
                     version: widget.version,
                     onHome: widget.onHome,
+                    onShare: widget.onShare,
                     compact: true,
                   ),
                 ),
@@ -368,11 +387,13 @@ class _CreditsBody extends StatelessWidget {
   const _CreditsBody({
     required this.version,
     required this.onHome,
+    required this.onShare,
     this.compact = false,
   });
 
   final String version;
   final VoidCallback onHome;
+  final VoidCallback onShare;
   final bool compact;
 
   @override
@@ -432,11 +453,17 @@ class _CreditsBody extends StatelessWidget {
                     ),
                   ),
                   SizedBox(height: compact ? 14 : 20),
-                  const _CreditLine(label: 'Concept & Artistic Direction', value: 'DUPUIS*'),
-                  const _CreditLine(label: 'Design & Development', value: 'DUPUIS*'),
+                  const _CreditLine(
+                    label: 'Concept & Artistic Direction', value: 'DUPUIS*'),
+                  const _CreditLine(
+                    label: 'Design & Development', value: 'DUPUIS*'),
                   const _CreditLine(label: 'Music / Sound', value: 'DJ WHO'),
-                  const _CreditLine(label: '3D / Interactive Environments', value: 'DUPUIS*'),
-                  const _CreditLine(label: 'AI-assisted development & creative tools', value: 'OpenAI / ChatGPT and other credited tools where applicable'),
+                  const _CreditLine(
+                    label: '3D / Interactive Environments', value: 'DUPUIS*'),
+                  const _CreditLine(
+                    label: 'AI-assisted development & creative tools',
+                    value:
+                        'OpenAI / ChatGPT and other credited tools where applicable'),
                   const SizedBox(height: 16),
                   TextButton(
                     key: const ValueKey('credits-website-home'),
@@ -451,11 +478,20 @@ class _CreditsBody extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  Text('Version: $version', key: const ValueKey('credits-version')),
+                  FilledButton.tonalIcon(
+                    key: const ValueKey('credits-share-visit-card'),
+                    onPressed: onShare,
+                    icon: const Icon(Icons.ios_share_rounded),
+                    label: const Text('SHARE VISIT CARD'),
+                  ),
+                  const SizedBox(height: 10),
+                  Text('Version: $version',
+                      key: const ValueKey('credits-version')),
                   const SizedBox(height: 10),
                   const Text('© 2026 DUPUIS*'),
                   const SizedBox(height: 10),
-                  const Text('Technologies: Flutter, Three.js, GoRouter, Provider, Supabase, OpenAI APIs and the supporting packages used by the app.'),
+                  const Text(
+                    'Technologies: Flutter, Three.js, GoRouter, Provider, Supabase, OpenAI APIs and the supporting packages used by the app.'),
                 ]),
               ),
             ),
