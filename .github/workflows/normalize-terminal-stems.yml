@@ -14,7 +14,6 @@ concurrency:
 
 jobs:
   normalize:
-    if: ${{ !contains(github.event.head_commit.message || '', 'Normalize terminal stem library') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -56,14 +55,12 @@ jobs:
             if [ "$src" != "$dst" ]; then rm -f "$src"; fi
           }
 
-          # Vivid Void: already cleanly named, reduce the 320 kbps masters to terminal weight.
           for stem in "${stems[@]}"; do
             src="assets/audio/stems/vivid_void/vivid_void_${stem}.mp3"
             rate="$(ffprobe -v error -select_streams a:0 -show_entries stream=bit_rate -of default=nw=1:nk=1 "$src" || true)"
             if [ -z "$rate" ] || [ "$rate" -gt 140000 ]; then transcode "$src" "$src"; fi
           done
 
-          # HELIOGABAL//DESIGN: camelCase source names -> canonical snake_case names + 128 kbps.
           for stem in "${stems[@]}"; do
             dst="assets/audio/stems/heliogabal_design/heliogabal_design_${stem}.mp3"
             legacy="assets/audio/stems/heliogabal_design/heliogabalDesign_${stem}.mp3"
@@ -77,7 +74,6 @@ jobs:
             fi
           done
 
-          # Caesar-Spitter: remove upload suffix/spaces and compress the 320 kbps sources.
           for stem in "${stems[@]}"; do
             dst="assets/audio/stems/caesar_spitter/caesar_spitter_${stem}.mp3"
             legacy="assets/audio/stems/caesar_spitter/caesar_spitter (2)_${stem}.mp3"
@@ -91,7 +87,6 @@ jobs:
             fi
           done
 
-          # The Kraken is already canonical; enforce the same terminal codec contract only if needed.
           for stem in "${stems[@]}"; do
             src="assets/audio/stems/the_kraken/the_kraken_${stem}.mp3"
             test -s "$src"
