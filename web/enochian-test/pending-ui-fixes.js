@@ -14,18 +14,23 @@
       const live=frame.contentDocument,deck=live&&live.getElementById('deck'),d=deck&&deck.contentDocument,w=d&&d.defaultView;
       if(!d||!w)return false;
       armRecovery(frame,live,deck);
-      if(d.documentElement.dataset.pendingUiFixes==='v2'){window.installEnochianSculptAudioMod?.(frame);return true}
+      if(d.documentElement.dataset.pendingUiFixes==='v3'){window.installEnochianSculptAudioMod?.(frame);return true}
       const play=d.getElementById('play'),loop=d.getElementById('loopToggle'),loopIn=d.getElementById('loopIn'),loopOut=d.getElementById('loopOut'),loopReset=d.getElementById('loopReset');
       const mod=d.querySelector('.mod'),modWheel=d.getElementById('modWheel'),wave=d.querySelector('.wave');
       const eqIds=['low','mid','high'];
       if(!play||!loop||!loopIn||!loopOut||!loopReset||!mod||!modWheel||!wave||eqIds.some(id=>!d.getElementById(id)))return false;
-      d.documentElement.dataset.pendingUiFixes='v2';
+      d.documentElement.dataset.pendingUiFixes='v3';
 
       const style=d.createElement('style');
       style.textContent=`
         .loop-control-row{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:5px!important;width:100%!important;margin-top:0!important}
         .loop-control-row .btn{min-width:0!important;padding:7px 4px!important;font-size:8px!important;white-space:nowrap!important}
         .mod{grid-template-columns:minmax(0,1fr) 96px!important;align-items:start!important}
+        .mod-main{display:grid!important;grid-template-rows:auto auto minmax(30px,auto) auto!important;gap:4px!important;min-height:0!important}
+        .mod textarea{min-height:30px!important;height:34px!important;max-height:42px!important;resize:none!important;padding:5px 7px!important;line-height:1.15!important;overflow:auto!important}
+        .mod-glyphs{display:flex!important;align-items:center!important;align-content:center!important;gap:4px!important;flex-wrap:wrap!important;min-height:34px!important;max-height:40px!important;overflow:hidden!important;padding:2px 0!important;visibility:visible!important}
+        .mod-glyphs img{width:24px!important;height:24px!important;flex:0 0 24px!important;display:block!important}
+        .mod-state{margin-top:0!important}
         .mod>.wheelbox{align-self:start!important;margin:-3px 0 0!important;justify-self:center!important;width:96px!important;padding:2px!important;gap:1px!important}
         .mod>.wheelbox .wheel{width:74px!important;height:74px!important}
         .mod>.wheelbox .wheel:before{top:7px!important;height:19px!important;transform-origin:2px 30px!important}
@@ -35,7 +40,7 @@
         .eq-kill-btn{min-width:52px!important;padding:4px 6px!important;font-size:7px!important;letter-spacing:.08em!important}
         .eq-kill-btn.active{background:#4a0909!important;color:#ffd5cf!important;border-color:#b74d45!important;box-shadow:0 0 10px #d14a3f44!important}
         .eq-kill-row{grid-template-columns:1fr auto auto!important}
-        @media(max-width:1000px){.mod{grid-template-columns:1fr!important}.mod>.wheelbox{margin:0 auto!important;width:auto!important;padding:4px 2px!important;gap:3px!important}.mod>.wheelbox .wheel{width:110px!important;height:110px!important}.mod>.wheelbox .wheel:before{top:9px!important;height:29px!important;transform-origin:2px 46px!important}.mod>.wheelbox .wheel-value{font-size:10px!important;min-height:12px!important}.mod>.wheelbox .wheel-hint{font-size:6px!important;line-height:1.2!important}}
+        @media(max-width:1000px){.mod{grid-template-columns:1fr!important}.mod-main{grid-template-rows:auto auto minmax(32px,auto) auto!important}.mod textarea{min-height:28px!important;height:32px!important;max-height:36px!important}.mod-glyphs{min-height:32px!important;max-height:36px!important;flex-wrap:nowrap!important;overflow-x:auto!important;overflow-y:hidden!important}.mod-glyphs img{width:23px!important;height:23px!important;flex-basis:23px!important}.mod>.wheelbox{margin:0 auto!important;width:auto!important;padding:4px 2px!important;gap:3px!important}.mod>.wheelbox .wheel{width:110px!important;height:110px!important}.mod>.wheelbox .wheel:before{top:9px!important;height:29px!important;transform-origin:2px 46px!important}.mod>.wheelbox .wheel-value{font-size:10px!important;min-height:12px!important}.mod>.wheelbox .wheel-hint{font-size:6px!important;line-height:1.2!important}}
       `;
       d.head.appendChild(style);
 
