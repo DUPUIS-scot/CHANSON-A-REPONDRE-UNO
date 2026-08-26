@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: normalize-terminal-stems-v2
+  group: normalize-terminal-stems-v3
   cancel-in-progress: true
 
 jobs:
@@ -20,6 +20,13 @@ jobs:
         with:
           ref: main
           fetch-depth: 1
+          filter: blob:none
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            .github/scripts/normalize_terminal_stems.py
+            assets/audio/stems/
+            web/enochian-test/live-copy.html
+            pubspec.yaml
 
       - name: Ensure ffmpeg
         shell: bash
