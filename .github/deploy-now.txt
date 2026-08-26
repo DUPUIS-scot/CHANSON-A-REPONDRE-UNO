@@ -1,4 +1,4 @@
-deploy-request: 2026-08-26T20:36:00+01:00
+deploy-request: 2026-08-26T22:37:46.623Z
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy anatomically corrected Sherlock theatrical cone salute
+reason: deploy STEM JECKER direct main-controls routing and workflow authentication repair
