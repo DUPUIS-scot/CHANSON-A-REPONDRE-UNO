@@ -14,6 +14,7 @@ void main() {
     final bridge = File('web/card_castle/castle_bureau_video_bridge.js').readAsStringSync();
     final medallion = File('web/card_castle/castle_laboratory_medallion_button.js').readAsStringSync();
     final resetView = File('web/card_castle/castle_laboratory_entry_reset_v70.js').readAsStringSync();
+    final uiPatch = File('web/card_castle/castle_bright_lab_ui_patch.js').readAsStringSync();
 
     expect(bootstrap, contains("const castleRuntimeRevision = '76';"));
     expect(bootstrap, contains("url.searchParams.set('v', buildId || castleRuntimeRevision)"));
@@ -74,6 +75,17 @@ void main() {
 
     expect(navigationCore, contains('window.__castleOpenLaboratory ??= switchToLaboratory'));
     expect(navigationCore, contains('window.__castleRestoreInteriorFromLaboratory ??= restoreInterior'));
+    expect(navigationCore, contains("castleNavigationControls = 'single-authority-v76'"));
+    expect(navigationCore, contains("button.setAttribute('aria-hidden', 'true')"));
+    expect(navigationCore, contains('restoreExterior();'));
+    expect(
+      resilience,
+      contains("'#bureau-of-ai, #laboratory-medallion-button, #laboratory-back-interior'"),
+    );
+    expect(resilience, isNot(contains("#return-exterior')){event.preventDefault")));
+    expect(uiPatch, contains("window.__castleRestoreInteriorFromLaboratory?.()"));
+    expect(uiPatch, contains("label.textContent='LABORATOIRE'"));
+    expect(uiPatch, contains("bureau.style.display='none'"));
 
     expect(resetView, contains("laboratoryStartingView = 'reset-identical-v70'"));
     expect(resetView, contains("laboratory-entry-v70"));

@@ -404,8 +404,12 @@ if (!window.__castleNavigationOverlayInstalled) {
     const button = ensureBureauControl();
     if (!button) return;
     const mode = sceneMode();
-    button.hidden = mode === 'exterior';
-    button.style.display = mode === 'exterior' ? 'none' : 'flex';
+    // Compatibility event target only. The rotating medallion owns entry
+    // and the dedicated laboratory Back control owns return navigation.
+    button.hidden = true;
+    button.style.display = 'none';
+    button.setAttribute('aria-hidden', 'true');
+    document.body.dataset.castleNavigationControls = 'single-authority-v76';
     const medallion = button.querySelector('.control-medallion');
     const title = button.querySelector('.control-title');
     const subtitle = button.querySelector('.control-subtitle');
@@ -431,8 +435,7 @@ if (!window.__castleNavigationOverlayInstalled) {
       returnButton.dataset.castleNavigationBound = 'true';
       returnButton.addEventListener('click', event => {
         event.preventDefault();
-        if (sceneMode() === 'laboratory') restoreInterior();
-        else restoreExterior();
+        restoreExterior();
       });
     }
 
