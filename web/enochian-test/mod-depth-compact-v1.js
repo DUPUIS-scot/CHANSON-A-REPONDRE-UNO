@@ -3,17 +3,18 @@
     try{
       const live=frame?.contentDocument,deck=live?.getElementById('deck'),d=deck?.contentDocument;
       if(!d)return false;
-      if(d.documentElement.dataset.modDepthCompact==='v4')return true;
+      if(d.documentElement.dataset.modDepthCompact==='v5')return true;
       const mod=d.querySelector('.mod'),wheelbox=mod?.querySelector('.wheelbox'),wheel=d.getElementById('modWheel');
       if(!mod||!wheelbox||!wheel)return false;
-      d.documentElement.dataset.modDepthCompact='v4';
-      d.documentElement.dataset.enochVisualShell='20260827';
+      d.documentElement.dataset.modDepthCompact='v5';
+      d.documentElement.dataset.enochVisualShell='20260827-no-main-turntable';
 
       const sides=[...d.querySelectorAll('.grid>.side')];
       sides[0]?.classList.add('enoch-playback-panel');
       sides[1]?.classList.add('enoch-transform-panel');
       d.querySelector('.stage')?.classList.add('enoch-signal-stage');
       d.querySelector('.wave')?.classList.add('enoch-signal-surface');
+      d.querySelector('.deckarea')?.classList.add('enoch-deck-controls');
       d.querySelector('.pad-panel')?.classList.add('enoch-fx-console');
       d.querySelector('.stem-isolator')?.classList.add('enoch-stems-console');
       mod.classList.add('enoch-mod-console');
@@ -24,7 +25,7 @@
       if(leftTitle&&/DECK ENGINE/i.test(leftTitle.textContent||''))leftTitle.textContent='PLAYBACK';
 
       const style=d.createElement('style');
-      style.dataset.enochVisualShell='20260827';
+      style.dataset.enochVisualShell='20260827-no-main-turntable';
       style.textContent=`
         :root{
           --bg:#02090e!important;
@@ -100,9 +101,11 @@
         .sig{border-radius:1px!important;border-color:#244b53!important;background:#031116e8!important}
         .sig img,.mod-glyphs img{filter:invert(77%) sepia(88%) saturate(1712%) hue-rotate(156deg) brightness(104%) contrast(105%)!important}
         .deckarea:before{background:linear-gradient(90deg,transparent,#9a7138 12%,#315f69 50%,#9a7138 88%,transparent)!important;opacity:.5}
-        .platter-wrap{background:radial-gradient(circle,#06161b 0 63%,#02090d 64%)!important;box-shadow:0 0 0 1px rgba(185,133,57,.48),0 0 28px rgba(53,215,255,.08)!important}
-        .platter{border-color:#8a6639!important;box-shadow:0 0 0 4px #02090d,0 0 0 6px #b9853959,0 0 36px rgba(53,215,255,.16),inset 0 0 45px #000!important}
-        .disc{box-shadow:inset 0 0 28px #000!important}
+        .enoch-deck-controls>.platter-wrap{display:none!important}
+        .enoch-deck-controls{grid-template-columns:minmax(96px,1fr) minmax(96px,1fr)!important;grid-template-areas:"eq fx"!important;max-width:360px!important;width:100%!important;margin:0 auto!important;align-items:center!important;justify-content:center!important}
+        .enoch-deck-controls>.wheelbox.eq{grid-area:eq!important}
+        .enoch-deck-controls>.wheelbox.fx{grid-area:fx!important}
+        .enoch-deck-controls>.seek{display:none!important}
         .wheelbox{border-radius:2px!important;background:#031015!important}
         .wheel{
           border-color:#b98539!important;
@@ -143,10 +146,11 @@
         @media(min-width:1001px){
           .grid{grid-template-columns:minmax(205px,20%) minmax(520px,52%) minmax(225px,28%)!important;gap:6px!important}
           .side{border-radius:2px!important;padding:7px!important;gap:5px!important}
-          .stage{padding:7px!important;gap:5px!important}
+          .stage{padding:7px!important;gap:5px!important;grid-template-rows:minmax(120px,18vh) minmax(0,1fr) auto auto auto!important}
           .enoch-playback-panel>.fx-title:first-child{color:#d7a651!important;font-size:9px!important;border-bottom:1px solid rgba(185,133,57,.32);padding:2px 2px 7px}
           .enoch-signal-stage:before{border-color:rgba(53,215,255,.10)!important}
-          .enoch-signal-surface{min-height:96px!important}
+          .enoch-signal-surface{min-height:120px!important}
+          .enoch-deck-controls{min-height:92px!important}
           .enoch-mod-console{border-color:rgba(185,133,57,.68)!important}
           .enoch-mod-console>.wheelbox{width:118px!important}
           .enoch-mod-console>.wheelbox .wheel{width:92px!important;height:92px!important}
@@ -159,6 +163,8 @@
         html.enoch-ios-landscape .ios-second-center>.pad-panel{position:relative!important;z-index:2!important;transform:none!important;margin-top:0!important;pointer-events:auto!important}
         @media(max-width:1000px){
           .app{gap:4px!important;padding:4px!important}
+          .enoch-deck-controls>.platter-wrap{display:none!important}
+          .enoch-deck-controls{grid-template-columns:1fr 1fr!important;grid-template-areas:"eq fx"!important;max-width:320px!important}
           .mod{grid-template-columns:1fr!important;transform:translateY(-12px)!important}
           .mod>.wheelbox{width:76px!important;margin:0 auto!important}
           .mod>.wheelbox .wheel{width:58px!important;height:58px!important}
