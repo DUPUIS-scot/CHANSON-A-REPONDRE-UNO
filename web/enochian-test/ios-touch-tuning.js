@@ -78,7 +78,7 @@
     const s=document.createElement('script');s.id=id;s.src=src;s.onload=()=>ready?.();document.head.appendChild(s);
   }
   function installSpecialAuthorities(frame){
-    loadAuthority('/enochian-test/double-decker-special-v2.js?v=20260826-v2','double-decker-special-v2-loader',()=>window.installEnochianDoubleDeckerSpecialV2?.(frame));
+    loadAuthority('/enochian-test/double-decker-special-v2.js?v=20260826-v3','double-decker-special-v2-loader',()=>window.installEnochianDoubleDeckerSpecialV2?.(frame));
     loadAuthority('/enochian-test/pad-fx-authority-v2.js?v=20260826-v2','pad-fx-authority-v2-loader',()=>window.installEnochianPadFxAuthorityV2?.(frame));
     loadAuthority('/enochian-test/two-mix-v1.js?v=20260826-v1','two-mix-v1-loader',()=>window.installEnochianTwoMix?.(frame));
     window.installEnochianDoubleDeckerSpecialV2?.(frame);
