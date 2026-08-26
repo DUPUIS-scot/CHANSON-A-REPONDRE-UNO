@@ -170,6 +170,15 @@
       w.__enochStemJecker={version:'v5',get linked(){return linked},get mode(){return mode},setLinked(on){if(on)void enterJecker();else void enterOff();w.setTimeout(syncUi,55);return !!on},setMode(next){if(next==='on')void enterOn();else if(next==='jecker')void enterJecker();else void enterOff();w.setTimeout(syncUi,55);return next},sync:syncFromMain,shuffle:shuffleLive,liveMask};
       w.__enochStemDecker=w.__enochStemJecker;
       syncUi();
+
+      const installShield=()=>{try{return window.installEnochianDoubleJeckerTurntableShieldV1?.(host)}catch(_){return false}};
+      if(!installShield()){
+        let loader=document.querySelector('script[data-double-jecker-shield-loader]');
+        if(!loader){
+          loader=document.createElement('script');loader.src='/enochian-test/double-jecker-turntable-shield-v1.js?v=20260826-v1';loader.dataset.doubleJeckerShieldLoader='v1';loader.onload=()=>installShield();document.head.appendChild(loader);
+        }
+      }
+
       w.addEventListener('pagehide',()=>masterObserver.disconnect(),{once:true});
       return true;
     }catch(_){return false}
