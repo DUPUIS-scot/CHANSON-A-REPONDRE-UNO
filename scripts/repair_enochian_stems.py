@@ -53,6 +53,8 @@ shell_required = [
     "analyser-signal-3d-v7.js?v=20260826-internal-master-v7",
     "sculpt-audio-mod.js?v=20260825-v3",
     "pending-ui-fixes.js?v=20260825-v2",
+    "double-decker-special-v2.js?v=20260826-v3",
+    "pad-fx-authority-v2.js?v=20260826-v2",
     "ios-touch-tuning.js?v=20260824-v1",
     "installEnochianAuthoritativeRuntime",
     "installEnochianOuterAnalyserPanel",
@@ -61,6 +63,8 @@ shell_required = [
     "installEnochianAnalyserSignal3D",
     "installEnochianSculptAudioMod",
     "installEnochianPendingUiFixes",
+    "installEnochianDoubleDeckerSpecialV2",
+    "installEnochianPadFxAuthorityV2",
     "installEnochianIOSTouchTuning",
     "target-viewport.js?v=20260825-deep-repair-v1",
     "iphone-landscape-layout-v2.js?v=20260826-two-viewport-v21",
@@ -89,6 +93,8 @@ required_files = [
     Path('web/enochian-test/analyser-signal-3d-v7.js'),
     Path('web/enochian-test/sculpt-audio-mod.js'),
     Path('web/enochian-test/pending-ui-fixes.js'),
+    Path('web/enochian-test/double-decker-special-v2.js'),
+    Path('web/enochian-test/pad-fx-authority-v2.js'),
     Path('web/enochian-test/ios-touch-tuning.js'),
 ]
 for required_file in required_files:
@@ -102,6 +108,8 @@ for js_file in [
     Path('web/enochian-test/analyser-signal-3d-v7.js'),
     Path('web/enochian-test/sculpt-audio-mod.js'),
     Path('web/enochian-test/pending-ui-fixes.js'),
+    Path('web/enochian-test/double-decker-special-v2.js'),
+    Path('web/enochian-test/pad-fx-authority-v2.js'),
     Path('web/enochian-test/ios-touch-tuning.js'),
 ]:
     subprocess.run(['node', '--check', str(js_file)], check=True)
@@ -161,7 +169,7 @@ if "analyserSignalGlide='v6'" not in glide or "__enochAnalyserWheelMode" not in 
     raise SystemExit('internal-master 16×16 logarithmic sculptable 3D analyser contract missing')
 if "sculptAudioMod='v3'" not in sculpt_audio or "version:'v3'" not in sculpt_audio or '__enochSculptAudio' not in sculpt_audio or 'grabCurve=[0,.28,.48,.67,.87,1]' not in sculpt_audio or 'restoreBase' not in sculpt_audio or 'SCULPT AUDIO' not in sculpt_audio:
     raise SystemExit('sculpt-to-audio modulation v3 engagement contract missing')
-if "pendingUiFixes==='v2'" not in pending_ui or "dataset.pendingUiFixes='v2'" not in pending_ui or 'loop-control-row' not in pending_ui or 'eq-kill-btn' not in pending_ui:
-    raise SystemExit('pending terminal UI fixes v2 contract missing')
+if "pendingUiFixes==='v3'" not in pending_ui or "dataset.pendingUiFixes='v3'" not in pending_ui or 'loop-control-row' not in pending_ui or 'eq-kill-btn' not in pending_ui:
+    raise SystemExit('pending terminal UI fixes v3 contract missing')
 
-print('Enochian runtime verified: persistent stem master ON/OFF inside isolator, native Web Audio stem bridge with exclusive master/stem routing and smoothed GainNode mix, authoritative transport-clock loop with forced end wrap, outer floating analyser, unified FFT analyser bus, ring-buffered 3D signal history, v3 grab-engagement sculpt-to-audio, EQ kills, aligned MOD wheel, loop row, navigation and outer fullscreen.')
+print('Enochian runtime verified: pending UI fixes v3, DOUBLE DECKER SPECIAL controls, repaired pad FX authority, persistent stem master ON/OFF inside isolator, native Web Audio stem bridge with exclusive master/stem routing and smoothed GainNode mix, authoritative transport-clock loop with forced end wrap, outer floating analyser, unified FFT analyser bus, ring-buffered 3D signal history, v3 grab-engagement sculpt-to-audio, EQ kills, aligned MOD wheel, loop row, navigation and outer fullscreen.')
