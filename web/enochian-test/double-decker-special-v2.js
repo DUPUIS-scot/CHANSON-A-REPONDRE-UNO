@@ -71,7 +71,7 @@
           try{
             if(on){
               if(mainWasPlaying===null)mainWasPlaying=!master.paused;
-              if(!master.paused)master.pause();
+              // Keep the muted master running as the shared beat clock. Pausing it would trigger the base engine's pause listener and silence every 2JECKER stem along with it.
               master.muted=true;
             }else{
               master.muted=false;
