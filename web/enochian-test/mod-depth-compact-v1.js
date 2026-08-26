@@ -10,17 +10,17 @@
       const style=d.createElement('style');
       style.dataset.modDepthCompact='v1';
       style.textContent=`
-        .mod{grid-template-columns:minmax(0,1fr) 92px!important;align-items:start!important}
-        .mod>.wheelbox{align-self:start!important;justify-self:center!important;width:92px!important;margin:-6px 0 0!important;padding:0 2px 2px!important;gap:1px!important}
-        .mod>.wheelbox .wheel{width:72px!important;height:72px!important}
-        .mod>.wheelbox .wheel:before{top:6px!important;height:18px!important;transform-origin:2px 30px!important}
+        .mod{grid-template-columns:minmax(0,1fr) 76px!important;align-items:start!important}
+        .mod>.wheelbox{align-self:start!important;justify-self:center!important;width:76px!important;margin:0!important;padding:0 2px 2px!important;gap:1px!important}
+        .mod>.wheelbox .wheel{width:58px!important;height:58px!important}
+        .mod>.wheelbox .wheel:before{top:5px!important;height:15px!important;transform-origin:2px 24px!important}
         .mod>.wheelbox .wheel-label{font-size:8px!important;line-height:1!important;margin:0!important}
         .mod>.wheelbox .wheel-value{font-size:9px!important;line-height:1!important;min-height:9px!important;margin:-1px 0 0!important}
         .mod>.wheelbox .wheel-hint{font-size:5.5px!important;line-height:1!important;margin:0!important;padding:0!important}
         @media(max-width:1000px){
-          .mod>.wheelbox{margin:-4px auto 0!important;width:92px!important;padding:0 2px 2px!important;gap:1px!important}
-          .mod>.wheelbox .wheel{width:92px!important;height:92px!important}
-          .mod>.wheelbox .wheel:before{top:8px!important;height:24px!important;transform-origin:2px 38px!important}
+          .mod>.wheelbox{width:76px!important;margin:0!important}
+          .mod>.wheelbox .wheel{width:58px!important;height:58px!important}
+          .mod>.wheelbox .wheel:before{top:5px!important;height:15px!important;transform-origin:2px 24px!important}
         }
       `;
       d.head.appendChild(style);
