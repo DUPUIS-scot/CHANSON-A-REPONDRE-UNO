@@ -16,7 +16,7 @@ void main() {
     );
   });
 
-  testWidgets('curtain starts closed, opens on tap, and reveals dynamic credits', (
+  testWidgets('curtain opens and reveals home links and visit card sharing', (
     tester,
   ) async {
     await tester.pumpWidget(const MaterialApp(home: CreditsScreen()));
@@ -33,14 +33,12 @@ void main() {
     expect(find.byKey(const ValueKey('credits-curtain-right')), findsNothing);
     expect(find.byIcon(Icons.play_arrow), findsNothing);
 
-    // Entry remains closed until the user directly interacts.
     await tester.pump(const Duration(seconds: 2));
     credits = tester.widget<AnimatedOpacity>(
       find.byKey(const ValueKey('credits-content')),
     );
     expect(credits.opacity, 0);
 
-    // The full closed surface opens the curtain reliably.
     await tester.tap(
       find.byKey(const ValueKey('credits-curtain-open-surface')),
     );
@@ -56,8 +54,12 @@ void main() {
     expect(find.text('BACK TO SETTINGS'), findsNothing);
     expect(find.byKey(const ValueKey('credits-uno-home')), findsOneWidget);
     expect(find.byKey(const ValueKey('credits-website-home')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('credits-share-visit-card')),
+      findsOneWidget,
+    );
+    expect(find.text('SHARE VISIT CARD'), findsOneWidget);
 
-    // The exposed curtain edge remains tappable and closes it again.
     await tester.tapAt(const Offset(10, 300));
     await tester.pumpAndSettle();
     credits = tester.widget<AnimatedOpacity>(
