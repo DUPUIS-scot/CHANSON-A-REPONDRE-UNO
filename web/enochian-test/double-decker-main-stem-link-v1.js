@@ -9,10 +9,12 @@
       if(!d||!w)return false;
       const api=w.__enochDoubleDeckerSpecial;
       const engine=w.__enochNativeStemEngine;
-      if(!api||!engine||typeof api.setStemOn!=='function')return false;
-      if(d.documentElement.dataset.ddsMainStemLink==='v1')return true;
-      d.documentElement.dataset.ddsMainStemLink='v1';
+      const panel=document.getElementById('doubleDeckerSpecial');
+      if(!api||!engine||typeof api.setStemOn!=='function'||!panel)return false;
+      if(d.documentElement.dataset.stemDecker==='v2')return true;
+      d.documentElement.dataset.stemDecker='v2';
 
+      const catalog=['ai_comptroller','caesar_spitter','the_kraken','heliogabal_design','vivid_void'];
       const rows=[...d.querySelectorAll('.stem-toggle')];
       const status=()=>engine.status?.().states||{};
       const setBoth=(stem,on)=>{api.setStemOn('A',stem,!!on);api.setStemOn('B',stem,!!on)};
@@ -25,24 +27,80 @@
         api.enforceActivePlayback?.(false);
       };
 
+      const randomKey=avoid=>{
+        const pool=catalog.filter(key=>key!==avoid);
+        return pool[Math.floor(Math.random()*pool.length)]||catalog[0];
+      };
+      const liveMask=()=>{
+        const s=status();
+        return {
+          vocals:!!s.vocals?.on,
+          drums:!!s.drums?.on,
+          bass:!!s.bass?.on,
+          other:!!s.other?.on,
+        };
+      };
+      const shuffleLive=async()=>{
+        const mask=liveMask();
+        const jobs=[];
+        ['A','B'].forEach(deckName=>{
+          const deckEl=panel.querySelector(`[data-dds-deck="${deckName}"]`);
+          if(!deckEl)return;
+          deckEl.querySelectorAll('.dds-slot').forEach(slotEl=>{
+            const stem=slotEl.dataset.slot;
+            if(!stem||!mask[stem])return;
+            const select=slotEl.querySelector('[data-source]');
+            if(!select)return;
+            const next=randomKey(select.value);
+            select.value=next;
+            jobs.push(Promise.resolve(api.setSource?.(deckName,stem,next)));
+          });
+        });
+        await Promise.all(jobs);
+        syncFromMain();
+        await api.enforceActivePlayback?.(true);
+        api.sync?.();
+        return mask;
+      };
+
       rows.forEach(button=>{
-        if(button.dataset.ddsMainStemBound==='v1')return;
-        button.dataset.ddsMainStemBound='v1';
+        if(button.dataset.stemDeckerBound==='v2')return;
+        button.dataset.stemDeckerBound='v2';
         button.addEventListener('click',()=>w.setTimeout(syncFromMain,0));
       });
 
       const stemMaster=d.getElementById('stemMasterToggle');
-      if(stemMaster&&stemMaster.dataset.ddsMainStemBound!=='v1'){
-        stemMaster.dataset.ddsMainStemBound='v1';
+      if(stemMaster&&stemMaster.dataset.stemDeckerBound!=='v2'){
+        stemMaster.dataset.stemDeckerBound='v2';
         stemMaster.addEventListener('click',()=>w.setTimeout(syncFromMain,0));
       }
 
-      w.__enochDoubleDeckerMainStemLink={version:'v1',sync:syncFromMain};
+      let button=panel.querySelector('[data-stem-decker-shuffle]');
+      if(!button){
+        button=document.createElement('button');
+        button.type='button';
+        button.className='dds-deck-shuffle';
+        button.dataset.stemDeckerShuffle='';
+        button.textContent='STEM DECKER SHUFFLE';
+        const center=panel.querySelector('.dds-center');
+        const statusEl=center?.querySelector('.dds-status');
+        if(center)center.insertBefore(button,statusEl||null);
+      }
+      if(button.dataset.stemDeckerBound!=='v2'){
+        button.dataset.stemDeckerBound='v2';
+        button.addEventListener('click',async e=>{
+          e.preventDefault();e.stopPropagation();
+          button.classList.add('active');
+          try{await shuffleLive()}finally{w.setTimeout(()=>button.classList.remove('active'),180)}
+        });
+      }
+
+      w.__enochStemDecker={version:'v2',sync:syncFromMain,shuffle:shuffleLive,liveMask};
       syncFromMain();
       return true;
     }catch(_){return false}
   }
-  window.installEnochianDoubleDeckerMainStemLinkV1=host=>{
+  window.installEnochianStemDeckerV2=host=>{
     let n=0,t=setInterval(()=>{if(install(host)||++n>240)clearInterval(t)},50);
     return install(host);
   };
