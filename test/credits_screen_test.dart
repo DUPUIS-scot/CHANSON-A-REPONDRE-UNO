@@ -53,7 +53,9 @@ void main() {
     );
     expect(credits.opacity, 1);
     expect(find.text('Version: 3.7.3+1'), findsOneWidget);
-    expect(find.text('BACK TO SETTINGS'), findsOneWidget);
+    expect(find.text('BACK TO SETTINGS'), findsNothing);
+    expect(find.byKey(const ValueKey('credits-uno-home')), findsOneWidget);
+    expect(find.byKey(const ValueKey('credits-website-home')), findsOneWidget);
 
     // The exposed curtain edge remains tappable and closes it again.
     await tester.tapAt(const Offset(10, 300));
