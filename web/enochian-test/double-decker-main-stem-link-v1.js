@@ -12,8 +12,8 @@
       const panel=document.getElementById('doubleDeckerSpecial');
       const stemMaster=d.getElementById('stemMasterToggle');
       if(!api||!engine||typeof api.setStemOn!=='function'||!panel||!stemMaster)return false;
-      if(d.documentElement.dataset.stemJecker==='v5')return true;
-      d.documentElement.dataset.stemJecker='v5';
+      if(d.documentElement.dataset.stemJecker==='v6')return true;
+      d.documentElement.dataset.stemJecker='v6';
 
       let visualStyle=document.getElementById('stem-jecker-live-style');
       if(!visualStyle){
@@ -135,8 +135,8 @@
       };
 
       rows.forEach(button=>{
-        if(button.dataset.stemJeckerBound==='v5')return;
-        button.dataset.stemJeckerBound='v5';
+        if(button.dataset.stemJeckerBound==='v6')return;
+        button.dataset.stemJeckerBound='v6';
         button.addEventListener('click',()=>w.setTimeout(syncFromMain,0));
       });
 
@@ -149,8 +149,8 @@
         linkButton.textContent=linked?'STEM JECKER ON':'STEM JECKER OFF';
         linkButton.setAttribute('aria-pressed',String(linked));
       };
-      if(linkButton.dataset.stemJeckerBound!=='v5'){
-        linkButton.dataset.stemJeckerBound='v5';
+      if(linkButton.dataset.stemJeckerBound!=='v6'){
+        linkButton.dataset.stemJeckerBound='v6';
         linkButton.addEventListener('click',e=>{
           e.preventDefault();e.stopPropagation();
           if(linked){void enterOff()}else{void enterJecker()}
@@ -161,23 +161,26 @@
       let shuffleButton=panel.querySelector('[data-stem-jecker-shuffle]')||panel.querySelector('[data-stem-decker-shuffle]');
       if(!shuffleButton){shuffleButton=document.createElement('button');shuffleButton.type='button';shuffleButton.className='dds-deck-shuffle';if(center)center.insertBefore(shuffleButton,statusEl||null)}
       delete shuffleButton.dataset.stemDeckerShuffle;shuffleButton.dataset.stemJeckerShuffle='';shuffleButton.textContent='STEM JECKER SHUFFLE';
-      if(shuffleButton.dataset.stemJeckerBound!=='v5'){
-        shuffleButton.dataset.stemJeckerBound='v5';
+      if(shuffleButton.dataset.stemJeckerBound!=='v6'){
+        shuffleButton.dataset.stemJeckerBound='v6';
         shuffleButton.addEventListener('click',async e=>{e.preventDefault();e.stopPropagation();shuffleButton.classList.add('active');try{await shuffleLive()}finally{w.setTimeout(()=>shuffleButton.classList.remove('active'),180)}});
       }
 
       const syncUi=()=>{paintLink();paintMasterMode()};
-      w.__enochStemJecker={version:'v5',get linked(){return linked},get mode(){return mode},setLinked(on){if(on)void enterJecker();else void enterOff();w.setTimeout(syncUi,55);return !!on},setMode(next){if(next==='on')void enterOn();else if(next==='jecker')void enterJecker();else void enterOff();w.setTimeout(syncUi,55);return next},sync:syncFromMain,shuffle:shuffleLive,liveMask};
+      w.__enochStemJecker={version:'v6',get linked(){return linked},get mode(){return mode},setLinked(on){if(on)void enterJecker();else void enterOff();w.setTimeout(syncUi,55);return !!on},setMode(next){if(next==='on')void enterOn();else if(next==='jecker')void enterJecker();else void enterOff();w.setTimeout(syncUi,55);return next},sync:syncFromMain,shuffle:shuffleLive,liveMask};
       w.__enochStemDecker=w.__enochStemJecker;
       syncUi();
 
-      const installShield=()=>{try{return window.installEnochianDoubleJeckerTurntableShieldV1?.(host)}catch(_){return false}};
-      if(!installShield()){
-        let loader=document.querySelector('script[data-double-jecker-shield-loader]');
-        if(!loader){
-          loader=document.createElement('script');loader.src='/enochian-test/double-jecker-turntable-shield-v1.js?v=20260826-v1';loader.dataset.doubleJeckerShieldLoader='v1';loader.onload=()=>installShield();document.head.appendChild(loader);
-        }
-      }
+      const loadAddon=(key,src,installer)=>{
+        const run=()=>{try{return window[installer]?.(host)}catch(_){return false}};
+        if(run())return true;
+        let loader=document.querySelector(`script[data-jecker-addon="${key}"]`);
+        if(!loader){loader=document.createElement('script');loader.src=src;loader.dataset.jeckerAddon=key;loader.onload=()=>run();document.head.appendChild(loader)}
+        return false;
+      };
+      loadAddon('shield','/enochian-test/double-jecker-turntable-shield-v1.js?v=20260826-v1','installEnochianDoubleJeckerTurntableShieldV1');
+      loadAddon('output','/enochian-test/double-jecker-output-v1.js?v=20260826-v2','installEnochianDoubleJeckerOutputV1');
+      loadAddon('signal-relay','/enochian-test/double-jecker-signal-relay-v1.js?v=20260826-v1','installEnochianDoubleJeckerSignalRelayV1');
 
       w.addEventListener('pagehide',()=>masterObserver.disconnect(),{once:true});
       return true;
