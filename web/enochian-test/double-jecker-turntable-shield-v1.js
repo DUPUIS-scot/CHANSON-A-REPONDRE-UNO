@@ -62,7 +62,7 @@
 
       const mask=()=>{const j=w.__enochStemJecker||w.__enochStemDecker;if(j&&typeof j.liveMask==='function')return j.liveMask();const on=(stem)=>api.state?.slots?.A?.[stem]?.on!==false||api.state?.slots?.B?.[stem]?.on!==false;return{vocals:on('vocals'),drums:on('drums'),bass:on('bass'),other:on('other')}};
       const paint=()=>{
-        const engineOn=!!api.state?.enabled,playing=!master.paused&&!master.ended,linked=!!(w.__enochStemJecker||w.__enochStemDecker)?.linked,open=panel.classList.contains('open');
+        const engineOn=!!api.state?.enabled,playing=engineOn&&['A','B'].some(deckName=>['vocals','drums','bass','other'].some(stem=>{const media=api.state?.slots?.[deckName]?.[stem]?.media;return media&&!media.paused&&!media.ended})),linked=!!(w.__enochStemJecker||w.__enochStemDecker)?.linked,open=panel.classList.contains('open');
         shield.classList.toggle('engine-on',engineOn);shield.classList.toggle('playing',playing);shield.classList.toggle('jecker-linked',linked);shield.classList.toggle('panel-open',open);shield.classList.toggle('takeover-active',engineOn&&panel.classList.contains('jecker-takeover'));
         const m=mask();Object.entries(m).forEach(([stem,on])=>shield.querySelector(`[data-jecker-stem="${stem}"]`)?.classList.toggle('live',!!on));
         const state=shield.querySelector('.djs-state');if(state)state.textContent=engineOn?(playing?'ENGINE · PLAY':'ENGINE · PAUSE'):(linked?'STEM JECKER':'READY');
