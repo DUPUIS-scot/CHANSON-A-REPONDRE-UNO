@@ -53,7 +53,7 @@ shell_required = [
     "analyser-signal-3d-v7.js?v=20260826-internal-master-v7",
     "sculpt-audio-mod.js?v=20260825-v3",
     "pending-ui-fixes.js?v=20260825-v2",
-    "double-decker-special-v2.js?v=20260826-v3",
+    "double-decker-special-v2.js?v=20260826-v7",
     "pad-fx-authority-v2.js?v=20260826-v2",
     "ios-touch-tuning.js?v=20260824-v1",
     "installEnochianAuthoritativeRuntime",
