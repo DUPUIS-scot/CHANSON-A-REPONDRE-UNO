@@ -310,7 +310,6 @@ class _IosCreditsPager extends StatefulWidget {
 
 class _IosCreditsPagerState extends State<_IosCreditsPager> {
   late final PageController _controller;
-  int _page = 0;
 
   @override
   void initState() {
@@ -343,7 +342,6 @@ class _IosCreditsPagerState extends State<_IosCreditsPager> {
           child: PageView(
             controller: _controller,
             physics: const NeverScrollableScrollPhysics(),
-            onPageChanged: (value) => setState(() => _page = value),
             children: [
               Stack(
                 fit: StackFit.expand,
