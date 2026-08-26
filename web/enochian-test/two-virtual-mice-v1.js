@@ -13,6 +13,7 @@
         #twoMixToggle{position:fixed;z-index:2147483000;right:10px;bottom:10px;min-height:28px;padding:0 9px;border:1px solid #d39d3e;border-radius:14px;background:#100b04;color:#f5cf85;font:900 8px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.08em;cursor:pointer;box-shadow:0 4px 15px #0009}
         #twoMixToggle.active{border-color:#63f5cf;background:#06271f;color:#baffed;box-shadow:0 0 16px #19c98f88}
         #twoMixHelp{position:fixed;z-index:2147482999;right:10px;bottom:45px;max-width:205px;padding:8px;border:1px solid #315b56;border-radius:6px;background:#020706eF;color:#b8d8d0;font:800 8px/1.35 ui-monospace,SFMono-Regular,Menlo,monospace;box-shadow:0 8px 24px #000a;pointer-events:none}
+        #twoMixHelp.live{max-width:236px;border-color:#63f5cf;background:#04130feF;box-shadow:0 0 18px #19c98f55}
         #twoMixHelp b{display:block;color:#f0c97e;margin-bottom:3px;letter-spacing:.08em}
         .two-mix-cursor{position:fixed;z-index:2147482998;width:28px;height:28px;display:none;align-items:center;justify-content:center;transform:translate(-4px,-4px);border-radius:50% 50% 50% 4px;pointer-events:none;font:1000 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;transition:box-shadow .08s}
         .two-mix-cursor.active{display:flex}.two-mix-cursor.a{border:2px solid #f0b34d;background:#3b2208d9;color:#ffe2a4;box-shadow:0 0 12px #f0b34daa}.two-mix-cursor.b{border:2px solid #63f5cf;background:#06352bd9;color:#c9fff0;box-shadow:0 0 12px #63f5cfaa}
@@ -24,9 +25,9 @@
       d.head.appendChild(style);
       const make=(tag,id,cls,text)=>{const el=d.createElement(tag);el.id=id;if(cls)el.className=cls;if(text)el.textContent=text;d.body.appendChild(el);return el};
       const button=make('button','twoMixToggle','','2MIX OFF');
-      button.type='button';button.setAttribute('aria-pressed','false');button.title='Enable two virtual mice';
+      button.type='button';button.setAttribute('aria-pressed','false');button.title='Enable CHANSON A REPONDRE UNO virtual mice';
       const help=make('aside','twoMixHelp','','');
-      help.innerHTML='<b>2 VIRTUAL MICE</b>Click <strong>2MIX ON</strong>. Move: both cursors. Shift + move: widen. Alt + move: rotate. Drag: controls A + B together. Esc: release.';
+      help.innerHTML='<b>CHANSON A REPONDRE UNO</b>Click to reveal A + B virtual mice. Move: together · Shift: spread · Alt: rotate · Drag: control both · Esc: release.';
       const tether=make('div','twoMixTether');
       const state=make('div','twoMixState');
       const a=make('div','twoMixA','two-mix-cursor a','A');
@@ -40,12 +41,24 @@
       const acquire=p=>{const el=resolve(p);p.target=el;p.start=Date.now();p.value=el?.tagName==='INPUT'?Number(el.value)||0:0;return el};
       const adjust=p=>{const el=p.target;if(!el||el.tagName!=='INPUT'||el.type!=='range')return;const max=Number(el.max)||100,min=Number(el.min)||0,step=Number(el.step)||1;const delta=(pair.moveX||0)-(pair.moveY||0);const next=clamp(p.value+delta*(max-min)/180,min,max);dispatchInput(el,Math.round(next/step)*step)};
       const activateButton=p=>{const el=p.target;if(!el||el.tagName!=='BUTTON'||Date.now()-p.start<140)return;el.click()};
+      const targetName=el=>el?.getAttribute?.('aria-label')||el?.dataset?.stemRange||el?.id?.toUpperCase()||el?.textContent?.trim()?.slice(0,18)||'READY';
+      const updateGuide=(A,B)=>{
+        if(!pair.enabled){
+          help.classList.remove('live');help.style.left='';help.style.top='';help.style.right='';help.style.bottom='';
+          help.innerHTML='<b>CHANSON A REPONDRE UNO</b>Click to reveal A + B virtual mice. Move: together · Shift: spread · Alt: rotate · Drag: control both · Esc: release.';
+          return;
+        }
+        const x=clamp((A.x+B.x)/2+18,8,Math.max(8,w.innerWidth-248));
+        const y=clamp((A.y+B.y)/2+18,8,Math.max(8,w.innerHeight-94));
+        help.classList.add('live');help.style.left=x+'px';help.style.top=y+'px';help.style.right='auto';help.style.bottom='auto';
+        help.innerHTML='<b>A: '+targetName(resolve(pair.a))+' · B: '+targetName(resolve(pair.b))+'</b>DRAG BOTH · SHIFT SPREAD · ALT ROTATE · ESC RELEASE';
+      };
       const render=()=>{
         const A=point(pair.a),B=point(pair.b);a.style.left=A.x+'px';a.style.top=A.y+'px';b.style.left=B.x+'px';b.style.top=B.y+'px';
         const dx=B.x-A.x,dy=B.y-A.y,len=Math.hypot(dx,dy);tether.style.left=A.x+'px';tether.style.top=A.y+'px';tether.style.width=len+'px';tether.style.transform='rotate('+Math.atan2(dy,dx)+'rad)';
-        state.textContent='A: '+(pair.a.target?.ariaLabel||pair.a.target?.id||'READY')+'  ·  B: '+(pair.b.target?.ariaLabel||pair.b.target?.id||'READY');
+        state.textContent='A: '+targetName(resolve(pair.a))+'  ·  B: '+targetName(resolve(pair.b));updateGuide(A,B);
       };
-      const setEnabled=on=>{pair.enabled=!!on;pair.dragging=false;pair.last=null;button.classList.toggle('active',on);button.textContent=on?'2MIX ON':'2MIX OFF';button.setAttribute('aria-pressed',String(on));button.title=on?'Two virtual mice active':'Enable two virtual mice';help.style.display=on?'none':'';[a,b].forEach(el=>el.classList.toggle('active',on));tether.style.display=on?'block':'none';state.classList.toggle('active',on);render()};
+      const setEnabled=on=>{pair.enabled=!!on;pair.dragging=false;pair.last=null;button.classList.toggle('active',on);button.textContent=on?'CHANSON A REPONDRE UNO · LIVE':'CHANSON A REPONDRE UNO';button.setAttribute('aria-pressed',String(on));button.title=on?'CHANSON A REPONDRE UNO virtual mice active':'Enable CHANSON A REPONDRE UNO virtual mice';help.style.display='block';[a,b].forEach(el=>el.classList.toggle('active',on));tether.style.display=on?'block':'none';state.classList.toggle('active',on);render()};
       button.addEventListener('click',e=>{e.stopPropagation();setEnabled(!pair.enabled)});
       d.addEventListener('pointerdown',e=>{if(!pair.enabled||e.target===button)return;pair.dragging=true;pair.last={x:e.clientX,y:e.clientY};pair.moveX=0;pair.moveY=0;acquire(pair.a);acquire(pair.b);e.preventDefault();e.stopImmediatePropagation()},{capture:true});
       d.addEventListener('pointermove',e=>{if(!pair.enabled||!pair.last)return;const dx=e.clientX-pair.last.x,dy=e.clientY-pair.last.y;pair.last={x:e.clientX,y:e.clientY};pair.moveX+=dx;pair.moveY+=dy;
