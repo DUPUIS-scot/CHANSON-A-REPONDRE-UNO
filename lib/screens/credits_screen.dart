@@ -107,7 +107,6 @@ class _CreditsScreenState extends State<CreditsScreen>
       title: _visitTitle,
       text: '$_visitTitle\nDUPUIS* · interactive Sherlock 3D experience',
       url: shareUrl,
-      imagePath: 'social/credits-sherlock-visit.jpg',
     );
   }
 
@@ -482,7 +481,7 @@ class _CreditsBody extends StatelessWidget {
                     key: const ValueKey('credits-share-visit-card'),
                     onPressed: onShare,
                     icon: const Icon(Icons.ios_share_rounded),
-                    label: const Text('SHARE VISIT CARD'),
+                    label: const Text('SHARE SOCIAL PREVIEW'),
                   ),
                   const SizedBox(height: 10),
                   Text('Version: $version',
