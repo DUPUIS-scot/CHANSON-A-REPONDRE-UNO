@@ -7,9 +7,10 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
-  group: normalize-terminal-stems-v5
+  group: normalize-terminal-stems-v6
   cancel-in-progress: true
 
 jobs:
@@ -49,10 +50,16 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add assets/audio/stems pubspec.yaml web/enochian-test/live-copy.html
-          if git diff --cached --quiet; then
+          if ! git diff --cached --quiet; then
+            git commit -m 'Normalize terminal stem library'
+            git pull --rebase origin main
+            git push origin HEAD:main
+          else
             echo 'Terminal stem library already normalized.'
-            exit 0
           fi
-          git commit -m 'Normalize terminal stem library'
-          git pull --rebase origin main
-          git push origin HEAD:main
+
+      - name: Deploy normalized main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: gh workflow run deploy-pages.yml --ref main
