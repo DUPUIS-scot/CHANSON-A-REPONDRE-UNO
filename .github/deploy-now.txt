@@ -1,4 +1,4 @@
-deploy-request: 2026-08-26T22:45:35.550Z
+deploy-request: 2026-08-26T22:53:11.154Z
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy certified release 3.7.3.3
+reason: deploy 2JECKER main STEMS MIX authority and live-control lock
