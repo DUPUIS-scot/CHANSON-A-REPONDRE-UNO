@@ -481,7 +481,7 @@ class _CreditsBody extends StatelessWidget {
                     key: const ValueKey('credits-share-visit-card'),
                     onPressed: onShare,
                     icon: const Icon(Icons.ios_share_rounded),
-                    label: const Text('SHARE SOCIAL PREVIEW'),
+                    label: const Text('SHARE VISIT CARD'),
                   ),
                   const SizedBox(height: 10),
                   Text('Version: $version',
