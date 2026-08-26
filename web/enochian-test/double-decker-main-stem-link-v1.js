@@ -178,7 +178,7 @@
         if(!loader){loader=document.createElement('script');loader.src=src;loader.dataset.jeckerAddon=key;loader.onload=()=>run();document.head.appendChild(loader)}
         return false;
       };
-      loadAddon('shield','/enochian-test/double-jecker-turntable-shield-v1.js?v=20260826-v1','installEnochianDoubleJeckerTurntableShieldV1');
+      loadAddon('shield','/enochian-test/double-jecker-turntable-shield-v1.js?v=20260826-v2','installEnochianDoubleJeckerTurntableShieldV1');
       loadAddon('output','/enochian-test/double-jecker-output-v1.js?v=20260826-v2','installEnochianDoubleJeckerOutputV1');
       loadAddon('signal-relay','/enochian-test/double-jecker-signal-relay-v1.js?v=20260826-v1','installEnochianDoubleJeckerSignalRelayV1');
 
