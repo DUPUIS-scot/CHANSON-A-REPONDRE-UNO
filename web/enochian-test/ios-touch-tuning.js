@@ -73,5 +73,15 @@
     d.querySelectorAll('.wheel').forEach(installWheel);
     return true;
   }
-  window.installEnochianIOSTouchTuning=function(frame){let n=0;const run=()=>{if(tune(frame)||++n>160)return;setTimeout(run,50)};run()};
+  function loadAuthority(src,id,ready){
+    if(document.getElementById(id)){ready?.();return}
+    const s=document.createElement('script');s.id=id;s.src=src;s.onload=()=>ready?.();document.head.appendChild(s);
+  }
+  function installSpecialAuthorities(frame){
+    loadAuthority('/enochian-test/double-decker-special-v2.js?v=20260826-v2','double-decker-special-v2-loader',()=>window.installEnochianDoubleDeckerSpecialV2?.(frame));
+    loadAuthority('/enochian-test/pad-fx-authority-v2.js?v=20260826-v2','pad-fx-authority-v2-loader',()=>window.installEnochianPadFxAuthorityV2?.(frame));
+    window.installEnochianDoubleDeckerSpecialV2?.(frame);
+    window.installEnochianPadFxAuthorityV2?.(frame);
+  }
+  window.installEnochianIOSTouchTuning=function(frame){let n=0;const run=()=>{if(tune(frame)||++n>160)return;setTimeout(run,50)};run();installSpecialAuthorities(frame)};
 })();
