@@ -12,7 +12,7 @@
         if(d.getElementById('enochianSocialLast15Bootstrap')){clearInterval(timer);return;}
         const s=d.createElement('script');
         s.id='enochianSocialLast15Bootstrap';
-        s.src='/enochian-test/social-last15-share-inner.js?v=20260824-v3';
+        s.src='/enochian-test/social-last15-share-inner.js?v=20260826-fx-record-v1';
         d.body.appendChild(s);
         clearInterval(timer);
       }catch(_){if(++tries>300)clearInterval(timer);}
