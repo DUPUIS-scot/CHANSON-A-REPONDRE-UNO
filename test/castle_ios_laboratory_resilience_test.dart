@@ -57,7 +57,14 @@ void main() {
     expect(sharedLoader, contains("interior-retry-v74"));
 
     expect(castle, contains('INTERIOR_LOAD_TIMEOUT_MS=26000'));
-    expect(castle, contains("interior-load-timeout-v74"));
+    expect(castle, contains("interior-load-slow-v75"));
+    expect(castle, contains("delete document.body.dataset.interiorLoadSlow"));
+    expect(
+      castle,
+      isNot(contains(
+        "setTimeout(()=>finishError(new Error('interior-load-timeout",
+      )),
+    );
     expect(castle, contains("state.interiorLoadPromise=null"));
     expect(castle, contains("dataset.interiorProgress"));
 

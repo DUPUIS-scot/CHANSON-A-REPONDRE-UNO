@@ -28,7 +28,16 @@ void main() {
     );
     expect(overlay, contains('if(!down||down.pointerId!==event.pointerId||down.moved)return'));
     expect(overlay, isNot(contains('||!down.jester||down.moved')));
-    expect(castleSource, contains("castleEntranceTransition='shared-loader-only-v73'"));
+    expect(castleSource, contains('function clearEntranceTransition()'));
+    expect(castleSource, contains("classList.remove('entrance-video-active')"));
+    expect(castleSource, contains("setAttribute('aria-hidden','true')"));
+    expect(castleSource, contains("castle-interior-loading-label"));
+    expect(castleSource, contains("entranceVideo.removeAttribute('src')"));
+    expect(castleSource, contains('if(switched)clearEntranceTransition()'));
+    expect(
+      castleSource,
+      contains("'shared-loader-clean-v75':'shared-loader-switch-failed-v75'"),
+    );
     expect(controller, contains("dataset.castleJesterState='looping'"));
     expect(controller, contains('onEnterRequested?.()'));
 
