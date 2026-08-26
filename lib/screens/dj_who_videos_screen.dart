@@ -50,10 +50,10 @@ class DjWhoVideosScreen extends StatelessWidget {
                 children: [
                   _Header(onOpenChannel: _openChannel),
                   const SizedBox(height: 16),
-                  const Center(
+                  Center(
                     child: ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: 980),
-                      child: DjWhoRoutePlayer(),
+                      constraints: const BoxConstraints(maxWidth: 980),
+                      child: const DjWhoRoutePlayer(),
                     ),
                   ),
                   const SizedBox(height: 18),
