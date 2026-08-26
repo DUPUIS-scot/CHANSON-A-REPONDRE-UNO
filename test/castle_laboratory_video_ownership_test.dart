@@ -14,20 +14,23 @@ void main() {
     final sharedLoader = File('web/card_castle/castle_shared_transition_loader_v64.js').readAsStringSync();
     final resetView = File('web/card_castle/castle_laboratory_entry_reset_v70.js').readAsStringSync();
 
-    expect(bridge, contains("bureauVideoOwner = 'castle-bureau-video-bridge-v73'"));
+    expect(bridge, contains("bureauVideoOwner = 'castle-bureau-video-bridge-v78'"));
     expect(bridge, contains(r'const SCREEN_NAME = /^VideoScreen_(Left|Right)$/i'));
     expect(bridge, contains('window.__castleBureauVideoPrime = primeFromGesture'));
     expect(bridge, contains('raycaster.intersectObjects([...boundMeshes], false)'));
-    expect(bridge, contains("bureauVideoInteraction = 'mirror-click-v73'"));
+    expect(bridge, contains("bureauVideoInteraction = 'mirror-click-v78'"));
     expect(bridge, contains("attemptPlay('mirror-click')"));
-    expect(bridge, contains("bureauVideoPlayback = 'paused-awaiting-mirror-click-v74'"));
-    expect(bridge, contains("bureauVideoPlayback = 'playing-loop-v74'"));
+    expect(bridge, contains("bureauVideoPlayback = 'paused-awaiting-mirror-click-v78'"));
+    expect(bridge, contains("bureauVideoPlayback = 'playing-loop-v78'"));
     expect(bridge, contains('let playRequested = false'));
     expect(bridge, contains('if (!playRequested)'));
     expect(bridge, contains('playRequested = true'));
     expect(bridge, contains('playRequested = false'));
     expect(bridge, contains('side: THREE.DoubleSide'));
-    expect(bridge, contains(r'const SCREEN_NAME = /^VideoScreen_(Left|Right)$/i'));
+    expect(bridge, contains('polygonOffset: true'));
+    expect(bridge, contains('if (object.material !== material) object.material = material'));
+    expect(bridge, contains("window.addEventListener('pointerdown', onPointerDown, {passive: true, capture: true})"));
+    expect(bridge, contains("window.addEventListener('pointerup', onPointerUp, {passive: true, capture: true})"));
     expect(bridge, contains('video.autoplay = false'));
     expect(bridge, contains('const CLICK_SLOP_TOUCH_PX = 18'));
     expect(bridge, contains('const HIT_TOLERANCE_PX = 10'));
@@ -43,7 +46,7 @@ void main() {
     expect(overlay, contains("castle_shared_transition_loader_v64.js"));
     expect(overlay, contains("castle_ios_laboratory_resilience_v62.js"));
     expect(overlay, contains("castle_laboratory_medallion_button.js"));
-    expect(overlay, contains("castle_bureau_video_bridge.js"));
+    expect(overlay, contains("castle_bureau_video_bridge.js?v=78"));
     expect(overlay, contains("castle_video_surface_invert_v71.js"));
     expect(videoOrientation, contains("bureauVideoSurfaceOrientation = 'laboratory-facing'"));
     expect(videoOrientation, contains('object.rotation.y -= Math.PI'));
