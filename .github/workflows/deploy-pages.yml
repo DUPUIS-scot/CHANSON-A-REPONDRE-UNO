@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
   statuses: write
@@ -19,6 +19,7 @@ jobs:
   build:
     name: Build web
     runs-on: ubuntu-latest
+    timeout-minutes: 35
     steps:
       - name: Download source snapshot
         timeout-minutes: 6
@@ -55,13 +56,22 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Install and analyze
-        run: |
-          flutter pub get
-          flutter analyze
+      - name: Cache Dart packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-dart-pub-${{ hashFiles('pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-dart-pub-
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze --no-pub
 
       - name: Run Flutter regression suite
-        run: flutter test
+        run: flutter test --no-pub
 
       - name: Validate production configuration
         shell: bash
@@ -84,7 +94,7 @@ jobs:
           AI_BACKEND_URL: ${{ secrets.AI_BACKEND_URL || vars.AI_BACKEND_URL }}
           TURNSTILE_SITE_KEY: 0x4AAAAAAERKLvJuMsQpWZhI
         run: |
-          flutter build web --release --base-href "/" --dart-define=SKIP_AUTH_FOR_DEVELOPMENT=false --dart-define=SUPABASE_URL="$SUPABASE_URL" --dart-define=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY" --dart-define=AI_BACKEND_URL="$AI_BACKEND_URL" --dart-define=TURNSTILE_SITE_KEY="$TURNSTILE_SITE_KEY" --dart-define=APP_BUILD_SHA="${{ github.sha }}"
+          flutter build web --release --no-pub --base-href "/" --dart-define=SKIP_AUTH_FOR_DEVELOPMENT=false --dart-define=SUPABASE_URL="$SUPABASE_URL" --dart-define=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY" --dart-define=AI_BACKEND_URL="$AI_BACKEND_URL" --dart-define=TURNSTILE_SITE_KEY="$TURNSTILE_SITE_KEY" --dart-define=APP_BUILD_SHA="${{ github.sha }}"
 
       - name: Prepare Safari-compatible laboratory video
         shell: bash
@@ -167,6 +177,7 @@ jobs:
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
+
       - name: Upload site
         uses: actions/upload-pages-artifact@v4
         with:
@@ -177,6 +188,7 @@ jobs:
     name: Deploy live
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
