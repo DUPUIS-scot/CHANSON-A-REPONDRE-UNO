@@ -20,6 +20,11 @@
         visualStyle=document.createElement('style');
         visualStyle.id='stem-jecker-live-style';
         visualStyle.textContent=`
+          #doubleDeckerSpecial{width:min(86vmin,760px)!important;height:min(86vmin,760px)!important;max-width:calc(100vw - 20px)!important;max-height:calc(100vh - 20px)!important;aspect-ratio:1/1!important;border-radius:50%!important;box-sizing:border-box!important;border:2px solid #8c7447!important;background:radial-gradient(circle at 50% 46%,#201b12 0 10%,#0d0c09 38%,#050505 62%,#17130c 76%,#060606 78% 100%)!important;box-shadow:inset 0 0 0 7px #070604,inset 0 0 0 9px #44351d,inset 0 0 52px #000,0 18px 52px #000d!important;overflow:auto!important;scrollbar-width:thin;scrollbar-color:#8c7447 #080706}
+          #doubleDeckerSpecial.open{border-radius:50%!important}
+          #doubleDeckerSpecial .dds-head{max-width:70%;margin-left:auto!important;margin-right:auto!important;text-align:center}
+          #doubleDeckerSpecial .dds-foot{max-width:72%;margin-left:auto!important;margin-right:auto!important}
+          @media(max-width:720px),(max-height:520px){#doubleDeckerSpecial{width:min(94vmin,620px)!important;height:min(94vmin,620px)!important;max-width:calc(100vw - 8px)!important;max-height:calc(100vh - 8px)!important}}
           .dds-slot .stem-toggle{background:#07100e!important;color:#7a9a94!important;border-color:#315b56!important;box-shadow:none!important}
           .dds-slot .stem-toggle.active{background:#19c98f!important;color:#001f16!important;border-color:#63f5cf!important;box-shadow:0 0 12px #40e6b477!important;font-weight:1000!important}
           .stem-jecker-toggle{width:100%;min-height:28px;border:1px solid #315b56;border-radius:4px;background:#06110f;color:#a9eee7;font:900 7px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;cursor:pointer}
@@ -31,7 +36,6 @@
 
       const catalog=['ai_comptroller','caesar_spitter','the_kraken','heliogabal_design','vivid_void'];
       const rows=[...d.querySelectorAll('.stem-toggle')];
-      const status=()=>engine.status?.().states||{};
       let linked=false;
       let mode=engine.status?.().enabled?'on':'off';
       let bypassMasterClick=false;
@@ -74,26 +78,10 @@
           w.setTimeout(resolve,45);
         }
       });
-      const enterOff=async()=>{
-        linked=false;
-        if(engine.status?.().enabled)await invokeNativeMasterClick();
-        mode='off';
-        paintMasterMode();
-      };
-      const enterJecker=async()=>{
-        if(engine.status?.().enabled)await invokeNativeMasterClick();
-        mode='jecker';linked=true;syncFromMain();paintMasterMode();
-      };
-      const enterOn=async()=>{
-        linked=false;
-        if(!engine.status?.().enabled)await invokeNativeMasterClick();
-        mode='on';paintMasterMode();
-      };
-      const cycleMode=async()=>{
-        if(mode==='on')await enterOff();
-        else if(mode==='off')await enterJecker();
-        else await enterOn();
-      };
+      const enterOff=async()=>{linked=false;if(engine.status?.().enabled)await invokeNativeMasterClick();mode='off';paintMasterMode()};
+      const enterJecker=async()=>{if(engine.status?.().enabled)await invokeNativeMasterClick();mode='jecker';linked=true;syncFromMain();paintMasterMode()};
+      const enterOn=async()=>{linked=false;if(!engine.status?.().enabled)await invokeNativeMasterClick();mode='on';paintMasterMode()};
+      const cycleMode=async()=>{if(mode==='on')await enterOff();else if(mode==='off')await enterJecker();else await enterOn()};
 
       stemMaster.addEventListener('click',e=>{
         if(bypassMasterClick)return;
@@ -102,51 +90,31 @@
         void cycleMode();
       },true);
 
-      const masterObserver=new MutationObserver(()=>{
-        if(mode==='jecker'&&stemMaster.textContent!=='STEM JECKER')paintMasterMode();
-      });
+      const masterObserver=new MutationObserver(()=>{if(mode==='jecker'&&stemMaster.textContent!=='STEM JECKER')paintMasterMode()});
       masterObserver.observe(stemMaster,{attributes:true,childList:true,characterData:true,subtree:true});
 
-      const randomKey=avoid=>{
-        const pool=catalog.filter(key=>key!==avoid);
-        return pool[Math.floor(Math.random()*pool.length)]||catalog[0];
-      };
+      const randomKey=avoid=>{const pool=catalog.filter(key=>key!==avoid);return pool[Math.floor(Math.random()*pool.length)]||catalog[0]};
       const liveMask=()=>{
         if(linked)return mainMask();
         const on=(deckName,stem)=>api.state?.slots?.[deckName]?.[stem]?.on!==false;
         return {vocals:on('A','vocals')||on('B','vocals'),drums:on('A','drums')||on('B','drums'),bass:on('A','bass')||on('B','bass'),other:on('A','other')||on('B','other')};
       };
       const shuffleLive=async()=>{
-        const mask=liveMask();
-        const jobs=[];
+        const mask=liveMask(),jobs=[];
         ['A','B'].forEach(deckName=>{
-          const deckEl=panel.querySelector(`[data-dds-deck="${deckName}"]`);
-          if(!deckEl)return;
+          const deckEl=panel.querySelector(`[data-dds-deck="${deckName}"]`);if(!deckEl)return;
           deckEl.querySelectorAll('.dds-slot').forEach(slotEl=>{
-            const stem=slotEl.dataset.slot;
-            const slot=api.state?.slots?.[deckName]?.[stem];
+            const stem=slotEl.dataset.slot,slot=api.state?.slots?.[deckName]?.[stem];
             if(!stem||!mask[stem]||slot?.on===false)return;
-            const select=slotEl.querySelector('[data-source]');
-            if(!select)return;
-            const next=randomKey(select.value);select.value=next;
-            jobs.push(Promise.resolve(api.setSource?.(deckName,stem,next)));
+            const select=slotEl.querySelector('[data-source]');if(!select)return;
+            const next=randomKey(select.value);select.value=next;jobs.push(Promise.resolve(api.setSource?.(deckName,stem,next)));
           });
         });
-        await Promise.all(jobs);
-        if(linked)syncFromMain();
-        await api.enforceActivePlayback?.(true);api.sync?.();return mask;
+        await Promise.all(jobs);if(linked)syncFromMain();await api.enforceActivePlayback?.(true);api.sync?.();return mask;
       };
 
-      rows.forEach(button=>{
-        if(button.dataset.stemJeckerBound==='v8')return;
-        button.dataset.stemJeckerBound='v8';
-        button.addEventListener('click',()=>w.setTimeout(syncFromMain,0));
-      });
-      d.querySelectorAll('[data-stem-range]').forEach(range=>{
-        if(range.dataset.stemJeckerBound==='v8')return;
-        range.dataset.stemJeckerBound='v8';
-        range.addEventListener('input',()=>syncFromMain());
-      });
+      rows.forEach(button=>{if(button.dataset.stemJeckerBound==='v8')return;button.dataset.stemJeckerBound='v8';button.addEventListener('click',()=>w.setTimeout(syncFromMain,0))});
+      d.querySelectorAll('[data-stem-range]').forEach(range=>{if(range.dataset.stemJeckerBound==='v8')return;range.dataset.stemJeckerBound='v8';range.addEventListener('input',()=>syncFromMain())});
 
       const center=panel.querySelector('.dds-center');
       const statusEl=center?.querySelector('.dds-status');
@@ -154,19 +122,11 @@
       if(!linkButton){linkButton=document.createElement('button');linkButton.type='button';linkButton.className='stem-jecker-toggle';linkButton.dataset.stemJeckerToggle='';if(center)center.insertBefore(linkButton,statusEl||null)}
       const paintLink=()=>{
         const live=!!api.state?.enabled;
-        linkButton.classList.toggle('active',linked);
-        linkButton.disabled=live;
-        linkButton.textContent=live?'STEM JECKER LIVE':linked?'STEM JECKER READY':'STEM JECKER OFF';
-        linkButton.title=live?'Main STEMS MIX is the live 2JECKER authority':linked?'STEM JECKER is armed':'Arm STEM JECKER';
-        linkButton.setAttribute('aria-pressed',String(linked));
+        linkButton.classList.toggle('active',linked);linkButton.disabled=live;linkButton.textContent=live?'STEM JECKER LIVE':linked?'STEM JECKER READY':'STEM JECKER OFF';linkButton.title=live?'Main STEMS MIX is the live 2JECKER authority':linked?'STEM JECKER is armed':'Arm STEM JECKER';linkButton.setAttribute('aria-pressed',String(linked));
       };
       if(linkButton.dataset.stemJeckerBound!=='v8'){
         linkButton.dataset.stemJeckerBound='v8';
-        linkButton.addEventListener('click',e=>{
-          e.preventDefault();e.stopPropagation();
-          if(linked){void enterOff()}else{void enterJecker()}
-          w.setTimeout(paintLink,55);
-        });
+        linkButton.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();if(linked){void enterOff()}else{void enterJecker()}w.setTimeout(paintLink,55)});
       }
 
       let shuffleButton=panel.querySelector('[data-stem-jecker-shuffle]')||panel.querySelector('[data-stem-decker-shuffle]');
@@ -179,8 +139,7 @@
 
       const syncUi=()=>{paintLink();paintMasterMode()};
       w.__enochStemJecker={version:'v8',get linked(){return linked},get mode(){return mode},setLinked(on){if(on)void enterJecker();else void enterOff();w.setTimeout(syncUi,55);return !!on},setMode(next){if(next==='on')void enterOn();else if(next==='jecker')void enterJecker();else void enterOff();w.setTimeout(syncUi,55);return next},sync:syncFromMain,syncUi,shuffle:shuffleLive,liveMask};
-      w.__enochStemDecker=w.__enochStemJecker;
-      syncUi();
+      w.__enochStemDecker=w.__enochStemJecker;syncUi();
 
       const loadAddon=(key,src,installer)=>{
         const run=()=>{try{return window[installer]?.(host)}catch(_){return false}};
