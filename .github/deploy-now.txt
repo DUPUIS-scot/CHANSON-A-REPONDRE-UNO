@@ -1,4 +1,4 @@
-deploy-request: 2026-08-26T22:39:06.424Z
+deploy-request: 2026-08-26T22:45:35.550Z
 source: chat
 workflow: WEB — Deploy Live Site
-reason: redeploy after removing failing remote main-head API guard
+reason: deploy certified release 3.7.3.3
