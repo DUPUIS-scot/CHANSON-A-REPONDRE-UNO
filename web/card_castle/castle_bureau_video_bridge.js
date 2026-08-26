@@ -26,7 +26,7 @@ if (!window.__castleBureauVideoBridgeInstalled) {
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
 
-  document.body.dataset.bureauVideoOwner = 'castle-bureau-video-bridge-v73';
+  document.body.dataset.bureauVideoOwner = 'castle-bureau-video-bridge-v78';
 
   const mode = () => document.body.dataset.sceneMode || 'exterior';
   const isLaboratoryActive = () => mode() === 'laboratory' || mode() === 'bureau';
@@ -54,12 +54,26 @@ if (!window.__castleBureauVideoBridgeInstalled) {
     video.preload = 'auto';
     video.controls = false;
     video.volume = 0;
+    video.crossOrigin = 'anonymous';
     video.setAttribute('playsinline', '');
     video.setAttribute('webkit-playsinline', '');
     video.setAttribute('muted', '');
     video.setAttribute('aria-hidden', 'true');
     video.src = VIDEO_URL;
     document.body.appendChild(video);
+
+    video.addEventListener('loadeddata', () => {
+      texture && (texture.needsUpdate = true);
+      document.body.dataset.bureauVideoMedia = 'loadeddata-v78';
+    });
+    video.addEventListener('playing', () => {
+      texture && (texture.needsUpdate = true);
+      document.body.dataset.bureauVideoPlayback = 'playing-loop-v78';
+    });
+    video.addEventListener('error', () => {
+      document.body.dataset.bureauVideoPlayback = 'media-error-v78';
+      document.body.dataset.bureauVideoError = String(video?.error?.message || video?.error?.code || 'video-error');
+    });
     video.load();
 
     texture = new THREE.VideoTexture(video);
@@ -69,11 +83,15 @@ if (!window.__castleBureauVideoBridgeInstalled) {
     texture.generateMipmaps = false;
 
     material = new THREE.MeshBasicMaterial({
-      name: 'bureau-live-video-material-v73',
+      name: 'bureau-live-video-material-v78',
       map: texture,
       color: 0xffffff,
       side: THREE.DoubleSide,
       toneMapped: false,
+      depthWrite: true,
+      polygonOffset: true,
+      polygonOffsetFactor: -2,
+      polygonOffsetUnits: -2,
     });
 
     const pump = () => {
@@ -103,9 +121,9 @@ if (!window.__castleBureauVideoBridgeInstalled) {
     });
 
     for (const object of targets) {
-      object.material = material;
-      object.material.needsUpdate = true;
+      if (object.material !== material) object.material = material;
       object.visible = true;
+      object.renderOrder = Math.max(object.renderOrder || 0, 10);
       object.userData.bureauMirrorVideoTarget = true;
       boundMeshes.add(object);
     }
@@ -114,8 +132,8 @@ if (!window.__castleBureauVideoBridgeInstalled) {
     document.body.dataset.bureauVideoScreenCount = String(targets.length);
     document.body.dataset.bureauVideoBoundNames = targets.map(object => object.name || '(unnamed)').join('|');
     document.body.dataset.bureauVideoState = targets.length === 2
-      ? 'exact-screens-ready-v73'
-      : 'screen-mismatch-v73';
+      ? 'exact-screens-ready-v78'
+      : 'screen-mismatch-v78';
     return targets.length === 2;
   }
 
@@ -127,23 +145,25 @@ if (!window.__castleBureauVideoBridgeInstalled) {
     video.volume = 0;
 
     if (!video.paused && !video.ended) {
-      document.body.dataset.bureauVideoPlayback = 'playing-loop-v74';
+      texture.needsUpdate = true;
+      document.body.dataset.bureauVideoPlayback = 'playing-loop-v78';
       delete document.body.dataset.bureauVideoError;
       return Promise.resolve(true);
     }
     if (playPromise) return playPromise;
 
     playRequested = true;
-    document.body.dataset.bureauVideoPlayback = `${reason}-attempt-v74`;
+    document.body.dataset.bureauVideoPlayback = `${reason}-attempt-v78`;
     playPromise = Promise.resolve(video.play())
       .then(() => {
-        document.body.dataset.bureauVideoPlayback = 'playing-loop-v74';
+        texture.needsUpdate = true;
+        document.body.dataset.bureauVideoPlayback = 'playing-loop-v78';
         delete document.body.dataset.bureauVideoError;
         return true;
       })
       .catch(error => {
         playRequested = false;
-        document.body.dataset.bureauVideoPlayback = 'mirror-click-blocked-v74';
+        document.body.dataset.bureauVideoPlayback = 'mirror-click-blocked-v78';
         document.body.dataset.bureauVideoError = String(error?.message || error);
         return false;
       })
@@ -157,8 +177,8 @@ if (!window.__castleBureauVideoBridgeInstalled) {
       try { video.currentTime = 0; } catch (_) {}
     }
     document.body.dataset.bureauVideoPlayback = isLaboratoryActive()
-      ? 'paused-awaiting-mirror-click-v74'
-      : 'preloaded-v73';
+      ? 'paused-awaiting-mirror-click-v78'
+      : 'preloaded-v78';
     return Promise.resolve(true);
   }
 
@@ -168,16 +188,16 @@ if (!window.__castleBureauVideoBridgeInstalled) {
       if (root) bindScreens(root);
       if (!playRequested) {
         if (video && !video.paused) video.pause();
-        document.body.dataset.bureauVideoPlayback = 'paused-awaiting-mirror-click-v74';
+        document.body.dataset.bureauVideoPlayback = 'paused-awaiting-mirror-click-v78';
       } else if (video && !video.paused && !video.ended) {
-        document.body.dataset.bureauVideoPlayback = 'playing-loop-v74';
+        document.body.dataset.bureauVideoPlayback = 'playing-loop-v78';
       }
       return;
     }
 
     playRequested = false;
     if (video && !video.paused) video.pause();
-    document.body.dataset.bureauVideoPlayback = 'paused-v74';
+    document.body.dataset.bureauVideoPlayback = 'paused-v78';
   }
 
   function hydrate() {
@@ -242,7 +262,7 @@ if (!window.__castleBureauVideoBridgeInstalled) {
     if (root) bindScreens(root);
     if (!mirrorHit(event.clientX, event.clientY) && !mirrorHit(down.x, down.y)) return;
 
-    document.body.dataset.bureauVideoInteraction = 'mirror-click-v73';
+    document.body.dataset.bureauVideoInteraction = 'mirror-click-v78';
     attemptPlay('mirror-click');
   }
 
@@ -261,8 +281,8 @@ if (!window.__castleBureauVideoBridgeInstalled) {
   });
 
   window.addEventListener('castleRuntimeReady', hydrate);
-  window.addEventListener('pointerdown', onPointerDown, {passive: true});
-  window.addEventListener('pointerup', onPointerUp, {passive: true});
+  window.addEventListener('pointerdown', onPointerDown, {passive: true, capture: true});
+  window.addEventListener('pointerup', onPointerUp, {passive: true, capture: true});
 
   observer = new MutationObserver(() => {
     hydrate();
