@@ -82,7 +82,7 @@ class _CreditsScreenState extends State<CreditsScreen>
     );
   }
 
-  Future<void> _backToSettings() async {
+  Future<void> _goHome() async {
     if (_leaving) return;
     setState(() => _leaving = true);
     if (MediaQuery.disableAnimationsOf(context)) {
@@ -94,7 +94,7 @@ class _CreditsScreenState extends State<CreditsScreen>
         duration: const Duration(milliseconds: 900),
       );
     }
-    if (mounted) context.go(AppRoutes.settings);
+    if (mounted) context.go(AppRoutes.home);
   }
 
   @override
@@ -124,7 +124,7 @@ class _CreditsScreenState extends State<CreditsScreen>
                   if (iosTwoViewport)
                     _IosCreditsPager(
                       version: _version,
-                      onBack: _backToSettings,
+                      onHome: _goHome,
                       visible: progress > .58 && !_leaving,
                       interactive: progress > .72 && !_leaving,
                       statueInteractive: statueInteractive,
@@ -150,7 +150,7 @@ class _CreditsScreenState extends State<CreditsScreen>
                         child: SafeArea(
                           child: _CreditsBody(
                             version: _version,
-                            onBack: _backToSettings,
+                            onHome: _goHome,
                           ),
                         ),
                       ),
@@ -289,39 +289,71 @@ class _CreditsScreenState extends State<CreditsScreen>
       );
 }
 
-class _IosCreditsPager extends StatelessWidget {
+class _IosCreditsPager extends StatefulWidget {
   const _IosCreditsPager({
     required this.version,
-    required this.onBack,
+    required this.onHome,
     required this.visible,
     required this.interactive,
     required this.statueInteractive,
   });
 
   final String version;
-  final VoidCallback onBack;
+  final VoidCallback onHome;
   final bool visible;
   final bool interactive;
   final bool statueInteractive;
 
   @override
+  State<_IosCreditsPager> createState() => _IosCreditsPagerState();
+}
+
+class _IosCreditsPagerState extends State<_IosCreditsPager> {
+  late final PageController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = PageController();
+  }
+
+  Future<void> _showCredits() async {
+    if (!widget.interactive || !_controller.hasClients) return;
+    await _controller.animateToPage(
+      1,
+      duration: const Duration(milliseconds: 420),
+      curve: Curves.easeInOutCubic,
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) => AnimatedOpacity(
         key: const ValueKey('credits-ios-two-viewport'),
-        opacity: visible ? 1 : 0,
+        opacity: widget.visible ? 1 : 0,
         duration: const Duration(milliseconds: 350),
         child: IgnorePointer(
-          ignoring: !interactive,
+          ignoring: !widget.interactive,
           child: PageView(
+            controller: _controller,
             scrollDirection: Axis.vertical,
             physics: const PageScrollPhysics(),
             children: [
-              StatueSceneView(interactive: statueInteractive),
+              StatueSceneView(
+                interactive: widget.statueInteractive,
+                onSwipeUp: _showCredits,
+              ),
               ColoredBox(
                 color: const Color(0xFF090201),
                 child: SafeArea(
                   child: _CreditsBody(
-                    version: version,
-                    onBack: onBack,
+                    version: widget.version,
+                    onHome: widget.onHome,
                     compact: true,
                   ),
                 ),
@@ -335,12 +367,12 @@ class _IosCreditsPager extends StatelessWidget {
 class _CreditsBody extends StatelessWidget {
   const _CreditsBody({
     required this.version,
-    required this.onBack,
+    required this.onHome,
     this.compact = false,
   });
 
   final String version;
-  final VoidCallback onBack;
+  final VoidCallback onHome;
   final bool compact;
 
   @override
@@ -387,26 +419,35 @@ class _CreditsBody extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    'CHANSON À RÉPONDRE UNO',
-                    style: TextStyle(
-                      fontSize: subtitleSize,
-                      fontWeight: FontWeight.w800,
+                  TextButton(
+                    key: const ValueKey('credits-uno-home'),
+                    onPressed: onHome,
+                    child: Text(
+                      'CHANSON À RÉPONDRE UNO',
+                      style: TextStyle(
+                        color: const Color(0xFFFFF4D2),
+                        fontSize: subtitleSize,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
-                  SizedBox(height: compact ? 18 : 24),
+                  SizedBox(height: compact ? 14 : 20),
                   const _CreditLine(label: 'Concept & Artistic Direction', value: 'DUPUIS*'),
                   const _CreditLine(label: 'Design & Development', value: 'DUPUIS*'),
                   const _CreditLine(label: 'Music / Sound', value: 'DJ WHO'),
                   const _CreditLine(label: '3D / Interactive Environments', value: 'DUPUIS*'),
                   const _CreditLine(label: 'AI-assisted development & creative tools', value: 'OpenAI / ChatGPT and other credited tools where applicable'),
                   const SizedBox(height: 16),
-                  const SelectableText(
-                    'www.chanson-a-repondre-uno.scot',
-                    style: TextStyle(
-                      color: Color(0xFFFFC928),
-                      decoration: TextDecoration.underline,
-                      decorationColor: Color(0xFFFFC928),
+                  TextButton(
+                    key: const ValueKey('credits-website-home'),
+                    onPressed: onHome,
+                    child: const Text(
+                      'www.chanson-a-repondre-uno.scot',
+                      style: TextStyle(
+                        color: Color(0xFFFFC928),
+                        decoration: TextDecoration.underline,
+                        decorationColor: Color(0xFFFFC928),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -415,13 +456,6 @@ class _CreditsBody extends StatelessWidget {
                   const Text('© 2026 DUPUIS*'),
                   const SizedBox(height: 10),
                   const Text('Technologies: Flutter, Three.js, GoRouter, Provider, Supabase, OpenAI APIs and the supporting packages used by the app.'),
-                  SizedBox(height: compact ? 20 : 26),
-                  FilledButton.tonalIcon(
-                    key: const ValueKey('credits-back-to-settings'),
-                    onPressed: onBack,
-                    icon: const Icon(Icons.arrow_back_rounded),
-                    label: const Text('BACK TO SETTINGS'),
-                  ),
                 ]),
               ),
             ),
