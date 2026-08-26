@@ -6,8 +6,8 @@
       if(!d||!w)return false;
       const api=w.__enochDoubleDeckerSpecial,panel=document.getElementById('doubleDeckerSpecial'),launcher=d.getElementById('doubleDeckerSpecialLaunch');
       if(!api||!panel||!launcher)return false;
-      if(panel.dataset.ddsControls==='v9')return true;
-      panel.dataset.ddsControls='v9';
+      if(panel.dataset.ddsControls==='v10')return true;
+      panel.dataset.ddsControls='v10';
       const catalog=['ai_comptroller','caesar_spitter','the_kraken','heliogabal_design','vivid_void'];
       const stems=['vocals','drums','bass','other'];
       const master=d.getElementById('audio'),stemMaster=d.getElementById('stemMasterToggle'),mainPlay=d.getElementById('play');
@@ -41,7 +41,7 @@
       if(typeof api.state.crossfader!=='number')api.state.crossfader=0;
       if(typeof api.state.quantize!=='string')api.state.quantize='1bar';
       let perf=panel.querySelector('[data-dds-performance]');
-      if(!perf){perf=document.createElement('div');perf.className='dds-performance';perf.dataset.ddsPerformance='';perf.innerHTML='<div class="dds-performance-row"><label>DECK A</label><input data-dds-crossfader type="range" min="0" max="100" step="1" value="0" aria-label="2JECKER A B crossfader"><output data-dds-crossfader-value>A 100%</output></div><div class="dds-perf-buttons"><button type="button" data-dds-take="A" class="active">TAKE A</button><button type="button" data-dds-cue-b>CUE B</button><button type="button" data-dds-take="B">TAKE B</button></div><div class="dds-quantize"><label>QUANTIZE</label><select data-dds-quantize><option value="now">NOW</option><option value="1beat">1 BEAT</option><option value="1bar" selected>1 BAR</option><option value="4bar">4 BARS</option></select></div>';center?.insertBefore(perf,status||null)}
+      if(!perf){perf=document.createElement('div');perf.className='dds-performance';perf.dataset.ddsPerformance='';perf.innerHTML='<div class="dds-performance-row"><label>DECK A</label><input data-dds-crossfader type="range" min="0" max="100" step="1" value="0" aria-label="2JECKER A B crossfader"><output data-dds-crossfader-value>A 100%</output></div><div class="dds-perf-buttons"><button type="button" data-dds-take="A" class="active">TAKE A</button><button type="button" data-dds-cue-b>PREP B</button><button type="button" data-dds-take="B">TAKE B</button></div><div class="dds-quantize"><label>QUANTIZE</label><select data-dds-quantize><option value="now">NOW</option><option value="1beat">1 BEAT</option><option value="1bar" selected>1 BAR</option><option value="4bar">4 BARS</option></select></div>';center?.insertBefore(perf,status||null)}
       const xf=perf.querySelector('[data-dds-crossfader]'),xfOut=perf.querySelector('[data-dds-crossfader-value]'),quant=perf.querySelector('[data-dds-quantize]');
       const randomKey=avoid=>{const pool=catalog.filter(x=>x!==avoid);return pool[Math.floor(Math.random()*pool.length)]||catalog[0]};
       const slotState=(deckName,stem)=>api.state?.slots?.[deckName]?.[stem]||null;
@@ -102,18 +102,18 @@
         setMasterHold(true);setMainPlayIndicator(true);return jeckerPlaying();
       };
       const setTakeover=on=>{
-        // 2JECKER is a companion mixer: it never takes over or hides NOW PLAYING / transport.
-        const active=false;
+        // 2JECKER becomes the visible hybrid master while retaining the main deck as its clock.
+        const active=!!on;
         panel.classList.toggle('jecker-takeover',active);
         document.documentElement.classList.toggle('double-jecker-takeover',active);
         const phase=takeoverHud?.querySelector('[data-dds-phase]');
         const play=takeoverHud?.querySelector('[data-dds-transport]');
-        if(phase)phase.textContent=active?(master?.paused?'2JECKER · PAUSED':'2JECKER · MASTER LIVE'):'ARMED · MASTER CLOCK';
-        if(play)play.textContent=master?.paused?'PLAY':'PAUSE';
+        if(phase)phase.textContent=active?(jeckerPlaying()?'2JECKER · MASTER LIVE':'2JECKER · PAUSED'):'ARMED · MASTER CLOCK';
+        if(play)play.textContent=jeckerPlaying()?'PAUSE':'PLAY';
       };
       const paint=()=>{const on=!!api.state?.enabled;setTakeover(on);const btn=panel.querySelector('[data-dds-enable]');btn?.classList.toggle('active',on);btn?.classList.toggle('dds-engine-live',on);if(btn)btn.textContent=on?'ENGINE ON · MAIN HOLD':'ENGINE OFF';launcher.classList.toggle('active',on);setMasterHold(on);setMainPlayIndicator(on)};
       if(mainPlay&&mainPlay.dataset.ddsJeckerTransportBound!=='v9'){mainPlay.dataset.ddsJeckerTransportBound='v9';mainPlay.addEventListener('click',e=>{if(!api.state?.enabled)return;e.preventDefault();e.stopImmediatePropagation();void toggleJeckerTransport()},{capture:true})}
-      takeoverHud?.querySelector('[data-dds-transport]')?.addEventListener('click',async()=>{if(!master)return;if(master.paused)await master.play();else master.pause();paint()});
+      takeoverHud?.querySelector('[data-dds-transport]')?.addEventListener('click',async()=>{await toggleJeckerTransport();paint()});
       takeoverHud?.querySelector('[data-dds-return]')?.addEventListener('click',async()=>{if(api.state?.enabled){api.disable?.();await restoreNormalStems();setMasterHold(false)}paint();if(panel.classList.contains('open'))launcher.click()});
       const engineBtn=panel.querySelector('[data-dds-enable]');
       if(engineBtn&&engineBtn.dataset.ddsEngineBound!=='v7'){engineBtn.dataset.ddsEngineBound='v7';engineBtn.addEventListener('click',async e=>{e.preventDefault();e.stopPropagation();if(api.state?.enabled){api.disable?.();await restoreNormalStems();setMasterHold(false)}else{await suspendNormalStems();await api.enable?.();if(api.state?.enabled){await enforceActivePlayback(true);setCrossfader(api.state.crossfader);setMasterHold(true)}else await restoreNormalStems()}paint()},{capture:true})}
@@ -138,9 +138,21 @@
         master.addEventListener('seeking',()=>{if(api.state?.enabled)w.setTimeout(()=>void enforceActivePlayback(true),0)});
         master.addEventListener('ratechange',()=>{if(api.state?.enabled)w.setTimeout(()=>void enforceActivePlayback(false),0)})
       }
-      panel.querySelectorAll('[data-source]').forEach(select=>{select.disabled=false;select.style.pointerEvents='auto'});panel.querySelectorAll('[data-level]').forEach(range=>{range.disabled=false;range.style.pointerEvents='auto'});
+      panel.querySelectorAll('[data-source]').forEach(select=>{
+        select.disabled=false;select.style.pointerEvents='auto';
+        if(select.dataset.ddsQuantizedSource!=='v10'){
+          select.dataset.ddsQuantizedSource='v10';
+          select.addEventListener('change',e=>{
+            if(!api.state?.enabled)return;
+            e.stopImmediatePropagation();
+            const slotEl=select.closest('.dds-slot'),deckEl=select.closest('[data-dds-deck]'),stem=slotEl?.dataset.slot,deckName=deckEl?.dataset.ddsDeck;
+            if(!deckName||!stem)return;
+            void quantized(async()=>{await api.setSource?.(deckName,stem,select.value);applyStemState(deckName,stem);await enforceActivePlayback(true);paint()});
+          },{capture:true});
+        }
+      });panel.querySelectorAll('[data-level]').forEach(range=>{range.disabled=false;range.style.pointerEvents='auto'});
       launcher.disabled=false;launcher.style.pointerEvents='auto';setCrossfader(api.state.crossfader);paint();
-      api.version='v9';api.shuffle=shuffle;api.shuffleDeck=shuffleDeck;api.setStemOn=setStemOn;api.toggleStem=(deckName,stem)=>{const slot=slotState(deckName,stem);return quantized(()=>setStemOn(deckName,stem,slot?.on===false))};api.setMasterHold=setMasterHold;api.enforceActivePlayback=enforceActivePlayback;api.suspendNormalStems=suspendNormalStems;api.restoreNormalStems=restoreNormalStems;api.setCrossfader=setCrossfader;api.quantized=quantized;api.toggleTransport=toggleJeckerTransport;
+      api.version='v10';api.shuffle=shuffle;api.shuffleDeck=shuffleDeck;api.setStemOn=setStemOn;api.toggleStem=(deckName,stem)=>{const slot=slotState(deckName,stem);return quantized(()=>setStemOn(deckName,stem,slot?.on===false))};api.setMasterHold=setMasterHold;api.enforceActivePlayback=enforceActivePlayback;api.suspendNormalStems=suspendNormalStems;api.restoreNormalStems=restoreNormalStems;api.setCrossfader=setCrossfader;api.quantized=quantized;api.toggleTransport=toggleJeckerTransport;
       w.__enochDoubleJeckerEngine=api;
       return true;
     }catch(_){return false}
