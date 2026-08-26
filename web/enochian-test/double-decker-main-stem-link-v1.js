@@ -11,8 +11,16 @@
       const engine=w.__enochNativeStemEngine;
       const panel=document.getElementById('doubleDeckerSpecial');
       if(!api||!engine||typeof api.setStemOn!=='function'||!panel)return false;
-      if(d.documentElement.dataset.stemDecker==='v2')return true;
-      d.documentElement.dataset.stemDecker='v2';
+      if(d.documentElement.dataset.stemDecker==='v3')return true;
+      d.documentElement.dataset.stemDecker='v3';
+
+      let visualStyle=document.getElementById('stem-decker-live-style');
+      if(!visualStyle){
+        visualStyle=document.createElement('style');
+        visualStyle.id='stem-decker-live-style';
+        visualStyle.textContent='.dds-slot .stem-toggle{background:#07100e!important;color:#7a9a94!important;border-color:#315b56!important;box-shadow:none!important}.dds-slot .stem-toggle.active{background:#19c98f!important;color:#001f16!important;border-color:#63f5cf!important;box-shadow:0 0 12px #40e6b477!important;font-weight:1000!important}';
+        document.head.appendChild(visualStyle);
+      }
 
       const catalog=['ai_comptroller','caesar_spitter','the_kraken','heliogabal_design','vivid_void'];
       const rows=[...d.querySelectorAll('.stem-toggle')];
@@ -64,14 +72,14 @@
       };
 
       rows.forEach(button=>{
-        if(button.dataset.stemDeckerBound==='v2')return;
-        button.dataset.stemDeckerBound='v2';
+        if(button.dataset.stemDeckerBound==='v3')return;
+        button.dataset.stemDeckerBound='v3';
         button.addEventListener('click',()=>w.setTimeout(syncFromMain,0));
       });
 
       const stemMaster=d.getElementById('stemMasterToggle');
-      if(stemMaster&&stemMaster.dataset.stemDeckerBound!=='v2'){
-        stemMaster.dataset.stemDeckerBound='v2';
+      if(stemMaster&&stemMaster.dataset.stemDeckerBound!=='v3'){
+        stemMaster.dataset.stemDeckerBound='v3';
         stemMaster.addEventListener('click',()=>w.setTimeout(syncFromMain,0));
       }
 
@@ -86,8 +94,8 @@
         const statusEl=center?.querySelector('.dds-status');
         if(center)center.insertBefore(button,statusEl||null);
       }
-      if(button.dataset.stemDeckerBound!=='v2'){
-        button.dataset.stemDeckerBound='v2';
+      if(button.dataset.stemDeckerBound!=='v3'){
+        button.dataset.stemDeckerBound='v3';
         button.addEventListener('click',async e=>{
           e.preventDefault();e.stopPropagation();
           button.classList.add('active');
@@ -95,7 +103,7 @@
         });
       }
 
-      w.__enochStemDecker={version:'v2',sync:syncFromMain,shuffle:shuffleLive,liveMask};
+      w.__enochStemDecker={version:'v3',sync:syncFromMain,shuffle:shuffleLive,liveMask};
       syncFromMain();
       return true;
     }catch(_){return false}
