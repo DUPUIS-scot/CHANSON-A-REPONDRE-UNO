@@ -46,7 +46,7 @@ shell_required = [
     "installReliableFullscreen",
     "syncResponsiveLayout",
     "authoritative-runtime.js?v=20260825-runtime-api-v2",
-    "outer-analyser-panel.js?v=20260824-v2",
+    "outer-analyser-panel.js?v=20260826-floating-controls-v3",
     "analyser-data-bus.js?v=20260824-v2",
     "analyser-composite-signal.js?v=20260824-v9",
     "analyser-signal-glide.js?v=20260826-wheel-sculpt-v7",
@@ -99,7 +99,7 @@ for js_file in [
     Path('web/enochian-test/authoritative-runtime.js'),
     Path('web/enochian-test/outer-analyser-panel.js'),
     Path('web/enochian-test/analyser-data-bus.js'),
-    Path('web/enochian-test/analyser-signal-3d.js'),
+    Path('web/enochian-test/analyser-signal-3d-v7.js'),
     Path('web/enochian-test/sculpt-audio-mod.js'),
     Path('web/enochian-test/pending-ui-fixes.js'),
     Path('web/enochian-test/ios-touch-tuning.js'),
@@ -149,7 +149,7 @@ if 'master.muted=true' in authority or 'm.volume=' in authority or 'createMediaE
     raise SystemExit('secondary stem mixer/audio graph unexpectedly present')
 if "VERSION='v2'" not in touch or 'installStemMasterPanel' not in touch or 'stem-master-slot' not in touch or 'stem-master-in-panel' not in touch or "getElementById('stemMasterToggle')" not in touch:
     raise SystemExit('persistent stem master ON/OFF panel contract missing')
-if "outerAnalyserPanel==='v2'" not in outer_panel or 'DRAG ANALYSER WINDOW' not in outer_panel or 'outer-float-launch' not in outer_panel or 'outerAnalyserLaunchStyle' not in outer_panel or 'localStorage' not in outer_panel:
+if "outerAnalyserPanel==='v2'" not in outer_panel or 'DRAG ANALYSER WINDOW' not in outer_panel or 'outer-float-launch' not in outer_panel or 'outerAnalyserLaunchStyle' not in outer_panel or 'outer-analyser-controls' not in outer_panel or 'MOD LEVEL' not in outer_panel or 'data-outer-wheel="twist"' not in outer_panel or 'localStorage' not in outer_panel:
     raise SystemExit('outer terminal analyser panel contract missing')
 if "__enochAnalyserBus" not in bus or "__enochAnalyserBus" not in composite or "__enochAnalyserBus" not in three_d:
     raise SystemExit('unified analyser bus contract missing')
