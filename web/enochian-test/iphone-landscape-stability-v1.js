@@ -1,0 +1,12 @@
+(()=>{
+function deckDoc(frame){try{return frame.contentDocument?.getElementById('deck')?.contentDocument||null}catch(_){return null}}
+function isLandscape(d){return !!d?.documentElement?.classList.contains('enoch-ios-landscape')}
+function install(frame){const d=deckDoc(frame);if(!d||!isLandscape(d))return false;const root=d.documentElement,body=d.body,app=d.querySelector('.app'),stage=d.querySelector('.stage'),deck=d.querySelector('.deckarea'),second=d.getElementById('iosSecondCenter');if(!body||!app||!stage||!deck||!second)return false;
+ let style=d.getElementById('iphoneLandscapeStabilityV1');if(!style){style=d.createElement('style');style.id='iphoneLandscapeStabilityV1';style.textContent=`@supports (-webkit-touch-callout:none){@media (orientation:landscape) and (max-height:520px) and (pointer:coarse){html.enoch-ios-landscape,html.enoch-ios-landscape body{height:auto!important;min-height:200dvh!important;overflow-y:auto!important;scroll-snap-type:y mandatory!important}.enoch-ios-landscape .app{height:200dvh!important;min-height:200dvh!important}.enoch-ios-landscape .stage{grid-template-rows:96px calc(100dvh - 132px) calc(100dvh - 70px)!important}.enoch-ios-landscape .deckarea,.enoch-ios-landscape .ios-second-center{scroll-snap-align:start!important;scroll-snap-stop:always!important}.enoch-ios-landscape .ios-second-center{overscroll-behavior:contain!important}.enoch-ios-landscape button,.enoch-ios-landscape .btn,.enoch-ios-landscape input[type=range]{-webkit-tap-highlight-color:transparent}.enoch-ios-landscape .ios-second-center button,.enoch-ios-landscape .ios-second-center .btn{touch-action:manipulation!important}}}`;d.head.appendChild(style)}
+ root.dataset.iphoneLandscapeStability='v1';
+ const preserve=()=>{try{window.syncEnochianIphoneLandscape?.(frame);requestAnimationFrame(()=>{const nd=deckDoc(frame);if(!nd||!isLandscape(nd))return;const s=nd.getElementById('iosSecondCenter');if(s&&nd.documentElement.scrollTop>nd.defaultView.innerHeight*.55)s.scrollIntoView({block:'start'});})}catch(_){}};
+ if(!root.__enochLandscapeStabilityBound){root.__enochLandscapeStabilityBound=true;d.defaultView.addEventListener('orientationchange',()=>setTimeout(preserve,120),{passive:true});d.defaultView.addEventListener('pageshow',preserve,{passive:true});}
+ return true}
+window.installEnochianIphoneLandscapeStability=frame=>{let n=0,t=setInterval(()=>{if(install(frame)||++n>240)clearInterval(t)},50)};
+window.syncEnochianIphoneLandscapeStability=frame=>install(frame);
+})();
