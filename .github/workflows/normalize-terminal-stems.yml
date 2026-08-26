@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: normalize-terminal-stems-v4
+  group: normalize-terminal-stems-v5
   cancel-in-progress: true
 
 jobs:
@@ -28,10 +28,13 @@ jobs:
             web/enochian-test/live-copy.html
             pubspec.yaml
 
-      - name: Check audio tools
+      - name: Install ffmpeg
         shell: bash
         run: |
           set -euo pipefail
+          export DEBIAN_FRONTEND=noninteractive
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
           ffmpeg -version | head -n 1
           ffprobe -version | head -n 1
 
@@ -51,4 +54,5 @@ jobs:
             exit 0
           fi
           git commit -m 'Normalize terminal stem library'
+          git pull --rebase origin main
           git push origin HEAD:main
