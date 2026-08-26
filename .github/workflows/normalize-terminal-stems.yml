@@ -1,0 +1,225 @@
+name: Normalize terminal stems
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: normalize-terminal-stems-v1
+  cancel-in-progress: true
+
+jobs:
+  normalize:
+    if: ${{ !contains(github.event.head_commit.message || '', 'Normalize terminal stem library') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            assets/audio/stems/
+            web/enochian-test/live-copy.html
+            pubspec.yaml
+
+      - name: Ensure ffmpeg
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y ffmpeg
+          fi
+
+      - name: Normalize and compress stem assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          stems=(vocals drums bass other)
+
+          transcode() {
+            local src="$1" dst="$2"
+            test -s "$src"
+            local tmp="${dst%.mp3}.terminal.tmp.mp3"
+            mkdir -p "$(dirname "$dst")"
+            ffmpeg -hide_banner -loglevel error -y \
+              -i "$src" -map 0:a:0 -map_metadata -1 -vn \
+              -c:a libmp3lame -b:a 128k -ar 44100 -ac 2 \
+              "$tmp"
+            test -s "$tmp"
+            mv "$tmp" "$dst"
+            if [ "$src" != "$dst" ]; then rm -f "$src"; fi
+          }
+
+          # Vivid Void: already cleanly named, reduce the 320 kbps masters to terminal weight.
+          for stem in "${stems[@]}"; do
+            src="assets/audio/stems/vivid_void/vivid_void_${stem}.mp3"
+            rate="$(ffprobe -v error -select_streams a:0 -show_entries stream=bit_rate -of default=nw=1:nk=1 "$src" || true)"
+            if [ -z "$rate" ] || [ "$rate" -gt 140000 ]; then transcode "$src" "$src"; fi
+          done
+
+          # HELIOGABAL//DESIGN: camelCase source names -> canonical snake_case names + 128 kbps.
+          for stem in "${stems[@]}"; do
+            dst="assets/audio/stems/heliogabal_design/heliogabal_design_${stem}.mp3"
+            legacy="assets/audio/stems/heliogabal_design/heliogabalDesign_${stem}.mp3"
+            if [ -s "$legacy" ]; then
+              transcode "$legacy" "$dst"
+            elif [ -s "$dst" ]; then
+              rate="$(ffprobe -v error -select_streams a:0 -show_entries stream=bit_rate -of default=nw=1:nk=1 "$dst" || true)"
+              if [ -z "$rate" ] || [ "$rate" -gt 140000 ]; then transcode "$dst" "$dst"; fi
+            else
+              echo "Missing HELIOGABAL stem: $stem" >&2; exit 1
+            fi
+          done
+
+          # Caesar-Spitter: remove upload suffix/spaces and compress the 320 kbps sources.
+          for stem in "${stems[@]}"; do
+            dst="assets/audio/stems/caesar_spitter/caesar_spitter_${stem}.mp3"
+            legacy="assets/audio/stems/caesar_spitter/caesar_spitter (2)_${stem}.mp3"
+            if [ -s "$legacy" ]; then
+              transcode "$legacy" "$dst"
+            elif [ -s "$dst" ]; then
+              rate="$(ffprobe -v error -select_streams a:0 -show_entries stream=bit_rate -of default=nw=1:nk=1 "$dst" || true)"
+              if [ -z "$rate" ] || [ "$rate" -gt 140000 ]; then transcode "$dst" "$dst"; fi
+            else
+              echo "Missing Caesar-Spitter stem: $stem" >&2; exit 1
+            fi
+          done
+
+          # The Kraken is already canonical; enforce the same terminal codec contract only if needed.
+          for stem in "${stems[@]}"; do
+            src="assets/audio/stems/the_kraken/the_kraken_${stem}.mp3"
+            test -s "$src"
+            rate="$(ffprobe -v error -select_streams a:0 -show_entries stream=bit_rate -of default=nw=1:nk=1 "$src" || true)"
+            sample="$(ffprobe -v error -select_streams a:0 -show_entries stream=sample_rate -of default=nw=1:nk=1 "$src" || true)"
+            channels="$(ffprobe -v error -select_streams a:0 -show_entries stream=channels -of default=nw=1:nk=1 "$src" || true)"
+            if [ -z "$rate" ] || [ "$rate" -gt 140000 ] || [ "$sample" != 44100 ] || [ "$channels" != 2 ]; then transcode "$src" "$src"; fi
+          done
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+          sets=['ai_comptroller','caesar_spitter','the_kraken','heliogabal_design','vivid_void']
+          stems=['vocals','drums','bass','other']
+          for key in sets:
+              paths=[Path('assets/audio/stems')/key/f'{key}_{stem}.mp3' for stem in stems]
+              for p in paths:
+                  if not p.is_file() or p.stat().st_size == 0:
+                      raise SystemExit(f'missing normalized stem: {p}')
+              durations=[]
+              for p in paths:
+                  out=subprocess.check_output(['ffprobe','-v','error','-show_entries','format=duration','-of','default=nw=1:nk=1',str(p)],text=True).strip()
+                  durations.append(float(out))
+              spread=max(durations)-min(durations)
+              if spread > 0.08:
+                  raise SystemExit(f'{key} stem duration mismatch: {durations}')
+              print(key, 'duration', round(sum(durations)/4,3), 'spread', round(spread,4), 'sizes', [p.stat().st_size for p in paths])
+          PY
+
+      - name: Add all stem folders to Flutter assets
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('pubspec.yaml')
+          s=p.read_text(encoding='utf-8')
+          anchor='    - assets/audio/stems/ai_comptroller/\n'
+          if anchor not in s:
+              raise SystemExit('AI Comptroller asset anchor missing')
+          extra=''.join(f'    - assets/audio/stems/{x}/\n' for x in ['caesar_spitter','the_kraken','heliogabal_design','vivid_void'])
+          for line in extra.splitlines(True):
+              s=s.replace(line,'')
+          s=s.replace(anchor,anchor+extra,1)
+          p.write_text(s,encoding='utf-8')
+
+      - name: Generalize terminal stem loader to every stemmed track
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('web/enochian-test/live-copy.html')
+          s=p.read_text(encoding='utf-8')
+          marker='MULTI TRACK STEM CATALOG v1'
+          if marker in s:
+              print('Multi-track stem runtime already installed')
+              raise SystemExit(0)
+
+          old="""  const stemFiles={
+   vocals:'/assets/assets/audio/stems/ai_comptroller/ai_comptroller_vocals.mp3',
+   drums:'/assets/assets/audio/stems/ai_comptroller/ai_comptroller_drums.mp3',
+   bass:'/assets/assets/audio/stems/ai_comptroller/ai_comptroller_bass.mp3',
+   other:'/assets/assets/audio/stems/ai_comptroller/ai_comptroller_other.mp3'
+  };
+"""
+          new="""  // MULTI TRACK STEM CATALOG v1
+  const stemCatalog={
+   0:{key:'ai_comptroller',label:'AI COMPTROLLER'},
+   1:{key:'caesar_spitter',label:'CAESAR-SPITTER'},
+   2:{key:'the_kraken',label:'THE KRAKEN'},
+   3:{key:'heliogabal_design',label:'HELIOGABAL//DESIGN'},
+   4:{key:'vivid_void',label:'VIVID VOID'}
+  };
+  const stemPath=(track,stem)=>'/assets/assets/audio/stems/'+track+'/'+track+'_'+stem+'.mp3';
+  const stemFiles={vocals:'',drums:'',bass:'',other:''};
+  let activeStemKey=null;
+  function stemTrackInfo(){try{if(typeof idx!=='undefined'&&stemCatalog[idx])return stemCatalog[idx]}catch(_){}const name=(q('name')?.textContent||'').trim().toUpperCase();return Object.values(stemCatalog).find(x=>x.label===name)||null}
+  function selectStemSources(force=false){const info=stemTrackInfo();if(!info)return false;if(!force&&activeStemKey===info.key)return true;Object.keys(stemFiles).forEach(key=>{const url=stemPath(info.key,key);stemFiles[key]=url;const m=stemMedia&&stemMedia[key];if(m){try{m.pause()}catch(_){};try{m.removeAttribute('src');m.load()}catch(_){};m.dataset.src=url}});activeStemKey=info.key;stemMode=false;try{setMasterRoute(true)}catch(_){};return true}
+"""
+          if old not in s:
+              raise SystemExit('stemFiles anchor missing')
+          s=s.replace(old,new,1)
+
+          old_create="Object.entries(stemFiles).forEach(([key,url])=>{const m=document.createElement('audio');m.preload='none';m.dataset.src=url;m.setAttribute('aria-hidden','true');m.style.display='none';document.body.appendChild(m);stemMedia[key]=m});"
+          new_create="Object.entries(stemFiles).forEach(([key,url])=>{const m=document.createElement('audio');m.preload='none';m.dataset.src=url;m.setAttribute('aria-hidden','true');m.style.display='none';document.body.appendChild(m);stemMedia[key]=m});selectStemSources(true);"
+          if old_create not in s: raise SystemExit('stem media creation anchor missing')
+          s=s.replace(old_create,new_create,1)
+
+          old_check="function isAiComptroller(){try{return typeof idx!=='undefined'&&idx===0}catch(_){return (q('name')?.textContent||'').trim()==='AI Comptroller'}}"
+          new_check="function isAiComptroller(){return !!stemTrackInfo()}"
+          if old_check not in s: raise SystemExit('stem availability anchor missing')
+          s=s.replace(old_check,new_check,1)
+
+          old_ui="function updateStemUi(){const box=q('stemIsolator');if(!box)return;const ai=isAiComptroller();box.classList.toggle('disabled',!ai);box.querySelectorAll('button,input').forEach(el=>el.disabled=!ai);const note=q('stemNote');if(note)note.textContent=ai?'BASS + OTHERS = INSTRUMENTS · ALL STEMS LOCKED TO MASTER TRANSPORT':'STEM ISOLATOR AVAILABLE ON AI COMPTROLLER'}"
+          new_ui="function updateStemUi(){const box=q('stemIsolator');if(!box)return;const info=stemTrackInfo(),available=!!info;box.classList.toggle('disabled',!available);box.querySelectorAll('button,input').forEach(el=>el.disabled=!available);const title=box.querySelector('.stem-title');if(title)title.textContent=available?'STEM ISOLATOR · '+info.label:'STEM ISOLATOR · NO STEMS';const note=q('stemNote');if(note)note.textContent=available?'BASS + OTHERS = INSTRUMENTS · ALL STEMS LOCKED TO MASTER TRANSPORT':'NO STEM SET FOR THIS TRACK'}"
+          if old_ui not in s: raise SystemExit('stem UI anchor missing')
+          s=s.replace(old_ui,new_ui,1)
+
+          old_mode="async function setStemMode(){const ai=isAiComptroller();if(!ai){stemMode=false;Object.values(stemMedia).forEach(m=>{try{m.pause()}catch(_){}});setMasterRoute(true);updateStemUi();return}if(stemMode){updateStemUi();return}try{if(originalEnsureAudio)await originalEnsureAudio();else if(typeof ensureAudio==='function')await ensureAudio()}catch(_){};ensureMasterGate();try{await ensureStemMediaLoaded();await ensureStemGraph();syncStemTimes(true);setStemRate();applyStemGains();if(a.paused){stemMode=false;setMasterRoute(true);try{log('STEMS ARMED · WAITING FOR PLAY')}catch(_){}}else{await Promise.all(Object.values(stemMedia).map(m=>m.play()));setMasterRoute(false);stemMode=true;try{log('STEM MODE · AI COMPTROLLER')}catch(_){}}}catch(error){stemMode=false;Object.values(stemMedia).forEach(m=>{try{m.pause()}catch(_){}});setMasterRoute(true);try{log('STEM FALLBACK · MASTER AUDIO · '+(error&&error.message?error.message:'UNKNOWN'))}catch(_){}}updateStemUi()}"
+          new_mode="async function setStemMode(){const info=stemTrackInfo();if(!info){stemMode=false;Object.values(stemMedia).forEach(m=>{try{m.pause()}catch(_){}});setMasterRoute(true);updateStemUi();return}if(activeStemKey!==info.key){Object.values(stemMedia).forEach(m=>{try{m.pause()}catch(_){}});stemMode=false;setMasterRoute(true);selectStemSources(true)}if(stemMode){updateStemUi();return}try{if(originalEnsureAudio)await originalEnsureAudio();else if(typeof ensureAudio==='function')await ensureAudio()}catch(_){};ensureMasterGate();try{await ensureStemMediaLoaded();await ensureStemGraph();syncStemTimes(true);setStemRate();applyStemGains();if(a.paused){stemMode=false;setMasterRoute(true);try{log('STEMS ARMED · '+info.label+' · WAITING FOR PLAY')}catch(_){}}else{await Promise.all(Object.values(stemMedia).map(m=>m.play()));setMasterRoute(false);stemMode=true;try{log('STEM MODE · '+info.label)}catch(_){}}}catch(error){stemMode=false;Object.values(stemMedia).forEach(m=>{try{m.pause()}catch(_){}});setMasterRoute(true);try{log('STEM FALLBACK · MASTER AUDIO · '+(error&&error.message?error.message:'UNKNOWN'))}catch(_){}}updateStemUi()}"
+          if old_mode not in s: raise SystemExit('stem mode anchor missing')
+          s=s.replace(old_mode,new_mode,1)
+
+          p.write_text(s,encoding='utf-8')
+
+      - name: Verify normalized terminal contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'MULTI TRACK STEM CATALOG v1' web/enochian-test/live-copy.html
+          grep -q "key:'caesar_spitter'" web/enochian-test/live-copy.html
+          grep -q "key:'the_kraken'" web/enochian-test/live-copy.html
+          grep -q "key:'heliogabal_design'" web/enochian-test/live-copy.html
+          grep -q "key:'vivid_void'" web/enochian-test/live-copy.html
+          grep -q 'assets/audio/stems/caesar_spitter/' pubspec.yaml
+          grep -q 'assets/audio/stems/the_kraken/' pubspec.yaml
+          grep -q 'assets/audio/stems/heliogabal_design/' pubspec.yaml
+          grep -q 'assets/audio/stems/vivid_void/' pubspec.yaml
+          ! find assets/audio/stems/caesar_spitter -type f -name '* (2)_*.mp3' | grep -q .
+          ! find assets/audio/stems/heliogabal_design -type f -name 'heliogabalDesign_*.mp3' | grep -q .
+
+      - name: Commit normalized terminal stem library
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/audio/stems pubspec.yaml web/enochian-test/live-copy.html
+          if git diff --cached --quiet; then
+            echo 'Nothing to normalize.'
+            exit 0
+          fi
+          git commit -m 'Normalize terminal stem library'
+          git push origin HEAD:main
