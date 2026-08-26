@@ -12,8 +12,8 @@
       const panel=document.getElementById('doubleDeckerSpecial');
       const stemMaster=d.getElementById('stemMasterToggle');
       if(!api||!engine||typeof api.setStemOn!=='function'||!panel||!stemMaster)return false;
-      if(d.documentElement.dataset.stemJecker==='v6')return true;
-      d.documentElement.dataset.stemJecker='v6';
+      if(d.documentElement.dataset.stemJecker==='v7')return true;
+      d.documentElement.dataset.stemJecker='v7';
 
       let visualStyle=document.getElementById('stem-jecker-live-style');
       if(!visualStyle){
@@ -36,13 +36,18 @@
       let mode=engine.status?.().enabled?'on':'off';
       let bypassMasterClick=false;
       const setBoth=(stem,on)=>{api.setStemOn('A',stem,!!on);api.setStemOn('B',stem,!!on)};
+      // In STEM JECKER mode the native stem engine is deliberately held off.
+      // Its runtime status therefore cannot be the source of truth. Read the
+      // visible STEMS MIX switches, which are the live performance controls.
+      const mainToggleOn=key=>!!d.querySelector(`[data-stem-toggle="${key}"]`)?.classList.contains('active');
+      const mainMask=()=>({vocals:mainToggleOn('vocals'),drums:mainToggleOn('drums'),bass:mainToggleOn('instruments'),other:mainToggleOn('instruments')});
       const syncFromMain=()=>{
         if(!linked)return false;
-        const s=status();
-        setBoth('vocals',!!s.vocals?.on);
-        setBoth('drums',!!s.drums?.on);
-        setBoth('bass',!!s.bass?.on);
-        setBoth('other',!!s.other?.on);
+        const s=mainMask();
+        setBoth('vocals',s.vocals);
+        setBoth('drums',s.drums);
+        setBoth('bass',s.bass);
+        setBoth('other',s.other);
         api.enforceActivePlayback?.(false);
         return true;
       };
@@ -106,10 +111,7 @@
         return pool[Math.floor(Math.random()*pool.length)]||catalog[0];
       };
       const liveMask=()=>{
-        if(linked){
-          const s=status();
-          return {vocals:!!s.vocals?.on,drums:!!s.drums?.on,bass:!!s.bass?.on,other:!!s.other?.on};
-        }
+        if(linked)return mainMask();
         const on=(deckName,stem)=>api.state?.slots?.[deckName]?.[stem]?.on!==false;
         return {vocals:on('A','vocals')||on('B','vocals'),drums:on('A','drums')||on('B','drums'),bass:on('A','bass')||on('B','bass'),other:on('A','other')||on('B','other')};
       };
@@ -135,8 +137,8 @@
       };
 
       rows.forEach(button=>{
-        if(button.dataset.stemJeckerBound==='v6')return;
-        button.dataset.stemJeckerBound='v6';
+        if(button.dataset.stemJeckerBound==='v7')return;
+        button.dataset.stemJeckerBound='v7';
         button.addEventListener('click',()=>w.setTimeout(syncFromMain,0));
       });
 
@@ -149,8 +151,8 @@
         linkButton.textContent=linked?'STEM JECKER ON':'STEM JECKER OFF';
         linkButton.setAttribute('aria-pressed',String(linked));
       };
-      if(linkButton.dataset.stemJeckerBound!=='v6'){
-        linkButton.dataset.stemJeckerBound='v6';
+      if(linkButton.dataset.stemJeckerBound!=='v7'){
+        linkButton.dataset.stemJeckerBound='v7';
         linkButton.addEventListener('click',e=>{
           e.preventDefault();e.stopPropagation();
           if(linked){void enterOff()}else{void enterJecker()}
@@ -161,13 +163,13 @@
       let shuffleButton=panel.querySelector('[data-stem-jecker-shuffle]')||panel.querySelector('[data-stem-decker-shuffle]');
       if(!shuffleButton){shuffleButton=document.createElement('button');shuffleButton.type='button';shuffleButton.className='dds-deck-shuffle';if(center)center.insertBefore(shuffleButton,statusEl||null)}
       delete shuffleButton.dataset.stemDeckerShuffle;shuffleButton.dataset.stemJeckerShuffle='';shuffleButton.textContent='STEM JECKER SHUFFLE';
-      if(shuffleButton.dataset.stemJeckerBound!=='v6'){
-        shuffleButton.dataset.stemJeckerBound='v6';
+      if(shuffleButton.dataset.stemJeckerBound!=='v7'){
+        shuffleButton.dataset.stemJeckerBound='v7';
         shuffleButton.addEventListener('click',async e=>{e.preventDefault();e.stopPropagation();shuffleButton.classList.add('active');try{await shuffleLive()}finally{w.setTimeout(()=>shuffleButton.classList.remove('active'),180)}});
       }
 
       const syncUi=()=>{paintLink();paintMasterMode()};
-      w.__enochStemJecker={version:'v6',get linked(){return linked},get mode(){return mode},setLinked(on){if(on)void enterJecker();else void enterOff();w.setTimeout(syncUi,55);return !!on},setMode(next){if(next==='on')void enterOn();else if(next==='jecker')void enterJecker();else void enterOff();w.setTimeout(syncUi,55);return next},sync:syncFromMain,shuffle:shuffleLive,liveMask};
+      w.__enochStemJecker={version:'v7',get linked(){return linked},get mode(){return mode},setLinked(on){if(on)void enterJecker();else void enterOff();w.setTimeout(syncUi,55);return !!on},setMode(next){if(next==='on')void enterOn();else if(next==='jecker')void enterJecker();else void enterOff();w.setTimeout(syncUi,55);return next},sync:syncFromMain,shuffle:shuffleLive,liveMask};
       w.__enochStemDecker=w.__enochStemJecker;
       syncUi();
 
