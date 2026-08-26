@@ -1,8 +1,6 @@
 name: Normalize terminal stems
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -10,7 +8,7 @@ permissions:
   actions: write
 
 concurrency:
-  group: normalize-terminal-stems-v6
+  group: normalize-terminal-stems
   cancel-in-progress: true
 
 jobs:
