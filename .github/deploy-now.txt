@@ -1,4 +1,4 @@
-deploy-request: 2026-08-26T22:37:46.623Z
+deploy-request: 2026-08-26T22:39:06.424Z
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy STEM JECKER direct main-controls routing and workflow authentication repair
+reason: redeploy after removing failing remote main-head API guard
