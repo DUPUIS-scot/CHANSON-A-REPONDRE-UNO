@@ -49,7 +49,7 @@ shell_required = [
     "outer-analyser-panel.js?v=20260824-v2",
     "analyser-data-bus.js?v=20260824-v2",
     "analyser-composite-signal.js?v=20260824-v9",
-    "analyser-signal-glide.js?v=20260825-v6",
+    "analyser-signal-glide.js?v=20260826-wheel-sculpt-v7",
     "analyser-signal-3d-v7.js?v=20260826-internal-master-v7",
     "sculpt-audio-mod.js?v=20260825-v3",
     "pending-ui-fixes.js?v=20260825-v2",
@@ -157,7 +157,7 @@ if "version:'v2'" not in bus or "frequency:null" not in bus or "bus.emit('freque
     raise SystemExit('FFT analyser bus v2 contract missing')
 if '__compositeCapture' in composite or '__enoch3dCapture' in three_d:
     raise SystemExit('legacy independent analyser wrappers unexpectedly present')
-if "analyserSignalGlide='v6'" not in glide or "analyserSignal3d==='v7'" not in three_d or "input:'internal-master-mix'" not in three_d or "const ROWS=16,BINS=16" not in three_d or "Math.pow(max+1" not in three_d or "const pick=" not in three_d:
+if "analyserSignalGlide='v6'" not in glide or "__enochAnalyserWheelMode" not in glide or "wheelMode==='height'" not in glide or "wheelMode==='depth'" not in glide or "wheelMode==='twist'" not in glide or "analyserSignal3d==='v7'" not in three_d or "analyser-control-widget" not in three_d or "MOD LEVEL" not in three_d or "input:'internal-master-mix'" not in three_d or "const ROWS=16,BINS=16" not in three_d or "Math.pow(max+1" not in three_d or "const pick=" not in three_d:
     raise SystemExit('internal-master 16×16 logarithmic sculptable 3D analyser contract missing')
 if "sculptAudioMod='v3'" not in sculpt_audio or "version:'v3'" not in sculpt_audio or '__enochSculptAudio' not in sculpt_audio or 'grabCurve=[0,.28,.48,.67,.87,1]' not in sculpt_audio or 'restoreBase' not in sculpt_audio or 'SCULPT AUDIO' not in sculpt_audio:
     raise SystemExit('sculpt-to-audio modulation v3 engagement contract missing')
