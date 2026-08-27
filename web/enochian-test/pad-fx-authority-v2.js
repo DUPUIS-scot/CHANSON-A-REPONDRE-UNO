@@ -8,6 +8,7 @@
         'use strict';
         if(window.__enochPadFxAuthorityV2)return;
         const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+        const modes=Object.freeze(['echo','reverb','flanger','phaser','bitcrusher','gate']);
         let fx=null,mode=null,x=.5,y=.5,gateTimer=0;
         const impulse=(ac,seconds=2.2,decay=2.8)=>{const rate=ac.sampleRate,len=Math.max(1,Math.floor(rate*seconds)),buf=ac.createBuffer(2,len,rate);for(let c=0;c<2;c++){const data=buf.getChannelData(c);for(let i=0;i<len;i++){const t=i/len;data[i]=(Math.random()*2-1)*Math.pow(1-t,decay)}}return buf};
         async function setup(){
@@ -28,7 +29,8 @@
         const stopGate=()=>{if(gateTimer){clearInterval(gateTimer);gateTimer=0}if(fx?.gateGain&&ctx)fx.gateGain.gain.setTargetAtTime(1,ctx.currentTime,.01)};
         const silence=()=>{if(!fx||!ctx)return;['echoOut','reverbOut','phaserOut','flangerOut','crusherOut','gateOut'].forEach(k=>fx[k].gain.setTargetAtTime(0,ctx.currentTime,.012));stopGate()};
         async function apply(nextMode,nx=x,ny=y){
-          x=clamp(nx,0,1);y=clamp(ny,0,1);mode=nextMode;await setup();silence();
+          if(!modes.includes(nextMode))throw new Error('UNKNOWN PAD FX: '+String(nextMode));
+          x=clamp(nx,0,1);y=clamp(ny,0,1);await setup();silence();mode=nextMode;
           try{if(wet)wet.gain.setTargetAtTime(0,ctx.currentTime,.01);if(delay)delay.delayTime.setTargetAtTime(0,ctx.currentTime,.01);if(fb)fb.gain.setTargetAtTime(.18,ctx.currentTime,.01);if(filter){filter.type='lowpass';filter.frequency.setTargetAtTime(20000,ctx.currentTime,.01);if(filter.Q)filter.Q.setTargetAtTime(1,ctx.currentTime,.01)}if(drive)drive.curve=null}catch(_){}
           const mix=clamp(typeof fxMix==='number'?fxMix:.5,0,1),wetAmt=.18+mix*.72;
           if(mode==='echo'){fx.echoDelay.delayTime.setTargetAtTime(.08+x*.62,ctx.currentTime,.012);fx.echoFb.gain.setTargetAtTime(.18+y*.68,ctx.currentTime,.012);fx.echoOut.gain.setTargetAtTime(wetAmt*(.3+y*.7),ctx.currentTime,.012)}
@@ -37,16 +39,34 @@
           else if(mode==='flanger'){fx.flangerLfo.frequency.setTargetAtTime(.06+x*1.9,ctx.currentTime,.02);fx.flangerDepth.gain.setTargetAtTime(.0015+y*.008,ctx.currentTime,.02);fx.flangerFb.gain.setTargetAtTime(.08+y*.7,ctx.currentTime,.02);fx.flangerOut.gain.setTargetAtTime(wetAmt*(.22+y*.58),ctx.currentTime,.015)}
           else if(mode==='bitcrusher'){fx.crusher.curve=curveFor(.18+x*.82);fx.crusherTone.frequency.setTargetAtTime(900+Math.pow(1-y,1.6)*12000,ctx.currentTime,.015);fx.crusherOut.gain.setTargetAtTime(wetAmt*(.25+y*.55),ctx.currentTime,.015)}
           else if(mode==='gate'){fx.gateOut.gain.setTargetAtTime(wetAmt,ctx.currentTime,.01);const hz=2+x*14,duty=.15+y*.68;gateTimer=setInterval(()=>{if(!ctx||mode!=='gate')return;const phase=(performance.now()/1000*hz)%1;fx.gateGain.gain.setTargetAtTime(phase<duty?1:.025,ctx.currentTime,.004)},16)}
+          document.documentElement.dataset.padFxLive=mode;
+          delete document.documentElement.dataset.padFxError;
           try{log('PAD FX V2 · '+String(mode||'OFF').toUpperCase())}catch(_){}
+          return mode;
+        }
+        function reset(){
+          mode=null;silence();
+          delete document.documentElement.dataset.padFxLive;
         }
         function bind(){
           const pad=document.getElementById('xyPad'),box=pad?.closest('.pad-panel'),modeBox=box?.querySelector('.pad-mode'),readout=document.getElementById('padReadout'),dot=document.getElementById('padDot');if(!pad||!modeBox)return false;
-          modeBox.querySelectorAll('[data-pad-fx]').forEach(btn=>{btn.onclick=async e=>{e?.preventDefault?.();modeBox.querySelectorAll('[data-pad-fx]').forEach(b=>b.classList.toggle('active',b===btn));await apply(btn.dataset.padFx,x,y)}});
+          modeBox.querySelectorAll('[data-pad-fx]').forEach(btn=>{btn.onclick=async e=>{
+            e?.preventDefault?.();
+            try{
+              await apply(btn.dataset.padFx,x,y);
+              modeBox.querySelectorAll('[data-pad-fx]').forEach(b=>b.classList.toggle('active',b===btn));
+            }catch(err){
+              modeBox.querySelectorAll('[data-pad-fx]').forEach(b=>b.classList.remove('active'));
+              document.documentElement.dataset.padFxError=String(err?.message||err||'PAD FX UNAVAILABLE');
+              try{log('PAD FX ERROR · '+String(btn.dataset.padFx||'UNKNOWN').toUpperCase())}catch(_){}
+              console.error('[PAD FX]',err);
+            }
+          }});
           const setFromEvent=async e=>{const r=pad.getBoundingClientRect();x=clamp((e.clientX-r.left)/Math.max(1,r.width),0,1);y=clamp(1-(e.clientY-r.top)/Math.max(1,r.height),0,1);if(dot){dot.style.left=(x*100)+'%';dot.style.top=((1-y)*100)+'%'}if(readout)readout.textContent='X '+Math.round(x*100)+' · Y '+Math.round(y*100);if(mode)await apply(mode,x,y)};
           pad.onpointerdown=async e=>{try{pad.setPointerCapture(e.pointerId)}catch(_){};await setFromEvent(e)};pad.onpointermove=async e=>{if(!pad.hasPointerCapture?.(e.pointerId))return;await setFromEvent(e)};
           document.documentElement.dataset.padFxAuthority='v2';return true;
         }
-        window.__enochPadFxAuthorityV2={version:'v2',setup,apply,get mode(){return mode},bind};
+        window.__enochPadFxAuthorityV2={version:'v3',modes,setup,apply,reset,get mode(){return mode},bind};
         let tries=0,t=setInterval(()=>{if(bind()||++tries>180)clearInterval(t)},50);bind();
       })();`;
       d.body.appendChild(script);
