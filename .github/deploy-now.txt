@@ -1,4 +1,4 @@
-deploy-request: 2026-08-27T01:03:00Z
+deploy-request: 2026-08-27T03:57:00Z
 source: chat
 workflow: WEB — Deploy Live Site
-reason: redeploy certified release 3.7.3.4 after dependency fix
+reason: redeploy after Enochian analyser verifier marker fix
