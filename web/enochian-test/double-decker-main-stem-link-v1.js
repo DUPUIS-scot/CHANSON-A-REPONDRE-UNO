@@ -12,8 +12,8 @@
       const panel=document.getElementById('doubleDeckerSpecial');
       const stemMaster=d.getElementById('stemMasterToggle');
       if(!api||!engine||typeof api.setStemOn!=='function'||!panel||!stemMaster)return false;
-      if(d.documentElement.dataset.stemJecker==='v9')return true;
-      d.documentElement.dataset.stemJecker='v9';
+      if(d.documentElement.dataset.stemJecker==='v10')return true;
+      d.documentElement.dataset.stemJecker='v10';
 
       let visualStyle=document.getElementById('stem-jecker-live-style');
       if(visualStyle)visualStyle.remove();
@@ -30,7 +30,7 @@
       const rows=[...d.querySelectorAll('.stem-toggle')];
       let linked=false;
       let mode=engine.status?.().enabled?'on':'off';
-      let bypassMasterClick=false;
+      let transition=null;
       const setBoth=(stem,on)=>{api.setStemOn('A',stem,!!on);api.setStemOn('B',stem,!!on)};
       const mainToggleOn=key=>!!d.querySelector(`[data-stem-toggle="${key}"]`)?.classList.contains('active');
       const mainLevel=key=>Math.max(0,Math.min(1,Number(d.querySelector(`[data-stem-range="${key}"]`)?.value||0)/100));
@@ -45,20 +45,36 @@
           stemMaster.setAttribute('aria-pressed','false');
           stemMaster.setAttribute('data-stem-master-mode','jecker');
           stemMaster.textContent='STEM → 2JECKER';
-          stemMaster.title='STEMS MIX is linked to 2JECKER; native master stems remain off';
+          stemMaster.title='STEMS MIX drives 2JECKER; native master stems are held off';
         }else{
           stemMaster.setAttribute('data-stem-master-mode',mode);
           stemMaster.title=mode==='on'?'STEMS ON':'STEMS OFF';
         }
       };
 
-      const invokeNativeMasterClick=()=>new Promise(resolve=>{bypassMasterClick=true;try{stemMaster.dispatchEvent(new w.MouseEvent('click',{bubbles:true,cancelable:true,view:w}))}finally{bypassMasterClick=false;w.setTimeout(resolve,45)}});
-      const enterOff=async()=>{linked=false;if(!api.state?.enabled&&engine.status?.().enabled)await invokeNativeMasterClick();mode=engine.status?.().enabled?'on':'off';paintMasterMode()};
-      const enterJecker=async()=>{if(!api.state?.enabled&&engine.status?.().enabled)await invokeNativeMasterClick();mode='jecker';linked=true;syncFromMain();paintMasterMode()};
-      const enterOn=async()=>{linked=false;if(!api.state?.enabled&&!engine.status?.().enabled)await invokeNativeMasterClick();mode='on';paintMasterMode()};
-      const cycleMode=async()=>{if(mode==='on')await enterOff();else if(mode==='off')await enterJecker();else await enterOn()};
+      const setNative=async on=>{
+        try{
+          if(on){
+            if(api.state?.enabled)return false;
+            await engine.setEnabled(true);
+            if(!d.getElementById('audio')?.paused&&!engine.status?.().routed)await engine.activate?.();
+            return !!engine.status?.().enabled;
+          }
+          await engine.setEnabled(false);
+          return !engine.status?.().enabled;
+        }catch(_){return false}
+      };
+      const runTransition=fn=>{
+        if(transition)return transition;
+        transition=Promise.resolve().then(fn).finally(()=>{transition=null;syncUi()});
+        return transition;
+      };
+      const enterOff=()=>runTransition(async()=>{linked=false;await setNative(false);mode='off'});
+      const enterJecker=()=>runTransition(async()=>{await setNative(false);mode='jecker';linked=true;syncFromMain()});
+      const enterOn=()=>runTransition(async()=>{linked=false;if(api.state?.enabled){await setNative(false);mode='off';return}const enabled=await setNative(true);mode=enabled?'on':'off'});
+      const cycleMode=()=>mode==='on'?enterOff():mode==='off'?enterJecker():(api.state?.enabled?enterOff():enterOn());
 
-      stemMaster.addEventListener('click',e=>{if(bypassMasterClick)return;e.preventDefault();e.stopImmediatePropagation();if(mode==='jecker'&&api.state?.enabled){syncFromMain();paintMasterMode();return}void cycleMode()},true);
+      stemMaster.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();if(transition)return;if(mode==='jecker'&&api.state?.enabled){syncFromMain();paintMasterMode();return}void cycleMode()},true);
       const masterObserver=new MutationObserver(()=>{if(mode==='jecker'&&stemMaster.textContent!=='STEM → 2JECKER')paintMasterMode()});
       masterObserver.observe(stemMaster,{attributes:true,childList:true,characterData:true,subtree:true});
 
@@ -66,23 +82,25 @@
       const liveMask=()=>{if(linked)return mainMask();const on=(deckName,stem)=>api.state?.slots?.[deckName]?.[stem]?.on!==false;return{vocals:on('A','vocals')||on('B','vocals'),drums:on('A','drums')||on('B','drums'),bass:on('A','bass')||on('B','bass'),other:on('A','other')||on('B','other')}};
       const shuffleLive=async()=>{const mask=liveMask(),jobs=[];['A','B'].forEach(deckName=>{const deckEl=panel.querySelector(`[data-dds-deck="${deckName}"]`);if(!deckEl)return;deckEl.querySelectorAll('.dds-slot').forEach(slotEl=>{const stem=slotEl.dataset.slot,slot=api.state?.slots?.[deckName]?.[stem];if(!stem||!mask[stem]||slot?.on===false)return;const select=slotEl.querySelector('[data-source]');if(!select)return;const next=randomKey(select.value);select.value=next;jobs.push(Promise.resolve(api.setSource?.(deckName,stem,next)))})});await Promise.all(jobs);if(linked)syncFromMain();await api.enforceActivePlayback?.(true);api.sync?.();return mask};
 
-      rows.forEach(button=>{if(button.dataset.stemJeckerBound==='v9')return;button.dataset.stemJeckerBound='v9';button.addEventListener('click',()=>w.setTimeout(syncFromMain,0))});
-      d.querySelectorAll('[data-stem-range]').forEach(range=>{if(range.dataset.stemJeckerBound==='v9')return;range.dataset.stemJeckerBound='v9';range.addEventListener('input',()=>syncFromMain())});
+      rows.forEach(button=>{if(button.dataset.stemJeckerBound==='v10')return;button.dataset.stemJeckerBound='v10';button.addEventListener('click',()=>w.setTimeout(syncFromMain,0))});
+      d.querySelectorAll('[data-stem-range]').forEach(range=>{if(range.dataset.stemJeckerBound==='v10')return;range.dataset.stemJeckerBound='v10';range.addEventListener('input',()=>syncFromMain())});
 
       const center=panel.querySelector('.dds-center');
       const statusEl=center?.querySelector('.dds-status');
       let linkButton=panel.querySelector('[data-stem-jecker-toggle]');
       if(!linkButton){linkButton=document.createElement('button');linkButton.type='button';linkButton.className='stem-jecker-toggle';linkButton.dataset.stemJeckerToggle='';if(center)center.insertBefore(linkButton,statusEl||null)}
-      const paintLink=()=>{const live=!!api.state?.enabled;linkButton.disabled=false;linkButton.classList.toggle('active',linked);linkButton.textContent=linked?(live?'UNLINK STEMS MIX':'STEM JECKER READY'):'LINK STEMS MIX';linkButton.title=linked?(live?'Stop routing main STEMS MIX changes into live 2JECKER':'STEM JECKER is armed'):'Route main STEMS MIX controls into 2JECKER';linkButton.setAttribute('aria-pressed',String(linked))};
-      if(linkButton.dataset.stemJeckerBound!=='v9'){linkButton.dataset.stemJeckerBound='v9';linkButton.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();if(linked){void enterOff()}else{void enterJecker()}w.setTimeout(paintLink,55)})}
+      const paintLink=()=>{const live=!!api.state?.enabled;linkButton.disabled=!!transition;linkButton.classList.toggle('active',linked);linkButton.textContent=transition?'STEM JECKER …':linked?(live?'UNLINK STEMS MIX':'STEM JECKER READY'):'LINK STEMS MIX';linkButton.title=linked?(live?'Stop routing main STEMS MIX changes into live 2JECKER':'STEM JECKER is armed'):'Route main STEMS MIX controls into 2JECKER';linkButton.setAttribute('aria-pressed',String(linked))};
+      if(linkButton.dataset.stemJeckerBound!=='v10'){linkButton.dataset.stemJeckerBound='v10';linkButton.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();if(transition)return;void(linked?enterOff():enterJecker())})}
 
       let shuffleButton=panel.querySelector('[data-stem-jecker-shuffle]')||panel.querySelector('[data-stem-decker-shuffle]');
       if(!shuffleButton){shuffleButton=document.createElement('button');shuffleButton.type='button';shuffleButton.className='dds-deck-shuffle';if(center)center.insertBefore(shuffleButton,statusEl||null)}
       delete shuffleButton.dataset.stemDeckerShuffle;shuffleButton.dataset.stemJeckerShuffle='';shuffleButton.textContent='STEM JECKER SHUFFLE';
-      if(shuffleButton.dataset.stemJeckerBound!=='v9'){shuffleButton.dataset.stemJeckerBound='v9';shuffleButton.addEventListener('click',async e=>{e.preventDefault();e.stopPropagation();shuffleButton.classList.add('active');try{await shuffleLive()}finally{w.setTimeout(()=>shuffleButton.classList.remove('active'),180)}})}
+      if(shuffleButton.dataset.stemJeckerBound!=='v10'){shuffleButton.dataset.stemJeckerBound='v10';shuffleButton.addEventListener('click',async e=>{e.preventDefault();e.stopPropagation();shuffleButton.classList.add('active');try{await shuffleLive()}finally{w.setTimeout(()=>shuffleButton.classList.remove('active'),180)}})}
 
       const syncUi=()=>{paintLink();paintMasterMode()};
-      w.__enochStemJecker={version:'v9',get linked(){return linked},get mode(){return mode},setLinked(on){if(on)void enterJecker();else void enterOff();w.setTimeout(syncUi,55);return !!on},setMode(next){if(next==='on')void enterOn();else if(next==='jecker')void enterJecker();else void enterOff();w.setTimeout(syncUi,55);return next},sync:syncFromMain,syncUi,shuffle:shuffleLive,liveMask};
+      const reconcile=()=>{try{if(api.state?.enabled&&engine.status?.().enabled)void setNative(false);if(linked&&mode!=='jecker')mode='jecker';syncUi()}catch(_){}};
+      const reconcileTimer=w.setInterval(reconcile,300);
+      w.__enochStemJecker={version:'v10',get linked(){return linked},get mode(){return mode},setLinked(on){void(on?enterJecker():enterOff());return !!on},setMode(next){void(next==='on'?enterOn():next==='jecker'?enterJecker():enterOff());return next},sync:syncFromMain,syncUi,shuffle:shuffleLive,liveMask,reconcile};
       w.__enochStemDecker=w.__enochStemJecker;syncUi();
 
       const loadAddon=(key,src,installer,delay=0)=>{
@@ -95,8 +113,9 @@
       loadAddon('signal-relay','/enochian-test/double-jecker-signal-relay-v1.js?v=20260827-relay-v3','installEnochianDoubleJeckerSignalRelayV1');
       loadAddon('radial-v2','/enochian-test/double-jecker-radial-layout-v1.js?v=20260827-radial-v2','installEnochianDoubleJeckerRadialV1',80);
       loadAddon('reference-v2','/enochian-test/double-jecker-reference-skin-v1.js?v=20260827-skin-v2','installEnochianDoubleJeckerReferenceSkinV1',100);
+      loadAddon('runtime-repair','/enochian-test/double-jecker-runtime-repair-v1.js?v=20260827-v1','installEnochianDoubleJeckerRuntimeRepairV1',140);
 
-      w.addEventListener('pagehide',()=>masterObserver.disconnect(),{once:true});
+      w.addEventListener('pagehide',()=>{masterObserver.disconnect();w.clearInterval(reconcileTimer)},{once:true});
       return true;
     }catch(_){return false}
   }
