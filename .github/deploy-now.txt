@@ -1,4 +1,4 @@
-deploy-request: 2026-08-27T20:08:00+01:00
+deploy-request: 2026-08-27T20:20:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy DOUBLE JESTER SPECIAL mechanical cyan amber redesign while preserving stable eight-stem geometry and audio authority
+reason: repair terminal boot gate, eliminate recurring installer sweep, and make dormant 2JESTER recognise STEM v4
