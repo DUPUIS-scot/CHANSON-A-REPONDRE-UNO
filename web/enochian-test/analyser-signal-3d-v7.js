@@ -8,7 +8,7 @@
       if(d.documentElement.dataset.analyserSignal3d==='v7')return true;
       d.documentElement.dataset.analyserSignal3d='v7';
       const style=d.createElement('style');
-      style.textContent='.wave{perspective:700px!important}.wave #wave{opacity:.025!important}.analyser-3d{position:absolute;left:8px;right:8px;top:30px;width:calc(100% - 16px);height:70px;z-index:1;display:block;transform:none!important}html.terminal-fullscreen .analyser-3d{top:22px!important}';
+      style.textContent='.wave{perspective:none!important}.wave #wave{opacity:1!important;position:absolute!important;z-index:3!important}.analyser-3d{display:none!important}';
       d.head.appendChild(style);
       wave.querySelector('.analyser-3d')?.remove();
       const canvas=d.createElement('canvas');canvas.className='analyser-3d';canvas.setAttribute('aria-hidden','true');source.insertAdjacentElement('afterend',canvas);
