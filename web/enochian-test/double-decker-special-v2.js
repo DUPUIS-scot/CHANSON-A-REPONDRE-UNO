@@ -142,9 +142,11 @@
         master.dataset.ddsPerfBound='v8';
         master.addEventListener('play',()=>{
           if(api.state?.enabled){
-            // The visible main transport is deliberately held while 2JECKER owns playback.
-            master.pause();
+            // 2JECKER keeps the master transport running but muted as its shared beat clock.
+            // Pausing it would fire the base pause handler and silence every special stem.
+            master.muted=true;
             setMasterHold(true);
+            w.setTimeout(()=>void enforceActivePlayback(false),0);
             return;
           }
           w.setTimeout(()=>void enforceActivePlayback(true),0);
