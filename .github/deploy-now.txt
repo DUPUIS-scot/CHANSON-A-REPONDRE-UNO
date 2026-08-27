@@ -1,4 +1,4 @@
-deploy-request: 2026-08-27T08:24:00+01:00
+deploy-request: 2026-08-27T08:51:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: remove duplicate fixed 3D SIGNAL control palette so fixed section keeps mesh/readouts/FLOAT only; preserve single authoritative controls palette inside floating analyser; preserve progressive PLAYBACK played-zone recoloring and current transport/loop repairs
+reason: deploy resilient ENOCHIAN TERMINAL startup; recover when iframe is already ready; singleton outer boot loop; 250ms retry cadence for about two minutes; guard four-stem and DOUBLE JESTER installers against duplicate retry loops; preserve current playback, analyser, stem and Jester repairs
