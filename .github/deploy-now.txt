@@ -1,4 +1,4 @@
-deploy-request: 2026-08-27T04:28:00Z
+deploy-request: 2026-08-27T04:55:00Z
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy Enochian playback reference panel
+reason: integrate and deploy Enochian specialist UI repairs
