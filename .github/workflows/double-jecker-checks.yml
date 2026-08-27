@@ -1,4 +1,4 @@
-name: Check 2JECKER Runtime
+name: Check 2JESTER Runtime
 
 on:
   workflow_dispatch:
@@ -14,9 +14,12 @@ on:
       - 'web/enochian-test/double-jecker-turntable-shield-v1.js'
       - 'web/enochian-test/double-jecker-runtime-repair-v1.js'
       - 'web/enochian-test/double-jecker-performance-v2.js'
+      - 'web/enochian-test/enochian-terminal-polish-v1.js'
+      - 'web/enochian-test/enochian-ui-repairs-v1.js'
       - 'web/enochian-test/stem-four-channel-ui-v1.js'
-      - 'web/enochian-test/analyser-controls-contained-v1.js'
       - 'web/enochian-terminal/index.html'
+      - 'scripts/repair_enochian_stems.py'
+      - 'test/enochian_terminal_authority_test.dart'
       - '.github/workflows/double-jecker-checks.yml'
 
 permissions:
@@ -37,7 +40,6 @@ jobs:
             "https://codeload.github.com/${GITHUB_REPOSITORY}/tar.gz/${GITHUB_SHA}" --output "$archive"
           tar -xzf "$archive" --strip-components=1
           rm -f "$archive"
-          test -f web/enochian-test/double-jecker-radial-layout-v1.js
 
       - name: JavaScript syntax
         shell: bash
@@ -53,43 +55,35 @@ jobs:
             web/enochian-test/double-jecker-turntable-shield-v1.js \
             web/enochian-test/double-jecker-runtime-repair-v1.js \
             web/enochian-test/double-jecker-performance-v2.js \
-            web/enochian-test/stem-four-channel-ui-v1.js \
-            web/enochian-test/analyser-controls-contained-v1.js; do
+            web/enochian-test/enochian-terminal-polish-v1.js \
+            web/enochian-test/enochian-ui-repairs-v1.js \
+            web/enochian-test/stem-four-channel-ui-v1.js; do
             node --check "$file"
           done
 
-      - name: Verify repaired platter and terminal contracts
+      - name: Verify consolidated 2JESTER contracts
         shell: bash
         run: |
           set -euo pipefail
+          python3 scripts/repair_enochian_stems.py
           radial=web/enochian-test/double-jecker-radial-layout-v1.js
-          skin=web/enochian-test/double-jecker-reference-skin-v1.js
-          output=web/enochian-test/double-jecker-output-v1.js
-          relay=web/enochian-test/double-jecker-signal-relay-v1.js
           link=web/enochian-test/double-decker-main-stem-link-v1.js
           guard=web/enochian-test/double-jecker-runtime-repair-v1.js
           perf=web/enochian-test/double-jecker-performance-v2.js
-          stems=web/enochian-test/stem-four-channel-ui-v1.js
-          controls=web/enochian-test/analyser-controls-contained-v1.js
+          polish=web/enochian-test/enochian-terminal-polish-v1.js
           shell=web/enochian-terminal/index.html
 
-          grep -q "jeckerRadial==='v5'" "$radial"
-          grep -q "width:min(74vmin,660px)" "$radial"
-          grep -q "jeckerReferenceSkin==='v5'" "$skin"
-          grep -q "jeckerOutput==='v2'" "$output"
-          grep -q "SignalRelay?.version==='v3'" "$relay"
-          grep -q "stemJecker==='v10'" "$link"
-          grep -q "RuntimeRepair?.version==='v5'" "$guard"
-          grep -q "DoubleJeckerPerformance?.version==='v3'" "$perf"
-          grep -q "stemFourChannel==='v3'" "$stems"
-          grep -q "VOCALS · DRUMS · BASS · OTHER" "$stems"
-          ! grep -q "data-stem-toggle=\"instruments\"" "$stems"
-          grep -q "analyserControlsContained==='v2'" "$controls"
-          grep -q "outer-float-launch" "$controls"
-          grep -q "maxL" "$controls"
-          grep -q "maxT" "$controls"
-          grep -q "stem-four-channel-ui-v1.js?v=20260827-v4" "$shell"
-          grep -q "analyser-controls-contained-v1.js?v=20260827-v3" "$shell"
+          grep -q "const VERSION='v10'" "$radial"
+          grep -q "doubleJesterRadialPanelRectV10" "$radial"
+          grep -q "const VERSION='v11'" "$link"
+          ! grep -q "mainLevel('instruments')" "$link"
+          grep -q "__enochDoubleJesterAuthority" "$guard"
+          grep -q "const VERSION='v4'" "$perf"
+          ! grep -q "if(row&&!split)" "$perf"
+          ! grep -q "const coords={A:{vocals:\[30,17\]" "$polish"
+          grep -q "double-jecker-radial-layout-v1.js?v=20260827-jester-radial-v10" "$shell"
+          grep -q "double-jecker-runtime-repair-v1.js?v=20260827-jester-authority-v11" "$shell"
+          grep -q "enochian-terminal-polish-v1.js?v=20260827-polish-v3" "$shell"
 
       - name: Report
-        run: echo '2JECKER, four native STEMS MIX rows and contained draggable 3D analyser controls verified.'
+        run: echo '2JESTER single geometry, four native stems, passive open authority and spinner crossfade verified.'
