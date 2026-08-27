@@ -16,6 +16,10 @@ EnochianTerminalMidiAudioProcessorEditor::EnochianTerminalMidiAudioProcessorEdit
     status.setJustificationType(juce::Justification::centred);
     status.setColour(juce::Label::textColourId, juce::Colour(0xffa8f1ff));
     addAndMakeVisible(status);
+    openLiveTerminal.onClick = [] { juce::URL("https://www.chanson-a-repondre-uno.scot/enochian-terminal/").launchInDefaultBrowser(); };
+    openLiveTerminal.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff0b4f73));
+    openLiveTerminal.setColour(juce::TextButton::textColourOffId, juce::Colour(0xffa8f1ff));
+    addAndMakeVisible(openLiveTerminal);
     styleKnob(mix, p.parameters, "mix"); styleKnob(modDepth, p.parameters, "modDepth"); styleKnob(fxMix, p.parameters, "fxMix");
     for (auto* k : {&mix, &modDepth, &fxMix}) addAndMakeVisible(*k);
     startTimerHz(20);
@@ -30,6 +34,7 @@ void EnochianTerminalMidiAudioProcessorEditor::paint(juce::Graphics& g) {
 }
 void EnochianTerminalMidiAudioProcessorEditor::resized() {
     status.setBounds(0, 90, getWidth(), 24);
+    openLiveTerminal.setBounds(getWidth() / 2 - 150, 340, 300, 34);
     mix.setBounds(110, 140, 140, 180); modDepth.setBounds(270, 140, 140, 180); fxMix.setBounds(430, 140, 140, 180);
 }
 void EnochianTerminalMidiAudioProcessorEditor::timerCallback() { status.setText(processor.statusText(), juce::dontSendNotification); }
