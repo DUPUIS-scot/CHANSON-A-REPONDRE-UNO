@@ -8,8 +8,8 @@ for marker in ['stem-four-channel-ui-v1.js?v=20260827-v4','two-mix-master-anchor
  if marker not in shell: raise SystemExit(f'missing terminal shell marker: {marker}')
 for marker,source,label in [("const VERSION='v11'",stem_link,'STEM JESTER'),("VERSION='v12'",radial,'radial authority'),("const VERSION='v11'",repair,'runtime authority'),("const VERSION='v4'",performance,'spinner'),("const VERSION='v8'",ui_repairs,'UI repairs'),("stemFourChannel==='v4'",four_stem,'four stem UI'),("analyserControlsContained='v6'",contained,'analyser ownership')]:
  if marker not in source: raise SystemExit(f'missing {label}: {marker}')
-for marker in ["twoMixMasterLayout==='v7'",'twoMixHelpToggle','UNO OPENS 2MIX',"helpButton.addEventListener('click',toggleGuide)","__enochTwoMixMasterAnchor={version:'v7'"]:
- if marker not in two_mix_owner: raise SystemExit(f'independent 2MIX launcher/help v7 missing: {marker}')
+for marker in ["twoMixMasterLayout==='v8'",'twoMixHelpToggle','UNO OPENS 2MIX',"helpButton.addEventListener('click',toggleGuide)","__enochTwoMixMasterAnchor={version:'v8'",'twoMixCursorTrail','two-mix-trail-segment','renderTrail']:
+ if marker not in two_mix_owner: raise SystemExit(f'independent 2MIX launcher/help/trail v8 missing: {marker}')
 for forbidden in ["toggle.addEventListener('click',toggleGuide", "toggle.addEventListener('pointerup'"]:
  if forbidden in two_mix_owner: raise SystemExit(f'2MIX launcher intercepted by help: {forbidden}')
 for marker in ["const VERSION='v1'",'data-terminal-floatable','data-terminal-fixed','terminalZone','MutationObserver','queueMicrotask(restore)','outerAnalyserPanel','#doubleDeckerSpecial','.analyser-control-widget']:
@@ -29,4 +29,4 @@ for name in required_files:
  path=base/name
  if not path.is_file() or path.stat().st_size==0: raise SystemExit(f'missing runtime layer: {path}')
  if path.suffix=='.js': subprocess.run(['node','--check',str(path)],check=True)
-print('Enochian runtime verified: Terminal Viewport Layout Contract v1 freezes fixed owners, permits only registered floatables, preserves 2MIX launcher/help v7, STEMS, SIGNAL and PLAYBACK authorities.')
+print('Enochian runtime verified: Terminal Viewport Layout Contract v1 freezes fixed owners, permits only registered floatables, preserves 2MIX launcher/help/trail v8, STEMS, SIGNAL and PLAYBACK authorities.')
