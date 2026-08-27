@@ -1,0 +1,25 @@
+name: Recover terminal layout repair
+on:
+  push:
+    paths:
+      - '.github/workflows/recover-terminal-layout.yml'
+permissions:
+  contents: write
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Restore authoritative terminal shell and wire v5 repair
+        run: |
+          git checkout b130c8b79ac2c4cebf86563966bfaad10fe5518a -- web/enochian-terminal/index.html
+          sed -i 's#analyser-controls-contained-v1.js?v=20260827-v3#analyser-controls-contained-v1.js?v=20260827-v5#g' web/enochian-terminal/index.html
+          sed -i 's#enochian-ui-repairs-v1.js?v=20260827-ui-repairs-v3#enochian-ui-repairs-v1.js?v=20260827-ui-repairs-v4#g' web/enochian-terminal/index.html
+          printf 'deploy-request: 2026-08-27T08:55:00+01:00\nsource: chat\nworkflow: WEB — Deploy Live Site\nreason: playback containment, full 3D signal mesh, 2MIX master-deck top-right and help restoration\n' > .github/deploy-now.txt
+          git config user.name 'DUPUIS-scot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add web/enochian-terminal/index.html .github/deploy-now.txt
+          git commit -m 'Restore terminal shell with layout repair v5'
+          git push
