@@ -1,4 +1,4 @@
-deploy-request: 2026-08-27T00:13:00Z
+deploy-request: 2026-08-27T00:58:00Z
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy Enochian terminal visual polish, signal transcript/sculpt controls, FX pad selectors, loop hover, logo, and 2JECKER containment
+reason: deploy certified release 3.7.3.4
