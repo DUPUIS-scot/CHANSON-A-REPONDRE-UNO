@@ -1,4 +1,4 @@
-deploy-request: 2026-08-27T12:24:00+01:00
+deploy-request: 2026-08-27T12:34:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: certify and deploy CHANSON A REPONDRE UNO version 3.7.3.5 from the current repaired Enochian terminal baseline
+reason: move primordial STEM master activation into STEMS MIX header, remove adjacent duplicate FULL SCREEN control, preserve UNO 2MIX separation and deploy
