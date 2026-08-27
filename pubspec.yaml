@@ -1,7 +1,7 @@
 name: uno_chanson_2
-description: "Chanson à Répondre UNO — certified release 3.7.3.5."
+description: "Chanson à Répondre UNO — certified release 3.7.3.6."
 publish_to: 'none'
-version: 3.7.3+5
+version: 3.7.3+6
 
 environment:
   sdk: ^3.12.2
