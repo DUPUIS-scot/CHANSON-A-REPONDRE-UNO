@@ -1,4 +1,4 @@
-deploy-request: 2026-08-27T05:46:00+01:00
+deploy-request: 2026-08-27T05:53:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy self-healing live 3D analyser FFT authority, remove duplicate visible mesh, and unify analyser pointer ownership after deep debug
+reason: deploy deterministic STEM-to-2JECKER authority, runtime audio-route guard, viewport clamp recovery and strengthened 2JECKER verification
