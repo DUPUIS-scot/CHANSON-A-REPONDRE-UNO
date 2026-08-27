@@ -1,29 +1,156 @@
 (()=>{
 'use strict';
-function install(host){try{
- const live=host&&host.contentDocument,deck=live&&live.getElementById('deck'),d=deck&&deck.contentDocument,w=d&&d.defaultView;
- const api=w&&w.__enochDoubleDeckerSpecial,panel=document.getElementById('doubleDeckerSpecial'),shield=document.getElementById('doubleJeckerShield');
- if(!d||!w||!api||!panel||!shield)return false;if(w.__enochDoubleJeckerPerformance?.version==='v3')return true;
- const clamp=(n,a=0,b=1)=>Math.max(a,Math.min(b,Number(n)||0)),xf=()=>panel.querySelector('[data-dds-crossfader]');
- const readX=()=>clamp(Number(xf()?.value||0)/100),setX=x=>{const el=xf();if(!el)return false;el.value=String(Math.round(clamp(x)*100));el.dispatchEvent(new Event('input',{bubbles:true}));return true};
- let style=document.getElementById('double-jecker-performance-v3-style');if(!style){style=document.createElement('style');style.id='double-jecker-performance-v3-style';style.textContent='#doubleJeckerShield{touch-action:none!important;cursor:grab!important}#doubleJeckerShield.j2-moving{cursor:grabbing!important}#doubleJeckerShield .djs-platter{touch-action:none!important;cursor:crosshair!important}#doubleJeckerShield .djs-performance-readout{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);z-index:9;min-width:72px;padding:3px 6px;border:1px solid #63f5cf88;border-radius:999px;background:#03110ddd;color:#a9eee7;text-align:center;font:900 7px/1 monospace;pointer-events:none}.stem-jecker-split{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:4px}.stem-jecker-split .stem-split{display:grid;grid-template-columns:auto 1fr;gap:4px;align-items:center}.stem-jecker-split button.active{background:#19c98f;color:#001f16}.stem-jecker-split input{width:100%}';document.head.appendChild(style)}
- let readout=shield.querySelector('.djs-performance-readout');if(!readout){readout=document.createElement('div');readout.className='djs-performance-readout';shield.appendChild(readout)}
- const paint=()=>{const x=readX();readout.textContent=x<.495?`A ${Math.round((1-x)*100)}%`:x>.505?`B ${Math.round(x*100)}%`:'A/B 50%'};
- const platter=shield.querySelector('.djs-platter')||shield;let spin=null;
- const angle=e=>{const r=platter.getBoundingClientRect();return Math.atan2(e.clientY-r.top-r.height/2,e.clientX-r.left-r.width/2)};
- platter.addEventListener('pointerdown',e=>{if(e.button!==0)return;e.stopPropagation();spin={id:e.pointerId,a:angle(e),x:readX(),m:false};platter.setPointerCapture?.(e.pointerId);e.preventDefault()});
- platter.addEventListener('pointermove',e=>{if(!spin||spin.id!==e.pointerId)return;e.stopPropagation();let a=angle(e),delta=a-spin.a;if(delta>Math.PI)delta-=2*Math.PI;if(delta<-Math.PI)delta+=2*Math.PI;spin.a=a;if(Math.abs(delta)>.002)spin.m=true;spin.x=clamp(spin.x+delta/(Math.PI*1.35));setX(spin.x);paint();e.preventDefault()});
- const spinEnd=e=>{if(!spin||spin.id!==e.pointerId)return;e.stopPropagation();try{platter.releasePointerCapture?.(e.pointerId)}catch(_){}const click=!spin.m;spin=null;if(click){panel.classList.toggle('open');panel.setAttribute('aria-hidden',String(!panel.classList.contains('open')))}e.preventDefault()};platter.addEventListener('pointerup',spinEnd);platter.addEventListener('pointercancel',spinEnd);
- platter.addEventListener('wheel',e=>{e.stopPropagation();setX(readX()+Math.sign(e.deltaY)*.025);paint();e.preventDefault()},{passive:false});platter.addEventListener('dblclick',e=>{e.stopPropagation();setX(.5);paint();e.preventDefault()});
- // Rim/background remains the floating handle. Do not capture platter events here.
- let move=null;shield.addEventListener('pointerdown',e=>{if(e.button!==0||e.target.closest('.djs-platter'))return;const r=shield.getBoundingClientRect();move={id:e.pointerId,dx:e.clientX-r.left,dy:e.clientY-r.top};shield.classList.add('j2-moving');shield.setPointerCapture?.(e.pointerId);e.preventDefault()});
- shield.addEventListener('pointermove',e=>{if(!move||move.id!==e.pointerId)return;const r=shield.getBoundingClientRect(),left=clamp(e.clientX-move.dx,4,Math.max(4,innerWidth-r.width-4)),top=clamp(e.clientY-move.dy,4,Math.max(4,innerHeight-r.height-4));shield.style.left=left+'px';shield.style.top=top+'px';shield.style.right='auto';shield.style.bottom='auto';e.preventDefault()});
- const moveEnd=e=>{if(!move||move.id!==e.pointerId)return;move=null;shield.classList.remove('j2-moving');try{shield.releasePointerCapture?.(e.pointerId)}catch(_){};try{const r=shield.getBoundingClientRect();localStorage.setItem('doubleJeckerTurntableShieldRect',JSON.stringify({left:r.left,top:r.top}))}catch(_){}};shield.addEventListener('pointerup',moveEnd);shield.addEventListener('pointercancel',moveEnd);
- const instruments=d.querySelector('[data-stem-range="instruments"]'),row=instruments?.closest('.stem-row,.stem-control,.control-row')||instruments?.parentElement,base=clamp(Number(instruments?.value||100)/100);let split=d.querySelector('[data-stem-jecker-split]');const splitState={bass:{on:true,level:base},other:{on:true,level:base},touched:false};
- const applySplit=()=>{if(!splitState.touched||!w.__enochStemJecker?.linked)return false;['bass','other'].forEach(s=>{api.setStemOn?.('A',s,splitState[s].on);api.setStemOn?.('B',s,splitState[s].on);api.setStemLevel?.('A',s,splitState[s].level);api.setStemLevel?.('B',s,splitState[s].level)});api.enforceActivePlayback?.(false);return true};
- if(row&&!split){split=document.createElement('div');split.className='stem-jecker-split';split.dataset.stemJeckerSplit='';split.innerHTML=`<div class="stem-split"><button type="button" data-jecker-split="bass" class="active">BASS</button><input type="range" min="0" max="100" value="${Math.round(base*100)}" data-jecker-split-level="bass"></div><div class="stem-split"><button type="button" data-jecker-split="other" class="active">OTHER</button><input type="range" min="0" max="100" value="${Math.round(base*100)}" data-jecker-split-level="other"></div>`;row.insertAdjacentElement('afterend',split)}
- split?.querySelectorAll('[data-jecker-split]').forEach(b=>b.addEventListener('click',()=>{const s=b.dataset.jeckerSplit;splitState.touched=true;splitState[s].on=!splitState[s].on;b.classList.toggle('active',splitState[s].on);applySplit()}));split?.querySelectorAll('[data-jecker-split-level]').forEach(r=>r.addEventListener('input',()=>{splitState.touched=true;splitState[r.dataset.jeckerSplitLevel].level=clamp(Number(r.value)/100);applySplit()}));
- const timer=w.setInterval(()=>{applySplit();paint()},350);w.__enochDoubleJeckerPerformance={version:'v3',setCrossfader:setX,get crossfader(){return readX()},splitState,applySplit,paint};paint();w.addEventListener('pagehide',()=>w.clearInterval(timer),{once:true});return true
-}catch(_){return false}}
-window.installEnochianDoubleJeckerPerformanceV2=host=>{let n=0,t=setInterval(()=>{if(install(host)||++n>240)clearInterval(t)},50);return install(host)};
+const VERSION='v4';
+function install(host){
+  try{
+    const live=host&&host.contentDocument;
+    const deck=live&&live.getElementById('deck');
+    const d=deck&&deck.contentDocument;
+    const w=d&&d.defaultView;
+    const api=w&&w.__enochDoubleDeckerSpecial;
+    const panel=document.getElementById('doubleDeckerSpecial');
+    const shield=document.getElementById('doubleJeckerShield');
+    if(!d||!w||!api||!panel||!shield)return false;
+    if(w.__enochDoubleJesterPerformance?.version===VERSION)return true;
+
+    const clamp=(n,a=0,b=1)=>Math.max(a,Math.min(b,Number(n)||0));
+    const crossfader=()=>panel.querySelector('[data-dds-crossfader]');
+    const readX=()=>clamp(Number(crossfader()?.value||0)/100);
+    const setX=value=>{
+      const el=crossfader();
+      if(!el)return false;
+      el.value=String(Math.round(clamp(value)*100));
+      el.dispatchEvent(new Event('input',{bubbles:true}));
+      return true;
+    };
+
+    document.getElementById('double-jecker-performance-v3-style')?.remove();
+    document.getElementById('double-jester-performance-v4-style')?.remove();
+    const style=document.createElement('style');
+    style.id='double-jester-performance-v4-style';
+    style.textContent=`
+      #doubleJeckerShield{touch-action:none!important;cursor:grab!important}
+      #doubleJeckerShield.j2-moving{cursor:grabbing!important}
+      #doubleJeckerShield .djs-platter{touch-action:none!important;cursor:crosshair!important}
+      #doubleJeckerShield .djs-performance-readout{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);z-index:9;min-width:72px;padding:3px 6px;border:1px solid #63f5cf88;border-radius:999px;background:#03110ddd;color:#a9eee7;text-align:center;font:900 7px/1 monospace;pointer-events:none}
+      .stem-jecker-split,[data-stem-jecker-split]{display:none!important}
+    `;
+    document.head.appendChild(style);
+    d.querySelectorAll('.stem-jecker-split,[data-stem-jecker-split]').forEach(node=>node.remove());
+
+    let readout=shield.querySelector('.djs-performance-readout');
+    if(!readout){
+      readout=document.createElement('div');
+      readout.className='djs-performance-readout';
+      shield.appendChild(readout);
+    }
+    const paint=()=>{
+      const x=readX();
+      readout.textContent=x<.495?`A ${Math.round((1-x)*100)}%`:x>.505?`B ${Math.round(x*100)}%`:'A/B 50%';
+    };
+
+    const platter=shield.querySelector('.djs-platter')||shield;
+    let spin=null;
+    const angle=e=>{
+      const r=platter.getBoundingClientRect();
+      return Math.atan2(e.clientY-r.top-r.height/2,e.clientX-r.left-r.width/2);
+    };
+    platter.addEventListener('pointerdown',e=>{
+      if(e.button!==0)return;
+      e.stopPropagation();
+      spin={id:e.pointerId,a:angle(e),x:readX(),moved:false};
+      try{platter.setPointerCapture?.(e.pointerId)}catch(_){}
+      e.preventDefault();
+    });
+    platter.addEventListener('pointermove',e=>{
+      if(!spin||spin.id!==e.pointerId)return;
+      e.stopPropagation();
+      let a=angle(e),delta=a-spin.a;
+      if(delta>Math.PI)delta-=2*Math.PI;
+      if(delta<-Math.PI)delta+=2*Math.PI;
+      spin.a=a;
+      if(Math.abs(delta)>.002)spin.moved=true;
+      spin.x=clamp(spin.x+delta/(Math.PI*1.35));
+      setX(spin.x);
+      paint();
+      e.preventDefault();
+    });
+    const endSpin=e=>{
+      if(!spin||spin.id!==e.pointerId)return;
+      e.stopPropagation();
+      try{platter.releasePointerCapture?.(e.pointerId)}catch(_){}
+      const click=!spin.moved;
+      spin=null;
+      if(click){
+        const authority=w.__enochDoubleJesterAuthority||window.__enochDoubleJesterAuthority;
+        if(authority?.toggle)authority.toggle();
+        else d.getElementById('doubleDeckerSpecialLaunch')?.click();
+      }
+      e.preventDefault();
+    };
+    platter.addEventListener('pointerup',endSpin);
+    platter.addEventListener('pointercancel',endSpin);
+    platter.addEventListener('wheel',e=>{
+      e.stopPropagation();
+      setX(readX()+Math.sign(e.deltaY)*.025);
+      paint();
+      e.preventDefault();
+    },{passive:false});
+    platter.addEventListener('dblclick',e=>{
+      e.stopPropagation();
+      setX(.5);
+      paint();
+      e.preventDefault();
+    });
+
+    let move=null;
+    shield.addEventListener('pointerdown',e=>{
+      if(e.button!==0||e.target.closest('.djs-platter'))return;
+      const r=shield.getBoundingClientRect();
+      move={id:e.pointerId,dx:e.clientX-r.left,dy:e.clientY-r.top};
+      shield.classList.add('j2-moving');
+      try{shield.setPointerCapture?.(e.pointerId)}catch(_){}
+      e.preventDefault();
+    });
+    shield.addEventListener('pointermove',e=>{
+      if(!move||move.id!==e.pointerId)return;
+      const r=shield.getBoundingClientRect();
+      const left=Math.max(4,Math.min(innerWidth-r.width-4,e.clientX-move.dx));
+      const top=Math.max(4,Math.min(innerHeight-r.height-4,e.clientY-move.dy));
+      shield.style.left=left+'px';
+      shield.style.top=top+'px';
+      shield.style.right='auto';
+      shield.style.bottom='auto';
+      e.preventDefault();
+    });
+    const endMove=e=>{
+      if(!move||move.id!==e.pointerId)return;
+      move=null;
+      shield.classList.remove('j2-moving');
+      try{shield.releasePointerCapture?.(e.pointerId)}catch(_){}
+      try{
+        const r=shield.getBoundingClientRect();
+        localStorage.setItem('doubleJeckerTurntableShieldRect',JSON.stringify({left:r.left,top:r.top}));
+      }catch(_){}
+    };
+    shield.addEventListener('pointerup',endMove);
+    shield.addEventListener('pointercancel',endMove);
+
+    const xf=crossfader();
+    if(xf&&!xf.dataset.jesterSpinnerPaint){
+      xf.dataset.jesterSpinnerPaint=VERSION;
+      xf.addEventListener('input',paint);
+    }
+
+    const controller={version:VERSION,setCrossfader:setX,get crossfader(){return readX()},paint,mode:'mix'};
+    w.__enochDoubleJesterPerformance=controller;
+    w.__enochDoubleJeckerPerformance=controller;
+    paint();
+    return true;
+  }catch(_){return false}
+}
+window.installEnochianDoubleJeckerPerformanceV2=host=>{
+  let n=0,t=setInterval(()=>{if(install(host)||++n>240)clearInterval(t)},50);
+  return install(host);
+};
 })();
