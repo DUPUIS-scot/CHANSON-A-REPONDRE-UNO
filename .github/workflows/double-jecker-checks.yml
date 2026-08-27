@@ -24,9 +24,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
+      - name: Download source snapshot
+        timeout-minutes: 2
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/source-${GITHUB_SHA}.tar.gz"
+          curl --fail --location --silent --show-error \
+            --retry 4 --retry-delay 2 --retry-all-errors \
+            "https://codeload.github.com/${GITHUB_REPOSITORY}/tar.gz/${GITHUB_SHA}" \
+            --output "$archive"
+          tar -xzf "$archive" --strip-components=1
+          rm -f "$archive"
+          test -f web/enochian-test/double-jecker-radial-layout-v1.js
 
       - name: JavaScript syntax
         shell: bash
