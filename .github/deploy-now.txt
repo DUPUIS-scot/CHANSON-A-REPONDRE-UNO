@@ -1,4 +1,4 @@
-deploy-request: 2026-08-27T07:03:00+01:00
+deploy-request: 2026-08-27T08:12:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy PLAYBACK v3 with free five-track selection, decoded complete-track waveform, red/orange played zone, absolute playhead, authoritative IN/OUT region, and functional bar-length loop controls
+reason: align CUE PREVIOUS PLAY PAUSE NEXT LOOP IN OUT RESET LOOP in one row; keep bar/X2 duration row below; keep 3D SIGNAL FLOAT permanently revealed above contained movable analyser controls; position 2MIX at top-right of bottom/master-deck area and restore contextual 2MIX help bubble
