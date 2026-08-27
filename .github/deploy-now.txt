@@ -1,4 +1,4 @@
-deploy-request: 2026-08-27T20:29:00+01:00
+deploy-request: 2026-08-27T20:31:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: redeploy current webapp unchanged to refresh Pages build
+reason: deploy after fixing 2J MIX STEM JOG verifier contract
