@@ -85,7 +85,7 @@ jobs:
           ! grep -q "masterGain.disconnect()" "$relay"
           grep -q "stemJecker==='v10'" "$link"
           grep -q "UNLINK STEMS MIX" "$link"
-          grep -q "RuntimeRepair?.version==='v3'" "$guard"
+          grep -q "RuntimeRepair?.version==='v4'" "$guard"
           grep -q "DoubleJeckerPerformance?.version==='v3'" "$perf"
           grep -q "data-dds-crossfader" "$perf"
 

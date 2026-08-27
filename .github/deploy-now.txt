@@ -1,4 +1,4 @@
-deploy-request: 2026-08-27T07:18:00+01:00
+deploy-request: 2026-08-27T07:29:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy open 2JECKER platter with compact center controls, remove inherited header/diagnostic text, and lock clear Deck A / Deck B stem banks
+reason: deploy all current Enochian repairs with v4 2JECKER runtime contract, cache-busted four-stem UI, contained analyser controls, repaired open platter layout, and playback updates
