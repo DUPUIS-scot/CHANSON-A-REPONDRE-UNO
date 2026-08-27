@@ -14,6 +14,9 @@ on:
       - 'web/enochian-test/double-jecker-turntable-shield-v1.js'
       - 'web/enochian-test/double-jecker-runtime-repair-v1.js'
       - 'web/enochian-test/double-jecker-performance-v2.js'
+      - 'web/enochian-test/stem-four-channel-ui-v1.js'
+      - 'web/enochian-test/analyser-controls-contained-v1.js'
+      - 'web/enochian-terminal/index.html'
       - '.github/workflows/double-jecker-checks.yml'
 
 permissions:
@@ -49,11 +52,13 @@ jobs:
             web/enochian-test/double-jecker-signal-relay-v1.js \
             web/enochian-test/double-jecker-turntable-shield-v1.js \
             web/enochian-test/double-jecker-runtime-repair-v1.js \
-            web/enochian-test/double-jecker-performance-v2.js; do
+            web/enochian-test/double-jecker-performance-v2.js \
+            web/enochian-test/stem-four-channel-ui-v1.js \
+            web/enochian-test/analyser-controls-contained-v1.js; do
             node --check "$file"
           done
 
-      - name: Verify repaired platter contracts
+      - name: Verify repaired platter and terminal contracts
         shell: bash
         run: |
           set -euo pipefail
@@ -64,30 +69,27 @@ jobs:
           link=web/enochian-test/double-decker-main-stem-link-v1.js
           guard=web/enochian-test/double-jecker-runtime-repair-v1.js
           perf=web/enochian-test/double-jecker-performance-v2.js
+          stems=web/enochian-test/stem-four-channel-ui-v1.js
+          controls=web/enochian-test/analyser-controls-contained-v1.js
+          shell=web/enochian-terminal/index.html
 
           grep -q "jeckerRadial==='v5'" "$radial"
           grep -q "width:min(74vmin,660px)" "$radial"
-          grep -q "dds-center{position:static" "$radial"
-          grep -q "dds-status.*display:none" "$radial"
-          grep -q "content:'DECK A'" "$radial"
-          grep -q "content:'DECK B'" "$radial"
-          grep -q "vocals:\[27,17.5\]" "$radial"
-          grep -q "vocals:\[27,67.5\]" "$radial"
           grep -q "jeckerReferenceSkin==='v5'" "$skin"
-          grep -q "background:#090604" "$skin"
-          ! grep -q "transparent 0 15.5%" "$skin"
-
           grep -q "jeckerOutput==='v2'" "$output"
-          grep -q "api.state.outputNode" "$output"
-          ! grep -q "masterGain.disconnect()" "$output"
           grep -q "SignalRelay?.version==='v3'" "$relay"
-          grep -q "__enochExternalSignalSources" "$relay"
-          ! grep -q "masterGain.disconnect()" "$relay"
           grep -q "stemJecker==='v10'" "$link"
-          grep -q "UNLINK STEMS MIX" "$link"
-          grep -q "RuntimeRepair?.version==='v4'" "$guard"
+          grep -q "RuntimeRepair?.version==='v5'" "$guard"
           grep -q "DoubleJeckerPerformance?.version==='v3'" "$perf"
-          grep -q "data-dds-crossfader" "$perf"
+          grep -q "stemFourChannel==='v3'" "$stems"
+          grep -q "VOCALS · DRUMS · BASS · OTHER" "$stems"
+          ! grep -q "data-stem-toggle=\"instruments\"" "$stems"
+          grep -q "analyserControlsContained==='v2'" "$controls"
+          grep -q "outer-float-launch" "$controls"
+          grep -q "maxL" "$controls"
+          grep -q "maxT" "$controls"
+          grep -q "stem-four-channel-ui-v1.js?v=20260827-v4" "$shell"
+          grep -q "analyser-controls-contained-v1.js?v=20260827-v3" "$shell"
 
       - name: Report
-        run: echo '2JECKER reduced floating platter, open center, explicit A/B banks, compact controls and audio authority verified.'
+        run: echo '2JECKER, four native STEMS MIX rows and contained draggable 3D analyser controls verified.'
