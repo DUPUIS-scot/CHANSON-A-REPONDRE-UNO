@@ -21,7 +21,10 @@ void main() {
     expect(terminal,
         contains('authoritative-runtime.js?v=20260825-runtime-api-v2'));
     expect(terminal,
-        contains('enochian-ui-repairs-v1.js?v=20260827-ui-repairs-v3'));
+        contains('enochian-ui-repairs-v1.js?v=20260827-ui-repairs-v4'));
+    expect(terminal,
+        contains('analyser-controls-contained-v1.js?v=20260827-v5'));
     expect(terminal, contains('installEnochianUiRepairsV1'));
+    expect(terminal, contains('installEnochianAnalyserControlsContainedV1'));
   });
 }
