@@ -1,4 +1,4 @@
-deploy-request: 2026-08-27T08:16:00+01:00
+deploy-request: 2026-08-27T08:24:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: repair analyser verifier/runtime contract, deploy aligned playback command row, keep FLOAT visible, position 2MIX at master-deck top-right, and restore 2MIX help bubble
+reason: remove duplicate fixed 3D SIGNAL control palette so fixed section keeps mesh/readouts/FLOAT only; preserve single authoritative controls palette inside floating analyser; preserve progressive PLAYBACK played-zone recoloring and current transport/loop repairs
