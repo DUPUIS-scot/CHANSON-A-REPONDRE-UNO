@@ -51,6 +51,15 @@ frame.addEventListener('load',()=>{
  .terminal-action.active{background:#083128!important;color:#63f5cf!important;border-color:#68d8bd!important;box-shadow:0 0 12px #40e6b422!important}
  .loop-timer{color:#f0c97e!important;border-color:#7b6339!important;background:#100c07!important;font-variant-numeric:tabular-nums!important;box-shadow:0 0 10px #d5aa6333!important;position:relative!important;z-index:8!important;transition:transform .14s ease,font-size .14s ease,box-shadow .14s ease!important}
  .loop-timer:hover,.loop-timer:focus-visible{color:#ffe4a4!important;border-color:#f0c97e!important;background:#171005!important;transform:scale(1.16)!important;z-index:22!important;min-width:150px!important;font-size:13px!important;letter-spacing:.04em!important;box-shadow:0 0 18px #d5aa6399!important;outline:none}
+ .track-wave-shell{position:relative!important;width:100%!important;height:42px!important;overflow:visible!important}
+ .track-wave-shell .track-wave{width:100%!important;height:42px!important}
+ .track-wave-overlay{position:absolute!important;inset:0!important;z-index:4!important;pointer-events:none!important;font:800 7px/1 ui-monospace,SFMono-Regular,Menlo,monospace!important}
+ .track-wave-time{position:absolute!important;top:3px!important;left:4px!important;padding:2px 4px!important;color:#c8fff5!important;background:#020706d9!important;border:1px solid #315b56!important;pointer-events:none!important}
+ .track-wave-marker{position:absolute!important;top:0!important;bottom:0!important;width:1px!important;background:#f0c97e!important;box-shadow:0 0 8px #f0c97ecc!important;pointer-events:none!important}
+ .track-wave-marker button{position:absolute!important;top:3px!important;left:2px!important;border:1px solid #f0c97e!important;border-radius:2px!important;background:#120d05e8!important;color:#ffe3a8!important;padding:2px 3px!important;font:900 7px/1 ui-monospace,SFMono-Regular,Menlo,monospace!important;cursor:pointer!important;pointer-events:auto!important}
+ .track-wave-marker.out{background:#63f5cf!important;box-shadow:0 0 8px #63f5cfcc!important}
+ .track-wave-marker.out button{border-color:#63f5cf!important;color:#c5fff0!important;background:#04140fe8!important}
+ .track-wave-marker.out button{transform:translateX(-100%)!important}
  html.terminal-fullscreen,html.terminal-fullscreen body{width:100%!important;height:100%!important;min-height:0!important;overflow:hidden!important}
  html.terminal-fullscreen .app{width:100%!important;max-width:none!important;height:100dvh!important;min-height:0!important;padding:4px!important;gap:4px!important;overflow:hidden!important;grid-template-rows:auto minmax(0,1fr) auto!important}
  html.terminal-fullscreen .top{min-height:42px!important;height:42px!important;padding:3px 7px!important}
@@ -298,9 +307,23 @@ frame.addEventListener('load',()=>{
 
   let loopEnabled=false,loopStart=0,loopEnd=null,loopTimer=0;
   const transport=q('play')&&q('play').parentElement;
-  let loopBtn=null,loopInBtn=null,loopOutBtn=null,loopResetBtn=null;
+  let loopBtn=null,loopInBtn=null,loopOutBtn=null,loopResetBtn=null,trackWaveShell=null,trackWaveTime=null,trackWaveIn=null,trackWaveOut=null;
+  function mountTrackWaveLoopUi(){
+   const wave=q('trackWave');if(!wave)return false;
+   if(!trackWaveShell){const parent=wave.parentElement;if(!parent)return false;trackWaveShell=document.createElement('div');trackWaveShell.className='track-wave-shell';wave.before(trackWaveShell);trackWaveShell.appendChild(wave);const overlay=document.createElement('div');overlay.className='track-wave-overlay';trackWaveTime=document.createElement('output');trackWaveTime.className='track-wave-time';trackWaveIn=document.createElement('div');trackWaveIn.className='track-wave-marker in';trackWaveOut=document.createElement('div');trackWaveOut.className='track-wave-marker out';const inButton=document.createElement('button'),outButton=document.createElement('button');inButton.type=outButton.type='button';inButton.textContent='IN';outButton.textContent='OUT';inButton.setAttribute('aria-label','Set loop IN at current time');outButton.setAttribute('aria-label','Set loop OUT at current time');inButton.onclick=e=>{e.preventDefault();e.stopPropagation();loopInBtn?.click()};outButton.onclick=e=>{e.preventDefault();e.stopPropagation();loopOutBtn?.click()};trackWaveIn.appendChild(inButton);trackWaveOut.appendChild(outButton);overlay.append(trackWaveTime,trackWaveIn,trackWaveOut);trackWaveShell.appendChild(overlay)}
+   return true;
+  }
+  function syncTrackWaveLoopUi(){
+   if(!mountTrackWaveLoopUi()||typeof a==='undefined'||!a)return;
+   const duration=Number(a.duration)||0,current=Math.max(0,Number(a.currentTime)||0),pct=v=>duration>0?Math.max(0,Math.min(100,v/duration*100)):0;
+   trackWaveTime.textContent=loopLabelTime(current);
+   trackWaveIn.style.left=pct(loopStart)+'%';
+   trackWaveOut.style.left=pct(loopEnd==null?current:loopEnd)+'%';
+   trackWaveIn.style.display=duration?'block':'none';
+   trackWaveOut.style.display=loopEnd==null?'none':'block';
+  }
   function loopLabelTime(v){if(!Number.isFinite(v))return '--:--.-';const m=Math.floor(v/60),sec=(v-m*60).toFixed(1).padStart(4,'0');return String(m).padStart(2,'0')+':'+sec}
-  function syncLoopUi(){if(loopBtn){loopBtn.classList.toggle('active',loopEnabled);loopBtn.textContent=loopEnabled?'LOOP ON':'LOOP OFF';loopBtn.setAttribute('aria-pressed',String(loopEnabled))}if(loopInBtn)loopInBtn.textContent='IN '+loopLabelTime(loopStart);if(loopOutBtn)loopOutBtn.textContent='OUT '+(loopEnd==null?'--:--.-':loopLabelTime(loopEnd))}
+  function syncLoopUi(){if(loopBtn){loopBtn.classList.toggle('active',loopEnabled);loopBtn.textContent=loopEnabled?'LOOP ON':'LOOP OFF';loopBtn.setAttribute('aria-pressed',String(loopEnabled))}if(loopInBtn)loopInBtn.textContent='IN '+loopLabelTime(loopStart);if(loopOutBtn)loopOutBtn.textContent='OUT '+(loopEnd==null?'--:--.-':loopLabelTime(loopEnd));syncTrackWaveLoopUi()}
   function armLoopTimer(){if(loopTimer){clearTimeout(loopTimer);loopTimer=0}if(!loopEnabled||loopEnd==null||typeof a==='undefined'||!a||a.paused)return;const remaining=(loopEnd-a.currentTime)/Math.max(.01,a.playbackRate||1);if(remaining<=.015){try{a.currentTime=loopStart}catch(_){};try{log('LOOP CYCLE · '+loopLabelTime(loopStart)+' → '+loopLabelTime(loopEnd))}catch(_){};armLoopTimer();return}loopTimer=setTimeout(()=>{loopTimer=0;if(loopEnabled&&loopEnd!=null&&a.currentTime>=loopEnd-.03){try{a.currentTime=loopStart}catch(_){};try{log('LOOP CYCLE · '+loopLabelTime(loopStart)+' → '+loopLabelTime(loopEnd))}catch(_){}}armLoopTimer()},Math.max(8,Math.min(250,remaining*1000-8)))}
   if(transport){
    transport.style.gridTemplateColumns='repeat(4,minmax(0,1fr))';
@@ -309,6 +332,7 @@ frame.addEventListener('load',()=>{
    loopBtn=document.createElement('button');loopBtn.type='button';loopBtn.className='btn';loopBtn.id='loopToggle';loopBtn.textContent='LOOP OFF';loopBtn.setAttribute('aria-pressed','false');loopBtn.onclick=()=>{if(loopEnd==null){loopStart=0;loopEnd=Number.isFinite(a.duration)&&a.duration>0?a.duration:null}loopEnabled=!loopEnabled;syncLoopUi();armLoopTimer();try{log('LOOP '+(loopEnabled?'ON':'OFF'))}catch(_){}};
    loopResetBtn=document.createElement('button');loopResetBtn.type='button';loopResetBtn.className='btn';loopResetBtn.id='loopReset';loopResetBtn.textContent='RESET LOOP';loopResetBtn.onclick=()=>{loopEnabled=false;loopStart=0;loopEnd=null;if(loopTimer){clearTimeout(loopTimer);loopTimer=0}syncLoopUi();try{log('LOOP RESET')}catch(_){}};
    transport.appendChild(loopInBtn);transport.appendChild(loopOutBtn);transport.appendChild(loopBtn);transport.appendChild(loopResetBtn);syncLoopUi();
+   const trackWaveLoopTick=()=>{syncTrackWaveLoopUi();requestAnimationFrame(trackWaveLoopTick)};requestAnimationFrame(trackWaveLoopTick);
   }
   try{if(typeof a!=='undefined'&&a){const originalEnded=a.onended;a.addEventListener('play',armLoopTimer);a.addEventListener('pause',()=>{if(loopTimer){clearTimeout(loopTimer);loopTimer=0}});a.addEventListener('seeked',armLoopTimer);a.addEventListener('ratechange',armLoopTimer);a.onended=()=>{if(loopEnabled){try{a.currentTime=loopStart}catch(_){};Promise.resolve(a.play()).catch(()=>{});armLoopTimer();try{log('LOOP RESTART')}catch(_){}}else if(typeof originalEnded==='function'){originalEnded.call(a)}}}}catch(_){}
 
