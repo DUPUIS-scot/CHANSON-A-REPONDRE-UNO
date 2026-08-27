@@ -1,4 +1,4 @@
-deploy-request: 2026-08-27T11:46:00+01:00
+deploy-request: 2026-08-27T12:15:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy 40x28 interpolated holographic 3D SIGNAL terrain, five-anchor geometric deformation, cyan-white amplitude palette, foreground rim, spectral drops, and refreshed orange sculpt controls
+reason: repair PLAYBACK root flow, fullscreen 3D SIGNAL stage/canvas containment, and high-resolution FLOAT analyser rendering
