@@ -52,6 +52,7 @@ shell_required = [
     "analyser-signal-glide.js?v=20260826-wheel-sculpt-v7",
     "analyser-signal-3d-v7.js?v=20260827-mesh-track-wave-v8",
     "sculpt-audio-mod.js?v=20260825-v3",
+    "analyser-multipoint-sculpt-v1.js?v=20260827-v1",
     "pending-ui-fixes.js?v=20260825-v2",
     "double-decker-special-v2.js?v=20260826-v7",
     "pad-fx-authority-v2.js?v=20260826-v2",
@@ -63,6 +64,7 @@ shell_required = [
     "installEnochianAnalyserSignalGlide",
     "installEnochianAnalyserSignal3D",
     "installEnochianSculptAudioMod",
+    "installEnochianMultipointSculptV1",
     "installEnochianPendingUiFixes",
     "installEnochianDoubleDeckerSpecialV2",
     "installEnochianPadFxAuthorityV2",
@@ -94,6 +96,7 @@ required_files = [
     Path('web/enochian-test/analyser-signal-glide.js'),
     Path('web/enochian-test/analyser-signal-3d-v7.js'),
     Path('web/enochian-test/sculpt-audio-mod.js'),
+    Path('web/enochian-test/analyser-multipoint-sculpt-v1.js'),
     Path('web/enochian-test/pending-ui-fixes.js'),
     Path('web/enochian-test/double-decker-special-v2.js'),
     Path('web/enochian-test/pad-fx-authority-v2.js'),
@@ -110,6 +113,7 @@ for js_file in [
     Path('web/enochian-test/analyser-data-bus.js'),
     Path('web/enochian-test/analyser-signal-3d-v7.js'),
     Path('web/enochian-test/sculpt-audio-mod.js'),
+    Path('web/enochian-test/analyser-multipoint-sculpt-v1.js'),
     Path('web/enochian-test/pending-ui-fixes.js'),
     Path('web/enochian-test/double-decker-special-v2.js'),
     Path('web/enochian-test/pad-fx-authority-v2.js'),
@@ -125,6 +129,7 @@ composite = Path('web/enochian-test/analyser-composite-signal.js').read_text(enc
 three_d = Path('web/enochian-test/analyser-signal-3d-v7.js').read_text(encoding='utf-8')
 glide = Path('web/enochian-test/analyser-signal-glide.js').read_text(encoding='utf-8')
 sculpt_audio = Path('web/enochian-test/sculpt-audio-mod.js').read_text(encoding='utf-8')
+multipoint = Path('web/enochian-test/analyser-multipoint-sculpt-v1.js').read_text(encoding='utf-8')
 pending_ui = Path('web/enochian-test/pending-ui-fixes.js').read_text(encoding='utf-8')
 touch = Path('web/enochian-test/ios-touch-tuning.js').read_text(encoding='utf-8')
 repairs = Path('web/enochian-test/enochian-ui-repairs-v1.js').read_text(encoding='utf-8')
@@ -172,11 +177,13 @@ if '__compositeCapture' in composite or '__enoch3dCapture' in three_d:
     raise SystemExit('legacy independent analyser wrappers unexpectedly present')
 if "analyserSignalGlide='v6'" not in glide or "__enochAnalyserWheelMode" not in glide or "wheelMode==='height'" not in glide or "wheelMode==='depth'" not in glide or "wheelMode==='twist'" not in glide or "analyserSignal3d==='v7'" not in three_d or "analyser-control-widget" not in three_d or "MOD LEVEL" not in three_d or "input:'internal-master-mix'" not in three_d or "const ROWS=16,BINS=16" not in three_d or "Math.pow(max+1" not in three_d or "const pick=" not in three_d:
     raise SystemExit('internal-master 16×16 logarithmic sculptable 3D analyser contract missing')
-if "sculptAudioMod='v3'" not in sculpt_audio or "version:'v3'" not in sculpt_audio or '__enochSculptAudio' not in sculpt_audio or 'grabCurve=[0,.28,.48,.67,.87,1]' not in sculpt_audio or 'restoreBase' not in sculpt_audio or 'SCULPT AUDIO' not in sculpt_audio:
-    raise SystemExit('sculpt-to-audio modulation v3 engagement contract missing')
+if "sculptAudioMod==='v4'" not in sculpt_audio or "version:'v4'" not in sculpt_audio or '__enochSculptAudio' not in sculpt_audio or 'anchors=Array.isArray(def.anchors)' not in sculpt_audio or "POINTS '+grabs+'/5" not in sculpt_audio or 'restoreBase' not in sculpt_audio:
+    raise SystemExit('five-point sculpt-to-audio modulation v4 contract missing')
+if "analyserMultipointSculpt===VERSION" not in multipoint or '__enochMultipointSculpt' not in multipoint or 'def.anchors' not in multipoint or 'selectedAnchor' not in multipoint or "ORANGE='#ff9d34'" not in multipoint or 'analyser-sculpt-overlay' not in multipoint:
+    raise SystemExit('five-point orange analyser sculpt mesh contract missing')
 if "pendingUiFixes==='v3'" not in pending_ui or "dataset.pendingUiFixes='v3'" not in pending_ui or 'loop-control-row' not in pending_ui or 'eq-kill-btn' not in pending_ui:
     raise SystemExit('pending terminal UI fixes v3 contract missing')
 if 'enochian-ui-repairs-v2-style' not in repairs or 'enoch-context-hint' not in repairs or 'masterDeckAnchor' not in repairs or 'installEnochianUiRepairsV1' not in repairs:
     raise SystemExit('Enochian specialist UI repair layer contract missing')
 
-print('Enochian runtime verified: UI repairs v3, pending UI fixes v3, DOUBLE DECKER SPECIAL controls, repaired pad FX authority, persistent stem master ON/OFF inside isolator, native Web Audio stem bridge with exclusive master/stem routing and smoothed GainNode mix, authoritative transport-clock loop with forced end wrap, outer floating analyser, unified FFT analyser bus, ring-buffered 3D signal history, v3 grab-engagement sculpt-to-audio, EQ kills, aligned MOD wheel, loop row, navigation and outer fullscreen.')
+print('Enochian runtime verified: UI repairs v3, pending UI fixes v3, DOUBLE DECKER SPECIAL controls, repaired pad FX authority, persistent stem master ON/OFF inside isolator, native Web Audio stem bridge with exclusive master/stem routing and smoothed GainNode mix, authoritative transport-clock loop with forced end wrap, outer floating analyser, unified FFT analyser bus, ring-buffered 3D signal history, five-point orange sculpt mesh with v4 anchor-driven audio modulation, EQ kills, aligned MOD wheel, loop row, navigation and outer fullscreen.')
