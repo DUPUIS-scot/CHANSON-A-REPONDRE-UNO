@@ -1,4 +1,4 @@
-deploy-request: 2026-08-27T07:29:00+01:00
+deploy-request: 2026-08-27T06:58:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy all current Enochian repairs with v4 2JECKER runtime contract, cache-busted four-stem UI, contained analyser controls, repaired open platter layout, and playback updates
+reason: deploy exact STEMS MIX four-row repair and fixed 3D SIGNAL with movable clamped analyser controls palette while FLOAT and signal readouts remain fixed
