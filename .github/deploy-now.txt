@@ -1,4 +1,4 @@
-deploy-request: 2026-08-27T12:45:00+01:00
+deploy-request: 2026-08-27T13:02:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: restore compact live 2MIX manipulation guide beside UNO launcher with drag, shift, alt, lock, wheel and touch instructions
+reason: make elapsed PLAYBACK waveform progressively turn terminal cyan blue while preserving dark future waveform, absolute playhead, seeking and track reset behavior
