@@ -28,11 +28,11 @@ function install(host){
     };
 
     const ensurePerformance=()=>{
-      if(w.__enochDoubleJesterPerformance?.version==='v4'||w.__enochDoubleJeckerPerformance?.version==='v4')return true;
+      if(['v4','v5'].includes(w.__enochDoubleJesterPerformance?.version)||['v4','v5'].includes(w.__enochDoubleJeckerPerformance?.version))return true;
       if(window.installEnochianDoubleJeckerPerformanceV2)return !!window.installEnochianDoubleJeckerPerformanceV2(host);
       if(perfPending)return false;
       perfPending=true;
-      load('performance-v4','/enochian-test/double-jecker-performance-v2.js?v=20260827-jester-performance-v4',()=>{perfPending=false;window.installEnochianDoubleJeckerPerformanceV2?.(host)});
+      load('performance-v4','/enochian-test/double-jecker-performance-v2.js?v=20260827-jester-performance-v5',()=>{perfPending=false;window.installEnochianDoubleJeckerPerformanceV2?.(host)});
       return false;
     };
     const ensureFloat=()=>{
@@ -176,7 +176,7 @@ function install(host){
       const stemsReady=['v3','v4'].includes(d.documentElement.dataset.stemFourChannel);
       const controlsReady=d.documentElement.dataset.analyserControlsContained==='v6'&&w.__enochAnalyserControlsContained?.fixedPaletteRemoved===true;
       const uiReady=d.documentElement.dataset.postPlaybackUiRepair==='v3'&&d.documentElement.dataset.playbackTransportAuthority==='v1'&&d.documentElement.dataset.twoMixMasterAnchor==='v1';
-      return{version:VERSION,live,conflict,outputReady:!!output,relayReady:!!relay,relayAttached:!!relay?.state?.attached,performanceReady:performance?.version==='v4',floatReady,stemsReady,controlsReady,uiReady,authorityReady:authority?.version===VERSION,healthy:!conflict&&(!live||!!output)&&(!live||!relay||!!relay.state?.attached)&&performance?.version==='v4'&&floatReady&&stemsReady&&controlsReady&&uiReady&&authority?.version===VERSION};
+      return{version:VERSION,live,conflict,outputReady:!!output,relayReady:!!relay,relayAttached:!!relay?.state?.attached,performanceReady:['v4','v5'].includes(performance?.version),floatReady,stemsReady,controlsReady,uiReady,authorityReady:authority?.version===VERSION,healthy:!conflict&&(!live||!!output)&&(!live||!relay||!!relay.state?.attached)&&performance?.version==='v4'&&floatReady&&stemsReady&&controlsReady&&uiReady&&authority?.version===VERSION};
     };
 
     const maintain=()=>{
