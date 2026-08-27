@@ -4,6 +4,7 @@ project(EnochianTerminalPlugins VERSION 0.1.0)
 add_subdirectory(JUCE)
 
 function(configure_enochian_target target)
+  juce_generate_juce_header(${target})
   target_compile_definitions(${target} PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
   target_link_libraries(${target} PRIVATE juce::juce_audio_utils juce::juce_dsp juce::juce_gui_extra)
 endfunction()
