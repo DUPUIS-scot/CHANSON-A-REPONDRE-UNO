@@ -1,4 +1,4 @@
-deploy-request: 2026-08-27T10:05:00+01:00
+deploy-request: 2026-08-27T11:45:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy consolidated 2JESTER runtime: single radial geometry owner, four native STEM JESTER linkage, passive open/close authority, v4 spinner crossfade, no polish/UI geometry overrides, cache-busted v10/v11 assets
+reason: deploy consolidated terminal repairs: stable nine-control PLAYBACK authority, single UNO 2MIX anchored to MASTER DECK with contextual help, fixed 3D SIGNAL header geometry, fullscreen-safe FLOAT/SIGNAL MOD/analyser containment, single floating sculpt controller, no viewport translation
