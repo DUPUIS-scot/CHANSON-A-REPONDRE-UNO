@@ -11,6 +11,7 @@ private:
     void timerCallback() override;
     EnochianTerminalMidiAudioProcessor& processor;
     juce::Label status;
+    juce::TextButton openLiveTerminal { "OPEN LIVE ENOCHIAN TERMINAL  ↗" };
     juce::Slider mix, modDepth, fxMix;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (EnochianTerminalMidiAudioProcessorEditor)
 };
