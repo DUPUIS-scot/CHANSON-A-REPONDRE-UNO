@@ -1,4 +1,4 @@
-deploy-request: 2026-08-27T10:18:00+01:00
+deploy-request: 2026-08-27T10:20:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: eliminate DOUBLE JESTER stem coordinate oscillation, restrict radial mutation relayout to structural slot changes, and stop runtime recenter jitter
+reason: repair stale Enochian verifier, align lazy DOUBLE JESTER add-ons with v9 stable geometry/no-recenter runtime, and redeploy
