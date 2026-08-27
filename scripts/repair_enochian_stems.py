@@ -8,8 +8,10 @@ for marker in ['stem-four-channel-ui-v1.js?v=20260827-v4','two-mix-master-anchor
  if marker not in shell: raise SystemExit(f'missing terminal shell marker: {marker}')
 for marker,source,label in [("const VERSION='v11'",stem_link,'STEM JESTER'),("VERSION='v12'",radial,'radial authority'),("const VERSION='v11'",repair,'runtime authority'),("const VERSION='v4'",performance,'spinner'),("const VERSION='v8'",ui_repairs,'UI repairs'),("stemFourChannel==='v4'",four_stem,'four stem UI'),("analyserControlsContained='v6'",contained,'analyser ownership')]:
  if marker not in source: raise SystemExit(f'missing {label}: {marker}')
-for marker in ["twoMixMasterLayout==='v5'",'2MIX · LIVE CONTROL','SHIFT+DRAG','ALT+DRAG','LOCK A/B','ADJUST MIX','CLICK / TAP UNO · TOGGLE GUIDE','two-mix-guide-row',"if(help.parentElement!==master)master.appendChild(help)",'two-mix-help-open',"toggle.addEventListener('click',toggleGuide,true)","pointerType==='touch'",'aria-expanded',"__enochTwoMixMasterAnchor={version:'v5'"]:
- if marker not in two_mix_owner: raise SystemExit(f'2MIX click/tap manipulation guide v5 missing: {marker}')
+for marker in ["twoMixMasterLayout==='v6'",'twoMixHelpToggle','2MIX · LIVE CONTROL','SHIFT+DRAG','ALT+DRAG','LOCK A/B','ADJUST MIX','UNO OPENS 2MIX',"helpButton.addEventListener('click',toggleGuide)","__enochTwoMixMasterAnchor={version:'v6'"]:
+ if marker not in two_mix_owner: raise SystemExit(f'independent 2MIX launcher/help v6 missing: {marker}')
+for forbidden in ["toggle.addEventListener('click',toggleGuide", "toggle.addEventListener('pointerup'", "toggleGuide=e=>{if(e){e.preventDefault();e.stopPropagation()}"]:
+ if forbidden in two_mix_owner: raise SystemExit(f'2MIX launcher is still intercepted by help authority: {forbidden}')
 if 'if(help.parentElement!==toggle)toggle.appendChild(help)' in two_mix_owner: raise SystemExit('2MIX help remains clipped inside UNO launcher')
 for marker in ['stem-primary-header','stem-master-primary',"master.textContent='STEMS'"]:
  if marker not in four_stem: raise SystemExit(f'primary STEM master missing: {marker}')
@@ -23,4 +25,4 @@ for name in required_files:
  path=base/name
  if not path.is_file() or path.stat().st_size==0: raise SystemExit(f'missing runtime layer: {path}')
  if path.suffix=='.js': subprocess.run(['node','--check',str(path)],check=True)
-print('Enochian runtime verified: explicit UNO click/tap 2MIX guide v5, unclipped compact help, primary STEMS MIX master, fullscreen SIGNAL/FLOAT and PLAYBACK ownership.')
+print('Enochian runtime verified: UNO remains the 2MIX launcher, dedicated ? help toggles compact guide v6, primary STEMS MIX master, fullscreen SIGNAL/FLOAT and PLAYBACK ownership.')
