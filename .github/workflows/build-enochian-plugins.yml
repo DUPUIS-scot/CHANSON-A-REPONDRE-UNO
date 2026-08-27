@@ -1,0 +1,40 @@
+name: Build ENOCHIAN TERMINAL plugins
+
+on:
+  push:
+    branches: [feature/enochian-midi-plugin]
+    paths:
+      - "plugins/enochian-terminal-midi/**"
+      - ".github/workflows/build-enochian-plugins.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: plugins/enochian-terminal-midi
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch JUCE
+        run: git clone --depth 1 --branch 8.0.4 https://github.com/juce-framework/JUCE.git JUCE
+      - name: Configure
+        run: cmake -B build -G "Visual Studio 17 2022" -A x64
+      - name: Build VST3 and Standalone
+        run: cmake --build build --config Release --parallel
+      - name: Package download
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path download | Out-Null
+          Copy-Item -Recurse build/*_artefacts/Release/VST3 download/
+          Copy-Item -Recurse build/*_artefacts/Release/Standalone download/
+          Compress-Archive -Path download/* -DestinationPath EnochianTerminalPlugins-Windows.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: EnochianTerminalPlugins-Windows
+          path: plugins/enochian-terminal-midi/EnochianTerminalPlugins-Windows.zip
+          if-no-files-found: error
+          retention-days: 30
