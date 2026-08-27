@@ -1,4 +1,4 @@
-deploy-request: 2026-08-27T13:27:00+01:00
+deploy-request: 2026-08-27T13:38:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: restore UNO as uninterrupted 2MIX launcher; move compact manipulation guide to dedicated ? help control; preserve existing terminal repairs
+reason: implement Terminal Viewport Layout Contract v1: freeze fixed module ownership, permit movement only for registered floatables, guard re-parenting without polling, preserve fullscreen resizing and existing audio/UI authorities
