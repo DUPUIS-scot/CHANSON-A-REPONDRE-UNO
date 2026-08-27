@@ -1,5 +1,13 @@
 # Chanson à Répondre UNO releases
 
+## v3.7.3.6 — Approved / Certified
+
+- Certificate version: 3.7.3.6
+- Status: APPROVED
+- Status: CERTIFIED
+- Package version: 3.7.3+6
+- Certifies the current repaired Enochian terminal baseline, including the Terminal Viewport Layout Contract, restored independent UNO/2MIX launcher and help control, PLAYBACK elapsed cyan waveform, STEMS MIX master visibility, and fullscreen/FLOAT 3D SIGNAL repairs.
+
 ## v3.7.3.5 — Approved / Certified
 
 - Certificate version: 3.7.3.5
