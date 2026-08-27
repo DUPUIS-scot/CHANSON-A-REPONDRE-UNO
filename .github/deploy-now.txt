@@ -1,4 +1,4 @@
-deploy-request: 2026-08-27T12:28:00+01:00
+deploy-request: 2026-08-27T12:40:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: redeploy final 2JESTER repair set after updating Enochian verifier for radial v12 authority and clean-disc contract
+reason: redeploy final 2JESTER repair set after updating Flutter regression contract to radial v12 authority while preserving v10 compatibility marker
