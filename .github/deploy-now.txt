@@ -1,4 +1,4 @@
-deploy-request: 2026-08-27T13:38:00+01:00
+deploy-request: 2026-08-27T13:46:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: implement Terminal Viewport Layout Contract v1: freeze fixed module ownership, permit movement only for registered floatables, guard re-parenting without polling, preserve fullscreen resizing and existing audio/UI authorities
+reason: deploy certified release 3.7.3.6 with current Terminal Viewport Layout Contract and repaired Enochian terminal baseline
