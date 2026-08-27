@@ -54,10 +54,13 @@ contracts = [
     ('STEM → 2JESTER', stem_link, '2JESTER link vocabulary'),
     ('jester-radial-v10', stem_link, 'fresh radial lazy loader'),
     ('jester-authority-v11', stem_link, 'fresh runtime lazy loader'),
-    ("const VERSION='v10'", radial, 'radial v10 authority'),
-    ('doubleJesterRadialPanelRectV10', radial, 'single radial geometry store'),
+    ("VERSION='v12'", radial, 'radial v12 authority'),
+    ('jesterRadialAuthority===VERSION', radial, 'radial v12 installation guard'),
+    ("panel.dataset.jeckerRadial='v10'", radial, 'radial v10 compatibility marker'),
+    ('doubleJesterRadialPanelRectV12', radial, 'single radial geometry store'),
     ('other:[22,34]', radial, 'A-side radial coordinates'),
     ('vocals:[34,82]', radial, 'B-side radial coordinates'),
+    ('content:none!important;display:none!important', radial, 'clean platter top inscription'),
     ("const VERSION='v11'", repair, 'runtime authority v11'),
     ('__enochDoubleJesterAuthority', repair, 'single open close authority'),
     ('authority-v11', repair, 'legacy resize suppression'),
@@ -130,4 +133,4 @@ for name in required_files:
     if path.suffix == '.js':
         subprocess.run(['node', '--check', str(path)], check=True)
 
-print('Enochian runtime verified: consolidated 2JESTER v11 ownership, one v10 radial geometry authority, fixed eight-stem layout, four native STEMS MIX rows, passive open/close authority, v4 spinner crossfade, PLAYBACK/2MIX/SIGNAL ownership, native stem/loop authority, navigation and fullscreen.')
+print('Enochian runtime verified: consolidated 2JESTER v11 ownership, one v12 radial geometry authority with v10 compatibility marker, clean platter top, fixed eight-stem layout, four native STEMS MIX rows, passive open/close authority, v4 spinner crossfade, PLAYBACK/2MIX/SIGNAL ownership, native stem/loop authority, navigation and fullscreen.')
