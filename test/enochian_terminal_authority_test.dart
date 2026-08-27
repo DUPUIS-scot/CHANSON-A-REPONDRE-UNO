@@ -17,8 +17,11 @@ void main() {
     expect(authority,
         contains("d.documentElement.dataset.authoritativeRuntime='v6'"));
     expect(terminal,
-        contains('live-copy.html?v=20260825-runtime-api-v2'));
+        contains('live-copy.html?v=20260827-ui-repairs-v3'));
     expect(terminal,
         contains('authoritative-runtime.js?v=20260825-runtime-api-v2'));
+    expect(terminal,
+        contains('enochian-ui-repairs-v1.js?v=20260827-ui-repairs-v3'));
+    expect(terminal, contains('installEnochianUiRepairsV1'));
   });
 }
