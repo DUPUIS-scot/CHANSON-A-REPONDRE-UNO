@@ -1,4 +1,4 @@
-deploy-request: 2026-08-27T06:10:00+01:00
+deploy-request: 2026-08-27T06:30:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy 2J live spinner crossfader, independent linked Bass/Other authority, runtime performance self-healing and strengthened interaction contracts
+reason: deploy restored J2 viewport floating, separated platter turntable gestures, working 2JECKER performance authority, and unobstructed 3D SIGNAL FLOAT control
