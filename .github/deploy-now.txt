@@ -1,4 +1,4 @@
-deploy-request: 2026-08-27T13:08:00+01:00
+deploy-request: 2026-08-27T13:17:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: make UNO click/tap explicitly toggle the compact 2MIX LIVE CONTROL manipulation guide; preserve anchored launcher and existing terminal repairs
+reason: verifier updated to 2MIX click/tap guide v5; redeploy explicit UNO click/tap toggle and existing terminal repairs
