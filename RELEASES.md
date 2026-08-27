@@ -1,5 +1,13 @@
 # Chanson à Répondre UNO releases
 
+## v3.7.3.4 — Approved / Certified
+
+- Certificate version: 3.7.3.4
+- Status: APPROVED
+- Status: CERTIFIED
+- Package version: 3.7.3+4
+- Includes the refined Enochian terminal controls and 2JECKER layout deployed from the 3.7.3.4 baseline.
+
 ## v3.7.3.3 — Approved / Certified
 
 - Certificate version: 3.7.3.3
