@@ -1,4 +1,4 @@
-deploy-request: 2026-08-27T08:51:00+01:00
+deploy-request: 2026-08-27T08:55:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy resilient ENOCHIAN TERMINAL startup; recover when iframe is already ready; singleton outer boot loop; 250ms retry cadence for about two minutes; guard four-stem and DOUBLE JESTER installers against duplicate retry loops; preserve current playback, analyser, stem and Jester repairs
+reason: playback containment, full 3D signal mesh, 2MIX master-deck top-right and help restoration
