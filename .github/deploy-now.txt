@@ -1,4 +1,4 @@
-deploy-request: 2026-08-27T09:11:00+01:00
+deploy-request: 2026-08-27T09:20:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: redeploy recovered terminal layout v5 with verifier aligned to ui-repairs v4 and analyser-controls-contained v5
+reason: redeploy recovered terminal layout v5 after updating enochian terminal regression test to ui-repairs v4 and analyser-controls-contained v5
