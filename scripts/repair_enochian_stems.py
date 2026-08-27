@@ -6,6 +6,7 @@ shell = Path('web/enochian-terminal/index.html').read_text(encoding='utf-8')
 authority_path = Path('web/enochian-test/analyser-live-authority-v1.js')
 authority_loader = authority_path.read_text(encoding='utf-8')
 stem_link = Path('web/enochian-test/double-decker-main-stem-link-v1.js').read_text(encoding='utf-8')
+radial_layout = Path('web/enochian-test/double-jecker-radial-layout-v1.js').read_text(encoding='utf-8')
 runtime_repair = Path('web/enochian-test/double-jecker-runtime-repair-v1.js').read_text(encoding='utf-8')
 
 runtime_required = [
@@ -34,7 +35,11 @@ shell_required = [
     "analyser-signal-3d-v7.js?v=20260827-mesh-track-wave-v8",
     "sculpt-audio-mod.js?v=20260825-v3", "pending-ui-fixes.js?v=20260825-v2",
     "pad-fx-authority-v2.js?v=20260826-v2", "ios-touch-tuning.js?v=20260824-v1",
-    "enochian-ui-repairs-v1.js?v=20260827-ui-repairs-v4",
+    "double-jecker-radial-layout-v1.js?v=20260827-stable-coordinates-v9",
+    "double-jecker-reference-skin-v1.js?v=20260827-layout-safe-v7",
+    "double-jecker-runtime-repair-v1.js?v=20260827-no-recenter-v9",
+    "enochian-terminal-polish-v1.js?v=20260827-polish-v2",
+    "enochian-ui-repairs-v1.js?v=20260827-ui-repairs-v5",
     "analyser-live-authority-v1.js?v=20260827-v1",
     "stem-four-channel-ui-v1.js?v=20260827-v4",
     "analyser-controls-contained-v1.js?v=20260827-v5",
@@ -52,7 +57,13 @@ for marker in shell_required:
 
 for marker, source in [
     ("double-decker-main-stem-link-v1.js?v=20260827-stem-jecker-v10", shell),
-    ("double-jecker-runtime-repair-v1.js?v=20260827-v2", stem_link),
+    ("double-jecker-radial-layout-v1.js?v=20260827-stable-coordinates-v9", stem_link),
+    ("double-jecker-reference-skin-v1.js?v=20260827-layout-safe-v7", stem_link),
+    ("double-jecker-runtime-repair-v1.js?v=20260827-no-recenter-v9", stem_link),
+    ("panel.dataset.jeckerRadial==='v9'", radial_layout),
+    ("doubleJeckerRadialPanelRectV5", radial_layout),
+    ("__enochDoubleJeckerRuntimeRepair?.version==='v9'", runtime_repair),
+    ("const r=panel.getBoundingClientRect(),out=", runtime_repair),
     ("stem-four-channel-ui-v1.js?v=20260827-v4", runtime_repair),
     ("analyser-controls-contained-v1.js?v=20260827-v5", runtime_repair),
 ]:
@@ -75,6 +86,7 @@ required_files = [
     'sculpt-audio-mod.js', 'analyser-multipoint-sculpt-v1.js', 'analyser-live-authority-v1.js',
     'pending-ui-fixes.js', 'pad-fx-authority-v2.js', 'ios-touch-tuning.js',
     'enochian-ui-repairs-v1.js', 'stem-four-channel-ui-v1.js', 'analyser-controls-contained-v1.js',
+    'double-jecker-radial-layout-v1.js', 'double-jecker-runtime-repair-v1.js',
 ]
 base = Path('web/enochian-test')
 for name in required_files:
@@ -132,4 +144,4 @@ if "stemFourChannel==='v3'" not in four_stem or "['vocals','drums','bass','other
 if "analyserControlsContained='v5'" not in contained_controls or 'fixedPaletteRemoved:true' not in contained_controls or 'removeFixedPalette' not in contained_controls or 'repairSignal' not in contained_controls or 'repairTwoMix' not in contained_controls:
     raise SystemExit('recovered terminal layout repair v5 contract missing')
 
-print('Enochian runtime verified: recovered v5 layout, four native STEMS MIX rows, full 3D SIGNAL viewport with FLOAT-only launcher, single authoritative controls palette in floating analyser, progressive PLAYBACK waveform, restored 2MIX placement/help, live FFT authority, native stem/loop authority, EQ kills, navigation and fullscreen.')
+print('Enochian runtime verified: stable DOUBLE JESTER v9 stem geometry and no-recenter runtime, recovered v5 layout, four native STEMS MIX rows, full 3D SIGNAL viewport with FLOAT-only launcher, single authoritative controls palette in floating analyser, progressive PLAYBACK waveform, restored 2MIX placement/help, live FFT authority, native stem/loop authority, EQ kills, navigation and fullscreen.')
