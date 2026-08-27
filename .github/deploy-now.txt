@@ -1,4 +1,4 @@
-deploy-request: 2026-08-27T10:10:00+01:00
+deploy-request: 2026-08-27T10:18:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy playback pointer authority, single anchored 2MIX widget, and separated 3D SIGNAL control layers
+reason: eliminate DOUBLE JESTER stem coordinate oscillation, restrict radial mutation relayout to structural slot changes, and stop runtime recenter jitter
