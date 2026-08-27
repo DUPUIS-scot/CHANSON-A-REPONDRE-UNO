@@ -36,23 +36,25 @@ shell_required = [
     "pad-fx-authority-v2.js?v=20260826-v2", "ios-touch-tuning.js?v=20260824-v1",
     "enochian-ui-repairs-v1.js?v=20260827-ui-repairs-v3",
     "analyser-live-authority-v1.js?v=20260827-v1",
+    "stem-four-channel-ui-v1.js?v=20260827-v4",
+    "analyser-controls-contained-v1.js?v=20260827-v3",
     "installEnochianAuthoritativeRuntime", "installEnochianOuterAnalyserPanel",
     "installEnochianAnalyserDataBus", "installEnochianAnalyserSignalGlide",
     "installEnochianAnalyserSignal3D", "installEnochianSculptAudioMod",
     "installEnochianPendingUiFixes", "installEnochianPadFxAuthorityV2",
     "installEnochianIOSTouchTuning", "installEnochianUiRepairsV1",
-    "installEnochianAnalyserLiveAuthorityV1",
+    "installEnochianAnalyserLiveAuthorityV1", "installEnochianStemFourChannelV1",
+    "installEnochianAnalyserControlsContainedV1",
 ]
 for marker in shell_required:
     if marker not in shell:
         raise SystemExit(f'missing terminal shell marker: {marker}')
 
-# Multipoint sculpt is intentionally lazy-loaded by the already-authoritative analyser layer.
 for marker, source in [
     ("double-decker-main-stem-link-v1.js?v=20260827-stem-jecker-v10", shell),
     ("double-jecker-runtime-repair-v1.js?v=20260827-v2", stem_link),
-    ("stem-four-channel-ui-v1.js?v=20260827-v3", runtime_repair),
-    ("analyser-controls-contained-v1.js?v=20260827-v2", runtime_repair),
+    ("stem-four-channel-ui-v1.js?v=20260827-v4", runtime_repair),
+    ("analyser-controls-contained-v1.js?v=20260827-v3", runtime_repair),
 ]:
     if marker not in source:
         raise SystemExit(f'stale Enochian cache-buster marker: {marker}')
@@ -72,7 +74,7 @@ required_files = [
     'analyser-composite-signal.js', 'analyser-signal-glide.js', 'analyser-signal-3d-v7.js',
     'sculpt-audio-mod.js', 'analyser-multipoint-sculpt-v1.js', 'analyser-live-authority-v1.js',
     'pending-ui-fixes.js', 'pad-fx-authority-v2.js', 'ios-touch-tuning.js',
-    'enochian-ui-repairs-v1.js',
+    'enochian-ui-repairs-v1.js', 'stem-four-channel-ui-v1.js', 'analyser-controls-contained-v1.js',
 ]
 base = Path('web/enochian-test')
 for name in required_files:
@@ -94,6 +96,8 @@ multipoint = files['analyser-multipoint-sculpt-v1.js']
 pending_ui = files['pending-ui-fixes.js']
 touch = files['ios-touch-tuning.js']
 repairs = files['enochian-ui-repairs-v1.js']
+four_stem = files['stem-four-channel-ui-v1.js']
+contained_controls = files['analyser-controls-contained-v1.js']
 
 for marker in ["authoritativeRuntime==='v6'", "__enochStemAuthority={version:'v6'", "__enochLoopAuthority={version:'v6'", "__enochNativeStemEngine={version:'v2'", "setTargetAtTime", "setEnabled(on)", "setRow(key,on)", "setLevel(key,value)", "LOOP CYCLE", "engine.sync(true)"]:
     if marker not in authority:
@@ -123,5 +127,9 @@ if "pendingUiFixes==='v3'" not in pending_ui or 'loop-control-row' not in pendin
     raise SystemExit('pending terminal UI fixes v3 contract missing')
 if 'enochian-ui-repairs-v2-style' not in repairs or 'enoch-context-hint' not in repairs or 'masterDeckAnchor' not in repairs:
     raise SystemExit('Enochian specialist UI repair layer contract missing')
+if "stemFourChannel==='v3'" not in four_stem or "['vocals','drums','bass','other']" not in four_stem or 'data-stem-jecker-split' not in four_stem:
+    raise SystemExit('four equal native stem rows contract missing')
+if "analyserControlsContained==='v2'" not in contained_controls or 'palette-dragging' not in contained_controls or 'outer-float-launch' not in contained_controls or 'maxL' not in contained_controls or 'maxT' not in contained_controls:
+    raise SystemExit('contained movable analyser controls contract missing')
 
-print('Enochian runtime verified: live FFT authority with dynamic five-point orange sculpt loader, v4 anchor-driven audio modulation, native stems/loop authority, outer analyser, EQ kills, MOD/loop UI, navigation and fullscreen.')
+print('Enochian runtime verified: four native STEMS MIX rows, fixed 3D SIGNAL with contained movable control palette, visible FLOAT, live FFT authority, native stem/loop authority, EQ kills, navigation and fullscreen.')
