@@ -6,8 +6,10 @@ for marker in ['window.__enochStemRuntimeApi=','stemMasterToggle','masterGate','
  if marker not in runtime: raise SystemExit(f'missing runtime marker: {marker}')
 for marker in ['stem-four-channel-ui-v1.js?v=20260827-v4','two-mix-master-anchor-v1.js?v=20260827-v1','analyser-data-bus.js?v=20260824-v2','installEnochianTwoMixMasterAnchorV1']:
  if marker not in shell: raise SystemExit(f'missing terminal shell marker: {marker}')
-for marker,source,label in [("const VERSION='v11'",stem_link,'STEM JESTER'),("VERSION='v12'",radial,'radial authority'),("const VERSION='v11'",repair,'runtime authority'),("const VERSION='v5'",performance,'spinner'),("const VERSION='v8'",ui_repairs,'UI repairs'),("stemFourChannel==='v4'",four_stem,'four stem UI'),("analyserControlsContained='v6'",contained,'analyser ownership')]:
+for marker,source,label in [("const VERSION='v11'",stem_link,'STEM JESTER'),("VERSION='v12'",radial,'radial authority'),("const VERSION='v11'",repair,'runtime authority'),("const VERSION='v6'",performance,'spinner'),("const VERSION='v8'",ui_repairs,'UI repairs'),("stemFourChannel==='v4'",four_stem,'four stem UI'),("analyserControlsContained='v6'",contained,'analyser ownership')]:
  if marker not in source: raise SystemExit(f'missing {label}: {marker}')
+for marker in ["data-mode=\"mix\"","data-mode=\"stem\"","data-mode=\"jog\"","setMode","applyStemMorph","applyJog","continuousSpin:true","dragOuterRig:true"]:
+ if marker not in performance: raise SystemExit(f'2J MIX/STEM/JOG v6 contract missing: {marker}')
 for marker in ["__enochAnalyserBus=bus","bus.emit('signal'",'rawSignal']:
  if marker not in analyser_bus: raise SystemExit(f'ENOCHIAN signal bus missing: {marker}')
 for marker in ["twoMixMasterLayout==='v10'",'twoMixHelpToggle',"helpButton.addEventListener('click',toggleGuide)","__enochTwoMixMasterAnchor={version:'v10'",'twoMixCursorTrail','two-mix-trail-segment','spawnMemory','bindSignal',"w.__enochAnalyserBus","type==='signal'","ENOCHIAN SIGNAL MEMORY","cursorHelp.classList.add('visible')"]:
@@ -31,4 +33,4 @@ for name in required_files:
  path=base/name
  if not path.is_file() or path.stat().st_size==0: raise SystemExit(f'missing runtime layer: {path}')
  if path.suffix=='.js': subprocess.run(['node','--check',str(path)],check=True)
-print('Enochian runtime verified: 2MIX v10 memory is fed by the ENOCHIAN analyser signal bus, cursor only sculpts geometry, live HUD persists, and STEMS/SIGNAL/PLAYBACK authorities remain intact.')
+print('Enochian runtime verified: 2J MIX/STEM/JOG v6, continuous visual spin, draggable chassis, 2MIX signal memory, and STEMS/SIGNAL/PLAYBACK authorities remain intact.')
