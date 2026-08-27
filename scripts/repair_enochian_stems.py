@@ -5,6 +5,8 @@ runtime = Path('web/enochian-test/live-copy.html').read_text(encoding='utf-8')
 shell = Path('web/enochian-terminal/index.html').read_text(encoding='utf-8')
 authority_path = Path('web/enochian-test/analyser-live-authority-v1.js')
 authority_loader = authority_path.read_text(encoding='utf-8')
+stem_link = Path('web/enochian-test/double-decker-main-stem-link-v1.js').read_text(encoding='utf-8')
+runtime_repair = Path('web/enochian-test/double-jecker-runtime-repair-v1.js').read_text(encoding='utf-8')
 
 runtime_required = [
     "v=20260824-stem-lazy-v5", "m.preload='none'", "ensureStemMediaLoaded",
@@ -22,7 +24,7 @@ if 'requestAnimationFrame(stemDriftTick)' in runtime:
     raise SystemExit('RAF stem drift loop unexpectedly present')
 
 shell_required = [
-    "live-copy.html?v=20260827-ui-repairs-v3", "installReliableNavigation",
+    "live-copy.html?v=20260827-cache-repair-v4", "installReliableNavigation",
     "home.href='/#/home'", "go('#/home')", "go('#/djwho')", "installConsoleAuthority",
     "installReliableFullscreen", "syncResponsiveLayout",
     "authoritative-runtime.js?v=20260825-runtime-api-v2",
@@ -46,6 +48,15 @@ for marker in shell_required:
         raise SystemExit(f'missing terminal shell marker: {marker}')
 
 # Multipoint sculpt is intentionally lazy-loaded by the already-authoritative analyser layer.
+for marker, source in [
+    ("double-decker-main-stem-link-v1.js?v=20260827-stem-jecker-v10", shell),
+    ("double-jecker-runtime-repair-v1.js?v=20260827-v2", stem_link),
+    ("stem-four-channel-ui-v1.js?v=20260827-v3", runtime_repair),
+    ("analyser-controls-contained-v1.js?v=20260827-v2", runtime_repair),
+]:
+    if marker not in source:
+        raise SystemExit(f'stale Enochian cache-buster marker: {marker}')
+
 for marker in [
     "VERSION='20260827-live-authority-v2'",
     "function loadSculpt(host)",

@@ -113,7 +113,7 @@
       loadAddon('signal-relay','/enochian-test/double-jecker-signal-relay-v1.js?v=20260827-relay-v3','installEnochianDoubleJeckerSignalRelayV1');
       loadAddon('radial-v2','/enochian-test/double-jecker-radial-layout-v1.js?v=20260827-radial-v2','installEnochianDoubleJeckerRadialV1',80);
       loadAddon('reference-v2','/enochian-test/double-jecker-reference-skin-v1.js?v=20260827-skin-v2','installEnochianDoubleJeckerReferenceSkinV1',100);
-      loadAddon('runtime-repair','/enochian-test/double-jecker-runtime-repair-v1.js?v=20260827-v1','installEnochianDoubleJeckerRuntimeRepairV1',140);
+      loadAddon('runtime-repair','/enochian-test/double-jecker-runtime-repair-v1.js?v=20260827-v2','installEnochianDoubleJeckerRuntimeRepairV1',140);
 
       w.addEventListener('pagehide',()=>{masterObserver.disconnect();w.clearInterval(reconcileTimer)},{once:true});
       return true;

@@ -17,7 +17,7 @@ void main() {
     expect(authority,
         contains("d.documentElement.dataset.authoritativeRuntime='v6'"));
     expect(terminal,
-        contains('live-copy.html?v=20260827-ui-repairs-v3'));
+        contains('live-copy.html?v=20260827-cache-repair-v4'));
     expect(terminal,
         contains('authoritative-runtime.js?v=20260825-runtime-api-v2'));
     expect(terminal,
