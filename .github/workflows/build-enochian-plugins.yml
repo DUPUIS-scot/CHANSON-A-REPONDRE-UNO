@@ -6,6 +6,11 @@ on:
     paths:
       - "plugins/enochian-terminal-midi/**"
       - ".github/workflows/build-enochian-plugins.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "plugins/enochian-terminal-midi/**"
+      - ".github/workflows/build-enochian-plugins.yml"
   workflow_dispatch:
 
 permissions:
