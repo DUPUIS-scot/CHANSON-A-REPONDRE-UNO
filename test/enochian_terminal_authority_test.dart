@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('terminal exposes and installs the v6 authoritative runtime', () {
+  test('terminal exposes consolidated Enochian and 2JESTER authorities', () {
     final liveCopy = File('web/enochian-test/live-copy.html').readAsStringSync();
     final authority =
         File('web/enochian-test/authoritative-runtime.js').readAsStringSync();
@@ -15,6 +15,14 @@ void main() {
         .readAsStringSync();
     final signalOwner = File('web/enochian-test/analyser-controls-contained-v1.js')
         .readAsStringSync();
+    final radial = File('web/enochian-test/double-jecker-radial-layout-v1.js')
+        .readAsStringSync();
+    final stemJester = File('web/enochian-test/double-decker-main-stem-link-v1.js')
+        .readAsStringSync();
+    final jesterRuntime = File('web/enochian-test/double-jecker-runtime-repair-v1.js')
+        .readAsStringSync();
+    final polish = File('web/enochian-test/enochian-terminal-polish-v1.js')
+        .readAsStringSync();
 
     expect(liveCopy, contains('window.__enochStemRuntimeApi='));
     expect(liveCopy, contains("version:'v1'"));
@@ -22,20 +30,41 @@ void main() {
     expect(authority, isNot(contains("typeof setStemMode!=='function'")));
     expect(authority,
         contains("d.documentElement.dataset.authoritativeRuntime='v6'"));
+
     expect(terminal,
         contains('live-copy.html?v=20260827-cache-repair-v4'));
     expect(terminal,
         contains('authoritative-runtime.js?v=20260825-runtime-api-v2'));
     expect(terminal,
-        contains('enochian-ui-repairs-v1.js?v=20260827-ui-repairs-v6'));
+        contains('double-decker-main-stem-link-v1.js?v=20260827-stem-jester-v11'));
+    expect(terminal,
+        contains('double-jecker-radial-layout-v1.js?v=20260827-jester-radial-v10'));
+    expect(terminal,
+        contains('double-jecker-runtime-repair-v1.js?v=20260827-jester-authority-v11'));
+    expect(terminal,
+        contains('enochian-terminal-polish-v1.js?v=20260827-polish-v3'));
+    expect(terminal,
+        contains('enochian-ui-repairs-v1.js?v=20260827-ui-repairs-v7'));
     expect(terminal,
         contains('analyser-controls-contained-v1.js?v=20260827-v6'));
-    expect(terminal,
-        contains('double-jecker-runtime-repair-v1.js?v=20260827-ownership-v10'));
     expect(terminal,
         contains('playback-transport-authority-v1.js?v=20260827-v1'));
     expect(terminal,
         contains('two-mix-master-anchor-v1.js?v=20260827-v1'));
+
+    expect(radial, contains("const VERSION='v10'"));
+    expect(radial, contains('doubleJesterRadialPanelRectV10'));
+    expect(radial, contains('other:[22,34]'));
+    expect(radial, contains('vocals:[34,82]'));
+    expect(stemJester, contains("const VERSION='v11'"));
+    expect(stemJester, contains("['vocals','drums','bass','other']"));
+    expect(stemJester, isNot(contains("mainLevel('instruments')")));
+    expect(jesterRuntime, contains("const VERSION='v11'"));
+    expect(jesterRuntime, contains('__enochDoubleJesterAuthority'));
+    expect(polish, contains("VERSION='20260827-polish-v3'"));
+    expect(polish, isNot(contains('const coords={A:{vocals:[30,17]')));
+    expect(polish, isNot(contains('JECKER_STORE=')));
+
     expect(terminal, contains('installEnochianUiRepairsV1'));
     expect(terminal, contains('installEnochianAnalyserControlsContainedV1'));
     expect(playbackOwner, contains("playbackTransportAuthority='v1'"));
