@@ -1,4 +1,4 @@
-deploy-request: 2026-08-27T12:15:00+01:00
+deploy-request: 2026-08-27T12:22:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: repair PLAYBACK root flow, fullscreen 3D SIGNAL stage/canvas containment, and high-resolution FLOAT analyser rendering
+reason: fix CI verifier mismatch for UI repairs v8 and deploy PLAYBACK root, fullscreen 3D SIGNAL containment, and high-resolution FLOAT analyser repair
