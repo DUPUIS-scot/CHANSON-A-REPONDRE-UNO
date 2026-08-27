@@ -55,3 +55,4 @@ juce::AudioProcessorEditor* EnochianTerminalMidiAudioProcessor::createEditor() {
 void EnochianTerminalMidiAudioProcessor::getStateInformation (juce::MemoryBlock& data) { juce::MemoryOutputStream(data, true).writeString(parameters.copyState().toXmlString()); }
 void EnochianTerminalMidiAudioProcessor::setStateInformation (const void* data, int size) { if (auto xml = juce::parseXML(juce::String::fromUTF8(static_cast<const char*>(data), size))) parameters.replaceState(juce::ValueTree::fromXml(*xml)); }
 juce::String EnochianTerminalMidiAudioProcessor::statusText() const { return (playing ? "PLAYING" : "READY") + juce::String(" · STEM ") + juce::String(activeStem.load()); }
+juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter(){ return new EnochianTerminalMidiAudioProcessor(); }
