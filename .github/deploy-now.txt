@@ -1,4 +1,4 @@
-deploy-request: 2026-08-27T09:00:00+01:00
+deploy-request: 2026-08-27T09:11:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: copy and verify authoritative enochian-terminal and enochian-test runtime in Pages artifact
+reason: redeploy recovered terminal layout v5 with verifier aligned to ui-repairs v4 and analyser-controls-contained v5
