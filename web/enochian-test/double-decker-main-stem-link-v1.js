@@ -111,9 +111,9 @@
       loadAddon('shield','/enochian-test/double-jecker-turntable-shield-v1.js?v=20260827-v3','installEnochianDoubleJeckerTurntableShieldV1');
       loadAddon('output','/enochian-test/double-jecker-output-v1.js?v=20260827-output-v2','installEnochianDoubleJeckerOutputV1');
       loadAddon('signal-relay','/enochian-test/double-jecker-signal-relay-v1.js?v=20260827-relay-v3','installEnochianDoubleJeckerSignalRelayV1');
-      loadAddon('radial-v2','/enochian-test/double-jecker-radial-layout-v1.js?v=20260827-radial-v2','installEnochianDoubleJeckerRadialV1',80);
-      loadAddon('reference-v2','/enochian-test/double-jecker-reference-skin-v1.js?v=20260827-skin-v2','installEnochianDoubleJeckerReferenceSkinV1',100);
-      loadAddon('runtime-repair','/enochian-test/double-jecker-runtime-repair-v1.js?v=20260827-v2','installEnochianDoubleJeckerRuntimeRepairV1',140);
+      loadAddon('radial-v9','/enochian-test/double-jecker-radial-layout-v1.js?v=20260827-stable-coordinates-v9','installEnochianDoubleJeckerRadialV1',80);
+      loadAddon('reference-v7','/enochian-test/double-jecker-reference-skin-v1.js?v=20260827-layout-safe-v7','installEnochianDoubleJeckerReferenceSkinV1',100);
+      loadAddon('runtime-repair-v9','/enochian-test/double-jecker-runtime-repair-v1.js?v=20260827-no-recenter-v9','installEnochianDoubleJeckerRuntimeRepairV1',140);
 
       w.addEventListener('pagehide',()=>{masterObserver.disconnect();w.clearInterval(reconcileTimer)},{once:true});
       return true;
