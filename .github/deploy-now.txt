@@ -1,4 +1,4 @@
-deploy-request: 2026-08-27T09:46:00+01:00
+deploy-request: 2026-08-27T10:10:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: lock all eight DOUBLE JESTER stem controls to fixed platter coordinates, suppress transform animation and cache-bust radial/skin assets
+reason: deploy playback pointer authority, single anchored 2MIX widget, and separated 3D SIGNAL control layers
