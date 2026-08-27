@@ -1,5 +1,13 @@
 # Chanson à Répondre UNO releases
 
+## v3.7.3.5 — Approved / Certified
+
+- Certificate version: 3.7.3.5
+- Status: APPROVED
+- Status: CERTIFIED
+- Package version: 3.7.3+5
+- Promotes the current repaired Enochian terminal baseline, including PLAYBACK layout cleanup and fullscreen 3D SIGNAL containment, as the certified live release.
+
 ## v3.7.3.4 — Approved / Certified
 
 - Certificate version: 3.7.3.4
