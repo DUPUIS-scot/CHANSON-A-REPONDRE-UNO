@@ -27,9 +27,15 @@ void main() {
     expect(terminal,
         contains('authoritative-runtime.js?v=20260825-runtime-api-v2'));
     expect(terminal,
-        contains('enochian-ui-repairs-v1.js?v=20260827-ui-repairs-v5'));
+        contains('enochian-ui-repairs-v1.js?v=20260827-ui-repairs-v6'));
     expect(terminal,
-        contains('analyser-controls-contained-v1.js?v=20260827-v5'));
+        contains('analyser-controls-contained-v1.js?v=20260827-v6'));
+    expect(terminal,
+        contains('double-jecker-runtime-repair-v1.js?v=20260827-ownership-v10'));
+    expect(terminal,
+        contains('playback-transport-authority-v1.js?v=20260827-v1'));
+    expect(terminal,
+        contains('two-mix-master-anchor-v1.js?v=20260827-v1'));
     expect(terminal, contains('installEnochianUiRepairsV1'));
     expect(terminal, contains('installEnochianAnalyserControlsContainedV1'));
     expect(playbackOwner, contains("playbackTransportAuthority='v1'"));
