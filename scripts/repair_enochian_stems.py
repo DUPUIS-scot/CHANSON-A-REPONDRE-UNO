@@ -8,7 +8,7 @@ for marker in ['stem-four-channel-ui-v1.js?v=20260827-v4','two-mix-master-anchor
  if marker not in shell: raise SystemExit(f'missing terminal shell marker: {marker}')
 for marker,source,label in [("const VERSION='v11'",stem_link,'STEM JESTER'),("VERSION='v12'",radial,'radial authority'),("const VERSION='v11'",repair,'runtime authority'),("const VERSION='v6'",performance,'spinner'),("const VERSION='v8'",ui_repairs,'UI repairs'),("stemFourChannel==='v4'",four_stem,'four stem UI'),("analyserControlsContained='v6'",contained,'analyser ownership')]:
  if marker not in source: raise SystemExit(f'missing {label}: {marker}')
-for marker in ["data-mode=\"mix\"","data-mode=\"stem\"","data-mode=\"jog\"","setMode","applyStemMorph","applyJog","continuousSpin:true","dragOuterRig:true"]:
+for marker in ["['mix','stem','jog']","b.dataset.mode=m","setMode","applyStem","applyJog","continuousSpin:true","dragOuterRig:true"]:
  if marker not in performance: raise SystemExit(f'2J MIX/STEM/JOG v6 contract missing: {marker}')
 for marker in ["__enochAnalyserBus=bus","bus.emit('signal'",'rawSignal']:
  if marker not in analyser_bus: raise SystemExit(f'ENOCHIAN signal bus missing: {marker}')
