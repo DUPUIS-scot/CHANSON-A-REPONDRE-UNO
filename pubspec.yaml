@@ -15,7 +15,6 @@ dependencies:
   video_player: ^2.13.0
   video_player_media_kit: ^2.0.0
   media_kit_libs_windows_video: any
-  media_kit_libs_linux_video: any
   audioplayers: ^6.8.1
   shared_preferences: ^2.5.5
   sqflite: ^2.4.3
