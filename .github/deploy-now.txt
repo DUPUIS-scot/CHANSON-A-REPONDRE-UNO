@@ -1,4 +1,4 @@
-deploy-request: 2026-08-27T08:55:00+01:00
+deploy-request: 2026-08-27T09:00:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: playback containment, full 3D signal mesh, 2MIX master-deck top-right and help restoration
+reason: copy and verify authoritative enochian-terminal and enochian-test runtime in Pages artifact
