@@ -1,4 +1,4 @@
-deploy-request: 2026-08-27T20:00:00+01:00
+deploy-request: 2026-08-27T20:08:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy 2MIX v10 Enochian signal-fed memory trail and persistent live HUD
+reason: deploy DOUBLE JESTER SPECIAL mechanical cyan amber redesign while preserving stable eight-stem geometry and audio authority
