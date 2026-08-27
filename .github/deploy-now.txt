@@ -1,4 +1,4 @@
-deploy-request: 2026-08-27T10:20:00+01:00
+deploy-request: 2026-08-27T10:38:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: repair stale Enochian verifier, align lazy DOUBLE JESTER add-ons with v9 stable geometry/no-recenter runtime, and redeploy
+reason: deploy structural terminal ownership repair: authoritative nine-control PLAYBACK, single UNO 2MIX master-deck anchor with contextual help, and separated fixed/floating 3D SIGNAL controls
