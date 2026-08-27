@@ -52,8 +52,11 @@ void main() {
     expect(terminal,
         contains('two-mix-master-anchor-v1.js?v=20260827-v1'));
 
-    expect(radial, contains("const VERSION='v10'"));
-    expect(radial, contains('doubleJesterRadialPanelRectV10'));
+    expect(radial, contains("VERSION='v12'"));
+    expect(radial, contains('doubleJesterRadialPanelRectV12'));
+    expect(radial, contains('jesterRadialAuthority===VERSION'));
+    expect(radial, contains("panel.dataset.jeckerRadial='v10'"));
+    expect(radial, contains("content:none!important;display:none!important"));
     expect(radial, contains('other:[22,34]'));
     expect(radial, contains('vocals:[34,82]'));
     expect(stemJester, contains("const VERSION='v11'"));
