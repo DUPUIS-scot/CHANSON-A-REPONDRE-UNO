@@ -1,4 +1,4 @@
-deploy-request: 2026-08-27T06:58:00+01:00
+deploy-request: 2026-08-27T07:01:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy exact STEMS MIX four-row repair and fixed 3D SIGNAL with movable clamped analyser controls palette while FLOAT and signal readouts remain fixed
+reason: redeploy after fixing four-stem JavaScript syntax while preserving exact four-row STEMS MIX and contained analyser controls repair
