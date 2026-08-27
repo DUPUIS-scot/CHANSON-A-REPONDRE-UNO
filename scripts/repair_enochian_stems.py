@@ -37,19 +37,23 @@ shell_required = [
     "pad-fx-authority-v2.js?v=20260826-v2", "ios-touch-tuning.js?v=20260824-v1",
     "double-jecker-radial-layout-v1.js?v=20260827-stable-coordinates-v9",
     "double-jecker-reference-skin-v1.js?v=20260827-layout-safe-v7",
-    "double-jecker-runtime-repair-v1.js?v=20260827-no-recenter-v9",
+    "double-jecker-runtime-repair-v1.js?v=20260827-ownership-v10",
     "enochian-terminal-polish-v1.js?v=20260827-polish-v2",
-    "enochian-ui-repairs-v1.js?v=20260827-ui-repairs-v5",
+    "enochian-ui-repairs-v1.js?v=20260827-ui-repairs-v6",
     "analyser-live-authority-v1.js?v=20260827-v1",
     "stem-four-channel-ui-v1.js?v=20260827-v4",
-    "analyser-controls-contained-v1.js?v=20260827-v5",
+    "analyser-controls-contained-v1.js?v=20260827-v6",
+    "playback-transport-authority-v1.js?v=20260827-v1",
+    "two-mix-master-anchor-v1.js?v=20260827-v1",
+    "post-playback-ui-repair-v2.js?v=20260827-v3",
     "installEnochianAuthoritativeRuntime", "installEnochianOuterAnalyserPanel",
     "installEnochianAnalyserDataBus", "installEnochianAnalyserSignalGlide",
     "installEnochianAnalyserSignal3D", "installEnochianSculptAudioMod",
     "installEnochianPendingUiFixes", "installEnochianPadFxAuthorityV2",
     "installEnochianIOSTouchTuning", "installEnochianUiRepairsV1",
     "installEnochianAnalyserLiveAuthorityV1", "installEnochianStemFourChannelV1",
-    "installEnochianAnalyserControlsContainedV1",
+    "installEnochianAnalyserControlsContainedV1", "installEnochianPlaybackTransportAuthorityV1",
+    "installEnochianTwoMixMasterAnchorV1", "installEnochianPostPlaybackUiRepairV2",
 ]
 for marker in shell_required:
     if marker not in shell:
@@ -62,10 +66,11 @@ for marker, source in [
     ("double-jecker-runtime-repair-v1.js?v=20260827-no-recenter-v9", stem_link),
     ("panel.dataset.jeckerRadial==='v9'", radial_layout),
     ("doubleJeckerRadialPanelRectV5", radial_layout),
-    ("__enochDoubleJeckerRuntimeRepair?.version==='v9'", runtime_repair),
+    ("__enochDoubleJeckerRuntimeRepair?.version==='v10'", runtime_repair),
     ("const r=panel.getBoundingClientRect(),out=", runtime_repair),
     ("stem-four-channel-ui-v1.js?v=20260827-v4", runtime_repair),
-    ("analyser-controls-contained-v1.js?v=20260827-v5", runtime_repair),
+    ("analyser-controls-contained-v1.js?v=20260827-v6", runtime_repair),
+    ("post-playback-ui-repair-v2.js?v=20260827-v3", runtime_repair),
 ]:
     if marker not in source:
         raise SystemExit(f'stale Enochian cache-buster marker: {marker}')
@@ -87,6 +92,8 @@ required_files = [
     'pending-ui-fixes.js', 'pad-fx-authority-v2.js', 'ios-touch-tuning.js',
     'enochian-ui-repairs-v1.js', 'stem-four-channel-ui-v1.js', 'analyser-controls-contained-v1.js',
     'double-jecker-radial-layout-v1.js', 'double-jecker-runtime-repair-v1.js',
+    'playback-reference-panel.js', 'post-playback-ui-repair-v2.js',
+    'playback-transport-authority-v1.js', 'two-mix-master-anchor-v1.js',
 ]
 base = Path('web/enochian-test')
 for name in required_files:
@@ -110,6 +117,9 @@ touch = files['ios-touch-tuning.js']
 repairs = files['enochian-ui-repairs-v1.js']
 four_stem = files['stem-four-channel-ui-v1.js']
 contained_controls = files['analyser-controls-contained-v1.js']
+playback_owner = files['playback-transport-authority-v1.js']
+two_mix_owner = files['two-mix-master-anchor-v1.js']
+post_playback = files['post-playback-ui-repair-v2.js']
 
 for marker in ["authoritativeRuntime==='v6'", "__enochStemAuthority={version:'v6'", "__enochLoopAuthority={version:'v6'", "__enochNativeStemEngine={version:'v2'", "setTargetAtTime", "setEnabled(on)", "setRow(key,on)", "setLevel(key,value)", "LOOP CYCLE", "engine.sync(true)"]:
     if marker not in authority:
@@ -137,11 +147,19 @@ if 'analyserMultipointSculpt===VERSION' not in multipoint or '__enochMultipointS
     raise SystemExit('five-point orange analyser sculpt mesh contract missing')
 if "pendingUiFixes==='v3'" not in pending_ui or 'loop-control-row' not in pending_ui or 'eq-kill-btn' not in pending_ui:
     raise SystemExit('pending terminal UI fixes v3 contract missing')
-if 'enochian-ui-repairs-v2-style' not in repairs or 'enoch-context-hint' not in repairs or 'masterDeckAnchor' not in repairs:
+if 'enochian-ui-repairs-v2-style' not in repairs or 'enoch-context-hint' not in repairs or "enochUiRepairs='v6'" not in repairs:
     raise SystemExit('Enochian specialist UI repair layer contract missing')
 if "stemFourChannel==='v3'" not in four_stem or "['vocals','drums','bass','other']" not in four_stem or 'data-stem-jecker-split' not in four_stem:
     raise SystemExit('four equal native stem rows contract missing')
-if "analyserControlsContained='v5'" not in contained_controls or 'fixedPaletteRemoved:true' not in contained_controls or 'removeFixedPalette' not in contained_controls or 'repairSignal' not in contained_controls or 'repairTwoMix' not in contained_controls:
-    raise SystemExit('recovered terminal layout repair v5 contract missing')
+if "analyserControlsContained='v6'" not in contained_controls or 'fixedPaletteRemoved:true' not in contained_controls or 'removeFixedPalette' not in contained_controls or 'repairSignal' not in contained_controls or 'layoutFloating' not in contained_controls:
+    raise SystemExit('separated SIGNAL ownership v6 contract missing')
+if 'const repairPlayback=' in contained_controls or 'const repairTwoMix=' in contained_controls:
+    raise SystemExit('analyser layer still mutates PLAYBACK or 2MIX')
+if "playbackTransportAuthority='v1'" not in playback_owner or 'repeat(9,minmax(0,1fr))' not in playback_owner or 'RESET LOOP' not in playback_owner:
+    raise SystemExit('dedicated PLAYBACK transport authority missing')
+if "twoMixMasterAnchor='v1'" not in two_mix_owner or 'two-mix-help-open' not in two_mix_owner or 'findMaster' not in two_mix_owner:
+    raise SystemExit('dedicated 2MIX master-deck anchor missing')
+if "postPlaybackUiRepair==='v3'" not in post_playback or 'playback-transport-authority-v1.js?v=20260827-v1' not in post_playback or 'two-mix-master-anchor-v1.js?v=20260827-v1' not in post_playback:
+    raise SystemExit('separated owner coordinator missing')
 
-print('Enochian runtime verified: stable DOUBLE JESTER v9 stem geometry and no-recenter runtime, recovered v5 layout, four native STEMS MIX rows, full 3D SIGNAL viewport with FLOAT-only launcher, single authoritative controls palette in floating analyser, progressive PLAYBACK waveform, restored 2MIX placement/help, live FFT authority, native stem/loop authority, EQ kills, navigation and fullscreen.')
+print('Enochian runtime verified: stable DOUBLE JESTER v9 stem geometry with v10 runtime, four native STEMS MIX rows, PLAYBACK nine-control authority, single UNO 2MIX master-deck anchor with contextual help, full 3D SIGNAL viewport with FLOAT-only fixed controls and non-overlapping floating SIGNAL MOD/ZOOM/MOD LEVEL controls, progressive waveform, live FFT authority, native stem/loop authority, EQ kills, navigation and fullscreen.')
