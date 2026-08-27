@@ -1,0 +1,39 @@
+name: ENOCHIAN — Terminal Boot Resilience
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'web/enochian-terminal/index.html'
+      - 'web/enochian-test/terminal-installer-singleton-v1.js'
+      - 'scripts/check_terminal_boot_resilience.py'
+      - '.github/workflows/terminal-boot-resilience.yml'
+  pull_request:
+    paths:
+      - 'web/enochian-terminal/index.html'
+      - 'web/enochian-test/terminal-installer-singleton-v1.js'
+      - 'scripts/check_terminal_boot_resilience.py'
+      - '.github/workflows/terminal-boot-resilience.yml'
+
+jobs:
+  boot-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify resilient terminal boot contract
+        run: python3 scripts/check_terminal_boot_resilience.py
+      - name: Parse singleton guard
+        run: node --check web/enochian-test/terminal-installer-singleton-v1.js
+      - name: Parse inline terminal boot script
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          html = Path('web/enochian-terminal/index.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', html, re.S)
+          inline = '\n'.join(s for s in scripts if s.strip())
+          Path('/tmp/enochian-inline.js').write_text(inline, encoding='utf-8')
+          PY
+          node --check /tmp/enochian-inline.js
