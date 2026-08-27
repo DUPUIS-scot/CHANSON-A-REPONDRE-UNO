@@ -1,4 +1,4 @@
-deploy-request: 2026-08-27T11:45:00+01:00
+deploy-request: 2026-08-27T12:08:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy consolidated terminal repairs: stable nine-control PLAYBACK authority, single UNO 2MIX anchored to MASTER DECK with contextual help, fixed 3D SIGNAL header geometry, fullscreen-safe FLOAT/SIGNAL MOD/analyser containment, single floating sculpt controller, no viewport translation
+reason: deploy final 2JESTER repair set: clean disc, fixed eight-stem geometry, stronger A/B separation, larger MASTER JESTER center, synchronized stem UI/audio state, passive opening, MAIN HOLD linkage, post-Jester SIGNAL relay, live connection help bubble, clean release and naming authority
