@@ -19,7 +19,8 @@ void EnochianTerminalFxAudioProcessor::processBlock(juce::AudioBuffer<float>& b,
   for(const auto m:midi) if(m.getMessage().isController()) { auto v=m.getMessage().getControllerValue()/127.f; if(m.getMessage().getControllerNumber()==1)*parameters.getRawParameterValue("modDepth")=v; if(m.getMessage().getControllerNumber()==7)*parameters.getRawParameterValue("fxMix")=v; if(m.getMessage().getControllerNumber()==16)*parameters.getRawParameterValue("mix")=v*2.f-1.f; }
   const auto drive=*parameters.getRawParameterValue("drive")*5.f;
   wetGain.setTargetValue(juce::Decibels::decibelsToGain(*parameters.getRawParameterValue("output")));
-  for(int c=0;c<b.getNumChannels();++c) for(int i=0;i<b.getNumSamples();++i) { auto dry=b.getSample(c,i); auto wet=std::tanh(dry*(1.f+drive)); b.setSample(c,i,juce::jmap(*parameters.getRawParameterValue("fxMix"),dry,wet)*wetGain.getNextValue()); }
+  for(int c=0;c<b.getNumChannels();++c) for(int i=0;i<b.getNumSamples();++i) { auto dry=b.getSample(c,i); auto wet=std::tanh(dry*(1.f+drive)); b.setSample(c,i,dry+(wet-dry)*(*parameters.getRawParameterValue("fxMix"))*wetGain.getNextValue()); }
 }
 void EnochianTerminalFxAudioProcessor::getStateInformation(juce::MemoryBlock& d){juce::MemoryOutputStream(d,true).writeString(parameters.copyState().toXmlString());}
 void EnochianTerminalFxAudioProcessor::setStateInformation(const void* d,int n){if(auto x=juce::parseXML(juce::String::fromUTF8(static_cast<const char*>(d),n)))parameters.replaceState(juce::ValueTree::fromXml(*x));}
+juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter(){ return new EnochianTerminalFxAudioProcessor(); }
