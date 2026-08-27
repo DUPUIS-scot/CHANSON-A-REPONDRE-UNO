@@ -1,4 +1,4 @@
-deploy-request: 2026-08-27T20:24:00+01:00
+deploy-request: 2026-08-27T20:36:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy terminal performance repair and align DOUBLE JESTER spinner v5 runtime with its verifier
+reason: deploy 2J MIX STEM JOG mode controller with continuous visual outer rig
