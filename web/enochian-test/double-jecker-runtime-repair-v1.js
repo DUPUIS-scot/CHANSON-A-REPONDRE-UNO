@@ -44,7 +44,7 @@ function install(host){
       return false;
     };
     const ensureStems=()=>{
-      if(d.documentElement.dataset.stemFourChannel==='v3')return true;
+      if(['v3','v4'].includes(d.documentElement.dataset.stemFourChannel))return true;
       if(window.installEnochianStemFourChannelV1)return !!window.installEnochianStemFourChannelV1(host);
       if(stemPending)return false;
       stemPending=true;
@@ -173,13 +173,18 @@ function install(host){
       const live=!!api.state?.enabled;
       const conflict=live&&!!native?.enabled;
       const floatReady=d.documentElement.dataset.analyserFloatClearance==='v1';
-      const stemsReady=d.documentElement.dataset.stemFourChannel==='v3';
+      const stemsReady=['v3','v4'].includes(d.documentElement.dataset.stemFourChannel);
       const controlsReady=d.documentElement.dataset.analyserControlsContained==='v6'&&w.__enochAnalyserControlsContained?.fixedPaletteRemoved===true;
       const uiReady=d.documentElement.dataset.postPlaybackUiRepair==='v3'&&d.documentElement.dataset.playbackTransportAuthority==='v1'&&d.documentElement.dataset.twoMixMasterAnchor==='v1';
       return{version:VERSION,live,conflict,outputReady:!!output,relayReady:!!relay,relayAttached:!!relay?.state?.attached,performanceReady:performance?.version==='v4',floatReady,stemsReady,controlsReady,uiReady,authorityReady:authority?.version===VERSION,healthy:!conflict&&(!live||!!output)&&(!live||!relay||!!relay.state?.attached)&&performance?.version==='v4'&&floatReady&&stemsReady&&controlsReady&&uiReady&&authority?.version===VERSION};
     };
 
     const maintain=()=>{
+      if(!authority?.isOpen&&!api.state?.enabled){
+        d.documentElement.dataset.doubleJesterRuntime='dormant';
+        d.documentElement.dataset.doubleJeckerRuntime='dormant';
+        return;
+      }
       ensurePresentation();
       clampPanel();
       ensurePerformance();
