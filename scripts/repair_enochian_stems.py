@@ -54,7 +54,7 @@ for marker, source in [
     ("double-decker-main-stem-link-v1.js?v=20260827-stem-jecker-v10", shell),
     ("double-jecker-runtime-repair-v1.js?v=20260827-v2", stem_link),
     ("stem-four-channel-ui-v1.js?v=20260827-v4", runtime_repair),
-    ("analyser-controls-contained-v1.js?v=20260827-v3", runtime_repair),
+    ("analyser-controls-contained-v1.js?v=20260827-v4", runtime_repair),
 ]:
     if marker not in source:
         raise SystemExit(f'stale Enochian cache-buster marker: {marker}')
@@ -117,7 +117,7 @@ if "version:'v2'" not in bus or 'frequency:null' not in bus or "bus.emit('freque
     raise SystemExit('FFT analyser bus v2 contract missing')
 if "analyserSignalGlide='v6'" not in glide or '__enochAnalyserWheelMode' not in glide or "wheelMode==='height'" not in glide or "wheelMode==='depth'" not in glide or "wheelMode==='twist'" not in glide:
     raise SystemExit('3D analyser gesture contract missing')
-if "analyserSignal3d==='v7'" not in three_d or 'analyser-control-widget' not in three_d or "input:'internal-master-mix'" not in three_d or 'const ROWS=16,BINS=16' not in three_d or 'const pick=' not in three_d:
+if "analyserSignal3d==='v7'" not in three_d or "input:'internal-master-mix'" not in three_d or 'const ROWS=16,BINS=16' not in three_d or 'const pick=' not in three_d:
     raise SystemExit('internal-master sculptable 3D analyser contract missing')
 if "sculptAudioMod==='v4'" not in sculpt_audio or "version:'v4'" not in sculpt_audio or '__enochSculptAudio' not in sculpt_audio or 'anchors=Array.isArray(def.anchors)' not in sculpt_audio or "POINTS '+grabs+'/5" not in sculpt_audio:
     raise SystemExit('five-point sculpt-to-audio modulation v4 contract missing')
@@ -129,7 +129,7 @@ if 'enochian-ui-repairs-v2-style' not in repairs or 'enoch-context-hint' not in 
     raise SystemExit('Enochian specialist UI repair layer contract missing')
 if "stemFourChannel==='v3'" not in four_stem or "['vocals','drums','bass','other']" not in four_stem or 'data-stem-jecker-split' not in four_stem:
     raise SystemExit('four equal native stem rows contract missing')
-if "analyserControlsContained==='v2'" not in contained_controls or 'palette-dragging' not in contained_controls or 'outer-float-launch' not in contained_controls or 'maxL' not in contained_controls or 'maxT' not in contained_controls:
-    raise SystemExit('contained movable analyser controls contract missing')
+if "analyserControlsContained='v4'" not in contained_controls or 'fixedPaletteRemoved:true' not in contained_controls or 'removeFixedPalette' not in contained_controls or 'outer-float-launch' not in contained_controls:
+    raise SystemExit('single floating 3D signal controller contract missing')
 
-print('Enochian runtime verified: four native STEMS MIX rows, fixed 3D SIGNAL with contained movable control palette, visible FLOAT, live FFT authority, native stem/loop authority, EQ kills, navigation and fullscreen.')
+print('Enochian runtime verified: four native STEMS MIX rows, fixed 3D SIGNAL visual with FLOAT-only launcher, single authoritative controls palette in floating analyser, progressive PLAYBACK waveform, live FFT authority, native stem/loop authority, EQ kills, navigation and fullscreen.')
