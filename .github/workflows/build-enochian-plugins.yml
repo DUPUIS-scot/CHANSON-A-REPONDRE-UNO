@@ -34,8 +34,10 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path download | Out-Null
-          Copy-Item -Recurse build/*_artefacts/Release/VST3 download/
-          Copy-Item -Recurse build/*_artefacts/Release/Standalone download/
+          Copy-Item -Recurse build/EnochianTerminalMidi_artefacts/Release/VST3 download/ENOCHIAN-TERMINAL-MIDI-VST3
+          Copy-Item -Recurse build/EnochianTerminalFx_artefacts/Release/VST3 download/ENOCHIAN-TERMINAL-FX-VST3
+          Copy-Item -Recurse build/EnochianTerminalMidi_artefacts/Release/Standalone download/ENOCHIAN-TERMINAL-MIDI-STANDALONE
+          Copy-Item -Recurse build/EnochianTerminalFx_artefacts/Release/Standalone download/ENOCHIAN-TERMINAL-FX-STANDALONE
           Compress-Archive -Path download/* -DestinationPath EnochianTerminalPlugins-Windows.zip
       - uses: actions/upload-artifact@v4
         with:
