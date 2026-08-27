@@ -1,4 +1,4 @@
-deploy-request: 2026-08-27T06:32:00+01:00
+deploy-request: 2026-08-27T06:36:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy five-point orange 3D SIGNAL sculpt anchors, local mesh influence overlay, and real anchor-driven sculpt audio modulation
+reason: re-deploy five-point orange 3D SIGNAL sculpt repair after updating Enochian runtime verifier to the v4 anchor-driven contract
