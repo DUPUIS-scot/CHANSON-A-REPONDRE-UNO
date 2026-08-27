@@ -1,4 +1,4 @@
-deploy-request: 2026-08-27T05:06:00Z
+deploy-request: 2026-08-27T05:12:00Z
 source: chat
 workflow: WEB — Deploy Live Site
-reason: load Enochian UI repairs from authoritative runtime
+reason: redeploy Enochian UI repairs after verifier update
