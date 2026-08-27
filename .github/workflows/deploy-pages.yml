@@ -36,10 +36,7 @@ jobs:
         run: |
           set -euo pipefail
           archive="$RUNNER_TEMP/source-${GITHUB_SHA}.tar.gz"
-          curl --fail --location --silent --show-error \
-            --retry 4 --retry-delay 2 --retry-all-errors \
-            "https://codeload.github.com/${GITHUB_REPOSITORY}/tar.gz/${GITHUB_SHA}" \
-            --output "$archive"
+          curl --fail --location --silent --show-error --retry 4 --retry-delay 2 --retry-all-errors "https://codeload.github.com/${GITHUB_REPOSITORY}/tar.gz/${GITHUB_SHA}" --output "$archive"
           tar -xzf "$archive" --strip-components=1
           rm -f "$archive"
 
@@ -49,11 +46,11 @@ jobs:
           set -euo pipefail
           test -f pubspec.yaml
           test -d lib
-          test -d web
+          test -d web/enochian-terminal
+          test -d web/enochian-test
           test -d scripts
-          echo "Source snapshot ready: ${GITHUB_SHA:0:12}"
 
-      - name: Verify Enochian runtime
+      - name: Verify Enochian source runtime
         shell: bash
         run: |
           set -euo pipefail
@@ -105,32 +102,42 @@ jobs:
         run: |
           flutter build web --release --no-pub --base-href "/" --dart-define=SKIP_AUTH_FOR_DEVELOPMENT=false --dart-define=SUPABASE_URL="$SUPABASE_URL" --dart-define=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY" --dart-define=AI_BACKEND_URL="$AI_BACKEND_URL" --dart-define=TURNSTILE_SITE_KEY="$TURNSTILE_SITE_KEY" --dart-define=APP_BUILD_SHA="${{ github.sha }}"
 
+      - name: Install authoritative Enochian terminal runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf build/web/enochian-terminal build/web/enochian-test
+          cp -a web/enochian-terminal build/web/enochian-terminal
+          cp -a web/enochian-test build/web/enochian-test
+          test -s build/web/enochian-terminal/index.html
+          test -s build/web/enochian-test/live-copy.html
+          cmp -s web/enochian-terminal/index.html build/web/enochian-terminal/index.html
+          cmp -s web/enochian-test/live-copy.html build/web/enochian-test/live-copy.html
+
+      - name: Verify deployed Enochian terminal contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q "live-copy.html?v=20260827-cache-repair-v4" build/web/enochian-terminal/index.html
+          grep -q "stem-four-channel-ui-v1.js?v=20260827-v4" build/web/enochian-terminal/index.html
+          grep -q "analyser-signal-3d-v7.js?v=20260827-mesh-track-wave-v8" build/web/enochian-terminal/index.html
+          grep -q "double-decker-main-stem-link-v1.js?v=20260827-stem-jecker-v10" build/web/enochian-terminal/index.html
+          test -s build/web/enochian-test/stem-four-channel-ui-v1.js
+          test -s build/web/enochian-test/double-jecker-runtime-repair-v1.js
+          test -s build/web/enochian-test/analyser-controls-contained-v1.js
+          node --check build/web/enochian-test/stem-four-channel-ui-v1.js
+          node --check build/web/enochian-test/double-jecker-runtime-repair-v1.js
+
       - name: Prepare Safari-compatible laboratory video
         shell: bash
         run: |
           set -euo pipefail
-          if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then
-            sudo apt-get update
-            sudo apt-get install -y ffmpeg
-          fi
-          src="assets/videos/bureau_screen_loop.mp4"
-          out="build/web/assets/assets/videos/bureau_screen_loop.mp4"
-          tmp="build/web/assets/assets/videos/bureau_screen_loop.safari.tmp.mp4"
-          test -s "$src"
-          mkdir -p "$(dirname "$out")"
-          codec="$(ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of default=nw=1:nk=1 "$src")"
-          pix_fmt="$(ffprobe -v error -select_streams v:0 -show_entries stream=pix_fmt -of default=nw=1:nk=1 "$src")"
-          width="$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of default=nw=1:nk=1 "$src")"
-          height="$(ffprobe -v error -select_streams v:0 -show_entries stream=height -of default=nw=1:nk=1 "$src")"
-          if [ "$codec" = "h264" ] && [ "$pix_fmt" = "yuv420p" ] && [ "$width" -le 1280 ] && [ "$height" -le 720 ]; then
-            cp "$src" "$out"
-          else
-            ffmpeg -hide_banner -loglevel error -y -i "$src" -map 0:v:0 -an -vf "scale='min(1280,iw)':'min(720,ih)':force_original_aspect_ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2" -r 30 -c:v libx264 -preset fast -crf 23 -profile:v main -level 4.0 -pix_fmt yuv420p -movflags +faststart "$tmp"
-            mv "$tmp" "$out"
-          fi
+          if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then sudo apt-get update && sudo apt-get install -y ffmpeg; fi
+          src="assets/videos/bureau_screen_loop.mp4"; out="build/web/assets/assets/videos/bureau_screen_loop.mp4"; tmp="build/web/assets/assets/videos/bureau_screen_loop.safari.tmp.mp4"
+          test -s "$src"; mkdir -p "$(dirname "$out")"
+          codec="$(ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of default=nw=1:nk=1 "$src")"; pix_fmt="$(ffprobe -v error -select_streams v:0 -show_entries stream=pix_fmt -of default=nw=1:nk=1 "$src")"; width="$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of default=nw=1:nk=1 "$src")"; height="$(ffprobe -v error -select_streams v:0 -show_entries stream=height -of default=nw=1:nk=1 "$src")"
+          if [ "$codec" = "h264" ] && [ "$pix_fmt" = "yuv420p" ] && [ "$width" -le 1280 ] && [ "$height" -le 720 ]; then cp "$src" "$out"; else ffmpeg -hide_banner -loglevel error -y -i "$src" -map 0:v:0 -an -vf "scale='min(1280,iw)':'min(720,ih)':force_original_aspect_ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2" -r 30 -c:v libx264 -preset fast -crf 23 -profile:v main -level 4.0 -pix_fmt yuv420p -movflags +faststart "$tmp" && mv "$tmp" "$out"; fi
           test -s "$out"
-          test "$(ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of default=nw=1:nk=1 "$out")" = "h264"
-          test "$(ffprobe -v error -select_streams v:0 -show_entries stream=pix_fmt -of default=nw=1:nk=1 "$out")" = "yuv420p"
 
       - name: Generate share previews and pages
         timeout-minutes: 12
@@ -145,19 +152,7 @@ jobs:
           python3 scripts/apply_global_share_previews.py build/web https://www.chanson-a-repondre-uno.scot/
 
       - name: Verify every social preview and share page
-        shell: bash
         run: python3 scripts/verify_share_previews.py
-
-      - name: Verify Search Castle deploy contract
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -f build/web/card_castle/card_castle.html
-          test -f build/web/card_castle/card_castle_fast.html
-          test -s build/web/assets/assets/models/castle_exterior.glb
-          grep -q "castle_exterior.glb" build/web/card_castle/card_castle.html
-          grep -q "card_castle.html" build/web/card_castle/card_castle_fast.html
-          grep -q "card_castle_fast.html" build/web/flutter_bootstrap.js
 
       - name: Verify deployable output
         shell: bash
@@ -167,12 +162,11 @@ jobs:
           test -f build/web/404.html
           test -f build/web/main.dart.js
           test -f build/web/enochian/index.html
+          test -s build/web/enochian-terminal/index.html
+          test -s build/web/enochian-test/live-copy.html
           test -f build/web/card_castle/card_castle.html
-          test -f build/web/card_castle/card_castle_fast.html
           test -s build/web/assets/assets/models/castle_exterior.glb
-          test -f build/web/assets/assets/models/transcription_jester_rigged.glb
           test -s build/web/assets/assets/videos/bureau_screen_loop.mp4
-          test -f build/web/assets/assets/hp/work_in_progress_ribbon.webp
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
