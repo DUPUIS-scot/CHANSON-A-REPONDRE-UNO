@@ -1,4 +1,4 @@
-deploy-request: 2026-08-27T12:34:00+01:00
+deploy-request: 2026-08-27T12:40:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: move primordial STEM master activation into STEMS MIX header, remove adjacent duplicate FULL SCREEN control, preserve UNO 2MIX separation and deploy
+reason: restore visible unclipped live 2MIX help bubble beside UNO launcher while preserving STEMS MIX master and terminal layout repairs
