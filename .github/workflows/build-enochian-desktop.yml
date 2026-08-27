@@ -1,0 +1,28 @@
+name: Build ENOCHIAN TERMINAL Windows app
+on:
+  push:
+    branches: [feature/enochian-midi-plugin]
+    paths: ["apps/enochian-terminal-desktop/**", ".github/workflows/build-enochian-desktop.yml"]
+  pull_request:
+    branches: [main]
+    paths: ["apps/enochian-terminal-desktop/**", ".github/workflows/build-enochian-desktop.yml"]
+  workflow_dispatch:
+permissions: { contents: read }
+jobs:
+  windows:
+    runs-on: windows-2022
+    defaults: { run: { working-directory: apps/enochian-terminal-desktop } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Install
+        run: npm install --package-lock=false
+      - name: Package Windows app
+        run: npm run dist:win
+      - uses: actions/upload-artifact@v4
+        with:
+          name: EnochianTerminal-Windows
+          path: apps/enochian-terminal-desktop/dist/ENOCHIAN-TERMINAL-Windows.exe
+          if-no-files-found: error
+          retention-days: 30
