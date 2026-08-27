@@ -1,4 +1,4 @@
-deploy-request: 2026-08-27T06:45:00+01:00
+deploy-request: 2026-08-27T06:59:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy repaired 2JECKER roundtable layout with unclipped center controls and fixed A/B stem placement
+reason: deploy four native STEMS MIX rows replacing Instruments, remove oversized Bass/Other controls, and constrain movable 3D analyser controls inside fixed SIGNAL section while keeping FLOAT and signal readouts fixed
