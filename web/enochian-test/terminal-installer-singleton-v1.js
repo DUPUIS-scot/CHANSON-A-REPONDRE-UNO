@@ -23,10 +23,15 @@
   };
   wrap('installEnochianStemFourChannelV1',frame=>['v3','v4'].includes(innerDocument(frame)?.documentElement?.dataset?.stemFourChannel));
   wrap('installEnochianDoubleDeckerSpecialV2',frame=>document.getElementById('doubleDeckerSpecial')?.dataset?.ddsControls==='v11');
-  const loadElapsedBlue=()=>{
-    if(window.installEnochianPlaybackElapsedBlueV1){window.installEnochianPlaybackElapsedBlueV1(document.getElementById('terminalLive'));return}
-    if(document.querySelector('script[data-enoch-playback-blue]'))return;
-    const s=document.createElement('script');s.src='/enochian-test/playback-elapsed-terminal-blue-v1.js?v=20260827-v1';s.dataset.enochPlaybackBlue='v1';s.onload=()=>window.installEnochianPlaybackElapsedBlueV1?.(document.getElementById('terminalLive'));document.head.appendChild(s);
+  const loadScript=(attr,src,ready)=>{
+    if(ready())return;
+    if(document.querySelector(`script[${attr}]`))return;
+    const s=document.createElement('script');s.src=src;s.setAttribute(attr,'v1');s.onload=ready;document.head.appendChild(s);
   };
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loadElapsedBlue,{once:true});else loadElapsedBlue();
+  const installLateAuthorities=()=>{
+    const frame=document.getElementById('terminalLive');
+    loadScript('data-enoch-playback-blue','/enochian-test/playback-elapsed-terminal-blue-v1.js?v=20260827-v1',()=>{if(window.installEnochianPlaybackElapsedBlueV1){window.installEnochianPlaybackElapsedBlueV1(frame);return true}return false});
+    loadScript('data-enoch-layout-contract','/enochian-test/terminal-viewport-layout-contract-v1.js?v=20260827-v1',()=>{if(window.installEnochianTerminalViewportLayoutContractV1){window.installEnochianTerminalViewportLayoutContractV1(frame);return true}return false});
+  };
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installLateAuthorities,{once:true});else installLateAuthorities();
 })();
