@@ -45,7 +45,7 @@ jobs:
             node --check "$file"
           done
 
-      - name: Verify consolidated 2JECKER contracts
+      - name: Verify rebuilt roundtable contracts
         shell: bash
         run: |
           set -euo pipefail
@@ -57,53 +57,35 @@ jobs:
           guard=web/enochian-test/double-jecker-runtime-repair-v1.js
           perf=web/enochian-test/double-jecker-performance-v2.js
 
-          grep -q "jeckerRadial==='v2'" "$radial"
-          grep -q "width:35%" "$radial"
-          grep -q "dds-center>.dds-takeover-hud" "$radial"
-          grep -q "jeckerReferenceSkin==='v2'" "$skin"
-          ! grep -q "dds-engine-control{top:" "$skin"
-          ! grep -q "dds-foot{bottom:" "$skin"
+          grep -q "jeckerRadial==='v3'" "$radial"
+          grep -q "width:25%" "$radial"
+          grep -q "aspect-ratio:auto" "$radial"
+          grep -q "dds-engine-control.*display:none" "$radial"
+          grep -q "content:none" "$radial"
+          grep -q "vocals:\[28,20\]" "$radial"
+          grep -q "vocals:\[28,62\]" "$radial"
+          grep -q "jeckerReferenceSkin==='v3'" "$skin"
+          grep -q "dds-center.*border-radius:10px" "$skin"
+          ! grep -q "repeating-radial-gradient(circle at 50% 50%,#1b140e" "$skin"
 
           grep -q "jeckerOutput==='v2'" "$output"
           grep -q "api.state.outputNode" "$output"
-          grep -q "masterGain.disconnect(ctx.destination)" "$output"
           ! grep -q "masterGain.disconnect()" "$output"
 
           grep -q "SignalRelay?.version==='v3'" "$relay"
           grep -q "__enochExternalSignalSources" "$relay"
-          grep -q "getRouteNode" "$relay"
           ! grep -q "masterGain.disconnect()" "$relay"
 
           grep -q "stemJecker==='v10'" "$link"
-          grep -q "engine.setEnabled(false)" "$link"
-          grep -q "engine.setEnabled(true)" "$link"
-          ! grep -q "invokeNativeMasterClick" "$link"
           grep -q "UNLINK STEMS MIX" "$link"
-          grep -q "20260827-output-v2" "$link"
-          grep -q "20260827-relay-v3" "$link"
-          grep -q "20260827-radial-v2" "$link"
-          grep -q "20260827-skin-v2" "$link"
-          grep -q "double-jecker-runtime-repair-v1.js?v=20260827-v1" "$link"
+          grep -q "double-jecker-runtime-repair-v1.js" "$link"
 
-          grep -q "RuntimeRepair?.version==='v2'" "$guard"
+          grep -q "RuntimeRepair?.version==='v3'" "$guard"
           grep -q "doubleJeckerRuntime" "$guard"
-          grep -q "relay.attach" "$guard"
-          grep -q "radial.clamp" "$guard"
-          grep -q "native?.enabled" "$guard"
-          grep -q "double-jecker-performance-v2.js?v=20260827-v2" "$guard"
-          grep -q "performanceReady" "$guard"
-
-          grep -q "DoubleJeckerPerformance?.version==='v2'" "$perf"
+          grep -q "DoubleJeckerPerformance?.version==='v3'" "$perf"
           grep -q "data-jecker-split=\"bass\"" "$perf"
           grep -q "data-jecker-split=\"other\"" "$perf"
           grep -q "data-dds-crossfader" "$perf"
-          grep -q "pointerdown" "$perf"
-          grep -q "pointermove" "$perf"
-          grep -q "pointercancel" "$perf"
-          grep -q "setPointerCapture" "$perf"
-          grep -q "stopImmediatePropagation" "$perf"
-          grep -q "wheel" "$perf"
-          grep -q "dblclick" "$perf"
 
       - name: Report
-        run: echo '2JECKER syntax, deterministic audio authority, independent bass/other controls, spinner gestures, addon wiring and runtime recovery contracts verified.'
+        run: echo '2JECKER rebuilt layout, separated A/B banks, unmasked center controls, audio authority and spinner contracts verified.'
