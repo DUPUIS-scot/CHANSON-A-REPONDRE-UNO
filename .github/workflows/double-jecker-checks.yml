@@ -1,0 +1,79 @@
+name: Check 2JECKER Runtime
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'web/enochian-test/double-decker-special-v2.js'
+      - 'web/enochian-test/double-decker-main-stem-link-v1.js'
+      - 'web/enochian-test/double-jecker-radial-layout-v1.js'
+      - 'web/enochian-test/double-jecker-reference-skin-v1.js'
+      - 'web/enochian-test/double-jecker-output-v1.js'
+      - 'web/enochian-test/double-jecker-signal-relay-v1.js'
+      - 'web/enochian-test/double-jecker-turntable-shield-v1.js'
+      - '.github/workflows/double-jecker-checks.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: JavaScript syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in \
+            web/enochian-test/double-decker-special-v2.js \
+            web/enochian-test/double-decker-main-stem-link-v1.js \
+            web/enochian-test/double-jecker-radial-layout-v1.js \
+            web/enochian-test/double-jecker-reference-skin-v1.js \
+            web/enochian-test/double-jecker-output-v1.js \
+            web/enochian-test/double-jecker-signal-relay-v1.js \
+            web/enochian-test/double-jecker-turntable-shield-v1.js; do
+            node --check "$file"
+          done
+
+      - name: Verify consolidated 2JECKER contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          radial=web/enochian-test/double-jecker-radial-layout-v1.js
+          skin=web/enochian-test/double-jecker-reference-skin-v1.js
+          output=web/enochian-test/double-jecker-output-v1.js
+          relay=web/enochian-test/double-jecker-signal-relay-v1.js
+          link=web/enochian-test/double-decker-main-stem-link-v1.js
+
+          grep -q "jeckerRadial==='v2'" "$radial"
+          grep -q "width:35%" "$radial"
+          grep -q "dds-center>.dds-takeover-hud" "$radial"
+          grep -q "jeckerReferenceSkin==='v2'" "$skin"
+          ! grep -q "dds-engine-control{top:" "$skin"
+          ! grep -q "dds-foot{bottom:" "$skin"
+
+          grep -q "jeckerOutput==='v2'" "$output"
+          grep -q "api.state.outputNode" "$output"
+          grep -q "masterGain.disconnect(ctx.destination)" "$output"
+          ! grep -q "masterGain.disconnect()" "$output"
+
+          grep -q "SignalRelay?.version==='v3'" "$relay"
+          grep -q "__enochExternalSignalSources" "$relay"
+          grep -q "getRouteNode" "$relay"
+          ! grep -q "masterGain.disconnect()" "$relay"
+
+          grep -q "stemJecker==='v9'" "$link"
+          grep -q "UNLINK STEMS MIX" "$link"
+          grep -q "20260827-output-v2" "$link"
+          grep -q "20260827-relay-v3" "$link"
+          grep -q "20260827-radial-v2" "$link"
+          grep -q "20260827-skin-v2" "$link"
+
+      - name: Report
+        run: echo '2JECKER runtime syntax and authority contracts verified.'
