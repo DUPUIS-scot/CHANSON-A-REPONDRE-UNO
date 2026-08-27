@@ -1,4 +1,4 @@
-deploy-request: 2026-08-27T13:02:00+01:00
+deploy-request: 2026-08-27T13:08:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: make elapsed PLAYBACK waveform progressively turn terminal cyan blue while preserving dark future waveform, absolute playhead, seeking and track reset behavior
+reason: make UNO click/tap explicitly toggle the compact 2MIX LIVE CONTROL manipulation guide; preserve anchored launcher and existing terminal repairs
