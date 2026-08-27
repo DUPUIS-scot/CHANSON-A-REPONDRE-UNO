@@ -1,4 +1,4 @@
-deploy-request: 2026-08-27T06:30:00+01:00
+deploy-request: 2026-08-27T06:32:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy restored J2 viewport floating, separated platter turntable gestures, working 2JECKER performance authority, and unobstructed 3D SIGNAL FLOAT control
+reason: deploy five-point orange 3D SIGNAL sculpt anchors, local mesh influence overlay, and real anchor-driven sculpt audio modulation
