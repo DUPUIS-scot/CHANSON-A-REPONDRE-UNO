@@ -34,10 +34,10 @@ shell_required = [
     "analyser-signal-3d-v7.js?v=20260827-mesh-track-wave-v8",
     "sculpt-audio-mod.js?v=20260825-v3", "pending-ui-fixes.js?v=20260825-v2",
     "pad-fx-authority-v2.js?v=20260826-v2", "ios-touch-tuning.js?v=20260824-v1",
-    "enochian-ui-repairs-v1.js?v=20260827-ui-repairs-v3",
+    "enochian-ui-repairs-v1.js?v=20260827-ui-repairs-v4",
     "analyser-live-authority-v1.js?v=20260827-v1",
     "stem-four-channel-ui-v1.js?v=20260827-v4",
-    "analyser-controls-contained-v1.js?v=20260827-v3",
+    "analyser-controls-contained-v1.js?v=20260827-v5",
     "installEnochianAuthoritativeRuntime", "installEnochianOuterAnalyserPanel",
     "installEnochianAnalyserDataBus", "installEnochianAnalyserSignalGlide",
     "installEnochianAnalyserSignal3D", "installEnochianSculptAudioMod",
@@ -54,7 +54,7 @@ for marker, source in [
     ("double-decker-main-stem-link-v1.js?v=20260827-stem-jecker-v10", shell),
     ("double-jecker-runtime-repair-v1.js?v=20260827-v2", stem_link),
     ("stem-four-channel-ui-v1.js?v=20260827-v4", runtime_repair),
-    ("analyser-controls-contained-v1.js?v=20260827-v4", runtime_repair),
+    ("analyser-controls-contained-v1.js?v=20260827-v5", runtime_repair),
 ]:
     if marker not in source:
         raise SystemExit(f'stale Enochian cache-buster marker: {marker}')
@@ -129,7 +129,7 @@ if 'enochian-ui-repairs-v2-style' not in repairs or 'enoch-context-hint' not in 
     raise SystemExit('Enochian specialist UI repair layer contract missing')
 if "stemFourChannel==='v3'" not in four_stem or "['vocals','drums','bass','other']" not in four_stem or 'data-stem-jecker-split' not in four_stem:
     raise SystemExit('four equal native stem rows contract missing')
-if "analyserControlsContained='v4'" not in contained_controls or 'fixedPaletteRemoved:true' not in contained_controls or 'removeFixedPalette' not in contained_controls or 'outer-float-launch' not in contained_controls:
-    raise SystemExit('single floating 3D signal controller contract missing')
+if "analyserControlsContained='v5'" not in contained_controls or 'fixedPaletteRemoved:true' not in contained_controls or 'removeFixedPalette' not in contained_controls or 'repairSignal' not in contained_controls or 'repairTwoMix' not in contained_controls:
+    raise SystemExit('recovered terminal layout repair v5 contract missing')
 
-print('Enochian runtime verified: four native STEMS MIX rows, fixed 3D SIGNAL visual with FLOAT-only launcher, single authoritative controls palette in floating analyser, progressive PLAYBACK waveform, live FFT authority, native stem/loop authority, EQ kills, navigation and fullscreen.')
+print('Enochian runtime verified: recovered v5 layout, four native STEMS MIX rows, full 3D SIGNAL viewport with FLOAT-only launcher, single authoritative controls palette in floating analyser, progressive PLAYBACK waveform, restored 2MIX placement/help, live FFT authority, native stem/loop authority, EQ kills, navigation and fullscreen.')
