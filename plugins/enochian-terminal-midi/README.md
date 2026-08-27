@@ -1,12 +1,13 @@
 # ENOCHIAN TERMINAL MIDI
 
-Native DAW instrument foundation for **ENOCHIAN TERMINAL**, based on the current 2MIX release branch.
+Native DAW instrument and live-FX foundation for **ENOCHIAN TERMINAL**, based on the current 2MIX release branch.
 
 ## Targets
 
 - VST3 — Windows/macOS DAWs
 - AU — Logic Pro/macOS
 - Standalone — MIDI-controller performance mode
+- VST3/AU FX — stereo live audio input from a DAW track, microphone or external audio interface
 
 The web terminal remains independent; this project does not alter its Web Audio engine or live deployment.
 
@@ -31,4 +32,4 @@ cmake -B build -S .
 cmake --build build --config Release
 ```
 
-The next native milestone is connecting the licensed local stem/audio assets to the processor's render engine and adding the Enochian visual editor.
+The FX companion already receives stereo live audio and responds to MIDI CC 1 (MOD DEPTH), CC 7 (FX MIX) and CC 16 (2MIX). The next native milestone is connecting licensed local stem/audio assets to the Instrument render engine and replacing the generic FX view with the complete Enochian visual editor.
