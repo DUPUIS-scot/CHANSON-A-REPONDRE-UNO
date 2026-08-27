@@ -1,4 +1,4 @@
-deploy-request: 2026-08-27T07:01:00+01:00
+deploy-request: 2026-08-27T07:03:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: redeploy after fixing four-stem JavaScript syntax while preserving exact four-row STEMS MIX and contained analyser controls repair
+reason: deploy PLAYBACK v3 with free five-track selection, decoded complete-track waveform, red/orange played zone, absolute playhead, authoritative IN/OUT region, and functional bar-length loop controls
