@@ -21,6 +21,12 @@
   const innerDocument=frame=>{
     try{return frame?.contentDocument?.getElementById('deck')?.contentDocument||null}catch(_){return null}
   };
-  wrap('installEnochianStemFourChannelV1',frame=>innerDocument(frame)?.documentElement?.dataset?.stemFourChannel==='v3');
+  wrap('installEnochianStemFourChannelV1',frame=>['v3','v4'].includes(innerDocument(frame)?.documentElement?.dataset?.stemFourChannel));
   wrap('installEnochianDoubleDeckerSpecialV2',frame=>document.getElementById('doubleDeckerSpecial')?.dataset?.ddsControls==='v11');
+  const loadElapsedBlue=()=>{
+    if(window.installEnochianPlaybackElapsedBlueV1){window.installEnochianPlaybackElapsedBlueV1(document.getElementById('terminalLive'));return}
+    if(document.querySelector('script[data-enoch-playback-blue]'))return;
+    const s=document.createElement('script');s.src='/enochian-test/playback-elapsed-terminal-blue-v1.js?v=20260827-v1';s.dataset.enochPlaybackBlue='v1';s.onload=()=>window.installEnochianPlaybackElapsedBlueV1?.(document.getElementById('terminalLive'));document.head.appendChild(s);
+  };
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loadElapsedBlue,{once:true});else loadElapsedBlue();
 })();
