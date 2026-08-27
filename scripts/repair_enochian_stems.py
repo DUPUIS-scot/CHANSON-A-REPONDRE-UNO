@@ -37,7 +37,7 @@ if 'requestAnimationFrame(stemDriftTick)' in s:
     raise SystemExit('RAF stem drift loop unexpectedly present')
 
 shell_required = [
-    "live-copy.html?v=20260825-runtime-api-v2",
+    "live-copy.html?v=20260827-ui-repairs-v3",
     "installReliableNavigation",
     "home.href='/#/home'",
     "go('#/home')",
@@ -56,6 +56,7 @@ shell_required = [
     "double-decker-special-v2.js?v=20260826-v7",
     "pad-fx-authority-v2.js?v=20260826-v2",
     "ios-touch-tuning.js?v=20260824-v1",
+    "enochian-ui-repairs-v1.js?v=20260827-ui-repairs-v3",
     "installEnochianAuthoritativeRuntime",
     "installEnochianOuterAnalyserPanel",
     "installEnochianAnalyserDataBus",
@@ -66,6 +67,7 @@ shell_required = [
     "installEnochianDoubleDeckerSpecialV2",
     "installEnochianPadFxAuthorityV2",
     "installEnochianIOSTouchTuning",
+    "installEnochianUiRepairsV1",
     "target-viewport.js?v=20260825-deep-repair-v1",
     "iphone-landscape-layout-v2.js?v=20260826-two-viewport-v21",
 ]
@@ -96,6 +98,7 @@ required_files = [
     Path('web/enochian-test/double-decker-special-v2.js'),
     Path('web/enochian-test/pad-fx-authority-v2.js'),
     Path('web/enochian-test/ios-touch-tuning.js'),
+    Path('web/enochian-test/enochian-ui-repairs-v1.js'),
 ]
 for required_file in required_files:
     if not required_file.is_file() or required_file.stat().st_size == 0:
@@ -111,6 +114,7 @@ for js_file in [
     Path('web/enochian-test/double-decker-special-v2.js'),
     Path('web/enochian-test/pad-fx-authority-v2.js'),
     Path('web/enochian-test/ios-touch-tuning.js'),
+    Path('web/enochian-test/enochian-ui-repairs-v1.js'),
 ]:
     subprocess.run(['node', '--check', str(js_file)], check=True)
 
@@ -123,6 +127,7 @@ glide = Path('web/enochian-test/analyser-signal-glide.js').read_text(encoding='u
 sculpt_audio = Path('web/enochian-test/sculpt-audio-mod.js').read_text(encoding='utf-8')
 pending_ui = Path('web/enochian-test/pending-ui-fixes.js').read_text(encoding='utf-8')
 touch = Path('web/enochian-test/ios-touch-tuning.js').read_text(encoding='utf-8')
+repairs = Path('web/enochian-test/enochian-ui-repairs-v1.js').read_text(encoding='utf-8')
 
 required_authority = [
     "authoritativeRuntime==='v6'",
@@ -171,5 +176,7 @@ if "sculptAudioMod='v3'" not in sculpt_audio or "version:'v3'" not in sculpt_aud
     raise SystemExit('sculpt-to-audio modulation v3 engagement contract missing')
 if "pendingUiFixes==='v3'" not in pending_ui or "dataset.pendingUiFixes='v3'" not in pending_ui or 'loop-control-row' not in pending_ui or 'eq-kill-btn' not in pending_ui:
     raise SystemExit('pending terminal UI fixes v3 contract missing')
+if 'enochian-ui-repairs-v2-style' not in repairs or 'enoch-context-hint' not in repairs or 'masterDeckAnchor' not in repairs or 'installEnochianUiRepairsV1' not in repairs:
+    raise SystemExit('Enochian specialist UI repair layer contract missing')
 
-print('Enochian runtime verified: pending UI fixes v3, DOUBLE DECKER SPECIAL controls, repaired pad FX authority, persistent stem master ON/OFF inside isolator, native Web Audio stem bridge with exclusive master/stem routing and smoothed GainNode mix, authoritative transport-clock loop with forced end wrap, outer floating analyser, unified FFT analyser bus, ring-buffered 3D signal history, v3 grab-engagement sculpt-to-audio, EQ kills, aligned MOD wheel, loop row, navigation and outer fullscreen.')
+print('Enochian runtime verified: UI repairs v3, pending UI fixes v3, DOUBLE DECKER SPECIAL controls, repaired pad FX authority, persistent stem master ON/OFF inside isolator, native Web Audio stem bridge with exclusive master/stem routing and smoothed GainNode mix, authoritative transport-clock loop with forced end wrap, outer floating analyser, unified FFT analyser bus, ring-buffered 3D signal history, v3 grab-engagement sculpt-to-audio, EQ kills, aligned MOD wheel, loop row, navigation and outer fullscreen.')
