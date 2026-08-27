@@ -45,7 +45,7 @@ jobs:
             node --check "$file"
           done
 
-      - name: Verify rebuilt roundtable contracts
+      - name: Verify open platter contracts
         shell: bash
         run: |
           set -euo pipefail
@@ -57,16 +57,17 @@ jobs:
           guard=web/enochian-test/double-jecker-runtime-repair-v1.js
           perf=web/enochian-test/double-jecker-performance-v2.js
 
-          grep -q "jeckerRadial==='v3'" "$radial"
-          grep -q "width:25%" "$radial"
-          grep -q "aspect-ratio:auto" "$radial"
-          grep -q "dds-engine-control.*display:none" "$radial"
-          grep -q "content:none" "$radial"
-          grep -q "vocals:\[28,20\]" "$radial"
-          grep -q "vocals:\[28,62\]" "$radial"
-          grep -q "jeckerReferenceSkin==='v3'" "$skin"
-          grep -q "dds-center.*border-radius:10px" "$skin"
-          ! grep -q "repeating-radial-gradient(circle at 50% 50%,#1b140e" "$skin"
+          grep -q "jeckerRadial==='v4'" "$radial"
+          grep -q "dds-center.*width:0" "$radial"
+          grep -q "dds-status{display:none" "$radial"
+          grep -q "dds-deck>.*not(.dds-slot).*not(.dds-deck-shuffle)" "$radial"
+          grep -q "content:'DECK A'" "$radial"
+          grep -q "content:'DECK B'" "$radial"
+          grep -q "vocals:\[27,18\]" "$radial"
+          grep -q "vocals:\[27,66.5\]" "$radial"
+          grep -q "jeckerReferenceSkin==='v4'" "$skin"
+          grep -q "dds-center{border:0" "$skin"
+          grep -q "background:transparent" "$skin"
 
           grep -q "jeckerOutput==='v2'" "$output"
           grep -q "api.state.outputNode" "$output"
@@ -88,4 +89,4 @@ jobs:
           grep -q "data-dds-crossfader" "$perf"
 
       - name: Report
-        run: echo '2JECKER rebuilt layout, separated A/B banks, unmasked center controls, audio authority and spinner contracts verified.'
+        run: echo '2JECKER open platter, explicit A/B stem banks, compact performance controls, audio authority and spinner contracts verified.'
