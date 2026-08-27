@@ -1,4 +1,4 @@
-deploy-request: 2026-08-27T09:31:00+01:00
+deploy-request: 2026-08-27T09:46:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: repair DOUBLE JESTER layout authority, restore stable centre geometry, hide legacy footer controls, stop reference skin overriding radial layout
+reason: lock all eight DOUBLE JESTER stem controls to fixed platter coordinates, suppress transform animation and cache-bust radial/skin assets
