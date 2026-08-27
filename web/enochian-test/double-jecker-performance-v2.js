@@ -7,62 +7,26 @@
       const shield=document.getElementById('doubleJeckerShield');
       if(!d||!w||!api||!panel||!shield)return false;
       if(w.__enochDoubleJeckerPerformance?.version==='v2')return true;
-
       const clamp01=n=>Math.max(0,Math.min(1,Number(n)||0));
       const dispatchRange=(el,value)=>{if(!el)return false;el.value=String(Math.round(clamp01(value)*100));el.dispatchEvent(new Event('input',{bubbles:true}));return true};
       const crossfader=()=>panel.querySelector('[data-dds-crossfader]');
       const readX=()=>clamp01(Number(crossfader()?.value||0)/100);
       const setX=x=>dispatchRange(crossfader(),x);
-
       let style=document.getElementById('double-jecker-performance-v2-style');
-      if(!style){
-        style=document.createElement('style');style.id='double-jecker-performance-v2-style';style.textContent=`
-          #doubleJeckerShield.performance-ready{touch-action:none!important;cursor:grab!important}
-          #doubleJeckerShield.performance-live{cursor:grabbing!important;filter:drop-shadow(0 0 22px #19c98faa) drop-shadow(0 14px 22px #000b)!important}
-          #doubleJeckerShield .djs-performance-readout{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);z-index:9;min-width:72px;padding:3px 6px;border:1px solid #63f5cf88;border-radius:999px;background:#03110ddd;color:#a9eee7;text-align:center;font:900 7px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.07em;pointer-events:none;box-shadow:0 0 10px #19c98f44}
-          .stem-jecker-split{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:4px}.stem-jecker-split .stem-split{display:grid;grid-template-columns:auto 1fr;gap:4px;align-items:center;min-width:0;padding:3px;border:1px solid #315b56;border-radius:4px;background:#04100d}.stem-jecker-split button{min-width:42px;min-height:24px;border:1px solid #315b56;border-radius:3px;background:#07100e;color:#7a9a94;font:900 7px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.stem-jecker-split button.active{background:#19c98f;color:#001f16;border-color:#63f5cf}.stem-jecker-split input{width:100%;min-width:30px;accent-color:#19c98f}
-        `;document.head.appendChild(style);
-      }
-
-      let readout=shield.querySelector('.djs-performance-readout');
-      if(!readout){readout=document.createElement('div');readout.className='djs-performance-readout';shield.appendChild(readout)}
+      if(!style){style=document.createElement('style');style.id='double-jecker-performance-v2-style';style.textContent=`#doubleJeckerShield.performance-ready{touch-action:none!important;cursor:grab!important}#doubleJeckerShield.performance-live{cursor:grabbing!important;filter:drop-shadow(0 0 22px #19c98faa) drop-shadow(0 14px 22px #000b)!important}#doubleJeckerShield .djs-performance-readout{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);z-index:9;min-width:72px;padding:3px 6px;border:1px solid #63f5cf88;border-radius:999px;background:#03110ddd;color:#a9eee7;text-align:center;font:900 7px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.07em;pointer-events:none;box-shadow:0 0 10px #19c98f44}.stem-jecker-split{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:4px}.stem-jecker-split .stem-split{display:grid;grid-template-columns:auto 1fr;gap:4px;align-items:center;min-width:0;padding:3px;border:1px solid #315b56;border-radius:4px;background:#04100d}.stem-jecker-split button{min-width:42px;min-height:24px;border:1px solid #315b56;border-radius:3px;background:#07100e;color:#7a9a94;font:900 7px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.stem-jecker-split button.active{background:#19c98f;color:#001f16;border-color:#63f5cf}.stem-jecker-split input{width:100%;min-width:30px;accent-color:#19c98f}`;document.head.appendChild(style)}
+      let readout=shield.querySelector('.djs-performance-readout');if(!readout){readout=document.createElement('div');readout.className='djs-performance-readout';shield.appendChild(readout)}
       const paint=()=>{const x=readX();readout.textContent=x<.495?`A ${Math.round((1-x)*100)}%`:x>.505?`B ${Math.round(x*100)}%`:'A/B 50%';shield.classList.toggle('performance-live',!!api.state?.enabled)};
-
-      let dragging=false,lastAngle=0,startX=0,moved=false;
-      const angle=e=>{const r=shield.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;return Math.atan2(e.clientY-cy,e.clientX-cx)};
+      let dragging=false,lastAngle=0,startX=0,moved=false;const angle=e=>{const r=shield.getBoundingClientRect();return Math.atan2(e.clientY-(r.top+r.height/2),e.clientX-(r.left+r.width/2))};
       shield.classList.add('performance-ready');
-      shield.addEventListener('pointerdown',e=>{if(e.button!==0)return;dragging=true;moved=false;lastAngle=angle(e);startX=readX();shield.setPointerCapture?.(e.pointerId);e.preventDefault()},{capture:true});
-      shield.addEventListener('pointermove',e=>{if(!dragging)return;const a=angle(e);let delta=a-lastAngle;if(delta>Math.PI)delta-=Math.PI*2;if(delta<-Math.PI)delta+=Math.PI*2;if(Math.abs(delta)>.002)moved=true;lastAngle=a;startX=clamp01(startX+delta/(Math.PI*1.35));setX(startX);paint();e.preventDefault()},{capture:true});
-      const end=e=>{if(!dragging)return;dragging=false;try{shield.releasePointerCapture?.(e.pointerId)}catch(_){}if(!moved){panel.classList.toggle('open');panel.setAttribute('aria-hidden',String(!panel.classList.contains('open')))}paint()};
-      shield.addEventListener('pointerup',end,{capture:true});shield.addEventListener('pointercancel',end,{capture:true});
-      shield.addEventListener('wheel',e=>{setX(readX()+Math.sign(e.deltaY)*.025);paint();e.preventDefault()},{passive:false,capture:true});
-      shield.addEventListener('dblclick',e=>{setX(.5);paint();e.preventDefault();e.stopPropagation()},{capture:true});
-
-      const instrumentsRow=d.querySelector('[data-stem-range="instruments"]')?.closest('.stem-row,.stem-control,.control-row')||d.querySelector('[data-stem-range="instruments"]')?.parentElement;
-      let split=d.querySelector('[data-stem-jecker-split]');
-      const splitState={bass:{on:true,level:1},other:{on:true,level:1},touched:false};
-      const applySplit=()=>{
-        if(!splitState.touched||!w.__enochStemJecker?.linked)return false;
-        ['bass','other'].forEach(stem=>{api.setStemOn?.('A',stem,splitState[stem].on);api.setStemOn?.('B',stem,splitState[stem].on);api.setStemLevel?.('A',stem,splitState[stem].level);api.setStemLevel?.('B',stem,splitState[stem].level)});
-        api.enforceActivePlayback?.(false);return true;
-      };
-      if(instrumentsRow&&!split){
-        split=document.createElement('div');split.className='stem-jecker-split';split.dataset.stemJeckerSplit='';
-        split.innerHTML='<div class="stem-split"><button type="button" data-jecker-split="bass" class="active" aria-pressed="true">BASS</button><input type="range" min="0" max="100" value="100" data-jecker-split-level="bass" aria-label="2JECKER bass level"></div><div class="stem-split"><button type="button" data-jecker-split="other" class="active" aria-pressed="true">OTHER</button><input type="range" min="0" max="100" value="100" data-jecker-split-level="other" aria-label="2JECKER other level"></div>';
-        instrumentsRow.insertAdjacentElement('afterend',split);
-      }
-      split?.querySelectorAll('[data-jecker-split]').forEach(btn=>btn.addEventListener('click',()=>{const stem=btn.dataset.jeckerSplit;splitState.touched=true;splitState[stem].on=!splitState[stem].on;btn.classList.toggle('active',splitState[stem].on);btn.setAttribute('aria-pressed',String(splitState[stem].on));applySplit()}));
-      split?.querySelectorAll('[data-jecker-split-level]').forEach(range=>range.addEventListener('input',()=>{const stem=range.dataset.jeckerSplitLevel;splitState.touched=true;splitState[stem].level=clamp01(Number(range.value)/100);applySplit()}));
-
-      const syncAfterMain=w.__enochStemJecker?.sync;
-      if(w.__enochStemJecker&&typeof syncAfterMain==='function'&&!w.__enochStemJecker.__splitWrapped){
-        w.__enochStemJecker.sync=()=>{const out=syncAfterMain();applySplit();return out};
-        w.__enochStemJecker.__splitWrapped=true;
-      }
-      const timer=w.setInterval(()=>{applySplit();paint()},350);
-      w.__enochDoubleJeckerPerformance={version:'v2',setCrossfader:setX,get crossfader(){return readX()},splitState,applySplit,paint};
-      paint();w.addEventListener('pagehide',()=>w.clearInterval(timer),{once:true});
-      return true;
+      shield.addEventListener('pointerdown',e=>{if(e.button!==0)return;e.stopImmediatePropagation();dragging=true;moved=false;lastAngle=angle(e);startX=readX();shield.setPointerCapture?.(e.pointerId);e.preventDefault()},{capture:true});
+      shield.addEventListener('pointermove',e=>{if(!dragging)return;e.stopImmediatePropagation();const a=angle(e);let delta=a-lastAngle;if(delta>Math.PI)delta-=Math.PI*2;if(delta<-Math.PI)delta+=Math.PI*2;if(Math.abs(delta)>.002)moved=true;lastAngle=a;startX=clamp01(startX+delta/(Math.PI*1.35));setX(startX);paint();e.preventDefault()},{capture:true});
+      const end=e=>{if(!dragging)return;e.stopImmediatePropagation();dragging=false;try{shield.releasePointerCapture?.(e.pointerId)}catch(_){}if(!moved){panel.classList.toggle('open');panel.setAttribute('aria-hidden',String(!panel.classList.contains('open')))}paint();e.preventDefault()};
+      shield.addEventListener('pointerup',end,{capture:true});shield.addEventListener('pointercancel',end,{capture:true});shield.addEventListener('wheel',e=>{e.stopImmediatePropagation();setX(readX()+Math.sign(e.deltaY)*.025);paint();e.preventDefault()},{passive:false,capture:true});shield.addEventListener('dblclick',e=>{e.stopImmediatePropagation();setX(.5);paint();e.preventDefault()},{capture:true});
+      const instrumentsRange=d.querySelector('[data-stem-range="instruments"]');const instrumentsRow=instrumentsRange?.closest('.stem-row,.stem-control,.control-row')||instrumentsRange?.parentElement;let split=d.querySelector('[data-stem-jecker-split]');const base=clamp01(Number(instrumentsRange?.value||100)/100);const splitState={bass:{on:true,level:base},other:{on:true,level:base},touched:false};
+      const applySplit=()=>{if(!splitState.touched||!w.__enochStemJecker?.linked)return false;['bass','other'].forEach(stem=>{api.setStemOn?.('A',stem,splitState[stem].on);api.setStemOn?.('B',stem,splitState[stem].on);api.setStemLevel?.('A',stem,splitState[stem].level);api.setStemLevel?.('B',stem,splitState[stem].level)});api.enforceActivePlayback?.(false);return true};
+      if(instrumentsRow&&!split){split=document.createElement('div');split.className='stem-jecker-split';split.dataset.stemJeckerSplit='';split.innerHTML=`<div class="stem-split"><button type="button" data-jecker-split="bass" class="active" aria-pressed="true">BASS</button><input type="range" min="0" max="100" value="${Math.round(base*100)}" data-jecker-split-level="bass" aria-label="2JECKER bass level"></div><div class="stem-split"><button type="button" data-jecker-split="other" class="active" aria-pressed="true">OTHER</button><input type="range" min="0" max="100" value="${Math.round(base*100)}" data-jecker-split-level="other" aria-label="2JECKER other level"></div>`;instrumentsRow.insertAdjacentElement('afterend',split)}
+      split?.querySelectorAll('[data-jecker-split]').forEach(btn=>btn.addEventListener('click',()=>{const stem=btn.dataset.jeckerSplit;splitState.touched=true;splitState[stem].on=!splitState[stem].on;btn.classList.toggle('active',splitState[stem].on);btn.setAttribute('aria-pressed',String(splitState[stem].on));applySplit()}));split?.querySelectorAll('[data-jecker-split-level]').forEach(range=>range.addEventListener('input',()=>{const stem=range.dataset.jeckerSplitLevel;splitState.touched=true;splitState[stem].level=clamp01(Number(range.value)/100);applySplit()}));
+      const timer=w.setInterval(()=>{applySplit();paint()},350);w.__enochDoubleJeckerPerformance={version:'v2',setCrossfader:setX,get crossfader(){return readX()},splitState,applySplit,paint};paint();w.addEventListener('pagehide',()=>w.clearInterval(timer),{once:true});return true;
     }catch(_){return false}
   }
   window.installEnochianDoubleJeckerPerformanceV2=host=>{let n=0,t=setInterval(()=>{if(install(host)||++n>240)clearInterval(t)},50);return install(host)};
