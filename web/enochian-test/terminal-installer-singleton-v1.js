@@ -66,6 +66,10 @@
       if(window.installEnochianTwoMixLauncherHitRepairV1){window.installEnochianTwoMixLauncherHitRepairV1(frame);return true}
       return false;
     });
+    loadScript('data-enoch-two-mix-live-help','/enochian-test/two-mix-live-context-help-v1.js?v=20260828-v1',()=>{
+      if(window.installEnochianTwoMixLiveContextHelpV1){window.installEnochianTwoMixLiveContextHelpV1(frame);return true}
+      return false;
+    });
   };
 
   const repairBootGate=()=>{
@@ -84,6 +88,7 @@
           d.documentElement.dataset.twoMixVirtualMice==='v3'&&
           d.documentElement.dataset.twoMixSpaceC==='v1'&&
           d.documentElement.dataset.twoMixLauncherHitRepair==='v1'&&
+          d.documentElement.dataset.twoMixLiveContextHelp==='v1'&&
           d.documentElement.dataset.analyserControlsContained==='v6'&&
           document.getElementById('doubleDeckerSpecial')?.dataset.ddsControls==='v11'&&
           document.getElementById('doubleDeckerSpecial')?.dataset.jeckerRadial==='v10'&&
@@ -98,9 +103,9 @@
   };
 
   window.__enochInstallerBroker={
-    version:'v6',
+    version:'v7',
     deduped:['analyser-data-bus','stem-four-channel','performance-reset','double-jester-runtime','double-decker-special'],
-    lateAuthorities:['playback-blue','layout-contract','jester-independent-transport','two-mix-space-c','two-mix-launcher-hit'],
+    lateAuthorities:['playback-blue','layout-contract','jester-independent-transport','two-mix-space-c','two-mix-launcher-hit','two-mix-live-help'],
     repairBootGate
   };
 
