@@ -12,6 +12,7 @@ on:
       - 'web/enochian-test/double-jecker-output-v1.js'
       - 'web/enochian-test/double-jecker-signal-relay-v1.js'
       - 'web/enochian-test/double-jecker-turntable-shield-v1.js'
+      - 'web/enochian-test/double-jester-portal-spinner-v1.js'
       - 'web/enochian-test/double-jecker-runtime-repair-v1.js'
       - 'web/enochian-test/double-jecker-performance-v2.js'
       - 'web/enochian-test/enochian-terminal-polish-v1.js'
@@ -53,6 +54,7 @@ jobs:
             web/enochian-test/double-jecker-output-v1.js \
             web/enochian-test/double-jecker-signal-relay-v1.js \
             web/enochian-test/double-jecker-turntable-shield-v1.js \
+            web/enochian-test/double-jester-portal-spinner-v1.js \
             web/enochian-test/double-jecker-runtime-repair-v1.js \
             web/enochian-test/double-jecker-performance-v2.js \
             web/enochian-test/enochian-terminal-polish-v1.js \
