@@ -50,7 +50,7 @@ void main() {
     expect(terminal,
         contains('playback-transport-authority-v1.js?v=20260827-v1'));
     expect(terminal,
-        contains('two-mix-master-anchor-v1.js?v=20260827-v1'));
+        contains('two-mix-master-anchor-v1.js?v=20260827-signal-memory-v10'));
 
     expect(radial, contains("VERSION='v12'"));
     expect(radial, contains('doubleJesterRadialPanelRectV12'));
