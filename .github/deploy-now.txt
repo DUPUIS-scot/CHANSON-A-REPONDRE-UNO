@@ -1,4 +1,4 @@
-deploy-request: 2026-08-28T18:16:00+01:00
+deploy-request: 2026-08-28T19:24:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: redeploy independent MAIN and 2JESTER transport after aligning 2MIX v10 regression contract
+reason: simplify independent 2JESTER player and keep MIX STEM JOG exclusively on compact 2J widget
