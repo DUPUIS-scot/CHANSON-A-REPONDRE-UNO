@@ -13,6 +13,7 @@ on:
       - 'web/enochian-test/double-jecker-signal-relay-v1.js'
       - 'web/enochian-test/double-jecker-turntable-shield-v1.js'
       - 'web/enochian-test/double-jester-portal-spinner-v1.js'
+      - 'assets/models/laboratory_portal_mirror.glb'
       - 'web/enochian-test/double-jecker-runtime-repair-v1.js'
       - 'web/enochian-test/double-jecker-performance-v2.js'
       - 'web/enochian-test/enochian-terminal-polish-v1.js'
@@ -74,6 +75,8 @@ jobs:
           perf=web/enochian-test/double-jecker-performance-v2.js
           polish=web/enochian-test/enochian-terminal-polish-v1.js
           shell=web/enochian-terminal/index.html
+          spinner=web/enochian-test/double-jester-portal-spinner-v1.js
+          mirror=assets/models/laboratory_portal_mirror.glb
 
           grep -q "const VERSION='v10'" "$radial"
           grep -q "doubleJesterRadialPanelRectV10" "$radial"
@@ -86,6 +89,13 @@ jobs:
           grep -q "double-jecker-radial-layout-v1.js?v=20260827-jester-radial-v10" "$shell"
           grep -q "double-jecker-runtime-repair-v1.js?v=20260827-jester-authority-v11" "$shell"
           grep -q "enochian-terminal-polish-v1.js?v=20260827-polish-v3" "$shell"
+          grep -q "double-decker-main-stem-link-v1.js?v=20260828-stem-jester-v12" "$shell"
+          grep -q '"three":"/vendor/three.module.js"' "$shell"
+          grep -q "laboratory_portal_mirror.glb" "$spinner"
+          grep -q "mirror.rotation.y" "$spinner"
+          grep -q "!panel.classList.contains('open')" "$spinner"
+          grep -q "installEnochianDoubleJesterPortalSpinnerV2" "$link"
+          test "$(head -c 4 "$mirror")" = "glTF"
 
       - name: Report
         run: echo '2JESTER single geometry, four native stems, passive open authority and spinner crossfade verified.'
