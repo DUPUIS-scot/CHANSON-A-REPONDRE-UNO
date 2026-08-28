@@ -26,8 +26,6 @@
 
   const innerDataset=(frame,key)=>innerDocument(frame)?.documentElement?.dataset?.[key];
 
-  // These installers own bounded readiness retries. The outer boot may call
-  // them repeatedly, but only one underlying retry loop is armed per iframe.
   wrap('installEnochianAnalyserDataBus',frame=>['v2','v3'].includes(innerDataset(frame,'analyserDataBus')));
   wrap('installEnochianStemFourChannelV1',frame=>['v3','v4'].includes(innerDataset(frame,'stemFourChannel')));
   wrap('installEnochianPerformanceResetV1',frame=>innerDataset(frame,'performanceResetV1')==='1');
@@ -56,11 +54,12 @@
       if(window.installEnochianTerminalViewportLayoutContractV1){window.installEnochianTerminalViewportLayoutContractV1(frame);return true}
       return false;
     });
+    loadScript('data-enoch-jester-independent-transport','/enochian-test/double-jester-independent-transport-v1.js?v=20260828-v1',()=>{
+      if(window.installEnochianDoubleJesterIndependentTransportV1){window.installEnochianDoubleJesterIndependentTransportV1(frame);return true}
+      return false;
+    });
   };
 
-  // The current terminal boot gate still names stem UI v3 even though the
-  // deployed authority is v4. Replace the gate after the inline boot script
-  // defines it so a healthy terminal actually exits its 250 ms boot loop.
   const repairBootGate=()=>{
     if(typeof window.terminalBootReady!=='function')return false;
     if(window.terminalBootReady.__enochPerfGate==='v1')return true;
@@ -87,7 +86,7 @@
   };
 
   window.__enochInstallerBroker={
-    version:'v3',
+    version:'v4',
     deduped:['analyser-data-bus','stem-four-channel','performance-reset','double-jester-runtime','double-decker-special'],
     repairBootGate
   };
