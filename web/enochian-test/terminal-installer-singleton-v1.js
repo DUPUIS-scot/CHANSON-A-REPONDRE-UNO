@@ -58,6 +58,10 @@
       if(window.installEnochianDoubleJesterIndependentTransportV1){window.installEnochianDoubleJesterIndependentTransportV1(frame);return true}
       return false;
     });
+    loadScript('data-enoch-two-mix-space-c','/enochian-test/two-mix-space-c-v1.js?v=20260828-v1',()=>{
+      if(window.installEnochianTwoMixSpaceCV1){window.installEnochianTwoMixSpaceCV1(frame);return true}
+      return false;
+    });
   };
 
   const repairBootGate=()=>{
@@ -72,6 +76,9 @@
           d.documentElement.dataset.stemJester==='v11'&&
           d.documentElement.dataset.playbackTransportAuthority==='v1'&&
           d.documentElement.dataset.twoMixMasterAnchor==='v1'&&
+          d.documentElement.dataset.twoMixMasterLayout==='v10'&&
+          d.documentElement.dataset.twoMixVirtualMice==='v3'&&
+          d.documentElement.dataset.twoMixSpaceC==='v1'&&
           d.documentElement.dataset.analyserControlsContained==='v6'&&
           document.getElementById('doubleDeckerSpecial')?.dataset.ddsControls==='v11'&&
           document.getElementById('doubleDeckerSpecial')?.dataset.jeckerRadial==='v10'&&
@@ -86,8 +93,9 @@
   };
 
   window.__enochInstallerBroker={
-    version:'v4',
+    version:'v5',
     deduped:['analyser-data-bus','stem-four-channel','performance-reset','double-jester-runtime','double-decker-special'],
+    lateAuthorities:['playback-blue','layout-contract','jester-independent-transport','two-mix-space-c'],
     repairBootGate
   };
 
