@@ -1,4 +1,4 @@
-deploy-request: 2026-08-28T23:38:00+01:00
+deploy-request: 2026-08-29T00:02:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: repair UNO 2MIX launcher click target after Space C integration
+reason: deploy laboratory portal mirror GLB as the compact 2JESTER turntable
