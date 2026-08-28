@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>ENOCHIAN TERMINAL — MIDI INPUT</title>
+  <style>
+    html,body{margin:0;width:100%;height:100%;background:#02070b;color:#a8f1ff;font:14px ui-monospace,Consolas,monospace}
+    #gate{position:fixed;inset:0;display:grid;place-items:center;background:radial-gradient(circle at 50% 35%,#061b29,#02070b 65%)}
+    .panel{width:min(360px,calc(100% - 48px));border:1px solid #39c8f5;padding:28px;box-shadow:0 0 30px #0b4f7377}
+    h1{margin:0 0 10px;color:#39c8f5;font-size:20px;letter-spacing:.08em} p{color:#b7c9d1;line-height:1.5}
+    input,button{box-sizing:border-box;width:100%;height:42px;margin-top:12px;border:1px solid #39c8f5;background:#02070b;color:#a8f1ff;padding:0 12px;font:inherit}
+    button{cursor:pointer;background:#0b4f73;color:white} #status{min-height:20px;margin:14px 0 0;color:#ff9b36}
+    #midiLive{display:none;width:100%;height:100%;border:0;background:#02070b}
+  </style>
+</head>
+<body>
+  <main id="gate"><section class="panel">
+    <h1>MIDI INPUT</h1>
+    <p>Private live second viewport for ENOCHIAN TERMINAL.</p>
+    <input id="password" type="password" autocomplete="current-password" aria-label="Access password" placeholder="Shared password">
+    <button id="enter">OPEN MIDI VIEWPORT</button><div id="status" role="status"></div>
+  </section></main>
+  <iframe id="midiLive" title="ENOCHIAN TERMINAL MIDI viewport"></iframe>
+  <script>
+    const endpoint="https://dedwajzurhqrnyzrxouo.supabase.co/functions/v1/midi-route-access";
+    const gate=document.getElementById("gate"), view=document.getElementById("midiLive"), input=document.getElementById("password"), status=document.getElementById("status");
+    function openViewport(){gate.style.display="none";view.style.display="block";view.src="/enochian-terminal/";}
+    const saved=Number(sessionStorage.getItem("enochianMidiUntil")||0); if(saved>Date.now()) openViewport();
+    async function enter(){
+      status.textContent="Checking access…";
+      try{
+        const r=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:input.value})});
+        const data=await r.json();
+        if(!r.ok||!data.allowed) throw new Error();
+        sessionStorage.setItem("enochianMidiUntil",String(data.expiresAt)); input.value=""; openViewport();
+      }catch{status.textContent="Password not accepted.";}
+    }
+    document.getElementById("enter").onclick=enter;
+    input.addEventListener("keydown",e=>{if(e.key==="Enter")enter();});
+  </script>
+</body>
+</html>
