@@ -1,4 +1,4 @@
-deploy-request: 2026-08-29T00:18:00+01:00
+deploy-request: 2026-08-28T23:59:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy persistent context-sensitive 2MIX USB cursor help with Space C instructions and protected UNO launcher hit target
+reason: publish password-gated MIDI live viewport
