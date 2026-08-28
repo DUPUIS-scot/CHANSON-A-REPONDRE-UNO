@@ -1,4 +1,4 @@
-deploy-request: 2026-08-28T23:14:00+00:00
+deploy-request: 2026-08-28T23:31:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: mirror-format DOUBLE JESTER SPECIAL with a floating resizable 2J that pauses while open and resumes at the interior portal rotation rate
+reason: deploy 2MIX Space C control
