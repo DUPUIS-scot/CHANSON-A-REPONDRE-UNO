@@ -1,4 +1,4 @@
-deploy-request: 2026-08-29T00:02:00+01:00
+deploy-request: 2026-08-29T00:10:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy laboratory portal mirror GLB as the compact 2JESTER turntable
+reason: redeploy laboratory portal mirror GLB after aligning the Enochian authority regression test
