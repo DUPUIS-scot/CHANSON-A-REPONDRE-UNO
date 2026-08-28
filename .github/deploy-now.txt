@@ -1,4 +1,4 @@
-deploy-request: 2026-08-28T19:24:00+01:00
+deploy-request: 2026-08-28T23:14:00+00:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: simplify independent 2JESTER player and keep MIX STEM JOG exclusively on compact 2J widget
+reason: mirror-format DOUBLE JESTER SPECIAL with a floating resizable 2J that pauses while open and resumes at the interior portal rotation rate
