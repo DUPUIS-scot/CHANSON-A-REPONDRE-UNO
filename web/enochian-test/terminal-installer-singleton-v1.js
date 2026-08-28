@@ -70,6 +70,10 @@
       if(window.installEnochianTwoMixLiveContextHelpV1){window.installEnochianTwoMixLiveContextHelpV1(frame);return true}
       return false;
     });
+    loadScript('data-enoch-midi-signal-live','/enochian-test/midi-signal-live-v1.js?v=20260829-v1',()=>{
+      if(window.installEnochianMidiSignalLiveV1){window.installEnochianMidiSignalLiveV1(frame);return true}
+      return false;
+    });
   };
 
   const repairBootGate=()=>{
@@ -103,9 +107,9 @@
   };
 
   window.__enochInstallerBroker={
-    version:'v7',
+    version:'v8',
     deduped:['analyser-data-bus','stem-four-channel','performance-reset','double-jester-runtime','double-decker-special'],
-    lateAuthorities:['playback-blue','layout-contract','jester-independent-transport','two-mix-space-c','two-mix-launcher-hit','two-mix-live-help'],
+    lateAuthorities:['playback-blue','layout-contract','jester-independent-transport','two-mix-space-c','two-mix-launcher-hit','two-mix-live-help','midi-signal-live'],
     repairBootGate
   };
 
