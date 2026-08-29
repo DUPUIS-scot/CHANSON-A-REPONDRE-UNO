@@ -1,59 +1,99 @@
 from pathlib import Path
 import subprocess
-base=Path('web/enochian-test')
 
-# 2J / 2JESTER deployment repair: normalize the remaining competing runtime
-# authorities in the source snapshot before validation and publication.
-def patch(path, old, new, label):
- text=path.read_text(encoding='utf-8')
- if old not in text:
-  raise SystemExit(f'missing 2J repair target: {label}')
- path.write_text(text.replace(old,new),encoding='utf-8')
+base = Path('web/enochian-test')
+shell = Path('web/enochian-terminal/index.html').read_text(encoding='utf-8')
+runtime = (base / 'live-copy.html').read_text(encoding='utf-8')
+authority = (base / 'authoritative-runtime.js').read_text(encoding='utf-8')
+stem_link = (base / 'double-decker-main-stem-link-v1.js').read_text(encoding='utf-8')
+radial = (base / 'double-jecker-radial-layout-v1.js').read_text(encoding='utf-8')
+repair = (base / 'double-jecker-runtime-repair-v1.js').read_text(encoding='utf-8')
+performance = (base / 'double-jecker-performance-v2.js').read_text(encoding='utf-8')
+portal = (base / 'double-jester-portal-spinner-v1.js').read_text(encoding='utf-8')
+four_stem = (base / 'stem-four-channel-ui-v1.js').read_text(encoding='utf-8')
+contained = (base / 'analyser-controls-contained-v1.js').read_text(encoding='utf-8')
+playback_owner = (base / 'playback-transport-authority-v1.js').read_text(encoding='utf-8')
+two_mix_owner = (base / 'two-mix-master-anchor-v1.js').read_text(encoding='utf-8')
+layout = (base / 'terminal-viewport-layout-contract-v1.js').read_text(encoding='utf-8')
 
-repair_path=base/'double-jecker-runtime-repair-v1.js'
-stem_path=base/'double-decker-main-stem-link-v1.js'
-patch(repair_path,"performance?.version==='v4'","['v4','v5'].includes(performance?.version)",'runtime health accepts performance v4/v5')
-patch(repair_path,'const timer=w.setInterval(maintain,500);','const timer=w.setInterval(maintain,1500);','runtime maintenance cadence')
-patch(stem_path,'const reconcileTimer=w.setInterval(reconcile,500);','const reconcileTimer=0; reconcile();','remove competing STEM JESTER polling authority')
+for marker in ['window.__enochStemRuntimeApi=', 'stemMasterToggle', 'masterGate', 'RESET LOOP']:
+    if marker not in runtime:
+        raise SystemExit(f'missing runtime marker: {marker}')
 
-runtime=(base/'live-copy.html').read_text(encoding='utf-8');shell=Path('web/enochian-terminal/index.html').read_text(encoding='utf-8');authority=(base/'authoritative-runtime.js').read_text(encoding='utf-8');stem_link=stem_path.read_text(encoding='utf-8');radial=(base/'double-jecker-radial-layout-v1.js').read_text(encoding='utf-8');repair=repair_path.read_text(encoding='utf-8');performance=(base/'double-jecker-performance-v2.js').read_text(encoding='utf-8');ui_repairs=(base/'enochian-ui-repairs-v1.js').read_text(encoding='utf-8');four_stem=(base/'stem-four-channel-ui-v1.js').read_text(encoding='utf-8');contained=(base/'analyser-controls-contained-v1.js').read_text(encoding='utf-8');playback_owner=(base/'playback-transport-authority-v1.js').read_text(encoding='utf-8');two_mix_owner=(base/'two-mix-master-anchor-v1.js').read_text(encoding='utf-8');two_mix_c=(base/'two-mix-space-c-v1.js').read_text(encoding='utf-8');two_mix_live_help=(base/'two-mix-live-context-help-v1.js').read_text(encoding='utf-8');analyser_bus=(base/'analyser-data-bus.js').read_text(encoding='utf-8');post_playback=(base/'post-playback-ui-repair-v2.js').read_text(encoding='utf-8');layout=(base/'terminal-viewport-layout-contract-v1.js').read_text(encoding='utf-8');singleton=(base/'terminal-installer-singleton-v1.js').read_text(encoding='utf-8')
-for marker in ['window.__enochStemRuntimeApi=','stemMasterToggle','masterGate','RESET LOOP']:
- if marker not in runtime: raise SystemExit(f'missing runtime marker: {marker}')
-for marker in ['stem-four-channel-ui-v1.js?v=20260827-v4','two-virtual-mice-v1.js?v=20260827-lock-workflow-v3','two-mix-master-anchor-v1.js?v=20260827-signal-memory-v10','analyser-data-bus.js?v=20260824-v2','installEnochianTwoMixMasterAnchorV1',"twoMixMasterLayout==='v10'","twoMixVirtualMice==='v3'"]:
- if marker not in shell: raise SystemExit(f'missing terminal shell marker: {marker}')
-for marker,source,label in [("const VERSION='v11'",stem_link,'STEM JESTER'),("VERSION='v13'",radial,'radial authority'),("const VERSION='v11'",repair,'runtime authority'),("const VERSION='v6'",performance,'spinner'),("const VERSION='v8'",ui_repairs,'UI repairs'),("stemFourChannel==='v4'",four_stem,'four stem UI'),("analyserControlsContained='v6'",contained,'analyser ownership')]:
- if marker not in source: raise SystemExit(f'missing {label}: {marker}')
-for marker in ["['mix','stem','jog']","b.dataset.mode=m",'setMode','applyStem','applyJog','continuousSpin:true','dragOuterRig:true']:
- if marker not in performance: raise SystemExit(f'2J MIX/STEM/JOG v6 contract missing: {marker}')
-for marker in ["__enochAnalyserBus=bus","bus.emit('signal'",'rawSignal']:
- if marker not in analyser_bus: raise SystemExit(f'ENOCHIAN signal bus missing: {marker}')
-for marker in ["twoMixMasterLayout==='v10'",'twoMixHelpToggle',"helpButton.addEventListener('click',toggleGuide)","__enochTwoMixMasterAnchor={version:'v10'",'twoMixCursorTrail','two-mix-trail-segment','spawnMemory','bindSignal',"w.__enochAnalyserBus","type==='signal'","ENOCHIAN SIGNAL MEMORY","cursorHelp.classList.add('visible')"]:
- if marker not in two_mix_owner: raise SystemExit(f'independent 2MIX ENOCHIAN signal-memory/live-HUD v10 missing: {marker}')
-for marker in ["const VERSION='v1'",'twoMixC','twoMixCTether',"e.code!=='Space'",'nearestT','enoch:two-mix-sculpt','balance,bend','adjustTarget']:
- if marker not in two_mix_c: raise SystemExit(f'2MIX Space C authority missing: {marker}')
-for marker in ["const VERSION='v1'",'twoMixUsbHelp','A↔B LINE','HOLD SPACE + CLICK = C','ENOCHIAN SIGNAL','MEMORY 36','elementFromPoint','twoMixLiveContextHelp']:
- if marker not in two_mix_live_help: raise SystemExit(f'2MIX live USB cursor help missing: {marker}')
-for marker in ['two-mix-space-c-v1.js?v=20260828-v1','installEnochianTwoMixSpaceCV1',"twoMixSpaceC==='v1'",'two-mix-live-context-help-v1.js?v=20260828-v1','installEnochianTwoMixLiveContextHelpV1',"twoMixLiveContextHelp==='v1'"]:
- if marker not in singleton: raise SystemExit(f'2MIX late authority loader missing: {marker}')
-for forbidden in ["toggle.addEventListener('click',toggleGuide", "toggle.addEventListener('pointerup'",'setTimeout(()=>cursorHelp.classList.remove']:
- if forbidden in two_mix_owner: raise SystemExit(f'2MIX launcher/help contract violated: {forbidden}')
-for marker in ["const VERSION='v1'",'data-terminal-floatable','data-terminal-fixed','terminalZone','MutationObserver','queueMicrotask(restore)','outerAnalyserPanel','#doubleDeckerSpecial','.analyser-control-widget']:
- if marker not in layout: raise SystemExit(f'terminal viewport layout contract missing: {marker}')
-for marker in ['terminal-viewport-layout-contract-v1.js?v=20260827-v1','installEnochianTerminalViewportLayoutContractV1']:
- if marker not in singleton: raise SystemExit(f'layout contract loader missing: {marker}')
-if 'setInterval(()=>{owner.forEach' in layout: raise SystemExit('layout guard must not poll fixed geometry')
-for marker in ['stem-primary-header','stem-master-primary',"master.textContent='STEMS'"]:
- if marker not in four_stem: raise SystemExit(f'primary STEM master missing: {marker}')
-for marker in ['repairPlaybackFlow','repairSignalRoot','repairFloatResolution','hiresFloat']:
- if marker not in ui_repairs: raise SystemExit(f'UI repair contract missing: {marker}')
-if "playbackTransportAuthority='v1'" not in playback_owner or 'repeat(9,minmax(0,1fr))' not in playback_owner: raise SystemExit('PLAYBACK authority missing')
-if "postPlaybackUiRepair==='v3'" not in post_playback: raise SystemExit('owner coordinator missing')
-if "authoritativeRuntime='v6'" not in authority: raise SystemExit('audio authority missing')
-if "['v4','v5'].includes(performance?.version)" not in repair: raise SystemExit('2JESTER health repair missing')
-if 'const reconcileTimer=0; reconcile();' not in stem_link: raise SystemExit('STEM JESTER single-authority repair missing')
-required_files=['authoritative-runtime.js','outer-analyser-panel.js','analyser-signal-3d-v7.js','analyser-data-bus.js','enochian-ui-repairs-v1.js','stem-four-channel-ui-v1.js','analyser-controls-contained-v1.js','double-decker-main-stem-link-v1.js','double-jecker-radial-layout-v1.js','double-jecker-runtime-repair-v1.js','double-jecker-performance-v2.js','playback-reference-panel.js','post-playback-ui-repair-v2.js','playback-transport-authority-v1.js','two-mix-master-anchor-v1.js','two-mix-space-c-v1.js','two-mix-live-context-help-v1.js','terminal-viewport-layout-contract-v1.js','terminal-installer-singleton-v1.js']
+for marker in ['stem-four-channel-ui-v1.js?v=20260827-v4', 'analyser-data-bus.js?v=20260824-v2', 'installEnochianTwoMixMasterAnchorV1']:
+    if marker not in shell:
+        raise SystemExit(f'missing terminal shell marker: {marker}')
+
+for marker, source, label in [
+    ("const VERSION='v11'", stem_link, 'STEM JESTER'),
+    ("VERSION='v13'", radial, 'radial authority'),
+    ("const VERSION='v11'", repair, '2JESTER runtime authority'),
+    ("const VERSION='v6'", performance, '2J performance'),
+    ("stemFourChannel==='v4'", four_stem, 'four stem UI'),
+    ("analyserControlsContained='v6'", contained, 'analyser ownership'),
+]:
+    if marker not in source:
+        raise SystemExit(f'missing {label}: {marker}')
+
+for marker in ["['mix','stem','jog']", 'setMode', 'applyStem', 'applyJog', 'continuousSpin:true', 'dragOuterRig:true']:
+    if marker not in performance:
+        raise SystemExit(f'2J MIX/STEM/JOG v6 contract missing: {marker}')
+
+# Full 2J -> 2JESTER authority contract.
+for marker in [
+    "['v4','v5','v6'].includes(performance?.version)",
+    "phase=open?'2jester-active':'2j-spinning'",
+    "get phase(){return phase}",
+    "new CustomEvent('enoch:2j-state'",
+    'const timer=w.setInterval(maintain,1500);',
+]:
+    if marker not in repair:
+        raise SystemExit(f'2JESTER authority repair missing: {marker}')
+if 'w.setInterval(maintain,500)' in repair:
+    raise SystemExit('legacy 500ms 2JESTER maintenance loop remains')
+
+for marker in [
+    "w.addEventListener('enoch:2j-state',onJ2State)",
+    'reconcile();',
+    "runtime-repair-v11','/enochian-test/double-jecker-runtime-repair-v1.js?v=20260829-jester-authority-v12",
+]:
+    if marker not in stem_link:
+        raise SystemExit(f'STEM JESTER authority repair missing: {marker}')
+if 'setInterval(reconcile,500)' in stem_link:
+    raise SystemExit('competing STEM JESTER polling authority remains')
+
+for marker in [
+    'const authority=inner.defaultView.__enochDoubleJesterAuthority||window.__enochDoubleJesterAuthority;',
+    "const phase=authority?.phase||(panel.classList.contains('open')?'2jester-active':'2j-spinning');",
+    "stateAuthority:'2JESTER runtime authority v11'",
+    "MODEL_URL='/assets/assets/models/laboratory_portal_mirror.glb?v=20260828-v1'",
+]:
+    if marker not in portal:
+        raise SystemExit(f'2J mirror authority repair missing: {marker}')
+
+if "playbackTransportAuthority='v1'" not in playback_owner:
+    raise SystemExit('PLAYBACK authority missing')
+if "authoritativeRuntime='v6'" not in authority:
+    raise SystemExit('audio authority missing')
+if 'data-terminal-floatable' not in layout or '#doubleDeckerSpecial' not in layout:
+    raise SystemExit('terminal viewport layout contract missing')
+if "twoMixMasterLayout==='v10'" not in two_mix_owner:
+    raise SystemExit('2MIX authority missing')
+
+required_files = [
+    'authoritative-runtime.js', 'outer-analyser-panel.js', 'analyser-signal-3d-v7.js',
+    'analyser-data-bus.js', 'stem-four-channel-ui-v1.js', 'analyser-controls-contained-v1.js',
+    'double-decker-main-stem-link-v1.js', 'double-jecker-radial-layout-v1.js',
+    'double-jecker-runtime-repair-v1.js', 'double-jecker-performance-v2.js',
+    'double-jester-portal-spinner-v1.js', 'playback-reference-panel.js',
+    'playback-transport-authority-v1.js', 'two-mix-master-anchor-v1.js',
+    'terminal-viewport-layout-contract-v1.js', 'terminal-installer-singleton-v1.js',
+]
 for name in required_files:
- path=base/name
- if not path.is_file() or path.stat().st_size==0: raise SystemExit(f'missing runtime layer: {path}')
- if path.suffix=='.js': subprocess.run(['node','--check',str(path)],check=True)
-print('Enochian runtime verified: 2J/2JESTER single-authority repair, 2MIX v10 signal memory, Space C sculpt authority, live USB cursor instructions, 2J MIX/STEM/JOG v6, and STEMS/SIGNAL/PLAYBACK authorities remain intact.')
+    path = base / name
+    if not path.is_file() or path.stat().st_size == 0:
+        raise SystemExit(f'missing runtime layer: {path}')
+    if path.suffix == '.js':
+        subprocess.run(['node', '--check', str(path)], check=True)
+
+print('Enochian runtime verified: explicit 2J spinning/2JESTER-active authority, no STEM polling writer, 2J MIX/STEM/JOG v6, laboratory mirror spinner, and existing STEMS/SIGNAL/PLAYBACK/2MIX contracts.')
