@@ -1,0 +1,35 @@
+name: Generate LUBIAK ember ground
+
+on:
+  push:
+    paths:
+      - '.lubiak-ember-ground-trigger'
+      - 'scripts/generate-lubiak-ember-ground.mjs'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Generate ember ground GLB
+        run: node scripts/generate-lubiak-ember-ground.mjs assets/models/lubiak_ember_ground.glb
+      - name: Commit generated GLB
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/models/lubiak_ember_ground.glb
+          if git diff --cached --quiet; then
+            echo 'No GLB change.'
+            exit 0
+          fi
+          git commit -m 'Add modular ember ground for LUBIAK'
+          git pull --rebase origin main
+          git push origin HEAD:main
