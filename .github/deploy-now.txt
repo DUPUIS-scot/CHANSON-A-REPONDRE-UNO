@@ -1,4 +1,4 @@
-deploy-request: 2026-08-29T23:12:00+01:00
+deploy-request: 2026-08-29T23:59:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy LUBIAK djinn third-person player and DA NOBLE Y2K broom now that both ultralight GLB assets are present
+reason: upgrade deployed SILMARI'LLION Megapole GLB to embedded PBR v8 maps and switch viewer to PBR-preserving runtime
