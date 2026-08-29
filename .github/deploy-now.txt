@@ -1,4 +1,4 @@
-deploy-request: 2026-08-29T01:50:00+01:00
+deploy-request: 2026-08-29T01:57:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy MOD MIDI LIVE ON OFF routing control for USB MIDI to ENOCHIAN 3D SIGNAL
+reason: restore complete Enochian late-authority loader including required 2MIX authorities while retaining floating USB MIDI and MOD MIDI LIVE
