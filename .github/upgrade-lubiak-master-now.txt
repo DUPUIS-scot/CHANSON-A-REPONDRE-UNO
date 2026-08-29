@@ -1,4 +1,5 @@
-upgrade-request: 2026-08-30T00:00:00+01:00
+upgrade-request: 2026-08-30T00:42:00+01:00
 source: chat
 target: assets/models/LUBIAK_master_optimized.glb
-texture-set: palace-place-pbr-v1
+texture-set: palace-place-pbr-v2
+status: trigger
