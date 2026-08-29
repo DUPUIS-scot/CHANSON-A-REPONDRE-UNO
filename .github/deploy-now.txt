@@ -1,4 +1,4 @@
-deploy-request: 2026-08-29T21:14:00+01:00
+deploy-request: 2026-08-29T21:51:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: normalize raw AI Megapole GLB world scale, repair camera framing/navigation bounds, and refresh Megapole runtime
+reason: place optimized Scene 11 GLB inside LUBIAK circus interior and show YouTube video 24rx276VBk0 on the circus screen
