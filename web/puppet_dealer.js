@@ -3,7 +3,7 @@ import { GLTFLoader } from './vendor/GLTFLoader.js';
 
 const dealers = new Map();
 const pendingMounts = new Map();
-const MODEL_REVISION = 'play-jester-rigged-20260829-torso-lock-v2';
+const MODEL_REVISION = 'play-jester-rigged-20260829-rig-anchor-bust-v3';
 const MODEL_URLS = [
   new URL('assets/assets/models/play_jester_rigged.glb', document.baseURI).href,
 ];
@@ -13,10 +13,6 @@ const RECEIVE_DURATION = 1850;
 
 const clamp01 = (value) => Math.max(0, Math.min(1, value));
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
-const smooth = (value) => {
-  const t = clamp01(value);
-  return t * t * (3 - 2 * t);
-};
 const smoother = (value) => {
   const t = clamp01(value);
   return t * t * t * (t * (t * 6 - 15) + 10);
@@ -121,8 +117,8 @@ class JesterDealer {
     this.scene.add(this.modelRoot);
 
     this.camera = new THREE.PerspectiveCamera(36, 1, 0.1, 100);
-    this.camera.position.set(0, 2.8, 9.4);
-    this.camera.lookAt(0, 2.8, 0);
+    this.camera.position.set(0, 0.5, 7.5);
+    this.camera.lookAt(0, 0.5, 0);
 
     this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: quality !== 'low', powerPreference: 'high-performance' });
     this.renderer.setClearColor(0x000000, 0);
@@ -131,7 +127,7 @@ class JesterDealer {
     this.renderer.toneMappingExposure = 1.08;
     this.renderer.domElement.id = `${host.id}-canvas`;
     this.renderer.domElement.dataset.renderer = 'three.js-gltf';
-    this.renderer.domElement.style.cssText = 'display:block;width:100%;height:100%;pointer-events:auto;touch-action:none;cursor:grab';
+    this.renderer.domElement.style.cssText = 'position:absolute;inset:0;display:block;width:100%;height:100%;pointer-events:auto;touch-action:none;cursor:grab';
     host.insertBefore(this.renderer.domElement, this.status);
 
     this.card = makeCard();
@@ -168,6 +164,8 @@ class JesterDealer {
       'L_Upperarm', 'L_Forearm', 'L_Hand',
       'R_Upperarm', 'R_Forearm', 'R_Hand',
     ];
+    this.bones.clear();
+    this.restQuaternions.clear();
     for (const name of names) {
       const bone = this.model.getObjectByName(name);
       if (bone) {
@@ -177,6 +175,102 @@ class JesterDealer {
     }
     this.host.dataset.rigged = String(this.bones.size >= 6);
     this.host.dataset.rigControls = 'head,torso,left-arm,left-hand,right-arm,right-hand';
+  }
+
+  boneWorld(name) {
+    const bone = this.bones.get(name);
+    if (!bone) return null;
+    this.puppetRoot.updateMatrixWorld(true);
+    return bone.getWorldPosition(new THREE.Vector3());
+  }
+
+  fitModelFromRig() {
+    const head = this.boneWorld('Head');
+    const spine = this.boneWorld('Spine02');
+    if (!head || !spine) {
+      const bounds = new THREE.Box3().setFromObject(this.model);
+      const size = bounds.getSize(new THREE.Vector3());
+      const center = bounds.getCenter(new THREE.Vector3());
+      this.model.position.sub(center);
+      this.model.scale.setScalar(4.0 / Math.max(size.y, 0.001));
+      this.host.dataset.rigAnchor = 'fallback-bounds';
+      return;
+    }
+
+    const rawSpan = Math.max(head.distanceTo(spine), 0.001);
+    const targetSpan = 1.55;
+    const scale = clamp(targetSpan / rawSpan, 0.01, 100);
+    this.model.scale.multiplyScalar(scale);
+    this.puppetRoot.updateMatrixWorld(true);
+
+    const scaledHead = this.boneWorld('Head');
+    const scaledSpine = this.boneWorld('Spine02');
+    if (!scaledHead || !scaledSpine) return;
+
+    const headLocal = this.puppetRoot.worldToLocal(scaledHead.clone());
+    const spineLocal = this.puppetRoot.worldToLocal(scaledSpine.clone());
+    const midLocal = headLocal.clone().lerp(spineLocal, 0.5);
+    const desiredMid = new THREE.Vector3(0, 0.45, 0);
+    this.model.position.add(desiredMid.sub(midLocal));
+    this.puppetRoot.updateMatrixWorld(true);
+
+    const finalHead = this.boneWorld('Head');
+    const finalSpine = this.boneWorld('Spine02');
+    if (finalHead && finalSpine && finalHead.y < finalSpine.y) {
+      this.model.rotation.z += Math.PI;
+      this.puppetRoot.updateMatrixWorld(true);
+      const flippedHead = this.boneWorld('Head');
+      const flippedSpine = this.boneWorld('Spine02');
+      if (flippedHead && flippedSpine) {
+        const fh = this.puppetRoot.worldToLocal(flippedHead.clone());
+        const fs = this.puppetRoot.worldToLocal(flippedSpine.clone());
+        const fm = fh.clone().lerp(fs, 0.5);
+        this.model.position.add(new THREE.Vector3(0, 0.45, 0).sub(fm));
+      }
+      this.host.dataset.rigOrientation = 'auto-upright';
+    } else {
+      this.host.dataset.rigOrientation = 'upright';
+    }
+    this.host.dataset.rigAnchor = 'Head+Spine02';
+    this.host.dataset.rigSpan = rawSpan.toFixed(4);
+  }
+
+  updateBustFrame() {
+    const head = this.boneWorld('Head');
+    const spine = this.boneWorld('Spine02');
+    if (!head || !spine) return false;
+
+    const rigSpan = Math.max(head.distanceTo(spine), 0.25);
+    const up = head.clone().sub(spine).normalize();
+    const target = spine.clone().lerp(head, 0.62).addScaledVector(up, rigSpan * 0.08);
+
+    const leftShoulder = this.boneWorld('L_Upperarm');
+    const rightShoulder = this.boneWorld('R_Upperarm');
+    const leftHand = this.boneWorld('L_Hand');
+    const rightHand = this.boneWorld('R_Hand');
+    const shoulderSpan = leftShoulder && rightShoulder ? leftShoulder.distanceTo(rightShoulder) : rigSpan * 1.4;
+    const handSpan = leftHand && rightHand ? leftHand.distanceTo(rightHand) : shoulderSpan;
+
+    const width = Math.max(this.host.clientWidth, 1);
+    const height = Math.max(this.host.clientHeight, 1);
+    const narrow = width < 720;
+    this.camera.fov = narrow ? 39 : 34;
+    const visibleHeight = rigSpan * (narrow ? 2.55 : 2.35);
+    const visibleWidth = Math.max(shoulderSpan * 1.45, handSpan * 1.12, rigSpan * 2.0);
+    const vfov = THREE.MathUtils.degToRad(this.camera.fov);
+    const hfov = 2 * Math.atan(Math.tan(vfov / 2) * (width / height));
+    const distanceForHeight = (visibleHeight * 0.5) / Math.max(Math.tan(vfov / 2), 0.001);
+    const distanceForWidth = (visibleWidth * 0.5) / Math.max(Math.tan(hfov / 2), 0.001);
+    const distance = Math.max(distanceForHeight, distanceForWidth, 4.2);
+
+    const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(this.puppetRoot.getWorldQuaternion(new THREE.Quaternion()));
+    this.camera.position.copy(target).addScaledVector(forward, distance);
+    this.camera.lookAt(target);
+    this.camera.updateProjectionMatrix();
+    this.camera.updateMatrixWorld(true);
+    this.host.dataset.puppetFit = 'rig-anchored-bust';
+    this.host.dataset.puppetCameraDistance = distance.toFixed(3);
+    return true;
   }
 
   loadModel(index) {
@@ -194,15 +288,11 @@ class JesterDealer {
           object.frustumCulled = false;
         }
       });
-      const bounds = new THREE.Box3().setFromObject(this.model);
-      const size = bounds.getSize(new THREE.Vector3());
-      const center = bounds.getCenter(new THREE.Vector3());
-      this.model.position.sub(center);
-      this.model.scale.setScalar(4.4 / Math.max(size.y, 0.001));
       this.puppetRoot.add(this.model);
-      this.cacheRig();
       this.puppetRoot.updateMatrixWorld(true);
-      this.puppetBounds = new THREE.Box3().setFromObject(this.puppetRoot);
+      this.cacheRig();
+      this.fitModelFromRig();
+      this.puppetRoot.updateMatrixWorld(true);
       this.resize();
       if (gltf.animations.length) {
         this.mixer = new THREE.AnimationMixer(this.model);
@@ -237,34 +327,12 @@ class JesterDealer {
     const height = Math.max(this.host.clientHeight, 1);
     this.renderer.setSize(width, height, false);
     this.camera.aspect = width / height;
-    const narrow = width < 720;
-    this.camera.fov = narrow ? 41 : 35;
-    this.modelRoot.scale.setScalar(narrow ? 0.96 : 1.02);
     this.modelRoot.position.set(0, 0, 0);
-
-    if (this.puppetBounds && !this.puppetBounds.isEmpty()) {
-      const size = this.puppetBounds.getSize(new THREE.Vector3());
-      const targetCenter = new THREE.Vector3(
-        0,
-        this.puppetBounds.min.y + size.y * (narrow ? 0.72 : 0.71),
-        this.puppetBounds.getCenter(new THREE.Vector3()).z,
-      );
-      const visibleHeight = Math.max(size.y * (narrow ? 0.56 : 0.54), 0.5);
-      const visibleWidth = Math.max(size.x * (narrow ? 0.98 : 0.94), 0.5);
-      const verticalFov = THREE.MathUtils.degToRad(this.camera.fov);
-      const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * this.camera.aspect);
-      const distanceForHeight = (visibleHeight * 0.5) / Math.max(Math.tan(verticalFov / 2), 0.001);
-      const distanceForWidth = (visibleWidth * 0.5) / Math.max(Math.tan(horizontalFov / 2), 0.001);
-      const distance = Math.max(distanceForHeight, distanceForWidth, 4.4) * (narrow ? 1.03 : 1.0);
-      this.camera.position.set(targetCenter.x, targetCenter.y, targetCenter.z + distance);
-      this.camera.lookAt(targetCenter);
-      this.camera.updateProjectionMatrix();
-      this.camera.updateMatrixWorld(true);
-      this.host.dataset.puppetFit = 'torso-and-up-locked';
-      this.host.dataset.puppetCameraDistance = distance.toFixed(3);
-    } else {
-      this.camera.position.set(0, 3.0, narrow ? 9.8 : 9.2);
-      this.camera.lookAt(0, 3.0, 0);
+    this.modelRoot.scale.setScalar(1);
+    if (!this.updateBustFrame()) {
+      this.camera.fov = width < 720 ? 39 : 34;
+      this.camera.position.set(0, 0.5, width < 720 ? 8.0 : 7.3);
+      this.camera.lookAt(0, 0.5, 0);
       this.camera.updateProjectionMatrix();
     }
   }
@@ -415,7 +483,6 @@ class JesterDealer {
   }
 
   updateDeal(t) {
-    const reach = segment(t, 0.04, 0.28);
     const lift = segment(t, 0.18, 0.42);
     const hold = segment(t, 0.34, 0.52);
     const flip = segment(t, 0.56, 0.74);
@@ -423,10 +490,7 @@ class JesterDealer {
     const settle = segment(t, 0.88, 1.0);
 
     this.applyRigPose(t, false);
-    this.setGesturePose({
-      ry: lerp(0, 0.03, hold),
-      squash: pulse(t, 0.10, 0.32, 0.52),
-    });
+    this.setGesturePose({ ry: lerp(0, 0.03, hold), squash: pulse(t, 0.10, 0.32, 0.52) });
 
     const deck = new THREE.Vector3(-2.65, -1.25, 3.0);
     const hand = this.handWorldPosition(true);
@@ -434,17 +498,13 @@ class JesterDealer {
     const player = new THREE.Vector3(0.15, -2.95, 3.05);
 
     if (t < 0.38) {
-      const p1 = new THREE.Vector3(-2.0, -0.65, 2.85);
-      const p2 = new THREE.Vector3(-1.1, 0.10, 2.75);
-      cubicBezier(this.card.position, deck, p1, p2, present, t / 0.38);
+      cubicBezier(this.card.position, deck, new THREE.Vector3(-2.0, -0.65, 2.85), new THREE.Vector3(-1.1, 0.10, 2.75), present, t / 0.38);
       this.setPhase('drawCategoryVerso');
     } else if (t < 0.78) {
       this.card.position.lerp(present, 0.32);
       this.setPhase(flip < 0.02 ? 'holdCategoryVerso' : 'flipToRecto');
     } else {
-      const p1 = present.clone().add(new THREE.Vector3(0.25, -0.2, 0.05));
-      const p2 = new THREE.Vector3(0.15, -1.65, 3.10);
-      cubicBezier(this.card.position, present, p1, p2, player, pass);
+      cubicBezier(this.card.position, present, present.clone().add(new THREE.Vector3(0.25, -0.2, 0.05)), new THREE.Vector3(0.15, -1.65, 3.10), player, pass);
       this.setPhase('presentRecto');
     }
 
@@ -452,20 +512,16 @@ class JesterDealer {
     this.card.rotation.y = lerp(Math.PI, 0, flip);
     this.card.rotation.z = Math.sin(t * Math.PI) * -0.06;
     this.card.scale.setScalar(1.06 + pulse(t, 0.38, 0.60, 0.82) * 0.23);
-
     if (t > 0.965) this.card.visible = false;
     if (settle > 0.98) this.resetGesture();
   }
 
   updateReceive(t) {
-    const catchPhase = segment(t, 0.04, 0.34);
     const lift = segment(t, 0.25, 0.58);
     const throwPhase = segment(t, 0.58, 0.92);
     const settle = segment(t, 0.76, 1.0);
     this.applyRigPose(t, true);
-    this.setGesturePose({
-      ry: lerp(0, -0.03, lift),
-    });
+    this.setGesturePose({ ry: lerp(0, -0.03, lift) });
 
     const player = new THREE.Vector3(0.15, -2.95, 3.05);
     const hand = this.handWorldPosition(false);
@@ -473,14 +529,10 @@ class JesterDealer {
     const discard = new THREE.Vector3(2.65, -1.20, 2.75);
 
     if (t < 0.58) {
-      const p1 = new THREE.Vector3(0.2, -1.5, 3.0);
-      const p2 = new THREE.Vector3(0.55, -0.1, 2.85);
-      cubicBezier(this.card.position, player, p1, p2, catchPoint, t / 0.58);
+      cubicBezier(this.card.position, player, new THREE.Vector3(0.2, -1.5, 3.0), new THREE.Vector3(0.55, -0.1, 2.85), catchPoint, t / 0.58);
       this.setPhase('catchPlayerCard');
     } else {
-      const p1 = catchPoint.clone().add(new THREE.Vector3(0.6, 0.45, 0.15));
-      const p2 = new THREE.Vector3(2.1, 0.10, 2.9);
-      cubicBezier(this.card.position, catchPoint, p1, p2, discard, throwPhase);
+      cubicBezier(this.card.position, catchPoint, catchPoint.clone().add(new THREE.Vector3(0.6, 0.45, 0.15)), new THREE.Vector3(2.1, 0.10, 2.9), discard, throwPhase);
       this.setPhase('discardLive');
     }
 
@@ -508,12 +560,7 @@ class JesterDealer {
     this.onPointerDown = (event) => {
       if (this.animation) return;
       const rect = canvas.getBoundingClientRect();
-      this.pointer = {
-        id: event.pointerId,
-        x: event.clientX,
-        y: event.clientY,
-        part: this.chooseControl(event.clientX - rect.left, event.clientY - rect.top),
-      };
+      this.pointer = { id: event.pointerId, x: event.clientX, y: event.clientY, part: this.chooseControl(event.clientX - rect.left, event.clientY - rect.top) };
       canvas.setPointerCapture?.(event.pointerId);
       canvas.style.cursor = 'grabbing';
       this.host.dataset.userControl = this.pointer.part;
@@ -541,6 +588,7 @@ class JesterDealer {
         pose.x = clamp(pose.x + dy * 1.8, -0.90, 0.90);
       }
       this.applyRigPose();
+      this.updateBustFrame();
       this.resume();
       event.preventDefault();
     };
@@ -554,6 +602,7 @@ class JesterDealer {
     this.onDoubleClick = () => {
       for (const pose of Object.values(this.userPose)) pose.x = pose.y = pose.z = 0;
       this.applyRigPose();
+      this.updateBustFrame();
       this.host.dataset.userControl = 'reset';
       this.resume();
     };
