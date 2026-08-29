@@ -1,4 +1,4 @@
-deploy-request: 2026-08-29T10:20:00+01:00
+deploy-request: 2026-08-29T10:06:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy 2J separation plus MIDI signal-pipeline controls, compact EQ-to-FX float placement, and translucent MIDI deck
+reason: deploy replacement PLAY Jester GLB with locked torso-up framing and fixed-root gesture motion
