@@ -1,4 +1,4 @@
-deploy-request: 2026-08-29T02:14:00+01:00
+deploy-request: 2026-08-29T02:20:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy WAV spectrum-to-note transcription so audio frequencies resolve to MIDI-equivalent note regions for main 3D SIGNAL
+reason: restore permanent MIDI CONTROLLER with CONNECT USB MIDI and MIDI launcher directly under MASTER while retaining floating dual-deck MIDI and WAV note transcription
