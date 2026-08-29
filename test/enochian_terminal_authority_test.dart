@@ -79,7 +79,7 @@ void main() {
     expect(twoJ, contains('STEMS DOUBLE DECK'));
     expect(twoJ, contains("modeAuthority:'2J performance v6'"));
     expect(twoJ, isNot(contains('data-2j-mode')));
-    expect(jesterTransport, contains("const VERSION='v2'"));
+    expect(jesterTransport, contains("const VERSION='v3'"));
     expect(jesterTransport, contains('data-jester-play'));
     expect(jesterTransport, contains('data-jester-pause'));
     expect(jesterOutput, contains('MASTER JESTER'));
