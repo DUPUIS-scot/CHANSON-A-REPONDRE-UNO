@@ -13,6 +13,7 @@ import '../screens/dj_who_videos_screen.dart';
 import '../screens/enochian_terminal_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/journal_screen.dart';
+import '../screens/lubiak_screen.dart';
 import '../screens/not_found_screen.dart';
 import '../screens/play_screen.dart';
 import '../screens/rules_screen.dart';
@@ -41,6 +42,7 @@ abstract final class AppRoutes {
   static const profile = '/profile';
   static const djWhoVideos = '/djwho';
   static const enochianTerminal = '/enochian-terminal';
+  static const lubiak = '/lubiak';
   static const login = '/login';
   static const register = '/register';
   static const forgotPassword = '/forgot-password';
@@ -133,6 +135,7 @@ abstract final class AppRouter {
         path: AppRoutes.enochianTerminal,
         builder: (_, _) => const EnochianTerminalScreen(),
       ),
+      GoRoute(path: AppRoutes.lubiak, builder: (_, _) => const LubiakScreen()),
       GoRoute(
         path: AppRoutes.profile,
         builder: (_, state) => AccountScreen(
@@ -195,4 +198,3 @@ class _DeckRouteScreenState extends State<_DeckRouteScreen> {
     return NotFoundScreen(message: 'The requested deck does not exist.');
   }
 }
-
