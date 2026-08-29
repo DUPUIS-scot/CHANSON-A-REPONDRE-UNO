@@ -1,4 +1,4 @@
-deploy-request: 2026-08-29T10:18:00+01:00
+deploy-request: 2026-08-29T11:40:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy PLAY Jester torso-and-up crop correction with five-category authority unchanged
+reason: deploy focused MIDI performance deck with optional routing drawer and pipeline MIDI activation in one single-row signal path
