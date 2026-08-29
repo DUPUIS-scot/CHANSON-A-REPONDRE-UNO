@@ -1,4 +1,4 @@
-deploy-request: 2026-08-29T02:39:00+01:00
+deploy-request: 2026-08-29T02:41:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy explicit MAIN to MIDI CONTROLLER to USB MIDI to MAIN 3D SIGNAL routing with MIDI spectrum events while retaining WAV note transcription
+reason: deploy MP3 and WAV note transcription through shared MOD SCULPT and 3D GEOMETRY MOD OUTPUT to MAIN 3D SIGNAL while retaining USB MIDI routing
