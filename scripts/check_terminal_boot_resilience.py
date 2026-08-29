@@ -9,7 +9,7 @@ checks = {
     'singleton outer boot timer': 'let terminalBootTimer=null' in index and 'if(terminalBootTimer!==null&&doc===terminalBootDocument)return' in index,
     '250 ms retry cadence': '},250);' in index,
     'approximately two minute recovery': 'tries>=480' in index,
-    'installer singleton guard loaded': 'terminal-installer-singleton-v1.js?v=20260829-v21' in index,
+    'installer singleton guard loaded': 'terminal-installer-singleton-v1.js?v=20260829-v30' in index,
     'four stem singleton': "wrap('installEnochianStemFourChannelV1'" in guard,
     'double jester singleton': "wrap('installEnochianDoubleDeckerSpecialV2'" in guard,
 }

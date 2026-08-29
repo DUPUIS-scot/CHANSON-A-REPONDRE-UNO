@@ -1,4 +1,4 @@
-deploy-request: 2026-08-29T14:31:00+01:00
+deploy-request: 2026-08-29T15:00:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy continuous LINE IN live streaming waveform before recording, with live overlay preserved through loop capture
+reason: restore main PLAY authority and consolidate duplicate terminal, 2J, fullscreen, and MIDI startup runtimes

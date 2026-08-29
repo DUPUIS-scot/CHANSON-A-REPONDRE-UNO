@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const VERSION='v2';
+const VERSION='v3';
 function install(host){
  try{
   const live=host?.contentDocument,deck=live?.getElementById('deck'),d=deck?.contentDocument,w=d?.defaultView;
@@ -30,7 +30,10 @@ function install(host){
   const paint=()=>{playButton?.classList.toggle('active',state.playing);pauseButton?.classList.toggle('active',!state.playing);playButton?.setAttribute('aria-pressed',String(state.playing));pauseButton?.setAttribute('aria-pressed',String(!state.playing));mainPlay.classList.toggle('jester-main-hold',state.playing||state.mainHeld);if(state.playing||state.mainHeld){mainPlay.title='MAIN ON HOLD · 2JESTER TRANSPORT';mainPlay.setAttribute('aria-label','MAIN ON HOLD · press to return to main transport')}else{mainPlay.removeAttribute('title');mainPlay.removeAttribute('aria-label')}panel.dataset.jesterTransport=state.playing?'playing':'paused'};
   playButton?.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();void playStems()});
   pauseButton?.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();pauseStems()});
-  w.addEventListener('click',e=>{if(e.target!==mainPlay&&!mainPlay.contains(e.target))return;if(!api.state?.enabled)return;e.preventDefault();e.stopImmediatePropagation();pauseStems();state.mainHeld=false;try{void main.play()}catch(_){}paint()},{capture:true});
+  // Main PLAY always belongs to the master deck. Let its native click handler
+  // resume/create the AudioContext and start the master media element; 2JESTER
+  // only yields its independent stem transport after that command is issued.
+  w.addEventListener('click',e=>{if(e.target!==mainPlay&&!mainPlay.contains(e.target))return;if(!api.state?.enabled)return;if(state.playing)pauseStems();state.mainHeld=false;paint()});
   main.addEventListener('play',()=>{if(api.state?.enabled&&!state.playing){state.mainHeld=false;paint()}});
   main.addEventListener('pause',()=>{if(state.playing){state.mainHeld=true;paint()}});
   const watchdog=w.setInterval(()=>{if(!api.state?.enabled){if(state.playing)pauseStems();state.mainHeld=false;paint();return}if(state.playing){syncToJesterClock(false);if(!main.paused)try{main.pause()}catch(_){}}},180);

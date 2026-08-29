@@ -14,7 +14,7 @@ function install(frame){
  const onMidi=e=>{if(!allowed(e))return;const data=e.data||[],st=data[0]||0,cmd=st&0xf0,a=data[1]||0,v=data[2]||0;if(cmd===0xb0){state.lastCC=a;state.lastValue=v;if(a===1)state.mod=v/127;else if(a===11)state.expression=v/127;else if(a===74)state.brightness=v/127;else if(a===64)state.sustain=v>=64?1:0;render()}else if(cmd===0xe0){const raw=(v<<7)|a;state.bend=clamp((raw-8192)/8192,-1,1);render()}};
  let access=null;const bind=()=>{for(const input of access?.inputs?.values?.()||[]){if(input.__enochExpressiveV2)return;try{input.addEventListener('midimessage',onMidi)}catch(_){}input.__enochExpressiveV2=true}};
  const connect=async()=>{if(!navigator.requestMIDIAccess)return;try{access=await navigator.requestMIDIAccess();bind();access.addEventListener?.('statechange',bind)}catch(_){}};
- const timer=w.setInterval(()=>{ensureUI();hookBus();bind()},500);connect();hookBus();ensureUI();render();d.documentElement.dataset.midiExpressiveSignal='v2';w.__enochMidiExpressiveSignal={version:'v2',state,connect,destroy:()=>w.clearInterval(timer)};return true;
+ const timer=w.setInterval(()=>{ensureUI();hookBus();bind()},500);hookBus();ensureUI();render();d.documentElement.dataset.midiExpressiveSignal='v2';w.__enochMidiExpressiveSignal={version:'v2',state,connect,destroy:()=>w.clearInterval(timer)};return true;
 }
 let timer=0;window.installEnochianMidiExpressiveSignalV1=frame=>{if(install(frame)){if(timer)clearInterval(timer);timer=0;return true}if(!timer){let n=0;timer=setInterval(()=>{if(install(frame)||++n>120){clearInterval(timer);timer=0}},100)}return false};
 })();

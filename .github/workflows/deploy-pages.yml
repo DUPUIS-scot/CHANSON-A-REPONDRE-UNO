@@ -118,7 +118,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          grep -q "live-copy.html?v=20260827-cache-repair-v4" build/web/enochian-terminal/index.html
+          grep -q "live-copy.html?v=20260829-runtime-consolidation-v1" build/web/enochian-terminal/index.html
           grep -q "stem-four-channel-ui-v1.js?v=20260827-v4" build/web/enochian-terminal/index.html
           grep -q "analyser-signal-3d-v7.js?v=20260827-mesh-track-wave-v8" build/web/enochian-terminal/index.html
           grep -q "double-decker-main-stem-link-v1.js?v=20260827-stem-jecker-v10" build/web/enochian-terminal/index.html
@@ -127,6 +127,7 @@ jobs:
           test -s build/web/enochian-test/analyser-controls-contained-v1.js
           node --check build/web/enochian-test/stem-four-channel-ui-v1.js
           node --check build/web/enochian-test/double-jecker-runtime-repair-v1.js
+          python3 scripts/check_terminal_runtime_consolidation.py
 
       - name: Prepare Safari-compatible laboratory video
         shell: bash
