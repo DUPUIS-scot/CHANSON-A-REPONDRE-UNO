@@ -52,3 +52,24 @@
     return false;
   };
 })();
+
+(()=>{
+  const load=src=>new Promise((resolve,reject)=>{
+    const existing=[...document.scripts].find(s=>s.src&&s.src.includes(src.split('?')[0]));
+    if(existing){if(existing.dataset.enochReady==='1')return resolve(existing);existing.addEventListener('load',()=>resolve(existing),{once:true});existing.addEventListener('error',reject,{once:true});return}
+    const s=document.createElement('script');s.src=src;s.async=false;s.addEventListener('load',()=>{s.dataset.enochReady='1';resolve(s)},{once:true});s.addEventListener('error',reject,{once:true});document.head.appendChild(s);
+  });
+  const boot=async()=>{
+    const frame=document.getElementById('terminalLive');if(!frame)return;
+    try{
+      await load('/enochian-test/track-midi-reference-v1.js?v=20260829-mp3-midi-v1');
+      await load('/enochian-test/midi-audio-pairing-v1.js?v=20260829-mp3-midi-v1');
+      window.installEnochianTrackMidiReferenceV1?.(frame);
+      window.installEnochianMidiAudioPairingV1?.(frame);
+      const run=()=>{window.installEnochianTrackMidiReferenceV1?.(frame);window.installEnochianMidiAudioPairingV1?.(frame)};
+      frame.addEventListener('load',run);
+      setTimeout(run,250);
+    }catch(_){ }
+  };
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else queueMicrotask(boot);
+})();
