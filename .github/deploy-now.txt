@@ -1,5 +1,4 @@
-deploy-request: 2026-08-29T10:20:00+01:00
+deploy-request: 2026-08-29T11:25:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy final 2J and 2JESTER release contract with one mode authority, independent PLAY/PAUSE, corrected layout, naming, mirror lighting, and repaired CI
-source-commit: 23bc52250d1df6d002f216258498494cbb66495d
+reason: deploy the minimal ENOCHIAN MIDI CONTROLLER redesign and four track-specific 3D SIGNAL MIDI reference scores
