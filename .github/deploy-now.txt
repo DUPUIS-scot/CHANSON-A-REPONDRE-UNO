@@ -1,4 +1,4 @@
-deploy-request: 2026-08-29T22:06:00+01:00
+deploy-request: 2026-08-29T22:07:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: guarantee Megapole visibility with unlit texture material and sphere-based camera framing
+reason: preserve Megapole lookAt camera orientation across animation frames and refresh viewer cache
