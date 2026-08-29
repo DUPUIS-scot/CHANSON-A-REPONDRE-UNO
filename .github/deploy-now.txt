@@ -1,4 +1,4 @@
-deploy-request: 2026-08-29T03:43:00+01:00
+deploy-request: 2026-08-29T03:49:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy AI Comptroller synchronized track MIDI reference feeding exact note on/off and velocity into MOD SCULPT, 3D GEOMETRY MOD OUTPUT and MAIN 3D SIGNAL
+reason: deploy PLAY JESTER torso-up card interaction with category VERSO draw, in-hand RECTO flip, live discard motion and user head/torso/arms/hands rig controls, preserving current MIDI and terminal fixes
