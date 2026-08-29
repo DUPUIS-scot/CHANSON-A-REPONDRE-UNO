@@ -14,6 +14,8 @@ const camera = new THREE.PerspectiveCamera(52, innerWidth / innerHeight, 0.03, 1
 let yaw = 0;
 let pitch = -0.04;
 let movementBounds = null;
+let environmentSize = null;
+let dragonRoot = null;
 
 let renderer;
 try {
@@ -47,6 +49,8 @@ scene.add(streetFillA);
 const streetFillB = new THREE.PointLight(0xffd09a, 66, 125, 1.35);
 streetFillB.position.set(18, 8, -28);
 scene.add(streetFillB);
+const dragonLight = new THREE.PointLight(0xff5a24, 92, 95, 1.4);
+scene.add(dragonLight);
 
 function setStatus(label, pct) {
   status.textContent = label;
@@ -102,6 +106,7 @@ function makeFallbackDistrict() {
 
   scene.add(group);
   camera.position.set(0, 3.2, 64);
+  environmentSize = new THREE.Vector3(76, 30, 130);
   movementBounds = new THREE.Box3(new THREE.Vector3(-38, 1.55, -58), new THREE.Vector3(38, 18, 72));
   finishLoad('ENTER LUBIAK · SAFE MODE');
 }
@@ -134,6 +139,7 @@ function frameLoadedEnvironment(root) {
     }
   });
 
+  environmentSize = size.clone();
   const eyeHeight = Math.max(1.7, Math.min(size.y * 0.12, 5));
   const distance = Math.max(maxDim * 0.72, size.z * 0.72, 18);
   camera.position.set(0, eyeHeight, distance);
@@ -167,7 +173,7 @@ async function getMeshoptDecoder() {
   }
 }
 
-function loadGlb(url, decoder, label) {
+function loadGlb(url, decoder, label, reportProgress = true) {
   return new Promise((resolve, reject) => {
     const loader = new GLTFLoader();
     if (decoder) loader.setMeshoptDecoder(decoder);
@@ -175,7 +181,7 @@ function loadGlb(url, decoder, label) {
       url,
       (gltf) => resolve(gltf),
       (xhr) => {
-        if (xhr.total) {
+        if (reportProgress && xhr.total) {
           const local = Math.min(99, (xhr.loaded / xhr.total) * 100);
           setStatus(label, local);
         }
@@ -183,6 +189,61 @@ function loadGlb(url, decoder, label) {
       reject,
     );
   });
+}
+
+function prepareDragon(root) {
+  root.name = 'LUBIAK_DRAGON_GUARDIAN';
+  root.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(root);
+  if (box.isEmpty()) throw new Error('Dragon GLB has empty bounds');
+
+  const size = box.getSize(new THREE.Vector3());
+  const center = box.getCenter(new THREE.Vector3());
+  const env = environmentSize || new THREE.Vector3(76, 30, 130);
+  const targetHeight = Math.max(8, Math.min(env.y * 0.46, env.z * 0.13));
+  const scale = targetHeight / Math.max(size.y, 0.001);
+
+  root.scale.setScalar(scale);
+  root.position.set(-center.x * scale, -box.min.y * scale, -env.z * 0.31);
+  root.rotation.y = Math.PI;
+  root.updateMatrixWorld(true);
+
+  root.traverse((object) => {
+    if (!object.isMesh) return;
+    object.castShadow = false;
+    object.receiveShadow = false;
+    object.frustumCulled = false;
+    object.userData.isLubiakDragonGuardian = true;
+    const materials = Array.isArray(object.material) ? object.material : [object.material];
+    for (const material of materials) {
+      if (!material) continue;
+      material.side = THREE.DoubleSide;
+      material.transparent = false;
+      material.opacity = 1;
+      material.needsUpdate = true;
+    }
+  });
+
+  dragonLight.position.set(0, targetHeight * 0.55, root.position.z + targetHeight * 0.35);
+  console.info('LUBIAK dragon guardian ready', { scale, position: root.position.toArray() });
+}
+
+async function installDragon(decoder) {
+  try {
+    setStatus('SUMMONING DRAGON GUARDIAN', 96);
+    const gltf = await loadGlb(
+      '/assets/assets/models/lubiak_dragon_guardian_web.glb?v=20260829-dragon-gate-v1',
+      decoder,
+      'SUMMONING DRAGON GUARDIAN',
+      false,
+    );
+    dragonRoot = gltf.scene;
+    prepareDragon(dragonRoot);
+    scene.add(dragonRoot);
+  } catch (error) {
+    dragonRoot = null;
+    console.error('LUBIAK dragon guardian failed to load.', error);
+  }
 }
 
 async function installEnvironment() {
@@ -212,6 +273,7 @@ async function installEnvironment() {
         scene.remove(root);
         throw new Error('GLB scene has invalid or empty bounds');
       }
+      await installDragon(decoder);
       finishLoad(candidate.finish);
       return;
     } catch (error) {
@@ -221,6 +283,54 @@ async function installEnvironment() {
 
   console.error('All LUBIAK GLB candidates failed; entering procedural safe mode.');
   makeFallbackDistrict();
+  await installDragon(decoder);
+}
+
+const raycaster = new THREE.Raycaster();
+const pointerNdc = new THREE.Vector2();
+const dragonGateClicks = [];
+const DRAGON_GATE_MAX_GAP = 650;
+const DRAGON_GATE_MAX_TRAVEL = 72;
+
+function pointerHitsDragon(event) {
+  if (!dragonRoot) return false;
+  const rect = renderer.domElement.getBoundingClientRect();
+  pointerNdc.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  pointerNdc.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(pointerNdc, camera);
+  return raycaster.intersectObject(dragonRoot, true).length > 0;
+}
+
+function handleDragonGatePointer(event) {
+  if (!event.shiftKey || event.button !== 0 || !pointerHitsDragon(event)) {
+    dragonGateClicks.length = 0;
+    return false;
+  }
+
+  const now = performance.now();
+  while (dragonGateClicks.length && now - dragonGateClicks[0].t > DRAGON_GATE_MAX_GAP * 2) {
+    dragonGateClicks.shift();
+  }
+
+  const first = dragonGateClicks[0];
+  if (first && Math.hypot(event.clientX - first.x, event.clientY - first.y) > DRAGON_GATE_MAX_TRAVEL) {
+    dragonGateClicks.length = 0;
+  }
+
+  dragonGateClicks.push({ t: now, x: event.clientX, y: event.clientY });
+  if (dragonGateClicks.length < 3) return true;
+
+  const a = dragonGateClicks[dragonGateClicks.length - 3];
+  const b = dragonGateClicks[dragonGateClicks.length - 2];
+  const c = dragonGateClicks[dragonGateClicks.length - 1];
+  if (b.t - a.t <= DRAGON_GATE_MAX_GAP && c.t - b.t <= DRAGON_GATE_MAX_GAP) {
+    dragonGateClicks.length = 0;
+    status.style.opacity = '1';
+    progress.style.opacity = '1';
+    setStatus('ENTERING SILMARI’LLION MEGAPOLE', 100);
+    setTimeout(() => location.assign('../megapole/'), 140);
+  }
+  return true;
 }
 
 const keys = new Set();
@@ -228,6 +338,10 @@ addEventListener('keydown', (event) => keys.add(event.key.toLowerCase()));
 addEventListener('keyup', (event) => keys.delete(event.key.toLowerCase()));
 let drag = null;
 renderer.domElement.addEventListener('pointerdown', (event) => {
+  if (handleDragonGatePointer(event)) {
+    event.preventDefault();
+    return;
+  }
   drag = { x: event.clientX, y: event.clientY };
   renderer.domElement.setPointerCapture(event.pointerId);
 });
