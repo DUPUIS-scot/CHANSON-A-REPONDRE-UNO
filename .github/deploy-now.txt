@@ -1,4 +1,4 @@
-deploy-request: 2026-08-29T11:25:00+01:00
+deploy-request: 2026-08-29T10:18:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy the minimal ENOCHIAN MIDI CONTROLLER redesign and four track-specific 3D SIGNAL MIDI reference scores
+reason: deploy PLAY Jester torso-and-up crop correction with five-category authority unchanged
