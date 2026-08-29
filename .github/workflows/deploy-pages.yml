@@ -102,6 +102,30 @@ jobs:
         run: |
           flutter build web --release --no-pub --base-href "/" --dart-define=SKIP_AUTH_FOR_DEVELOPMENT=false --dart-define=SUPABASE_URL="$SUPABASE_URL" --dart-define=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY" --dart-define=AI_BACKEND_URL="$AI_BACKEND_URL" --dart-define=TURNSTILE_SITE_KEY="$TURNSTILE_SITE_KEY" --dart-define=APP_BUILD_SHA="${{ github.sha }}"
 
+      - name: Upgrade deployed Megapole GLB to PBR
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install --user --disable-pip-version-check pillow
+          target="build/web/assets/assets/models/SILMARI_LLION_MEGAPOLE_LUBIAK.glb"
+          test -s "$target"
+          python3 scripts/upgrade_megapole_glb.py "$target"
+          test -s "$target"
+          python3 - "$target" <<'PY'
+          import json, struct, sys
+          p = sys.argv[1]
+          with open(p, 'rb') as f:
+              magic, version, total = struct.unpack('<4sII', f.read(12))
+              assert magic == b'glTF' and version == 2
+              jlen, jtype = struct.unpack('<II', f.read(8))
+              doc = json.loads(f.read(jlen).decode('utf-8').rstrip(' \t\r\n\x00'))
+          assert doc['materials'][0]['name'] == 'SILMARI_LLION_MEGAPOLE_PBR_MATERIAL'
+          assert 'emissiveTexture' in doc['materials'][0]
+          assert 'normalTexture' in doc['materials'][0]
+          assert doc['asset']['generator'].endswith('v8')
+          print('Megapole PBR deployment contract verified')
+          PY
+
       - name: Install authoritative Enochian terminal runtime
         shell: bash
         run: |
@@ -167,7 +191,10 @@ jobs:
           test -s build/web/enochian-test/live-copy.html
           test -f build/web/card_castle/card_castle.html
           test -s build/web/assets/assets/models/castle_exterior.glb
+          test -s build/web/assets/assets/models/SILMARI_LLION_MEGAPOLE_LUBIAK.glb
           test -s build/web/assets/assets/videos/bureau_screen_loop.mp4
+          grep -q "megapole-pbr-v8.js" build/web/megapole/index.html
+          node --check build/web/megapole/megapole-pbr-v8.js
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
