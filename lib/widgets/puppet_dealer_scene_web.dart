@@ -13,7 +13,7 @@ import 'puppet_dealer_controller.dart';
 external void _createDealer(String id, String quality);
 
 @JS('puppetDealerDeal')
-external void _dealCard(String id, String imageUrl);
+external void _dealCard(String id, String versoUrl, String rectoUrl);
 
 @JS('puppetDealerReceive')
 external void _receiveCard(String id, String imageUrl);
@@ -53,19 +53,32 @@ class _PuppetDealerSceneState extends State<PuppetDealerScene> {
       return html.DivElement()
         ..id = _elementId
         ..className = 'dealer-3d-container'
-        ..setAttribute('aria-label', 'Live 3D jester card dealer')
+        ..setAttribute(
+          'aria-label',
+          'Live 3D jester dealer. Drag head, torso, arms and hands to pose.',
+        )
         ..style.width = '100%'
         ..style.height = '100%'
         ..style.position = 'relative'
-        ..style.pointerEvents = 'none'
+        ..style.pointerEvents = 'auto'
         ..style.overflow = 'hidden'
         ..style.backgroundColor = 'transparent';
     });
     widget.controller.attach(
-      deal: (path) => _animate(path, receive: false),
-      receive: (path) => _animate(path, receive: true),
+      deal: (versoPath, rectoPath) => _animateDeal(versoPath, rectoPath),
+      receive: (path) => _animateReceive(path),
       setQuality: (quality) => _setDealerQuality(_elementId, quality.name),
     );
+  }
+
+  String _assetUrl(String imagePath) {
+    if (imagePath.startsWith('data:')) return imagePath;
+    return Uri(
+      pathSegments: [
+        if (imagePath.startsWith('assets/')) 'assets',
+        ...imagePath.split('/'),
+      ],
+    ).toString().replaceAll('%', '%25');
   }
 
   void _mountDealer(int _) {
@@ -76,22 +89,14 @@ class _PuppetDealerSceneState extends State<PuppetDealerScene> {
     });
   }
 
-  Future<void> _animate(String imagePath, {required bool receive}) async {
-    final imageUrl = imagePath.startsWith('data:')
-        ? imagePath
-        : Uri(
-            pathSegments: [
-              if (imagePath.startsWith('assets/')) 'assets',
-              ...imagePath.split('/'),
-            ],
-          ).toString().replaceAll('%', '%25');
-    if (receive) {
-      _receiveCard(_elementId, imageUrl);
-      await Future<void>.delayed(const Duration(milliseconds: 1650));
-    } else {
-      _dealCard(_elementId, imageUrl);
-      await Future<void>.delayed(const Duration(milliseconds: 2350));
-    }
+  Future<void> _animateDeal(String versoPath, String rectoPath) async {
+    _dealCard(_elementId, _assetUrl(versoPath), _assetUrl(rectoPath));
+    await Future<void>.delayed(const Duration(milliseconds: 3300));
+  }
+
+  Future<void> _animateReceive(String imagePath) async {
+    _receiveCard(_elementId, _assetUrl(imagePath));
+    await Future<void>.delayed(const Duration(milliseconds: 1850));
   }
 
   @override
@@ -110,14 +115,12 @@ class _PuppetDealerSceneState extends State<PuppetDealerScene> {
   }
 
   @override
-  Widget build(BuildContext context) => IgnorePointer(
-    child: SizedBox.expand(
-      key: const Key('puppet-stage-slot'),
-      child: ClipRect(
-        child: HtmlElementView(
-          viewType: _viewType,
-          onPlatformViewCreated: _mountDealer,
-        ),
+  Widget build(BuildContext context) => SizedBox.expand(
+    key: const Key('puppet-stage-slot'),
+    child: ClipRect(
+      child: HtmlElementView(
+        viewType: _viewType,
+        onPlatformViewCreated: _mountDealer,
       ),
     ),
   );
