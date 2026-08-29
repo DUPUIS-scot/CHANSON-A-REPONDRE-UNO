@@ -1,4 +1,4 @@
-deploy-request: 2026-08-29T20:23:00+01:00
+deploy-request: 2026-08-29T19:59:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: substantially brighten LUBIAK night scene with ambient, moon and warm street/circus fill lighting
+reason: load lubiak_dragon_guardian_web.glb in LUBIAK and scope SHIFT + triple-click Megapole entrance to the dragon guardian mesh only
