@@ -1,4 +1,4 @@
-deploy-request: 2026-08-29T11:15:00+01:00
+deploy-request: 2026-08-29T11:36:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy unified MIDI device/channel routing and shared LINE IN terminal audio path through EQ FX 3D SIGNAL MASTER
+reason: final deploy hardened MIDI device channel note CC bend sustain routing and shared LINE IN path through EQ FX 3D SIGNAL MASTER
