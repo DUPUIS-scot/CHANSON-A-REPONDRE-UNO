@@ -1,4 +1,4 @@
-deploy-request: 2026-08-29T22:07:00+01:00
+deploy-request: 2026-08-29T23:04:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: preserve Megapole lookAt camera orientation across animation frames and refresh viewer cache
+reason: apply SILMARI'LLION Megapole PBR texture treatment, emissive glyphs, cyan fountains and warm cavern relighting
