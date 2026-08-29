@@ -161,7 +161,10 @@ class _PlayScreenState extends State<PlayScreen> {
     final activeDeck = decks.activeDeck;
     setState(() => dealerBusy = true);
     try {
-      await puppetController.dealToPlayer(_cardVersoForDeck(activeDeck, card));
+      await puppetController.dealToPlayer(
+        _cardVersoForDeck(activeDeck, card),
+        card.imagePath,
+      );
       if (mounted) await game.draw();
     } finally {
       if (mounted) setState(() => dealerBusy = false);
