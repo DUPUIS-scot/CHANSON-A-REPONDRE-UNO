@@ -47,16 +47,21 @@ class HomeScreen extends StatelessWidget {
   }
 
   Future<void> _openEnochianTerminal(BuildContext context) async {
-    // On web, go straight from the home control to the standalone terminal.
-    // This avoids building the intermediate Flutter terminal route for one
-    // frame before that route redirects to the same document, which is
-    // particularly noticeable in iOS Safari.
     if (kIsWeb) {
       final uri = Uri.base.resolve('/enochian-terminal/');
       final opened = await launchUrl(uri, webOnlyWindowName: '_self');
       if (opened) return;
     }
     if (context.mounted) context.go(AppRoutes.enochianTerminal);
+  }
+
+  Future<void> _openLubiak(BuildContext context) async {
+    if (kIsWeb) {
+      final uri = Uri.base.resolve('/lubiak/');
+      final opened = await launchUrl(uri, webOnlyWindowName: '_self');
+      if (opened) return;
+    }
+    if (context.mounted) context.go(AppRoutes.lubiak);
   }
 
   @override
@@ -98,6 +103,7 @@ class HomeScreen extends StatelessWidget {
                   onNavigate: (route) => context.go(route),
                   onCastle: () => _openCastleFromHome(context),
                   onEnochianTerminal: () => _openEnochianTerminal(context),
+                  onLubiak: () => _openLubiak(context),
                 ),
               ),
             ),
@@ -135,11 +141,13 @@ class _ArtisticHome extends StatelessWidget {
     required this.onNavigate,
     required this.onCastle,
     required this.onEnochianTerminal,
+    required this.onLubiak,
   });
 
   final ValueChanged<String> onNavigate;
   final VoidCallback onCastle;
   final VoidCallback onEnochianTerminal;
+  final VoidCallback onLubiak;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
@@ -177,6 +185,12 @@ class _ArtisticHome extends StatelessWidget {
                       icon: Icons.castle_rounded,
                       label: 'CASTLE',
                       onTap: onCastle,
+                    ),
+                    _PrimaryEntrance(
+                      icon: Icons.explore_rounded,
+                      label: 'LUBIAK',
+                      tooltip: 'Freak Street · June 2001',
+                      onTap: onLubiak,
                     ),
                     _PrimaryEntrance(
                       icon: Icons.graphic_eq_rounded,
