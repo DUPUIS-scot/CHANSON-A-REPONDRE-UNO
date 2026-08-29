@@ -1,4 +1,4 @@
-deploy-request: 2026-08-29T20:31:00+01:00
+deploy-request: 2026-08-29T21:02:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: make LUBIAK big top walk-in with continuous circus interior and exit back to Freak Street
+reason: wire Megapole route to SILMARI_LLION_MEGAPOLE_LUBIAK.glb and deploy dragon-to-megapole path
