@@ -1,4 +1,4 @@
-deploy-request: 2026-08-29T19:24:00+01:00
+deploy-request: 2026-08-29T19:32:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy 45-second LUBIAK dragon guardian patrol runtime over master environment
+reason: deploy fail-safe LUBIAK master loader with lightweight and procedural recovery paths
