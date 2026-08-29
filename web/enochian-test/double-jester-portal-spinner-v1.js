@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const VERSION='v2',STORE='doubleJesterPortalSpinnerSizeV1',RATE=.82;
+  const VERSION='v3',STORE='doubleJesterPortalSpinnerSizeV1',MODE_STORE='twoJPerformanceModeV1',RATE=.82;
   const MODEL_URL='/assets/assets/models/laboratory_portal_mirror.glb?v=20260828-v1';
 
   async function mountMirror(shield,panel,inner){
@@ -22,18 +22,33 @@
       const rim=new THREE.DirectionalLight(0x24ddff,2.4);rim.position.set(-4,1,2);scene.add(rim);
       const gltf=await new GLTFLoader().loadAsync(MODEL_URL);
       if(!platter.isConnected){renderer.dispose();return}
-      const mirror=gltf.scene;mirror.name='2JESTER laboratory portal mirror';mirror.rotation.set(0,0,0);
+      const rig=new THREE.Group();rig.name='2J two-sided turntable';
+      const mirror=gltf.scene;mirror.name='2J original laboratory mirror face';mirror.rotation.set(0,0,0);
       mirror.traverse(object=>{if(object.isMesh){object.castShadow=false;object.receiveShadow=false;if(object.material){object.material.side=THREE.DoubleSide;object.material.needsUpdate=true}}});
       const bounds=new THREE.Box3().setFromObject(mirror),size=bounds.getSize(new THREE.Vector3()),center=bounds.getCenter(new THREE.Vector3()),scale=3.8/Math.max(size.x,size.y,.001);
-      mirror.scale.multiplyScalar(scale);mirror.position.set(-center.x*scale,-center.y*scale,-center.z*scale);scene.add(mirror);
+      mirror.scale.multiplyScalar(scale);mirror.position.set(-center.x*scale,-center.y*scale,-center.z*scale);rig.add(mirror);
+      const faceCanvas=document.createElement('canvas');faceCanvas.width=faceCanvas.height=512;
+      const context=faceCanvas.getContext('2d'),gradient=context.createRadialGradient(205,160,20,256,256,250);
+      gradient.addColorStop(0,'#17323d');gradient.addColorStop(.42,'#071319');gradient.addColorStop(.76,'#020507');gradient.addColorStop(1,'#000');
+      context.fillStyle=gradient;context.fillRect(0,0,512,512);
+      context.strokeStyle='#34e2f4';context.lineWidth=10;context.beginPath();context.arc(256,256,226,0,Math.PI*2);context.stroke();
+      context.strokeStyle='#f2a33c';context.lineWidth=6;context.beginPath();context.arc(256,256,204,0,Math.PI*2);context.stroke();
+      context.fillStyle='#061116';context.beginPath();context.arc(256,256,94,0,Math.PI*2);context.fill();context.strokeStyle='#efaa48';context.lineWidth=5;context.stroke();
+      context.textAlign='center';context.fillStyle='#f4ae48';context.font='700 34px monospace';context.fillText('2J',256,245);
+      context.fillStyle='#66efff';context.font='700 20px monospace';context.fillText('STEMS DOUBLE DECK',256,282);
+      context.fillStyle='#d8edf1';context.font='700 17px monospace';context.fillText('MIX   STEM   JOG',256,352);
+      const faceTexture=new THREE.CanvasTexture(faceCanvas);faceTexture.colorSpace=THREE.SRGBColorSpace;
+      const deckFace=new THREE.Mesh(new THREE.CircleGeometry(1.72,96),new THREE.MeshStandardMaterial({name:'2J STEMS DOUBLE DECK face',map:faceTexture,metalness:.58,roughness:.34,side:THREE.FrontSide}));
+      deckFace.name='2J STEMS DOUBLE DECK face';deckFace.rotation.y=Math.PI;deckFace.position.z=-.20;rig.add(deckFace);scene.add(rig);
       let disposed=false,last=performance.now();
       const resize=()=>{const rect=platter.getBoundingClientRect(),width=Math.max(1,Math.round(rect.width)),height=Math.max(1,Math.round(rect.height));renderer.setSize(width,height,false);camera.aspect=width/height;camera.updateProjectionMatrix()};
       const resizeObserver=new ResizeObserver(resize);resizeObserver.observe(platter);resize();
-      const render=now=>{if(disposed)return;const delta=Math.min(.05,Math.max(0,(now-last)/1000));last=now;if(!panel.classList.contains('open'))mirror.rotation.y=(mirror.rotation.y+RATE*delta)%(Math.PI*2);renderer.render(scene,camera);requestAnimationFrame(render)};
+      let faceState='';
+      const render=now=>{if(disposed)return;const delta=Math.min(.05,Math.max(0,(now-last)/1000));last=now;const open=panel.classList.contains('open');if(!open)rig.rotation.y=(rig.rotation.y+RATE*delta)%(Math.PI*2);const deckActive=!open&&Math.cos(rig.rotation.y)<-.72,nextFace=deckActive?'double-deck':open?'paused':'mirror';if(nextFace!==faceState){faceState=nextFace;shield.dataset.twoJFace=nextFace;shield.classList.toggle('djs-deck-face-active',deckActive);shield.querySelectorAll('.djs-mode-button').forEach(button=>{button.disabled=!deckActive;button.tabIndex=deckActive?0:-1})}renderer.render(scene,camera);requestAnimationFrame(render)};
       requestAnimationFrame(render);platter.dataset.mirrorReady='true';
-      inner.defaultView.__enochDoubleJesterMirrorGlb={version:VERSION,url:MODEL_URL,mirror,renderer};
+      inner.defaultView.__enochDoubleJesterMirrorGlb={version:VERSION,url:MODEL_URL,rig,mirror,deckFace,renderer};
       inner.defaultView.addEventListener('pagehide',()=>{disposed=true;resizeObserver.disconnect();renderer.dispose()},{once:true});
-    }catch(error){platter.dataset.mirrorError='true';console.warn('2JESTER mirror GLB unavailable',error)}
+    }catch(error){platter.dataset.mirrorError='true';console.warn('2J mirror GLB unavailable',error)}
   }
 
   function install(host){
@@ -42,12 +57,20 @@
       const panel=document.getElementById('doubleDeckerSpecial'),shield=document.getElementById('doubleJeckerShield');
       if(!inner||!panel||!shield)return false;if(shield.dataset.portalSpinner===VERSION)return true;
       shield.dataset.portalSpinner=VERSION;panel.classList.add('jester-mirror-format');
+      let modes=shield.querySelector('.djs-mode-strip');if(!modes){modes=document.createElement('div');modes.className='djs-mode-strip';modes.setAttribute('aria-label','2J performance mode');modes.innerHTML='<button type="button" class="djs-mode-button" data-2j-mode="mix">MIX</button><button type="button" class="djs-mode-button" data-2j-mode="stem">STEM</button><button type="button" class="djs-mode-button" data-2j-mode="jog">JOG</button>';shield.appendChild(modes)}
+      let activeMode=localStorage.getItem(MODE_STORE)||'stem';const selectMode=(mode,announce=true)=>{activeMode=['mix','stem','jog'].includes(mode)?mode:'stem';shield.dataset.twoJMode=activeMode;modes.querySelectorAll('[data-2j-mode]').forEach(button=>{const active=button.getAttribute('data-2j-mode')===activeMode;button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active))});try{localStorage.setItem(MODE_STORE,activeMode)}catch(_){}if(announce)inner.defaultView.dispatchEvent(new CustomEvent('2j-mode-change',{detail:{mode:activeMode,source:'2J'}}))};
+      modes.addEventListener('pointerdown',event=>event.stopPropagation());modes.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();const button=event.target.closest('[data-2j-mode]');if(button&&!button.disabled)selectMode(button.getAttribute('data-2j-mode'))});selectMode(activeMode,false);
       let style=document.getElementById('double-jester-portal-spinner-v1-style');style?.remove();style=document.createElement('style');style.id='double-jester-portal-spinner-v1-style';
       style.textContent=`
         #doubleJeckerShield{width:var(--j2-size,150px)!important;height:var(--j2-size,150px)!important;min-width:112px!important;min-height:112px!important;max-width:min(38vmin,360px)!important;max-height:min(38vmin,360px)!important;overflow:visible!important}
         #doubleJeckerShield .djs-platter{overflow:hidden!important;background:radial-gradient(circle,#10232b 0 42%,#030608 72%,#000 100%)!important;animation:none!important;transform:none!important}
         #doubleJeckerShield .djs-mirror-canvas{position:absolute;inset:0;width:100%!important;height:100%!important;display:block;pointer-events:none}
         #doubleJeckerShield.panel-open .djs-mirror-canvas{filter:saturate(.76) brightness(.78)}
+        #doubleJeckerShield .djs-mode-strip{position:absolute;z-index:8;left:17%;right:17%;bottom:19%;display:flex;justify-content:center;gap:3px;opacity:0;transform:scale(.86);pointer-events:none;transition:opacity .1s linear,transform .1s linear}
+        #doubleJeckerShield.djs-deck-face-active .djs-mode-strip{opacity:1;transform:scale(1);pointer-events:auto}
+        #doubleJeckerShield .djs-mode-button{min-width:0;padding:3px 5px;border:1px solid #2b8592;border-radius:8px;background:#041015e8;color:#9eeeff;font:700 7px/1 monospace;letter-spacing:.03em;cursor:pointer}
+        #doubleJeckerShield .djs-mode-button.active{border-color:#f2a33c;color:#ffc369;box-shadow:0 0 7px #f2a33c99}
+        #doubleJeckerShield:not(.djs-deck-face-active) .djs-center{pointer-events:auto}
         #doubleDeckerSpecial.jecker-radial.jester-mirror-format{background:radial-gradient(ellipse at 31% 21%,rgba(197,235,245,.19) 0 2%,transparent 8%),radial-gradient(ellipse at 69% 75%,rgba(51,123,147,.26) 0 5%,transparent 22%),radial-gradient(circle at 50% 50%,#132d38 0 22%,#071116 38%,#020608 63%,#151716 64%,#020405 74%,#010203 100%)!important;box-shadow:inset 0 0 0 2px #8bc4d1,inset 0 0 0 7px #10191d,inset 0 0 0 10px #b98939,inset 0 0 52px #000,0 18px 56px #000d!important}
         #doubleJeckerShield .djs-resize-handle{position:absolute;right:-4px;bottom:-4px;width:18px;height:18px;border:1px solid #f3b542;border-radius:50%;z-index:30;background:#061018;box-shadow:0 0 8px #28dcff,0 0 12px #ff9b24;cursor:nwse-resize;touch-action:none}
         #doubleJeckerShield .djs-resize-handle::before,#doubleJeckerShield .djs-resize-handle::after{content:'';position:absolute;background:#f3b542;opacity:.9}#doubleJeckerShield .djs-resize-handle::before{width:8px;height:1px;left:4px;top:8px}#doubleJeckerShield .djs-resize-handle::after{width:1px;height:8px;left:8px;top:4px}
@@ -61,9 +84,10 @@
       const finish=event=>{if(!resize||resize.id!==event.pointerId)return;const size=shield.getBoundingClientRect().width;resize=null;try{localStorage.setItem(STORE,String(Math.round(size)));handle.releasePointerCapture(event.pointerId)}catch(_){}};
       handle.addEventListener('pointerup',finish);handle.addEventListener('pointercancel',finish);
       const onResize=()=>{const size=shield.getBoundingClientRect().width;if(size>clamp(size))shield.style.setProperty('--j2-size',`${clamp(size)}px`)};window.addEventListener('resize',onResize);
-      inner.defaultView.__enochDoubleJesterPortalSpinner={version:VERSION,rate:RATE,secondsPerTurn:Math.PI*2/RATE,modelUrl:MODEL_URL,shield};return true;
+      inner.defaultView.__enochDoubleJesterPortalSpinner={version:VERSION,rate:RATE,secondsPerTurn:Math.PI*2/RATE,modelUrl:MODEL_URL,faces:['mirror','double-deck'],get mode(){return shield.dataset.twoJMode},shield};return true;
     }catch(_){return false}
   }
-  window.installEnochianDoubleJesterPortalSpinnerV2=host=>{let n=0,t=setInterval(()=>{if(install(host)||++n>240)clearInterval(t)},50);return install(host)};
-  window.installEnochianDoubleJesterPortalSpinnerV1=window.installEnochianDoubleJesterPortalSpinnerV2;
+  window.installEnochianDoubleJesterPortalSpinnerV3=host=>{let n=0,t=setInterval(()=>{if(install(host)||++n>240)clearInterval(t)},50);return install(host)};
+  window.installEnochianDoubleJesterPortalSpinnerV2=window.installEnochianDoubleJesterPortalSpinnerV3;
+  window.installEnochianDoubleJesterPortalSpinnerV1=window.installEnochianDoubleJesterPortalSpinnerV3;
 })();

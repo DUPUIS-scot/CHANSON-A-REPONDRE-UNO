@@ -23,6 +23,8 @@ void main() {
         .readAsStringSync();
     final polish = File('web/enochian-test/enochian-terminal-polish-v1.js')
         .readAsStringSync();
+    final twoJ = File('web/enochian-test/double-jester-portal-spinner-v1.js')
+        .readAsStringSync();
 
     expect(liveCopy, contains('window.__enochStemRuntimeApi='));
     expect(liveCopy, contains("version:'v1'"));
@@ -36,7 +38,7 @@ void main() {
     expect(terminal,
         contains('authoritative-runtime.js?v=20260825-runtime-api-v2'));
     expect(terminal,
-        contains('double-decker-main-stem-link-v1.js?v=20260828-stem-jester-v12'));
+        contains('double-decker-main-stem-link-v1.js?v=20260829-stem-jester-v13'));
     expect(terminal,
         contains('double-jecker-radial-layout-v1.js?v=20260827-jester-radial-v10'));
     expect(terminal,
@@ -67,6 +69,11 @@ void main() {
     expect(polish, contains("VERSION='20260827-polish-v3'"));
     expect(polish, isNot(contains('const coords={A:{vocals:[30,17]')));
     expect(polish, isNot(contains('JECKER_STORE=')));
+    expect(twoJ, contains("const VERSION='v3'"));
+    expect(twoJ, contains("faces:['mirror','double-deck']"));
+    expect(twoJ, contains('STEMS DOUBLE DECK'));
+    expect(twoJ, contains('data-2j-mode="mix"'));
+    expect(twoJ, contains("source:'2J'"));
 
     expect(terminal, contains('installEnochianUiRepairsV1'));
     expect(terminal, contains('installEnochianAnalyserControlsContainedV1'));
