@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from '../vendor/GLTFLoader.js';
+import { MeshoptDecoder } from '../vendor/meshopt_decoder.module.js';
 
 const host = document.querySelector('#stage');
 const bar = document.querySelector('#bar');
@@ -85,12 +86,9 @@ function frameLoadedEnvironment(root) {
   const center = box.getCenter(new THREE.Vector3());
   const maxDim = Math.max(size.x, size.y, size.z);
 
-  // Keep the imported GLB topology/transforms intact; only move the scene as one unit.
   root.position.sub(center);
   root.updateMatrixWorld(true);
 
-  // Generated/photogrammetric surfaces are frequently one-sided. Show both sides
-  // rather than mistaking back faces for missing/exploded geometry.
   root.traverse((object) => {
     if (!object.isMesh) return;
     object.frustumCulled = false;
@@ -106,8 +104,6 @@ function frameLoadedEnvironment(root) {
     }
   });
 
-  // Start outside the complete bounds instead of using the old hard-coded point,
-  // which could place the camera inside the imported mesh cloud.
   const eyeHeight = Math.max(1.7, Math.min(size.y * 0.12, 5.0));
   const distance = Math.max(maxDim * 0.72, size.z * 0.72, 18);
   camera.position.set(0, eyeHeight, distance);
@@ -127,8 +123,10 @@ function frameLoadedEnvironment(root) {
   return true;
 }
 
-const modelUrl = '../assets/assets/models/LUBIAK_master_optimized.glb';
-new GLTFLoader().load(
+const modelUrl = '/assets/assets/models/LUBIAK_master_optimized.glb?v=20260829-master-runtime-v2';
+const loader = new GLTFLoader();
+loader.setMeshoptDecoder(MeshoptDecoder);
+loader.load(
   modelUrl,
   (gltf) => {
     const root = gltf.scene;
@@ -139,13 +137,13 @@ new GLTFLoader().load(
       makeFallbackDistrict();
       return;
     }
-    finishLoad('ENTER LUBIAK · RECOVERED VIEW');
+    finishLoad('ENTER LUBIAK');
   },
   (xhr) => {
     if (xhr.total) bar.style.width = `${Math.min(99, (xhr.loaded / xhr.total) * 100)}%`;
   },
   (error) => {
-    console.warn('LUBIAK master GLB unavailable; using lightweight district fallback.', error);
+    console.error('LUBIAK master GLB failed to load; using lightweight district fallback.', error);
     makeFallbackDistrict();
   },
 );
