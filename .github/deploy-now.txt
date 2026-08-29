@@ -1,4 +1,4 @@
-deploy-request: 2026-08-29T13:15:00+01:00
+deploy-request: 2026-08-29T13:22:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy stabilized PLAY Jester animation with conservative bone rotations while preserving card verso flip recto preview and dealer state machine
+reason: deploy adaptive Windows/browser LINE IN device discovery, current selection preservation, and hot-plug refresh
