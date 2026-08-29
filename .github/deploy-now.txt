@@ -1,4 +1,4 @@
-deploy-request: 2026-08-29T12:35:00+01:00
+deploy-request: 2026-08-29T13:01:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy explicit 2J / 2JESTER authority, remove STEM polling conflict, verify performance v6 and mirror path
+reason: deploy one PRIVATE I/O launcher under MAIN for MIDI + LINE IN with one shared password/session gate
