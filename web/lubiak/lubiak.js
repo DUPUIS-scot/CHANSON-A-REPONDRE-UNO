@@ -31,6 +31,25 @@ let transitionLockUntil = 0;
 const circusGate = new THREE.Vector3(12, 2, -9);
 const exteriorReturn = { position: new THREE.Vector3(), yaw: 0, pitch: 0 };
 
+let playerRoot = null;
+let playerVisual = null;
+let broomRoot = null;
+let playerReady = false;
+let playerMode = 'walk';
+let playerVelocity = new THREE.Vector3();
+let playerHeading = Math.PI;
+let playerBaseY = 0;
+let followYaw = 0;
+let followPitch = -0.12;
+let followDistance = 6.6;
+let walkPhase = 0;
+let walkBlend = 0;
+let mountTransition = 0;
+let playerBoneCache = null;
+const playerGateClicks = [];
+const PLAYER_GATE_MAX_GAP = 650;
+const PLAYER_GATE_MAX_TRAVEL = 72;
+
 let renderer;
 try {
   renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -86,6 +105,7 @@ function setExteriorVisibility(visible) {
   if (exteriorRoot) exteriorRoot.visible = visible;
   if (fallbackRoot) fallbackRoot.visible = visible;
   if (dragonRoot) dragonRoot.visible = visible;
+  if (playerRoot) playerRoot.visible = visible;
   moon.visible = visible;
   moonFill.visible = visible;
   circus.visible = visible;
@@ -213,7 +233,7 @@ async function installCircusSet() {
       showStatus('LOADING CIRCUS STAGE', 0);
       const decoder = await getMeshoptDecoder();
       const gltf = await loadGlb(
-        '/assets/assets/models/lubiak_scene11_web_ultralight.glb?v=20260829-circus-scene11-v1',
+        '/assets/assets/models/lubiak_scene11_web_ultralight.glb?v=20260829-djinn-player-v1',
         decoder,
         'LOADING CIRCUS STAGE',
         true,
@@ -238,10 +258,6 @@ async function installCircusSet() {
       });
       makeCircusInterior().add(root);
       circusSetRoot = root;
-      console.info('LUBIAK Scene 11 installed inside circus', {
-        bounds: box.getSize(new THREE.Vector3()).toArray(),
-        position: root.position.toArray(),
-      });
       if (worldMode === 'circus') showStatus('CIRCUS STAGE READY', 850);
       return root;
     } catch (error) {
@@ -259,21 +275,27 @@ async function installCircusSet() {
 function enterCircus() {
   if (worldMode !== 'exterior' || performance.now() < transitionLockUntil) return;
   makeCircusInterior();
-  exteriorReturn.position.copy(camera.position);
-  exteriorReturn.yaw = yaw;
-  exteriorReturn.pitch = pitch;
+  exteriorReturn.position.copy(playerReady ? playerRoot.position : camera.position);
+  exteriorReturn.yaw = playerReady ? followYaw : yaw;
+  exteriorReturn.pitch = playerReady ? followPitch : pitch;
 
   worldMode = 'circus';
   transitionLockUntil = performance.now() + 1400;
   setExteriorVisibility(false);
   circusInterior.visible = true;
+  if (playerRoot) playerRoot.visible = true;
   scene.background = new THREE.Color(0x160b08);
   scene.fog = new THREE.FogExp2(0x1e0d09, 0.012);
   renderer.toneMappingExposure = 1.45;
-  camera.position.set(0, 2.1, 14.5);
-  yaw = 0;
-  pitch = -0.02;
-  movementBounds = new THREE.Box3(new THREE.Vector3(-19, 1.55, -19), new THREE.Vector3(19, 8, 22.5));
+  if (playerReady) {
+    playerRoot.position.set(0, 0, 14.5);
+    playerBaseY = 0;
+  } else {
+    camera.position.set(0, 2.1, 14.5);
+    yaw = 0;
+    pitch = -0.02;
+  }
+  movementBounds = new THREE.Box3(new THREE.Vector3(-19, 0, -19), new THREE.Vector3(19, 8, 22.5));
   setCircusMediaVisible(true);
   installCircusSet();
   showStatus('INSIDE LUBIAK CIRCUS', 1100);
@@ -289,12 +311,19 @@ function exitCircus() {
   scene.background = exteriorBackground.clone();
   scene.fog = new THREE.FogExp2(exteriorFogColor, 0.0024);
   renderer.toneMappingExposure = 1.55;
-  camera.position.copy(exteriorReturn.position);
-  yaw = exteriorReturn.yaw;
-  pitch = exteriorReturn.pitch;
+  if (playerReady) {
+    playerRoot.position.copy(exteriorReturn.position);
+    playerBaseY = playerRoot.position.y;
+    followYaw = exteriorReturn.yaw;
+    followPitch = exteriorReturn.pitch;
+  } else {
+    camera.position.copy(exteriorReturn.position);
+    yaw = exteriorReturn.yaw;
+    pitch = exteriorReturn.pitch;
+  }
   const env = environmentSize || new THREE.Vector3(76, 30, 130);
   movementBounds = new THREE.Box3(
-    new THREE.Vector3(-env.x * 0.7, 1.55, -env.z * 0.7),
+    new THREE.Vector3(-env.x * 0.7, 0, -env.z * 0.7),
     new THREE.Vector3(env.x * 0.7, Math.max(18, env.y * 1.15), env.z * 0.9),
   );
   showStatus('BACK TO FREAK STREET', 900);
@@ -302,12 +331,13 @@ function exitCircus() {
 
 function updateCircusTransition() {
   if (performance.now() < transitionLockUntil) return;
+  const p = playerReady ? playerRoot.position : camera.position;
   if (worldMode === 'exterior') {
-    const dx = camera.position.x - circusGate.x;
-    const dz = camera.position.z - circusGate.z;
+    const dx = p.x - circusGate.x;
+    const dz = p.z - circusGate.z;
     const distance = Math.hypot(dx, dz);
-    if (distance < 11 && camera.position.y < 9) enterCircus();
-  } else if (camera.position.z > 21.2) {
+    if (distance < 11 && p.y < 9) enterCircus();
+  } else if (p.z > 21.2) {
     exitCircus();
   }
 }
@@ -357,7 +387,7 @@ function makeFallbackDistrict() {
   environmentSize = new THREE.Vector3(76, 30, 130);
   circus.position.set(12, 12, -20);
   circusGate.set(12, 2, -8.5);
-  movementBounds = new THREE.Box3(new THREE.Vector3(-38, 1.55, -58), new THREE.Vector3(38, 18, 72));
+  movementBounds = new THREE.Box3(new THREE.Vector3(-38, 0, -58), new THREE.Vector3(38, 18, 72));
   makeCircusInterior();
   finishLoad('ENTER LUBIAK · SAFE MODE');
 }
@@ -401,7 +431,7 @@ function frameLoadedEnvironment(root) {
   pitch = -0.035;
 
   movementBounds = new THREE.Box3(
-    new THREE.Vector3(-size.x * 0.7, 1.55, -size.z * 0.7),
+    new THREE.Vector3(-size.x * 0.7, 0, -size.z * 0.7),
     new THREE.Vector3(size.x * 0.7, Math.max(18, size.y * 1.15), size.z * 0.9),
   );
   circus.position.set(size.x * 0.08, Math.max(7, size.y * 0.25), -size.z * 0.08);
@@ -444,7 +474,7 @@ function prepareDragon(root) {
 
 async function installDragon(decoder) {
   try {
-    const gltf = await loadGlb('/assets/assets/models/lubiak_dragon_guardian_web.glb?v=20260829-dragon-anim-v1', decoder, 'SUMMONING DRAGON GUARDIAN', false);
+    const gltf = await loadGlb('/assets/assets/models/lubiak_dragon_guardian_web.glb?v=20260829-djinn-player-v1', decoder, 'SUMMONING DRAGON GUARDIAN', false);
     dragonRoot = gltf.scene;
     prepareDragon(dragonRoot);
     scene.add(dragonRoot);
@@ -459,9 +489,6 @@ async function installDragon(decoder) {
         action.enabled = true;
         action.play();
       }
-      console.info('LUBIAK dragon animation active', gltf.animations.map((clip) => ({ name: clip.name || 'unnamed', duration: clip.duration })));
-    } else {
-      console.warn('LUBIAK dragon guardian GLB contains no animation clips.');
     }
   } catch (error) {
     dragonRoot = null;
@@ -470,12 +497,107 @@ async function installDragon(decoder) {
   }
 }
 
+function findBone(root, patterns) {
+  let hit = null;
+  root.traverse((object) => {
+    if (hit || !object.isBone) return;
+    const name = (object.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (patterns.some((pattern) => name.includes(pattern))) hit = object;
+  });
+  return hit;
+}
+
+function cachePlayerBones() {
+  if (!playerVisual) return null;
+  playerBoneCache = {
+    hips: findBone(playerVisual, ['hips', 'pelvis']),
+    chest: findBone(playerVisual, ['upperchest', 'chest', 'spine2', 'spine02', 'spine1']),
+    leftLeg: findBone(playerVisual, ['leftupleg', 'leftthigh', 'thighl', 'upperlegl']),
+    rightLeg: findBone(playerVisual, ['rightupleg', 'rightthigh', 'thighr', 'upperlegr']),
+    leftArm: findBone(playerVisual, ['leftarm', 'leftupperarm', 'upperarml']),
+    rightArm: findBone(playerVisual, ['rightarm', 'rightupperarm', 'upperarmr']),
+  };
+  return playerBoneCache;
+}
+
+function attachBroomToShoulder() {
+  if (!playerVisual || !broomRoot) return;
+  const bones = playerBoneCache || cachePlayerBones();
+  const shoulderSocket = new THREE.Group();
+  shoulderSocket.name = 'DA_NOBLE_Y2K_SHOULDER_SOCKET';
+  (bones?.chest || playerVisual).add(shoulderSocket);
+  shoulderSocket.position.set(0.18, 0.12, -0.08);
+  shoulderSocket.rotation.set(-0.16, -0.18, -0.42);
+  shoulderSocket.add(broomRoot);
+
+  broomRoot.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(broomRoot);
+  const size = box.getSize(new THREE.Vector3());
+  const longest = Math.max(size.x, size.y, size.z, 0.001);
+  broomRoot.scale.setScalar(2.15 / longest);
+  broomRoot.rotation.set(0, Math.PI * 0.5, 0.08);
+  broomRoot.position.set(-0.82, 0.06, -0.08);
+}
+
+function preparePlayer(root) {
+  playerRoot = new THREE.Group();
+  playerRoot.name = 'LUBIAK_DJINN_PLAYER_ROOT';
+  playerVisual = root;
+  root.name = 'LUBIAK_DJINN_PLAYER';
+  root.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(root);
+  if (box.isEmpty()) throw new Error('Djinn GLB has empty bounds');
+  const size = box.getSize(new THREE.Vector3());
+  const center = box.getCenter(new THREE.Vector3());
+  const scale = 1.72 / Math.max(size.y, 0.001);
+  root.scale.setScalar(scale);
+  root.position.set(-center.x * scale, -box.min.y * scale, -center.z * scale);
+  root.traverse((object) => {
+    if (!object.isMesh) return;
+    object.frustumCulled = false;
+    object.userData.isLubiakPlayer = true;
+    const materials = Array.isArray(object.material) ? object.material : [object.material];
+    for (const material of materials) {
+      if (!material) continue;
+      material.side = THREE.DoubleSide;
+      material.needsUpdate = true;
+    }
+  });
+  playerRoot.add(root);
+  const env = environmentSize || new THREE.Vector3(76, 30, 130);
+  playerRoot.position.set(0, 0, Math.min(env.z * 0.34, 42));
+  playerBaseY = playerRoot.position.y;
+  playerHeading = Math.PI;
+  playerRoot.rotation.y = playerHeading;
+  scene.add(playerRoot);
+  cachePlayerBones();
+  playerReady = true;
+}
+
+async function installPlayer(decoder) {
+  try {
+    const gltf = await loadGlb('/assets/assets/models/lubiak_djinn_player_ultralight.glb?v=20260829-djinn-player-v1', decoder, 'CALLING DJINN', false);
+    preparePlayer(gltf.scene);
+    try {
+      const broomGltf = await loadGlb('/assets/assets/models/lubiak_da_noble_y2k_broom_ultralight.glb?v=20260829-djinn-player-v1', decoder, 'PREPARING DA NOBLE Y2K', false);
+      broomRoot = broomGltf.scene;
+      attachBroomToShoulder();
+    } catch (broomError) {
+      console.warn('DA NOBLE Y2K broom unavailable; player remains active without broom.', broomError);
+    }
+    showStatus('DJINN PLAYER READY', 850);
+  } catch (error) {
+    playerReady = false;
+    console.warn('Djinn player unavailable; original free-camera navigation remains active.', error);
+  }
+}
+
 async function installEnvironment() {
   setStatus('STARTING 3D ENGINE', 4);
   const decoder = await getMeshoptDecoder();
   const candidates = [
-    { url: '/assets/assets/models/LUBIAK_master_optimized.glb?v=20260829-circus-scene11-v1', label: 'LOADING LUBIAK MASTER', finish: 'ENTER LUBIAK' },
-    { url: '/assets/assets/models/LUBIAK.glb?v=20260829-circus-scene11-v1', label: 'LOADING LUBIAK FALLBACK', finish: 'ENTER LUBIAK · RECOVERY MODEL' },
+    { url: '/assets/assets/models/LUBIAK_master_optimized.glb?v=20260829-djinn-player-v1', label: 'LOADING LUBIAK MASTER', finish: 'ENTER LUBIAK' },
+    { url: '/assets/assets/models/LUBIAK.glb?v=20260829-djinn-player-v1', label: 'LOADING LUBIAK FALLBACK', finish: 'ENTER LUBIAK · RECOVERY MODEL' },
   ];
 
   for (const candidate of candidates) {
@@ -490,7 +612,7 @@ async function installEnvironment() {
         throw new Error('GLB scene has invalid or empty bounds');
       }
       exteriorRoot = root;
-      await installDragon(decoder);
+      await Promise.all([installDragon(decoder), installPlayer(decoder)]);
       finishLoad(candidate.finish);
       return;
     } catch (error) {
@@ -499,8 +621,61 @@ async function installEnvironment() {
   }
 
   makeFallbackDistrict();
-  await installDragon(decoder);
+  await Promise.all([installDragon(decoder), installPlayer(decoder)]);
 }
+
+const joystick = document.createElement('div');
+joystick.id = 'lubiak-sphere-control';
+joystick.innerHTML = '<div class="sphere-shell" aria-hidden="true"><div class="sphere-knob"></div></div><span>MOVE</span>';
+joystick.setAttribute('role', 'application');
+joystick.setAttribute('aria-label', 'LUBIAK spherical movement control');
+document.body.appendChild(joystick);
+const joystickStyle = document.createElement('style');
+joystickStyle.textContent = `
+#lubiak-sphere-control{position:fixed;left:22px;bottom:20px;width:118px;height:136px;z-index:60;display:grid;place-items:center;touch-action:none;user-select:none;color:#ffe2bd;font:700 10px/1 system-ui;letter-spacing:.18em;text-shadow:0 1px 4px #0008;opacity:.94}
+#lubiak-sphere-control .sphere-shell{position:relative;width:104px;height:104px;border-radius:50%;border:1px solid #f6c28b88;background:radial-gradient(circle at 32% 27%,#fff7 0 4%,#efad6d55 5% 17%,#6d3018bb 48%,#190a06ee 100%);box-shadow:inset -15px -18px 28px #000a,inset 9px 10px 22px #ffb76b2a,0 8px 28px #000a}
+#lubiak-sphere-control .sphere-shell:after{content:'';position:absolute;inset:10px;border-radius:50%;border:1px solid #ffd5a72b;box-shadow:inset 0 0 18px #ffb0671f}
+#lubiak-sphere-control .sphere-knob{position:absolute;left:50%;top:50%;width:38px;height:38px;border-radius:50%;transform:translate(-50%,-50%);background:radial-gradient(circle at 35% 28%,#fff8,#f2ae68 24%,#7c3415 66%,#210b04);box-shadow:0 4px 12px #000b,inset -5px -6px 8px #0008;border:1px solid #ffd7a1aa;will-change:transform}
+#lubiak-sphere-control span{position:absolute;bottom:2px;opacity:.78}
+@media (max-width:600px){#lubiak-sphere-control{left:12px;bottom:10px;transform:scale(.88);transform-origin:left bottom}}
+`;
+document.head.appendChild(joystickStyle);
+
+const joystickVector = new THREE.Vector2();
+let joystickPointer = null;
+function updateJoystick(event) {
+  const shell = joystick.querySelector('.sphere-shell');
+  const knob = joystick.querySelector('.sphere-knob');
+  const rect = shell.getBoundingClientRect();
+  const radius = rect.width * 0.34;
+  let x = event.clientX - (rect.left + rect.width / 2);
+  let y = event.clientY - (rect.top + rect.height / 2);
+  const length = Math.hypot(x, y);
+  if (length > radius) {
+    x *= radius / length;
+    y *= radius / length;
+  }
+  joystickVector.set(x / radius, -y / radius);
+  knob.style.transform = `translate(calc(-50% + ${x}px),calc(-50% + ${y}px))`;
+}
+
+joystick.addEventListener('pointerdown', (event) => {
+  joystickPointer = event.pointerId;
+  joystick.setPointerCapture(event.pointerId);
+  updateJoystick(event);
+  event.preventDefault();
+});
+joystick.addEventListener('pointermove', (event) => {
+  if (event.pointerId === joystickPointer) updateJoystick(event);
+});
+function releaseJoystick(event) {
+  if (event.pointerId !== joystickPointer) return;
+  joystickPointer = null;
+  joystickVector.set(0, 0);
+  joystick.querySelector('.sphere-knob').style.transform = 'translate(-50%,-50%)';
+}
+joystick.addEventListener('pointerup', releaseJoystick);
+joystick.addEventListener('pointercancel', releaseJoystick);
 
 const raycaster = new THREE.Raycaster();
 const pointerNdc = new THREE.Vector2();
@@ -515,6 +690,44 @@ function pointerHitsDragon(event) {
   pointerNdc.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
   raycaster.setFromCamera(pointerNdc, camera);
   return raycaster.intersectObject(dragonRoot, true).length > 0;
+}
+
+function pointerHitsPlayer(event) {
+  if (!playerReady || !playerRoot) return false;
+  const rect = renderer.domElement.getBoundingClientRect();
+  pointerNdc.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  pointerNdc.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(pointerNdc, camera);
+  return raycaster.intersectObject(playerRoot, true).length > 0;
+}
+
+function beginMountTransition() {
+  if (!playerReady || playerMode !== 'walk') return;
+  playerMode = 'mounting';
+  mountTransition = 0;
+  playerVelocity.set(0, 0, 0);
+  showStatus('DA NOBLE Y2K · LIFT OFF', 1100);
+}
+
+function handlePlayerGatePointer(event) {
+  if (!event.shiftKey || event.button !== 0 || !pointerHitsPlayer(event)) {
+    playerGateClicks.length = 0;
+    return false;
+  }
+  const now = performance.now();
+  while (playerGateClicks.length && now - playerGateClicks[0].t > PLAYER_GATE_MAX_GAP * 2) playerGateClicks.shift();
+  const first = playerGateClicks[0];
+  if (first && Math.hypot(event.clientX - first.x, event.clientY - first.y) > PLAYER_GATE_MAX_TRAVEL) playerGateClicks.length = 0;
+  playerGateClicks.push({ t: now, x: event.clientX, y: event.clientY });
+  if (playerGateClicks.length < 3) return true;
+  const a = playerGateClicks[playerGateClicks.length - 3];
+  const b = playerGateClicks[playerGateClicks.length - 2];
+  const c = playerGateClicks[playerGateClicks.length - 1];
+  if (b.t - a.t <= PLAYER_GATE_MAX_GAP && c.t - b.t <= PLAYER_GATE_MAX_GAP) {
+    playerGateClicks.length = 0;
+    beginMountTransition();
+  }
+  return true;
 }
 
 function handleDragonGatePointer(event) {
@@ -544,7 +757,7 @@ addEventListener('keydown', (event) => keys.add(event.key.toLowerCase()));
 addEventListener('keyup', (event) => keys.delete(event.key.toLowerCase()));
 let drag = null;
 renderer.domElement.addEventListener('pointerdown', (event) => {
-  if (handleDragonGatePointer(event)) {
+  if (handlePlayerGatePointer(event) || handleDragonGatePointer(event)) {
     event.preventDefault();
     return;
   }
@@ -553,23 +766,120 @@ renderer.domElement.addEventListener('pointerdown', (event) => {
 });
 renderer.domElement.addEventListener('pointermove', (event) => {
   if (!drag) return;
-  yaw -= (event.clientX - drag.x) * 0.0042;
-  pitch -= (event.clientY - drag.y) * 0.0032;
-  pitch = THREE.MathUtils.clamp(pitch, -0.78, 0.62);
+  if (playerReady) {
+    followYaw -= (event.clientX - drag.x) * 0.0042;
+    followPitch -= (event.clientY - drag.y) * 0.0032;
+    followPitch = THREE.MathUtils.clamp(followPitch, -0.58, 0.38);
+  } else {
+    yaw -= (event.clientX - drag.x) * 0.0042;
+    pitch -= (event.clientY - drag.y) * 0.0032;
+    pitch = THREE.MathUtils.clamp(pitch, -0.78, 0.62);
+  }
   drag = { x: event.clientX, y: event.clientY };
 });
 renderer.domElement.addEventListener('pointerup', () => { drag = null; });
 renderer.domElement.addEventListener('pointercancel', () => { drag = null; });
 renderer.domElement.addEventListener('wheel', (event) => {
-  const forward = new THREE.Vector3(Math.sin(yaw), 0, -Math.cos(yaw));
-  camera.position.addScaledVector(forward, -Math.sign(event.deltaY) * 1.7);
+  if (playerReady) {
+    followDistance = THREE.MathUtils.clamp(followDistance + Math.sign(event.deltaY) * 0.55, 3.4, 11);
+  } else {
+    const forward = new THREE.Vector3(Math.sin(yaw), 0, -Math.cos(yaw));
+    camera.position.addScaledVector(forward, -Math.sign(event.deltaY) * 1.7);
+  }
 }, { passive: true });
 
-const clock = new THREE.Clock();
-function animate() {
-  requestAnimationFrame(animate);
-  const dt = Math.min(clock.getDelta(), 0.04);
-  if (dragonMixer && worldMode === 'exterior') dragonMixer.update(dt);
+function combinedMoveInput() {
+  const input = joystickVector.clone();
+  if (keys.has('w') || keys.has('arrowup')) input.y += 1;
+  if (keys.has('s') || keys.has('arrowdown')) input.y -= 1;
+  if (keys.has('a') || keys.has('arrowleft')) input.x -= 1;
+  if (keys.has('d') || keys.has('arrowright')) input.x += 1;
+  if (input.length() > 1) input.normalize();
+  return input;
+}
+
+function proceduralWalk(dt, speed01) {
+  if (!playerVisual || !playerBoneCache) return;
+  walkBlend += (speed01 - walkBlend) * Math.min(1, dt * 9);
+  walkPhase += dt * (3.4 + speed01 * 4.8);
+  const swing = Math.sin(walkPhase);
+  const bob = Math.sin(walkPhase * 2) * 0.018 * walkBlend;
+  playerVisual.position.y = bob;
+  if (playerBoneCache.hips) playerBoneCache.hips.rotation.y = swing * 0.045 * walkBlend;
+  if (playerBoneCache.leftLeg) playerBoneCache.leftLeg.rotation.x = swing * 0.32 * walkBlend;
+  if (playerBoneCache.rightLeg) playerBoneCache.rightLeg.rotation.x = -swing * 0.32 * walkBlend;
+  if (playerBoneCache.leftArm) playerBoneCache.leftArm.rotation.x = -swing * 0.16 * walkBlend;
+  if (playerBoneCache.rightArm) playerBoneCache.rightArm.rotation.x = swing * 0.07 * walkBlend;
+}
+
+function updatePlayer(dt) {
+  if (!playerReady || !playerRoot) return;
+  const input = combinedMoveInput();
+
+  if (playerMode === 'walk') {
+    const mag = THREE.MathUtils.clamp(input.length(), 0, 1);
+    if (mag > 0.05) {
+      const forward = new THREE.Vector3(Math.sin(followYaw), 0, -Math.cos(followYaw));
+      const right = new THREE.Vector3(Math.cos(followYaw), 0, Math.sin(followYaw));
+      const desired = forward.multiplyScalar(input.y).add(right.multiplyScalar(input.x));
+      if (desired.lengthSq() > 0.001) {
+        desired.normalize();
+        const targetHeading = Math.atan2(desired.x, desired.z) + Math.PI;
+        const diff = THREE.MathUtils.euclideanModulo(targetHeading - playerHeading + Math.PI, Math.PI * 2) - Math.PI;
+        playerHeading += diff * Math.min(1, dt * 8.5);
+        playerRoot.rotation.y = playerHeading;
+        playerVelocity.lerp(desired.multiplyScalar(5.0 * mag), Math.min(1, dt * 9));
+      }
+    } else {
+      playerVelocity.multiplyScalar(Math.max(0, 1 - dt * 8));
+    }
+    playerRoot.position.addScaledVector(playerVelocity, dt);
+    proceduralWalk(dt, THREE.MathUtils.clamp(playerVelocity.length() / 5, 0, 1));
+  } else if (playerMode === 'mounting') {
+    mountTransition += dt;
+    playerVelocity.multiplyScalar(Math.max(0, 1 - dt * 9));
+    const t = THREE.MathUtils.smoothstep(mountTransition, 0.25, 1.55);
+    playerRoot.position.y = playerBaseY + t * 2.6;
+    playerRoot.rotation.x = -0.13 * t;
+    if (broomRoot) broomRoot.rotation.z = 0.08 - t * 0.38;
+    if (mountTransition > 1.75) {
+      playerMode = 'flight';
+      showStatus('FLIGHT MODE', 800);
+    }
+  } else if (playerMode === 'flight') {
+    const mag = THREE.MathUtils.clamp(input.length(), 0, 1);
+    const forward = new THREE.Vector3(Math.sin(followYaw), 0, -Math.cos(followYaw));
+    const right = new THREE.Vector3(Math.cos(followYaw), 0, Math.sin(followYaw));
+    const desired = forward.multiplyScalar(input.y).add(right.multiplyScalar(input.x));
+    if (desired.lengthSq() > 0.001) desired.normalize();
+    playerVelocity.lerp(desired.multiplyScalar(9.5 * mag), Math.min(1, dt * 5));
+    playerRoot.position.addScaledVector(playerVelocity, dt);
+    playerRoot.position.y += (Math.max(playerBaseY + 2.6, 2.6) - playerRoot.position.y) * dt * 0.8;
+    if (mag > 0.05) {
+      const targetHeading = Math.atan2(desired.x, desired.z) + Math.PI;
+      const diff = THREE.MathUtils.euclideanModulo(targetHeading - playerHeading + Math.PI, Math.PI * 2) - Math.PI;
+      playerHeading += diff * Math.min(1, dt * 4.5);
+      playerRoot.rotation.y = playerHeading;
+    }
+  }
+
+  if (movementBounds) playerRoot.position.clamp(movementBounds.min, movementBounds.max);
+}
+
+function updateFollowCamera(dt) {
+  if (!playerReady || !playerRoot) return;
+  const target = playerRoot.position.clone().add(new THREE.Vector3(0, playerMode === 'flight' ? 1.45 : 1.25, 0));
+  const cp = Math.cos(followPitch);
+  const desired = target.clone().add(new THREE.Vector3(
+    -Math.sin(followYaw) * cp * followDistance,
+    Math.sin(-followPitch) * followDistance + 1.05,
+    Math.cos(followYaw) * cp * followDistance,
+  ));
+  camera.position.lerp(desired, 1 - Math.exp(-dt * 7.5));
+  camera.lookAt(target);
+}
+
+function updateFallbackCamera(dt) {
   const speed = 9.5 * dt;
   const forward = new THREE.Vector3(Math.sin(yaw), 0, -Math.cos(yaw));
   const right = new THREE.Vector3(Math.cos(yaw), 0, Math.sin(yaw));
@@ -578,10 +888,23 @@ function animate() {
   if (keys.has('a') || keys.has('arrowleft')) camera.position.addScaledVector(right, -speed);
   if (keys.has('d') || keys.has('arrowright')) camera.position.addScaledVector(right, speed);
   if (movementBounds) camera.position.clamp(movementBounds.min, movementBounds.max);
-  updateCircusTransition();
   camera.rotation.order = 'YXZ';
   camera.rotation.y = yaw;
   camera.rotation.x = pitch;
+}
+
+const clock = new THREE.Clock();
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.04);
+  if (dragonMixer && worldMode === 'exterior') dragonMixer.update(dt);
+  if (playerReady) {
+    updatePlayer(dt);
+    updateFollowCamera(dt);
+  } else {
+    updateFallbackCamera(dt);
+  }
+  updateCircusTransition();
   renderer.render(scene, camera);
 }
 animate();
