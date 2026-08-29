@@ -1,0 +1,15 @@
+(()=>{
+'use strict';
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const deckDoc=frame=>{try{return frame?.contentDocument?.getElementById('deck')?.contentDocument||null}catch(_){return null}};
+const freqToMidi=f=>69+12*Math.log2(f/440);
+const noteName=n=>{const names=['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'],m=Math.round(n);return `${names[(m%12+12)%12]}${Math.floor(m/12)-1}`};
+const sampleRateFor=w=>w?.audioCtx?.sampleRate||w?.audioContext?.sampleRate||w?.ctx?.sampleRate||w?.ac?.sampleRate||44100;
+function install(frame){const d=deckDoc(frame),w=d?.defaultView;if(!d||!w)return false;if(d.documentElement.dataset.wavNoteTranscription==='v1')return true;const bus=w.__enochAnalyserBus;if(!bus?.subscribe)return false;
+ const state={version:'v1',notes:[],frame:0,sampleRate:sampleRateFor(w),maxNotes:8,threshold:34};
+ const analyse=arr=>{if(!(arr instanceof Uint8Array)||arr.length<8)return;const sr=sampleRateFor(w),fft=arr.length*2,binHz=sr/fft,byNote=new Map();let floor=0,count=0;for(let i=1;i<Math.min(arr.length,Math.floor(5000/binHz));i++){floor+=arr[i];count++}floor=count?floor/count:0;const threshold=Math.max(state.threshold,floor+12);
+   for(let i=2;i<arr.length-2;i++){const amp=arr[i];if(amp<threshold||amp<arr[i-1]||amp<arr[i+1])continue;const hz=i*binHz;if(hz<27.5||hz>5000)continue;const midi=freqToMidi(hz);if(!Number.isFinite(midi)||midi<21||midi>108)continue;const note=Math.round(midi),cents=Math.round((midi-note)*100),prev=byNote.get(note);const item={note,name:noteName(note),hz:+hz.toFixed(2),cents,energy:amp,normalized:+clamp((amp-threshold)/(255-threshold),0,1).toFixed(3)};if(!prev||item.energy>prev.energy)byNote.set(note,item)}
+   const candidates=[...byNote.values()].sort((a,b)=>b.energy-a.energy);const chosen=[];for(const c of candidates){if(chosen.some(x=>Math.abs(x.note-c.note)===12&&x.energy>=c.energy*.72))continue;chosen.push(c);if(chosen.length>=state.maxNotes)break}chosen.sort((a,b)=>a.note-b.note);state.notes=chosen;state.sampleRate=sr;state.frame++;bus.wavNotes=chosen;bus.wavNoteFrame=(bus.wavNoteFrame||0)+1;bus.emit('notes',{source:'wav',notes:chosen,sampleRate:sr,frame:state.frame});w.dispatchEvent(new CustomEvent('enoch:wav-notes',{detail:{source:'wav',notes:chosen,sampleRate:sr,frame:state.frame}}));};
+ const unsubscribe=bus.subscribe((type,payload)=>{if(type==='frequency')analyse(payload)});state.unsubscribe=unsubscribe;state.freqToMidi=freqToMidi;state.noteName=noteName;w.__enochWavNoteTranscription=state;d.documentElement.dataset.wavNoteTranscription='v1';return true}
+let timer=0;window.installEnochianWavNoteTranscriptionV1=frame=>{if(install(frame)){clearInterval(timer);timer=0;return true}if(!timer){let n=0;timer=setInterval(()=>{if(install(frame)||++n>150){clearInterval(timer);timer=0}},100)}return false};
+})();
