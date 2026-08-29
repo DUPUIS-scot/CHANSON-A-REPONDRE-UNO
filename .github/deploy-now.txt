@@ -1,4 +1,4 @@
-deploy-request: 2026-08-29T13:12:00+01:00
+deploy-request: 2026-08-29T13:15:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy enlarged rig-anchored PLAY Jester bust with procedural idle and dealer draw flip present receive discard animation state machine
+reason: deploy stabilized PLAY Jester animation with conservative bone rotations while preserving card verso flip recto preview and dealer state machine
