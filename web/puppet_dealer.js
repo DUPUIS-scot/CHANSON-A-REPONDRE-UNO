@@ -3,7 +3,7 @@ import { GLTFLoader } from './vendor/GLTFLoader.js';
 
 const dealers = new Map();
 const pendingMounts = new Map();
-const MODEL_REVISION = 'play-jester-rigged-20260829-torso-card-flip-live';
+const MODEL_REVISION = 'play-jester-rigged-20260829-torso-lock-v2';
 const MODEL_URLS = [
   new URL('assets/assets/models/play_jester_rigged.glb', document.baseURI).href,
 ];
@@ -240,17 +240,17 @@ class JesterDealer {
     const narrow = width < 720;
     this.camera.fov = narrow ? 41 : 35;
     this.modelRoot.scale.setScalar(narrow ? 0.96 : 1.02);
-    this.modelRoot.position.set(0, narrow ? 2.35 : 1.72, 0);
+    this.modelRoot.position.set(0, 0, 0);
 
     if (this.puppetBounds && !this.puppetBounds.isEmpty()) {
       const size = this.puppetBounds.getSize(new THREE.Vector3());
       const targetCenter = new THREE.Vector3(
         0,
-        this.puppetBounds.min.y + size.y * (narrow ? 0.75 : 0.74),
+        this.puppetBounds.min.y + size.y * (narrow ? 0.72 : 0.71),
         this.puppetBounds.getCenter(new THREE.Vector3()).z,
       );
-      const visibleHeight = Math.max(size.y * (narrow ? 0.50 : 0.48), 0.5);
-      const visibleWidth = Math.max(size.x * (narrow ? 0.94 : 0.90), 0.5);
+      const visibleHeight = Math.max(size.y * (narrow ? 0.56 : 0.54), 0.5);
+      const visibleWidth = Math.max(size.x * (narrow ? 0.98 : 0.94), 0.5);
       const verticalFov = THREE.MathUtils.degToRad(this.camera.fov);
       const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * this.camera.aspect);
       const distanceForHeight = (visibleHeight * 0.5) / Math.max(Math.tan(verticalFov / 2), 0.001);
@@ -260,7 +260,7 @@ class JesterDealer {
       this.camera.lookAt(targetCenter);
       this.camera.updateProjectionMatrix();
       this.camera.updateMatrixWorld(true);
-      this.host.dataset.puppetFit = 'torso-and-up-crop';
+      this.host.dataset.puppetFit = 'torso-and-up-locked';
       this.host.dataset.puppetCameraDistance = distance.toFixed(3);
     } else {
       this.camera.position.set(0, 3.0, narrow ? 9.8 : 9.2);
@@ -341,10 +341,14 @@ class JesterDealer {
     this.gestureRoot.scale.setScalar(1);
   }
 
-  setGesturePose({ x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, squash = 0 }) {
-    this.gestureRoot.position.set(x, y, z);
-    this.gestureRoot.rotation.set(rx, ry, rz);
-    this.gestureRoot.scale.set(1 + squash * 0.04, 1 - squash * 0.05, 1 + squash * 0.03);
+  setGesturePose({ rx = 0, ry = 0, rz = 0, squash = 0 }) {
+    this.gestureRoot.position.set(0, 0, 0);
+    this.gestureRoot.rotation.set(
+      clamp(rx, -0.03, 0.03),
+      clamp(ry, -0.035, 0.035),
+      clamp(rz, -0.03, 0.03),
+    );
+    this.gestureRoot.scale.set(1 + squash * 0.02, 1 - squash * 0.02, 1 + squash * 0.015);
   }
 
   poseBone(name, auto, user) {
@@ -420,10 +424,7 @@ class JesterDealer {
 
     this.applyRigPose(t, false);
     this.setGesturePose({
-      x: lerp(0, -0.18, reach) + lerp(0, 0.18, hold),
-      y: lerp(0, 0.10, lift),
-      z: lerp(0, 0.18, hold),
-      ry: lerp(0, 0.08, hold),
+      ry: lerp(0, 0.03, hold),
       squash: pulse(t, 0.10, 0.32, 0.52),
     });
 
@@ -463,10 +464,7 @@ class JesterDealer {
     const settle = segment(t, 0.76, 1.0);
     this.applyRigPose(t, true);
     this.setGesturePose({
-      x: lerp(0, 0.18, catchPhase),
-      y: lerp(0, 0.10, lift),
-      z: lerp(0, 0.16, catchPhase),
-      ry: lerp(0, -0.10, lift),
+      ry: lerp(0, -0.03, lift),
     });
 
     const player = new THREE.Vector3(0.15, -2.95, 3.05);
