@@ -194,6 +194,9 @@ frame.addEventListener('load',()=>{
       try{if(typeof disablePitchPreservation==='function')disablePitchPreservation()}catch(_){}
       try{if(typeof applyPlaybackRate==='function')applyPlaybackRate()}catch(_){}
       await a.play();
+      // A main-deck start must recover its physical output route. Optional stem
+      // and 2JESTER engines are allowed to reroute audio only when explicitly on.
+      try{await ensureMainOutputAudible()}catch(_){}
      }else{
       a.pause();
      }
@@ -217,6 +220,15 @@ frame.addEventListener('load',()=>{
    }
    return await setStemModeCore();
   };
+  async function ensureMainOutputAudible(){
+   if(stemsEnabled)return false;
+   try{if(typeof originalEnsureAudio==='function')await originalEnsureAudio();else if(typeof ensureAudio==='function')await ensureAudio()}catch(_){}
+   try{a.muted=false;if(Number(a.volume)<=0)a.volume=.82}catch(_){}
+   try{if(typeof setMasterRoute==='function')setMasterRoute(true)}catch(_){}
+   try{if(typeof master!=='undefined'&&master){const v=Math.max(.01,Number(q('vol')?.value)||.82);master.gain.value=v}}catch(_){}
+   try{log('MASTER OUTPUT · LIVE')}catch(_){}
+   return true;
+  }
   // Stable bridge for runtime layers loaded by the parent terminal page. Keep
   // the stem implementation private while exposing the operations and state
   // that the authoritative controller must coordinate.

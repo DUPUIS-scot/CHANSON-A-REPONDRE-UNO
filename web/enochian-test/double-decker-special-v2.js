@@ -95,8 +95,9 @@
           try{
             if(on){
               if(mainWasPlaying===null)mainWasPlaying=!master.paused;
-              // Keep the muted master running as the shared beat clock. Pausing it would trigger the base engine's pause listener and silence every 2JESTER stem along with it.
-              master.muted=true;
+              // Main is always the audible authority. 2JESTER may sync to its clock
+              // but must never mute or replace the programme deck.
+              master.muted=false;
             }else{
               master.muted=false;
               const resume=mainWasPlaying;
@@ -159,9 +160,8 @@
         master.dataset.ddsPerfBound='v8';
         master.addEventListener('play',()=>{
           if(api.state?.enabled){
-            // 2JESTER keeps the master transport running but muted as its shared beat clock.
-            // Pausing it would fire the base pause handler and silence every special stem.
-            master.muted=true;
+            // Keep the master audible while 2JESTER follows its clock.
+            master.muted=false;
             setMasterHold(true);
             w.setTimeout(()=>void enforceActivePlayback(false),0);
             return;
