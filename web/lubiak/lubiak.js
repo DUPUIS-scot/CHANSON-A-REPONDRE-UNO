@@ -105,7 +105,7 @@ function makeFallbackDistrict() {
   finishLoad('ENTER LUBIAK · LIGHT MODE');
 }
 
-const modelUrl = '../assets/assets/models/LUBIAK.glb';
+const modelUrl = '../assets/assets/models/LUBIAK_master_optimized.glb';
 new GLTFLoader().load(
   modelUrl,
   (gltf) => {
@@ -118,7 +118,7 @@ new GLTFLoader().load(
     if (xhr.total) bar.style.width = `${Math.min(99, (xhr.loaded / xhr.total) * 100)}%`;
   },
   (error) => {
-    console.warn('LUBIAK GLB unavailable; using lightweight district fallback.', error);
+    console.warn('LUBIAK master GLB unavailable; using lightweight district fallback.', error);
     makeFallbackDistrict();
   },
 );
