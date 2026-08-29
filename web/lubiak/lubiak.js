@@ -7,8 +7,10 @@ const status = document.querySelector('#status');
 const progress = document.querySelector('#progress');
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0d1018);
-scene.fog = new THREE.FogExp2(0x101018, 0.0024);
+const exteriorBackground = new THREE.Color(0x0d1018);
+const exteriorFogColor = new THREE.Color(0x101018);
+scene.background = exteriorBackground.clone();
+scene.fog = new THREE.FogExp2(exteriorFogColor, 0.0024);
 
 const camera = new THREE.PerspectiveCamera(52, innerWidth / innerHeight, 0.03, 1200);
 let yaw = 0;
@@ -16,6 +18,13 @@ let pitch = -0.04;
 let movementBounds = null;
 let environmentSize = null;
 let dragonRoot = null;
+let exteriorRoot = null;
+let fallbackRoot = null;
+let circusInterior = null;
+let worldMode = 'exterior';
+let transitionLockUntil = 0;
+const circusGate = new THREE.Vector3(12, 2, -9);
+const exteriorReturn = { position: new THREE.Vector3(), yaw: 0, pitch: 0 };
 
 let renderer;
 try {
@@ -32,37 +41,181 @@ try {
   throw error;
 }
 
-scene.add(new THREE.AmbientLight(0xffead7, 1.15));
-scene.add(new THREE.HemisphereLight(0x9bb8e8, 0x6b321b, 2.35));
+const ambient = new THREE.AmbientLight(0xffead7, 1.15);
+const hemi = new THREE.HemisphereLight(0x9bb8e8, 0x6b321b, 2.35);
 const moon = new THREE.DirectionalLight(0xbfd6ff, 2.15);
 moon.position.set(-24, 48, 30);
-scene.add(moon);
 const moonFill = new THREE.DirectionalLight(0x7795c9, 1.05);
 moonFill.position.set(30, 22, -34);
-scene.add(moonFill);
 const circus = new THREE.PointLight(0xffb06a, 155, 210, 1.25);
 circus.position.set(0, 14, 0);
-scene.add(circus);
 const streetFillA = new THREE.PointLight(0xff8a45, 78, 135, 1.35);
 streetFillA.position.set(-18, 9, 30);
-scene.add(streetFillA);
 const streetFillB = new THREE.PointLight(0xffd09a, 66, 125, 1.35);
 streetFillB.position.set(18, 8, -28);
-scene.add(streetFillB);
 const dragonLight = new THREE.PointLight(0xff5a24, 92, 95, 1.4);
-scene.add(dragonLight);
+scene.add(ambient, hemi, moon, moonFill, circus, streetFillA, streetFillB, dragonLight);
 
 function setStatus(label, pct) {
   status.textContent = label;
   if (Number.isFinite(pct)) bar.style.width = `${THREE.MathUtils.clamp(pct, 0, 100)}%`;
 }
 
-function finishLoad(label = 'ENTER LUBIAK') {
+function showStatus(label, hideAfter = 1200) {
+  status.style.opacity = '1';
+  progress.style.opacity = '1';
   setStatus(label, 100);
-  setTimeout(() => {
-    status.style.opacity = '0';
-    progress.style.opacity = '0';
-  }, 900);
+  if (hideAfter > 0) setTimeout(() => {
+    if (status.textContent === label) {
+      status.style.opacity = '0';
+      progress.style.opacity = '0';
+    }
+  }, hideAfter);
+}
+
+function finishLoad(label = 'ENTER LUBIAK') {
+  showStatus(label, 900);
+}
+
+function setExteriorVisibility(visible) {
+  if (exteriorRoot) exteriorRoot.visible = visible;
+  if (fallbackRoot) fallbackRoot.visible = visible;
+  if (dragonRoot) dragonRoot.visible = visible;
+  moon.visible = visible;
+  moonFill.visible = visible;
+  circus.visible = visible;
+  streetFillA.visible = visible;
+  streetFillB.visible = visible;
+  dragonLight.visible = visible;
+}
+
+function makeCircusInterior() {
+  if (circusInterior) return circusInterior;
+
+  const group = new THREE.Group();
+  group.name = 'LUBIAK_CIRCUS_INTERIOR';
+  group.visible = false;
+
+  const cream = new THREE.MeshStandardMaterial({ color: 0xf2d5ad, roughness: 0.78, side: THREE.DoubleSide });
+  const orange = new THREE.MeshStandardMaterial({ color: 0xd55b24, roughness: 0.74, side: THREE.DoubleSide });
+  const dark = new THREE.MeshStandardMaterial({ color: 0x351712, roughness: 0.92, side: THREE.DoubleSide });
+  const gold = new THREE.MeshStandardMaterial({ color: 0xffb25f, emissive: 0x8c2e09, emissiveIntensity: 0.6, roughness: 0.55 });
+
+  const floor = new THREE.Mesh(new THREE.CircleGeometry(23, 64), dark);
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.y = 0;
+  group.add(floor);
+
+  const ring = new THREE.Mesh(new THREE.RingGeometry(6.5, 9.4, 64), orange);
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.y = 0.025;
+  group.add(ring);
+
+  const innerRing = new THREE.Mesh(new THREE.CircleGeometry(6.5, 64), cream);
+  innerRing.rotation.x = -Math.PI / 2;
+  innerRing.position.y = 0.03;
+  group.add(innerRing);
+
+  const wallRadius = 22;
+  const panels = 32;
+  for (let i = 0; i < panels; i += 1) {
+    const a = (i / panels) * Math.PI * 2;
+    const panel = new THREE.Mesh(new THREE.BoxGeometry(4.45, 9.5, 0.24), i % 2 ? orange : cream);
+    panel.position.set(Math.sin(a) * wallRadius, 4.75, Math.cos(a) * wallRadius);
+    panel.rotation.y = a;
+    group.add(panel);
+  }
+
+  const roof = new THREE.Mesh(new THREE.ConeGeometry(22.3, 17, 64, 1, true), new THREE.MeshStandardMaterial({ color: 0xc85324, roughness: 0.78, side: THREE.BackSide }));
+  roof.position.y = 17.7;
+  group.add(roof);
+
+  const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.48, 20, 18), gold);
+  mast.position.y = 10;
+  group.add(mast);
+
+  for (let i = 0; i < 12; i += 1) {
+    const a = (i / 12) * Math.PI * 2;
+    const lamp = new THREE.PointLight(i % 2 ? 0xff783d : 0xffd09c, 42, 28, 1.6);
+    lamp.position.set(Math.sin(a) * 13.5, 6.5 + (i % 3), Math.cos(a) * 13.5);
+    group.add(lamp);
+    const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 8), gold);
+    bulb.position.copy(lamp.position);
+    group.add(bulb);
+  }
+
+  const centreGlow = new THREE.PointLight(0xffa25d, 105, 50, 1.4);
+  centreGlow.position.set(0, 12, 0);
+  group.add(centreGlow);
+
+  const entryGlow = new THREE.PointLight(0xffd2a0, 68, 24, 1.4);
+  entryGlow.position.set(0, 4, 19);
+  group.add(entryGlow);
+
+  const exitLeft = new THREE.Mesh(new THREE.BoxGeometry(0.45, 5, 0.45), gold);
+  exitLeft.position.set(-2.2, 2.5, 21.4);
+  const exitRight = exitLeft.clone();
+  exitRight.position.x = 2.2;
+  const exitTop = new THREE.Mesh(new THREE.BoxGeometry(4.8, 0.45, 0.45), gold);
+  exitTop.position.set(0, 5, 21.4);
+  group.add(exitLeft, exitRight, exitTop);
+
+  scene.add(group);
+  circusInterior = group;
+  return group;
+}
+
+function enterCircus() {
+  if (worldMode !== 'exterior' || performance.now() < transitionLockUntil) return;
+  makeCircusInterior();
+  exteriorReturn.position.copy(camera.position);
+  exteriorReturn.yaw = yaw;
+  exteriorReturn.pitch = pitch;
+
+  worldMode = 'circus';
+  transitionLockUntil = performance.now() + 1400;
+  setExteriorVisibility(false);
+  circusInterior.visible = true;
+  scene.background = new THREE.Color(0x160b08);
+  scene.fog = new THREE.FogExp2(0x1e0d09, 0.012);
+  renderer.toneMappingExposure = 1.45;
+  camera.position.set(0, 2.1, 14.5);
+  yaw = 0;
+  pitch = -0.02;
+  movementBounds = new THREE.Box3(new THREE.Vector3(-19, 1.55, -19), new THREE.Vector3(19, 8, 22.5));
+  showStatus('INSIDE LUBIAK CIRCUS', 1100);
+}
+
+function exitCircus() {
+  if (worldMode !== 'circus' || performance.now() < transitionLockUntil) return;
+  worldMode = 'exterior';
+  transitionLockUntil = performance.now() + 1400;
+  if (circusInterior) circusInterior.visible = false;
+  setExteriorVisibility(true);
+  scene.background = exteriorBackground.clone();
+  scene.fog = new THREE.FogExp2(exteriorFogColor, 0.0024);
+  renderer.toneMappingExposure = 1.55;
+  camera.position.copy(exteriorReturn.position);
+  yaw = exteriorReturn.yaw;
+  pitch = exteriorReturn.pitch;
+  const env = environmentSize || new THREE.Vector3(76, 30, 130);
+  movementBounds = new THREE.Box3(
+    new THREE.Vector3(-env.x * 0.7, 1.55, -env.z * 0.7),
+    new THREE.Vector3(env.x * 0.7, Math.max(18, env.y * 1.15), env.z * 0.9),
+  );
+  showStatus('BACK TO FREAK STREET', 900);
+}
+
+function updateCircusTransition() {
+  if (performance.now() < transitionLockUntil) return;
+  if (worldMode === 'exterior') {
+    const dx = camera.position.x - circusGate.x;
+    const dz = camera.position.z - circusGate.z;
+    const distance = Math.hypot(dx, dz);
+    if (distance < 11 && camera.position.y < 9) enterCircus();
+  } else if (camera.position.z > 21.2) {
+    exitCircus();
+  }
 }
 
 function makeFallbackDistrict() {
@@ -105,9 +258,13 @@ function makeFallbackDistrict() {
   group.add(tent);
 
   scene.add(group);
+  fallbackRoot = group;
   camera.position.set(0, 3.2, 64);
   environmentSize = new THREE.Vector3(76, 30, 130);
+  circus.position.set(12, 12, -20);
+  circusGate.set(12, 2, -8.5);
   movementBounds = new THREE.Box3(new THREE.Vector3(-38, 1.55, -58), new THREE.Vector3(38, 18, 72));
+  makeCircusInterior();
   finishLoad('ENTER LUBIAK · SAFE MODE');
 }
 
@@ -154,9 +311,11 @@ function frameLoadedEnvironment(root) {
     new THREE.Vector3(size.x * 0.7, Math.max(18, size.y * 1.15), size.z * 0.9),
   );
   circus.position.set(size.x * 0.08, Math.max(7, size.y * 0.25), -size.z * 0.08);
+  circusGate.set(circus.position.x, 2, circus.position.z + Math.max(9, size.z * 0.075));
   streetFillA.position.set(-size.x * 0.22, Math.max(5, size.y * 0.13), size.z * 0.28);
   streetFillB.position.set(size.x * 0.22, Math.max(5, size.y * 0.13), -size.z * 0.3);
-  console.info('LUBIAK environment ready', { size: size.toArray(), camera: camera.position.toArray() });
+  makeCircusInterior();
+  console.info('LUBIAK environment ready', { size: size.toArray(), camera: camera.position.toArray(), circusGate: circusGate.toArray() });
   return true;
 }
 
@@ -177,17 +336,12 @@ function loadGlb(url, decoder, label, reportProgress = true) {
   return new Promise((resolve, reject) => {
     const loader = new GLTFLoader();
     if (decoder) loader.setMeshoptDecoder(decoder);
-    loader.load(
-      url,
-      (gltf) => resolve(gltf),
-      (xhr) => {
-        if (reportProgress && xhr.total) {
-          const local = Math.min(99, (xhr.loaded / xhr.total) * 100);
-          setStatus(label, local);
-        }
-      },
-      reject,
-    );
+    loader.load(url, resolve, (xhr) => {
+      if (reportProgress && xhr.total) {
+        const local = Math.min(99, (xhr.loaded / xhr.total) * 100);
+        setStatus(label, local);
+      }
+    }, reject);
   });
 }
 
@@ -196,22 +350,16 @@ function prepareDragon(root) {
   root.updateMatrixWorld(true);
   const box = new THREE.Box3().setFromObject(root);
   if (box.isEmpty()) throw new Error('Dragon GLB has empty bounds');
-
   const size = box.getSize(new THREE.Vector3());
   const center = box.getCenter(new THREE.Vector3());
   const env = environmentSize || new THREE.Vector3(76, 30, 130);
   const targetHeight = Math.max(8, Math.min(env.y * 0.46, env.z * 0.13));
   const scale = targetHeight / Math.max(size.y, 0.001);
-
   root.scale.setScalar(scale);
   root.position.set(-center.x * scale, -box.min.y * scale, -env.z * 0.31);
   root.rotation.y = Math.PI;
-  root.updateMatrixWorld(true);
-
   root.traverse((object) => {
     if (!object.isMesh) return;
-    object.castShadow = false;
-    object.receiveShadow = false;
     object.frustumCulled = false;
     object.userData.isLubiakDragonGuardian = true;
     const materials = Array.isArray(object.material) ? object.material : [object.material];
@@ -223,26 +371,18 @@ function prepareDragon(root) {
       material.needsUpdate = true;
     }
   });
-
   dragonLight.position.set(0, targetHeight * 0.55, root.position.z + targetHeight * 0.35);
-  console.info('LUBIAK dragon guardian ready', { scale, position: root.position.toArray() });
 }
 
 async function installDragon(decoder) {
   try {
-    setStatus('SUMMONING DRAGON GUARDIAN', 96);
-    const gltf = await loadGlb(
-      '/assets/assets/models/lubiak_dragon_guardian_web.glb?v=20260829-dragon-gate-v1',
-      decoder,
-      'SUMMONING DRAGON GUARDIAN',
-      false,
-    );
+    const gltf = await loadGlb('/assets/assets/models/lubiak_dragon_guardian_web.glb?v=20260829-circus-entry-v1', decoder, 'SUMMONING DRAGON GUARDIAN', false);
     dragonRoot = gltf.scene;
     prepareDragon(dragonRoot);
     scene.add(dragonRoot);
   } catch (error) {
     dragonRoot = null;
-    console.error('LUBIAK dragon guardian failed to load.', error);
+    console.warn('LUBIAK dragon guardian unavailable; circus remains accessible.', error);
   }
 }
 
@@ -250,16 +390,8 @@ async function installEnvironment() {
   setStatus('STARTING 3D ENGINE', 4);
   const decoder = await getMeshoptDecoder();
   const candidates = [
-    {
-      url: '/assets/assets/models/LUBIAK_master_optimized.glb?v=20260829-lubiak-light-v1',
-      label: 'LOADING LUBIAK MASTER',
-      finish: 'ENTER LUBIAK',
-    },
-    {
-      url: '/assets/assets/models/LUBIAK.glb?v=20260829-lubiak-light-v1',
-      label: 'LOADING LUBIAK FALLBACK',
-      finish: 'ENTER LUBIAK · RECOVERY MODEL',
-    },
+    { url: '/assets/assets/models/LUBIAK_master_optimized.glb?v=20260829-circus-entry-v1', label: 'LOADING LUBIAK MASTER', finish: 'ENTER LUBIAK' },
+    { url: '/assets/assets/models/LUBIAK.glb?v=20260829-circus-entry-v1', label: 'LOADING LUBIAK FALLBACK', finish: 'ENTER LUBIAK · RECOVERY MODEL' },
   ];
 
   for (const candidate of candidates) {
@@ -273,6 +405,7 @@ async function installEnvironment() {
         scene.remove(root);
         throw new Error('GLB scene has invalid or empty bounds');
       }
+      exteriorRoot = root;
       await installDragon(decoder);
       finishLoad(candidate.finish);
       return;
@@ -281,7 +414,6 @@ async function installEnvironment() {
     }
   }
 
-  console.error('All LUBIAK GLB candidates failed; entering procedural safe mode.');
   makeFallbackDistrict();
   await installDragon(decoder);
 }
@@ -293,7 +425,7 @@ const DRAGON_GATE_MAX_GAP = 650;
 const DRAGON_GATE_MAX_TRAVEL = 72;
 
 function pointerHitsDragon(event) {
-  if (!dragonRoot) return false;
+  if (!dragonRoot || worldMode !== 'exterior') return false;
   const rect = renderer.domElement.getBoundingClientRect();
   pointerNdc.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
   pointerNdc.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -306,28 +438,18 @@ function handleDragonGatePointer(event) {
     dragonGateClicks.length = 0;
     return false;
   }
-
   const now = performance.now();
-  while (dragonGateClicks.length && now - dragonGateClicks[0].t > DRAGON_GATE_MAX_GAP * 2) {
-    dragonGateClicks.shift();
-  }
-
+  while (dragonGateClicks.length && now - dragonGateClicks[0].t > DRAGON_GATE_MAX_GAP * 2) dragonGateClicks.shift();
   const first = dragonGateClicks[0];
-  if (first && Math.hypot(event.clientX - first.x, event.clientY - first.y) > DRAGON_GATE_MAX_TRAVEL) {
-    dragonGateClicks.length = 0;
-  }
-
+  if (first && Math.hypot(event.clientX - first.x, event.clientY - first.y) > DRAGON_GATE_MAX_TRAVEL) dragonGateClicks.length = 0;
   dragonGateClicks.push({ t: now, x: event.clientX, y: event.clientY });
   if (dragonGateClicks.length < 3) return true;
-
   const a = dragonGateClicks[dragonGateClicks.length - 3];
   const b = dragonGateClicks[dragonGateClicks.length - 2];
   const c = dragonGateClicks[dragonGateClicks.length - 1];
   if (b.t - a.t <= DRAGON_GATE_MAX_GAP && c.t - b.t <= DRAGON_GATE_MAX_GAP) {
     dragonGateClicks.length = 0;
-    status.style.opacity = '1';
-    progress.style.opacity = '1';
-    setStatus('ENTERING SILMARI’LLION MEGAPOLE', 100);
+    showStatus('ENTERING SILMARI’LLION MEGAPOLE', 0);
     setTimeout(() => location.assign('../megapole/'), 140);
   }
   return true;
@@ -371,6 +493,7 @@ function animate() {
   if (keys.has('a') || keys.has('arrowleft')) camera.position.addScaledVector(right, -speed);
   if (keys.has('d') || keys.has('arrowright')) camera.position.addScaledVector(right, speed);
   if (movementBounds) camera.position.clamp(movementBounds.min, movementBounds.max);
+  updateCircusTransition();
   camera.rotation.order = 'YXZ';
   camera.rotation.y = yaw;
   camera.rotation.x = pitch;
