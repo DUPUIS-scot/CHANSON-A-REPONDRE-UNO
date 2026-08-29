@@ -1,4 +1,4 @@
-deploy-request: 2026-08-29T12:15:00+01:00
+deploy-request: 2026-08-29T12:35:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: repair 2J / 2JESTER path, runtime health and STEM JESTER authority
+reason: deploy explicit 2J / 2JESTER authority, remove STEM polling conflict, verify performance v6 and mirror path
