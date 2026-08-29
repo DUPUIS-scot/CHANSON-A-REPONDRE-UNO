@@ -1,0 +1,28 @@
+(()=>{
+'use strict';
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const getDeck=frame=>{try{return frame?.contentDocument?.getElementById('deck')?.contentDocument||null}catch(_){return null}};
+function install(frame){
+ const d=getDeck(frame),w=d?.defaultView;if(!d||!w)return false;
+ if(d.documentElement.dataset.midiExpressiveSignal==='v1')return true;
+ const state={mod:0,expression:1,brightness:.5,bend:0,sustain:0,lastCC:0,lastValue:0};
+ const ensureUI=()=>{
+  const panel=d.querySelector('.midi-signal-live');if(panel&&!panel.querySelector('[data-midi-expressive]')){const el=d.createElement('div');el.dataset.midiExpressive='';el.style.cssText='font-size:7px;color:#8fc9be;letter-spacing:.04em';el.textContent='CC — · BEND 0 · SUSTAIN OFF';panel.appendChild(el)}
+  const footer=d.querySelector('.midi-piano-float footer');if(footer&&!footer.dataset.expressive){footer.dataset.expressive='1';footer.textContent='LOW ← NOTE → HIGH · VELOCITY = ENERGY · CC = SHAPE · BEND = TILT · SUSTAIN = HOLD'}
+ };
+ const render=()=>{ensureUI();const el=d.querySelector('[data-midi-expressive]');if(el)el.textContent=`CC ${state.lastCC||'—'}:${state.lastValue} · BEND ${state.bend>0?'+':''}${Math.round(state.bend*100)} · SUSTAIN ${state.sustain?'ON':'OFF'}`};
+ let originalEmit=null,busRef=null;
+ const hookBus=()=>{const b=w.__enochAnalyserBus;if(!b||b===busRef)return false;busRef=b;originalEmit=b.emit?.bind(b);if(!originalEmit)return false;b.emit=(type,payload)=>{
+   if(type==='signal'&&Array.isArray(payload)){const bend=state.bend,mod=state.mod,exp=state.expression,bright=state.brightness,hold=state.sustain;const p=payload.slice(0,4);p[0]=clamp(p[0]*(0.72+0.55*exp)*(1-0.18*bend)+55*mod,0,255);p[1]=clamp(p[1]*(0.82+0.42*exp)+34*hold,0,255);p[2]=clamp(p[2]*(0.66+0.7*bright)*(1+0.18*bend)+45*mod,0,255);p[3]=clamp(p[3]*(0.82+0.45*exp)+60*mod+30*hold,0,255);b.rawSignal=p;return originalEmit(type,p)}
+   if(type==='frequency'&&payload?.length){const src=payload,out=new Uint8Array(src.length),shift=Math.round(state.bend*10);for(let i=0;i<src.length;i++){const from=clamp(i-shift,0,src.length-1);const sculpt=1+state.mod*.55*(i/src.length)+state.brightness*.18;out[i]=clamp(src[from]*sculpt,0,255)}b.frequency=out;return originalEmit(type,out)}
+   if(type==='waveform'&&payload?.length&&state.sustain){const out=new Uint8Array(payload.length);for(let i=0;i<payload.length;i++)out[i]=clamp(128+(payload[i]-128)*(1+.22*state.sustain),0,255);b.waveform=out;return originalEmit(type,out)}
+   return originalEmit(type,payload)
+  };return true};
+ const onMidi=e=>{const data=e.data||[],st=data[0]||0,cmd=st&0xf0,a=data[1]||0,v=data[2]||0;if(cmd===0xb0){state.lastCC=a;state.lastValue=v;if(a===1)state.mod=v/127;else if(a===11)state.expression=v/127;else if(a===74)state.brightness=v/127;else if(a===64)state.sustain=v>=64?1:0;render()}else if(cmd===0xe0){const raw=(v<<7)|a;state.bend=clamp((raw-8192)/8192,-1,1);render()}};
+ let access=null;const bind=()=>{for(const input of access?.inputs?.values?.()||[]){if(input.dataset?.enochExpressive)return;try{input.addEventListener('midimessage',onMidi)}catch(_){}try{input.dataset.enochExpressive='1'}catch(_){input.__enochExpressive=true}}};
+ const connect=async()=>{if(!navigator.requestMIDIAccess)return;try{access=await navigator.requestMIDIAccess();bind();access.addEventListener?.('statechange',bind)}catch(_){}};
+ const timer=w.setInterval(()=>{ensureUI();hookBus();bind()},500);connect();hookBus();ensureUI();render();
+ d.documentElement.dataset.midiExpressiveSignal='v1';w.__enochMidiExpressiveSignal={version:'v1',state,connect,destroy:()=>w.clearInterval(timer)};return true;
+}
+let timer=0;window.installEnochianMidiExpressiveSignalV1=frame=>{if(install(frame)){if(timer)clearInterval(timer);timer=0;return true}if(!timer){let n=0;timer=setInterval(()=>{if(install(frame)||++n>120){clearInterval(timer);timer=0}},100)}return false};
+})();
