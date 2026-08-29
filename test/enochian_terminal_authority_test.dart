@@ -39,7 +39,7 @@ void main() {
         contains("d.documentElement.dataset.authoritativeRuntime='v6'"));
 
     expect(terminal,
-        contains('live-copy.html?v=20260829-runtime-consolidation-v1'));
+        contains('live-copy.html?v=20260829-main-output-v2'));
     expect(terminal,
         contains('authoritative-runtime.js?v=20260825-runtime-api-v2'));
     expect(terminal,
@@ -79,7 +79,7 @@ void main() {
     expect(twoJ, contains('STEMS DOUBLE DECK'));
     expect(twoJ, contains("modeAuthority:'2J performance v6'"));
     expect(twoJ, isNot(contains('data-2j-mode')));
-    expect(jesterTransport, contains("const VERSION='v3'"));
+    expect(jesterTransport, contains("const VERSION='v2'"));
     expect(jesterTransport, contains('data-jester-play'));
     expect(jesterTransport, contains('data-jester-pause'));
     expect(jesterOutput, contains('MASTER JESTER'));
