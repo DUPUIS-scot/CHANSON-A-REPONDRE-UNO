@@ -7,8 +7,8 @@ const status = document.querySelector('#status');
 const progress = document.querySelector('#progress');
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x05080d);
-scene.fog = new THREE.FogExp2(0x07101a, 0.0022);
+scene.background = new THREE.Color(0x111827);
+scene.fog = new THREE.FogExp2(0x111827, 0.00135);
 
 const camera = new THREE.PerspectiveCamera(54, innerWidth / innerHeight, 0.03, 2200);
 let yaw = 0;
@@ -20,16 +20,25 @@ renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
 renderer.setSize(innerWidth, innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 0.92;
+renderer.toneMappingExposure = 1.55;
 host.appendChild(renderer.domElement);
 
-scene.add(new THREE.HemisphereLight(0xb7d8ff, 0x24170b, 1.35));
-const key = new THREE.DirectionalLight(0xffcf7a, 2.2);
+const ambient = new THREE.AmbientLight(0xffffff, 2.4);
+scene.add(ambient);
+const hemi = new THREE.HemisphereLight(0xd7ecff, 0x5a321e, 2.5);
+scene.add(hemi);
+const key = new THREE.DirectionalLight(0xffe2a6, 4.2);
 key.position.set(-18, 46, 26);
 scene.add(key);
-const cyan = new THREE.PointLight(0x72d9ff, 85, 220, 1.65);
+const fill = new THREE.DirectionalLight(0x9bdfff, 2.6);
+fill.position.set(28, 24, -34);
+scene.add(fill);
+const cyan = new THREE.PointLight(0x72d9ff, 180, 300, 1.35);
 cyan.position.set(0, 20, -12);
 scene.add(cyan);
+const warm = new THREE.PointLight(0xffb15f, 150, 260, 1.4);
+warm.position.set(-12, 12, 18);
+scene.add(warm);
 
 function setStatus(label, pct) {
   status.textContent = label;
@@ -64,6 +73,17 @@ function frameEnvironment(root) {
       material.side = THREE.DoubleSide;
       material.depthTest = true;
       material.depthWrite = true;
+      if ('metalness' in material) material.metalness = Math.min(material.metalness ?? 0, 0.08);
+      if ('roughness' in material) material.roughness = Math.max(material.roughness ?? 0.7, 0.68);
+      if ('emissive' in material) {
+        material.emissive.setHex(0xffffff);
+        material.emissiveIntensity = 0.72;
+        if (material.map) material.emissiveMap = material.map;
+      }
+      if (material.map) {
+        material.map.colorSpace = THREE.SRGBColorSpace;
+        material.map.needsUpdate = true;
+      }
       material.needsUpdate = true;
     }
   });
@@ -79,6 +99,14 @@ function frameEnvironment(root) {
     new THREE.Vector3(size.x * 0.75, Math.max(20, size.y * 1.2), size.z * 0.92),
   );
   cyan.position.set(size.x * 0.05, Math.max(8, size.y * 0.3), -size.z * 0.1);
+  warm.position.set(-size.x * 0.16, Math.max(6, size.y * 0.18), size.z * 0.16);
+  key.target.position.set(0, size.y * 0.15, 0);
+  fill.target.position.set(0, size.y * 0.12, 0);
+  scene.add(key.target, fill.target);
+  console.info('MEGAPOLE environment ready', {
+    size: size.toArray(),
+    camera: camera.position.toArray(),
+  });
   return true;
 }
 
@@ -113,7 +141,7 @@ async function installEnvironment() {
   setStatus('ENTERING THE DRAGON', 4);
   const decoder = await getMeshoptDecoder();
   const candidates = [
-    '/assets/assets/models/SILMARI_LLION_MEGAPOLE_LUBIAK.glb?v=20260829-megapole-lubiak-v1',
+    '/assets/assets/models/SILMARI_LLION_MEGAPOLE_LUBIAK.glb?v=20260829-megapole-light-v2',
   ];
 
   let lastError;
@@ -132,7 +160,7 @@ async function installEnvironment() {
     }
   }
   console.error('Megapole GLB unavailable.', lastError);
-  setStatus('MEGAPOLE MODEL NOT YET INSTALLED', 100);
+  setStatus('MEGAPOLE MODEL FAILED TO RENDER', 100);
 }
 
 const keys = new Set();
