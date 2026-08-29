@@ -1,4 +1,4 @@
-deploy-request: 2026-08-29T00:45:00+01:00
+deploy-request: 2026-08-29T01:02:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: password-gate floating live MIDI piano controlling ENOCHIAN 3D SIGNAL
+reason: deploy MIDI CC pitch bend sustain and expressive 3D SIGNAL controls
