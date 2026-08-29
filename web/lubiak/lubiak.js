@@ -7,8 +7,8 @@ const status = document.querySelector('#status');
 const progress = document.querySelector('#progress');
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x050303);
-scene.fog = new THREE.FogExp2(0x070405, 0.0035);
+scene.background = new THREE.Color(0x0d1018);
+scene.fog = new THREE.FogExp2(0x101018, 0.0024);
 
 const camera = new THREE.PerspectiveCamera(52, innerWidth / innerHeight, 0.03, 1200);
 let yaw = 0;
@@ -22,7 +22,7 @@ try {
   renderer.setSize(innerWidth, innerHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 0.9;
+  renderer.toneMappingExposure = 1.55;
   host.appendChild(renderer.domElement);
 } catch (error) {
   console.error('LUBIAK WebGL bootstrap failed.', error);
@@ -30,13 +30,23 @@ try {
   throw error;
 }
 
-scene.add(new THREE.HemisphereLight(0x4a5b78, 0x24110a, 1.15));
-const moon = new THREE.DirectionalLight(0x91a9d1, 0.95);
+scene.add(new THREE.AmbientLight(0xffead7, 1.15));
+scene.add(new THREE.HemisphereLight(0x9bb8e8, 0x6b321b, 2.35));
+const moon = new THREE.DirectionalLight(0xbfd6ff, 2.15);
 moon.position.set(-24, 48, 30);
 scene.add(moon);
-const circus = new THREE.PointLight(0xffa25a, 62, 150, 1.55);
+const moonFill = new THREE.DirectionalLight(0x7795c9, 1.05);
+moonFill.position.set(30, 22, -34);
+scene.add(moonFill);
+const circus = new THREE.PointLight(0xffb06a, 155, 210, 1.25);
 circus.position.set(0, 14, 0);
 scene.add(circus);
+const streetFillA = new THREE.PointLight(0xff8a45, 78, 135, 1.35);
+streetFillA.position.set(-18, 9, 30);
+scene.add(streetFillA);
+const streetFillB = new THREE.PointLight(0xffd09a, 66, 125, 1.35);
+streetFillB.position.set(18, 8, -28);
+scene.add(streetFillB);
 
 function setStatus(label, pct) {
   status.textContent = label;
@@ -137,7 +147,9 @@ function frameLoadedEnvironment(root) {
     new THREE.Vector3(-size.x * 0.7, 1.55, -size.z * 0.7),
     new THREE.Vector3(size.x * 0.7, Math.max(18, size.y * 1.15), size.z * 0.9),
   );
-  circus.position.set(size.x * 0.08, Math.max(6, size.y * 0.25), -size.z * 0.08);
+  circus.position.set(size.x * 0.08, Math.max(7, size.y * 0.25), -size.z * 0.08);
+  streetFillA.position.set(-size.x * 0.22, Math.max(5, size.y * 0.13), size.z * 0.28);
+  streetFillB.position.set(size.x * 0.22, Math.max(5, size.y * 0.13), -size.z * 0.3);
   console.info('LUBIAK environment ready', { size: size.toArray(), camera: camera.position.toArray() });
   return true;
 }
@@ -178,12 +190,12 @@ async function installEnvironment() {
   const decoder = await getMeshoptDecoder();
   const candidates = [
     {
-      url: '/assets/assets/models/LUBIAK_master_optimized.glb?v=20260829-lubiak-boot-v3',
+      url: '/assets/assets/models/LUBIAK_master_optimized.glb?v=20260829-lubiak-light-v1',
       label: 'LOADING LUBIAK MASTER',
       finish: 'ENTER LUBIAK',
     },
     {
-      url: '/assets/assets/models/LUBIAK.glb?v=20260829-lubiak-boot-v3',
+      url: '/assets/assets/models/LUBIAK.glb?v=20260829-lubiak-light-v1',
       label: 'LOADING LUBIAK FALLBACK',
       finish: 'ENTER LUBIAK · RECOVERY MODEL',
     },
