@@ -1,4 +1,4 @@
-deploy-request: 2026-08-29T19:10:00+01:00
+deploy-request: 2026-08-29T19:24:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: repair LUBIAK master GLB loading with Meshopt decoder, absolute deployed asset URL and cache-busted runtime
+reason: deploy 45-second LUBIAK dragon guardian patrol runtime over master environment
