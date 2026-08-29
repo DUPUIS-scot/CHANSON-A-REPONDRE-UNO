@@ -1,4 +1,4 @@
-deploy-request: 2026-08-29T03:53:00+01:00
+deploy-request: 2026-08-29T03:56:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: redeploy PLAY JESTER torso-up category VERSO draw, in-hand RECTO flip, discard motion and rig controls after controller regression test update; preserve current MIDI and terminal fixes
+reason: sustain AI Comptroller MIDI sculpt modulation while notes are held, fix normalized MIDI spectrum energy scaling, and refresh MOD SCULPT v6 authorities
