@@ -1,5 +1,4 @@
-deploy-request: 2026-08-29T00:00:00Z
+deploy-request: 2026-08-29T10:20:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy the two-sided 2J performance turntable while preserving the separate 2JESTER preparation/player interface
-source-commit: abc0d7fd6952eebb2d82ae44b8e00d8f22d8d294
+reason: deploy 2J separation plus MIDI signal-pipeline controls, compact EQ-to-FX float placement, and translucent MIDI deck
