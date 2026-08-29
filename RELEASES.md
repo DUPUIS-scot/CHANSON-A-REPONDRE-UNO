@@ -1,5 +1,13 @@
 # Chanson à Répondre UNO releases
 
+## v3.7.3.7 — Approved / Certified
+
+- Certificate version: 3.7.3.7
+- Status: APPROVED
+- Status: CERTIFIED
+- Package version: 3.7.3+7
+- Certifies the current live CHANSON À RÉPONDRE UNO baseline as version 3.7.3.7.
+
 ## v3.7.3.6 — Approved / Certified
 
 - Certificate version: 3.7.3.6
