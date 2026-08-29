@@ -1,4 +1,4 @@
-deploy-request: 2026-08-29T18:35:00+01:00
+deploy-request: 2026-08-29T18:40:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: implement and deploy LUBIAK as a new primary home path with standalone Three.js district experience
+reason: switch LUBIAK path to assets/models/LUBIAK_master_optimized.glb as the authoritative 3D environment model
