@@ -18,6 +18,7 @@ let pitch = -0.04;
 let movementBounds = null;
 let environmentSize = null;
 let dragonRoot = null;
+let dragonMixer = null;
 let exteriorRoot = null;
 let fallbackRoot = null;
 let circusInterior = null;
@@ -376,12 +377,28 @@ function prepareDragon(root) {
 
 async function installDragon(decoder) {
   try {
-    const gltf = await loadGlb('/assets/assets/models/lubiak_dragon_guardian_web.glb?v=20260829-circus-entry-v1', decoder, 'SUMMONING DRAGON GUARDIAN', false);
+    const gltf = await loadGlb('/assets/assets/models/lubiak_dragon_guardian_web.glb?v=20260829-dragon-anim-v1', decoder, 'SUMMONING DRAGON GUARDIAN', false);
     dragonRoot = gltf.scene;
     prepareDragon(dragonRoot);
     scene.add(dragonRoot);
+
+    dragonMixer = null;
+    if (Array.isArray(gltf.animations) && gltf.animations.length > 0) {
+      dragonMixer = new THREE.AnimationMixer(dragonRoot);
+      for (const clip of gltf.animations) {
+        const action = dragonMixer.clipAction(clip);
+        action.setLoop(THREE.LoopRepeat, Infinity);
+        action.clampWhenFinished = false;
+        action.enabled = true;
+        action.play();
+      }
+      console.info('LUBIAK dragon animation active', gltf.animations.map((clip) => ({ name: clip.name || 'unnamed', duration: clip.duration })));
+    } else {
+      console.warn('LUBIAK dragon guardian GLB contains no animation clips.');
+    }
   } catch (error) {
     dragonRoot = null;
+    dragonMixer = null;
     console.warn('LUBIAK dragon guardian unavailable; circus remains accessible.', error);
   }
 }
@@ -390,8 +407,8 @@ async function installEnvironment() {
   setStatus('STARTING 3D ENGINE', 4);
   const decoder = await getMeshoptDecoder();
   const candidates = [
-    { url: '/assets/assets/models/LUBIAK_master_optimized.glb?v=20260829-circus-entry-v1', label: 'LOADING LUBIAK MASTER', finish: 'ENTER LUBIAK' },
-    { url: '/assets/assets/models/LUBIAK.glb?v=20260829-circus-entry-v1', label: 'LOADING LUBIAK FALLBACK', finish: 'ENTER LUBIAK · RECOVERY MODEL' },
+    { url: '/assets/assets/models/LUBIAK_master_optimized.glb?v=20260829-dragon-anim-v1', label: 'LOADING LUBIAK MASTER', finish: 'ENTER LUBIAK' },
+    { url: '/assets/assets/models/LUBIAK.glb?v=20260829-dragon-anim-v1', label: 'LOADING LUBIAK FALLBACK', finish: 'ENTER LUBIAK · RECOVERY MODEL' },
   ];
 
   for (const candidate of candidates) {
@@ -485,6 +502,7 @@ const clock = new THREE.Clock();
 function animate() {
   requestAnimationFrame(animate);
   const dt = Math.min(clock.getDelta(), 0.04);
+  if (dragonMixer && worldMode === 'exterior') dragonMixer.update(dt);
   const speed = 9.5 * dt;
   const forward = new THREE.Vector3(Math.sin(yaw), 0, -Math.cos(yaw));
   const right = new THREE.Vector3(Math.cos(yaw), 0, Math.sin(yaw));
