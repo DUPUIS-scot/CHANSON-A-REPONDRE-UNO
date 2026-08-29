@@ -45,7 +45,19 @@
       const resize=()=>{const rect=platter.getBoundingClientRect(),width=Math.max(1,Math.round(rect.width)),height=Math.max(1,Math.round(rect.height));renderer.setSize(width,height,false);camera.aspect=width/height;camera.updateProjectionMatrix()};
       const resizeObserver=new ResizeObserver(resize);resizeObserver.observe(platter);resize();
       let faceState='';
-      const render=now=>{if(disposed)return;const delta=Math.min(.05,Math.max(0,(now-last)/1000));last=now;const open=panel.classList.contains('open');if(!open)rig.rotation.y=(rig.rotation.y+RATE*delta)%(Math.PI*2);const deckActive=!open&&Math.cos(rig.rotation.y)<-.72,nextFace=deckActive?'double-deck':open?'paused':'mirror';if(nextFace!==faceState){faceState=nextFace;shield.dataset.twoJFace=nextFace;shield.classList.toggle('djs-deck-face-active',deckActive)}renderer.render(scene,camera);requestAnimationFrame(render)};
+      const render=now=>{
+        if(disposed)return;
+        const delta=Math.min(.05,Math.max(0,(now-last)/1000));last=now;
+        const authority=inner.defaultView.__enochDoubleJesterAuthority||window.__enochDoubleJesterAuthority;
+        const phase=authority?.phase||(panel.classList.contains('open')?'2jester-active':'2j-spinning');
+        const open=phase==='2jester-active';
+        shield.dataset.j2State=phase;
+        if(!open)rig.rotation.y=(rig.rotation.y+RATE*delta)%(Math.PI*2);
+        const deckActive=!open&&Math.cos(rig.rotation.y)<-.72;
+        const nextFace=open?'paused':deckActive?'double-deck':'mirror';
+        if(nextFace!==faceState){faceState=nextFace;shield.dataset.twoJFace=nextFace;shield.classList.toggle('djs-deck-face-active',deckActive)}
+        renderer.render(scene,camera);requestAnimationFrame(render);
+      };
       requestAnimationFrame(render);platter.dataset.mirrorReady='true';
       inner.defaultView.__enochDoubleJesterMirrorGlb={version:VERSION,url:MODEL_URL,rig,mirror,deckFace,renderer};
       inner.defaultView.addEventListener('pagehide',()=>{disposed=true;resizeObserver.disconnect();renderer.dispose()},{once:true});
@@ -64,7 +76,7 @@
         #doubleJeckerShield{width:var(--j2-size,150px)!important;height:var(--j2-size,150px)!important;min-width:112px!important;min-height:112px!important;max-width:min(38vmin,360px)!important;max-height:min(38vmin,360px)!important;overflow:visible!important}
         #doubleJeckerShield .djs-platter{overflow:hidden!important;background:radial-gradient(circle,#10232b 0 42%,#030608 72%,#000 100%)!important;animation:none!important;transform:none!important}
         #doubleJeckerShield .djs-mirror-canvas{position:absolute;inset:0;width:100%!important;height:100%!important;display:block;pointer-events:none}
-        #doubleJeckerShield.panel-open .djs-mirror-canvas{filter:saturate(.76) brightness(.78)}
+        #doubleJeckerShield[data-j2-state="2jester-active"] .djs-mirror-canvas{filter:saturate(.76) brightness(.78)}
         #doubleJeckerShield:not(.djs-deck-face-active) .djs-center{pointer-events:auto}
         #doubleDeckerSpecial.jecker-radial.jester-mirror-format{background:radial-gradient(ellipse at 31% 21%,rgba(197,235,245,.19) 0 2%,transparent 8%),radial-gradient(ellipse at 69% 75%,rgba(51,123,147,.26) 0 5%,transparent 22%),radial-gradient(circle at 50% 50%,#132d38 0 22%,#071116 38%,#020608 63%,#151716 64%,#020405 74%,#010203 100%)!important;box-shadow:inset 0 0 0 2px #8bc4d1,inset 0 0 0 7px #10191d,inset 0 0 0 10px #b98939,inset 0 0 52px #000,0 18px 56px #000d!important}
         #doubleJeckerShield .djs-resize-handle{position:absolute;right:-4px;bottom:-4px;width:18px;height:18px;border:1px solid #f3b542;border-radius:50%;z-index:30;background:#061018;box-shadow:0 0 8px #28dcff,0 0 12px #ff9b24;cursor:nwse-resize;touch-action:none}
@@ -79,7 +91,7 @@
       const finish=event=>{if(!resize||resize.id!==event.pointerId)return;const size=shield.getBoundingClientRect().width;resize=null;try{localStorage.setItem(STORE,String(Math.round(size)));handle.releasePointerCapture(event.pointerId)}catch(_){}};
       handle.addEventListener('pointerup',finish);handle.addEventListener('pointercancel',finish);
       const onResize=()=>{const size=shield.getBoundingClientRect().width;if(size>clamp(size))shield.style.setProperty('--j2-size',`${clamp(size)}px`)};window.addEventListener('resize',onResize);
-      inner.defaultView.__enochDoubleJesterPortalSpinner={version:VERSION,rate:RATE,secondsPerTurn:Math.PI*2/RATE,modelUrl:MODEL_URL,faces:['mirror','double-deck'],modeAuthority:'2J performance v6',shield};return true;
+      inner.defaultView.__enochDoubleJesterPortalSpinner={version:VERSION,rate:RATE,secondsPerTurn:Math.PI*2/RATE,modelUrl:MODEL_URL,faces:['mirror','double-deck'],modeAuthority:'2J performance v6',stateAuthority:'2JESTER runtime authority v11',shield};return true;
     }catch(_){return false}
   }
   window.installEnochianDoubleJesterPortalSpinnerV4=host=>{let n=0,t=setInterval(()=>{if(install(host)||++n>240)clearInterval(t)},50);return install(host)};
