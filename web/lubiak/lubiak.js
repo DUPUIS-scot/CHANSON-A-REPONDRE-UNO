@@ -14,6 +14,7 @@ const camera = new THREE.PerspectiveCamera(52, innerWidth / innerHeight, 0.03, 1
 let yaw = 0;
 let pitch = -0.04;
 let movementBounds = null;
+let districtSize = new THREE.Vector3(80, 30, 120);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 1.6));
@@ -30,6 +31,19 @@ scene.add(moon);
 const circus = new THREE.PointLight(0xff9848, 48, 120, 1.7);
 circus.position.set(0, 12, 0);
 scene.add(circus);
+
+let dragonRoot = null;
+let dragonMixer = null;
+let dragonAction = null;
+const dragonLoopSeconds = 45;
+const dragonCurrent = new THREE.Vector3();
+const dragonAhead = new THREE.Vector3();
+const dragonForward = new THREE.Vector3();
+const dragonLook = new THREE.Vector3();
+const dragonTargetQuat = new THREE.Quaternion();
+const dragonBasis = new THREE.Matrix4();
+const dragonWorldUp = new THREE.Vector3(0, 1, 0);
+let dragonRoute = null;
 
 function finishLoad(label = 'ENTER LUBIAK') {
   status.textContent = label;
@@ -75,6 +89,9 @@ function makeFallbackDistrict() {
   group.add(tent);
   scene.add(group);
   camera.position.set(0, 3.2, 64);
+  districtSize.set(54, 20, 112);
+  createDragonRoute();
+  loadDragon();
   finishLoad('ENTER LUBIAK · LIGHT MODE');
 }
 
@@ -104,6 +121,7 @@ function frameLoadedEnvironment(root) {
     }
   });
 
+  districtSize.copy(size);
   const eyeHeight = Math.max(1.7, Math.min(size.y * 0.12, 5.0));
   const distance = Math.max(maxDim * 0.72, size.z * 0.72, 18);
   camera.position.set(0, eyeHeight, distance);
@@ -119,8 +137,129 @@ function frameLoadedEnvironment(root) {
   );
 
   circus.position.set(size.x * 0.08, Math.max(6, size.y * 0.25), -size.z * 0.08);
+  createDragonRoute();
   console.info('LUBIAK bounds', { size: size.toArray(), maxDim, camera: camera.position.toArray() });
   return true;
+}
+
+function createDragonRoute() {
+  const sx = Math.max(28, districtSize.x * 0.42);
+  const sz = Math.max(52, districtSize.z * 0.44);
+  const high = Math.max(18, districtSize.y * 0.9);
+  const medium = Math.max(10, districtSize.y * 0.52);
+  const low = Math.max(4.8, districtSize.y * 0.22);
+
+  dragonRoute = {
+    start: new THREE.Vector3(0, high, sz),
+    descend: new THREE.Vector3(-sx * 0.26, medium, sz * 0.54),
+    streetA: new THREE.Vector3(-sx * 0.10, low + 2.0, sz * 0.30),
+    streetB: new THREE.Vector3(sx * 0.05, low, sz * 0.04),
+    streetC: new THREE.Vector3(0, low + 0.4, -sz * 0.20),
+    perch: new THREE.Vector3(-sx * 0.34, Math.max(7.5, districtSize.y * 0.36), -sz * 0.34),
+    takeoff: new THREE.Vector3(-sx * 0.24, medium, -sz * 0.28),
+    orbitA: new THREE.Vector3(sx * 0.28, medium + 2, -sz * 0.26),
+    orbitB: new THREE.Vector3(sx * 0.38, high * 0.95, -sz * 0.06),
+    orbitC: new THREE.Vector3(0, high, sz * 0.10),
+    orbitD: new THREE.Vector3(-sx * 0.22, high * 0.92, sz * 0.34),
+  };
+}
+
+function smooth01(t) {
+  const x = THREE.MathUtils.clamp(t, 0, 1);
+  return x * x * (3 - 2 * x);
+}
+
+function segment(a, b, t, out) {
+  return out.copy(a).lerp(b, smooth01(t));
+}
+
+function sampleDragonPosition(seconds, out) {
+  if (!dragonRoute) return out.set(0, 18, 40);
+  const t = ((seconds % dragonLoopSeconds) + dragonLoopSeconds) % dragonLoopSeconds;
+
+  if (t < 7) return segment(dragonRoute.start, dragonRoute.descend, t / 7, out);
+  if (t < 14) return segment(dragonRoute.descend, dragonRoute.streetA, (t - 7) / 7, out);
+  if (t < 17.5) return segment(dragonRoute.streetA, dragonRoute.streetB, (t - 14) / 3.5, out);
+  if (t < 21) return segment(dragonRoute.streetB, dragonRoute.streetC, (t - 17.5) / 3.5, out);
+  if (t < 23) return segment(dragonRoute.streetC, dragonRoute.perch, (t - 21) / 2, out);
+  if (t < 29) return out.copy(dragonRoute.perch);
+  if (t < 34) return segment(dragonRoute.perch, dragonRoute.takeoff, (t - 29) / 5, out);
+  if (t < 35.75) return segment(dragonRoute.takeoff, dragonRoute.orbitA, (t - 34) / 1.75, out);
+  if (t < 37.5) return segment(dragonRoute.orbitA, dragonRoute.orbitB, (t - 35.75) / 1.75, out);
+  if (t < 39.25) return segment(dragonRoute.orbitB, dragonRoute.orbitC, (t - 37.5) / 1.75, out);
+  if (t < 41) return segment(dragonRoute.orbitC, dragonRoute.orbitD, (t - 39.25) / 1.75, out);
+  return segment(dragonRoute.orbitD, dragonRoute.start, (t - 41) / 4, out);
+}
+
+function orientDragon(seconds, dt) {
+  if (!dragonRoot || !dragonRoute) return;
+  const t = ((seconds % dragonLoopSeconds) + dragonLoopSeconds) % dragonLoopSeconds;
+
+  if (t >= 23 && t < 29) {
+    dragonLook.set(0, Math.max(4, districtSize.y * 0.22), -districtSize.z * 0.10);
+  } else {
+    sampleDragonPosition(seconds + 0.22, dragonAhead);
+    dragonLook.copy(dragonAhead);
+  }
+
+  dragonForward.copy(dragonLook).sub(dragonRoot.position);
+  if (dragonForward.lengthSq() < 0.00001) return;
+  dragonForward.normalize();
+
+  dragonBasis.lookAt(dragonRoot.position, dragonLook, dragonWorldUp);
+  dragonTargetQuat.setFromRotationMatrix(dragonBasis);
+  dragonTargetQuat.multiply(new THREE.Quaternion().setFromAxisAngle(dragonWorldUp, Math.PI));
+  dragonRoot.quaternion.slerp(dragonTargetQuat, 1 - Math.exp(-dt * 5.5));
+
+  if (!(t >= 23 && t < 29)) {
+    const bank = THREE.MathUtils.clamp(-dragonForward.x * 0.30, -0.42, 0.42);
+    dragonRoot.rotateZ(bank * (1 - Math.exp(-dt * 3.5)));
+  }
+}
+
+function loadDragon() {
+  if (dragonRoot) return;
+  const dragonUrl = '/assets/assets/models/lubiak_dragon_guardian_web.glb?v=20260829-guardian-45s-v1';
+  const dragonLoader = new GLTFLoader();
+  dragonLoader.setMeshoptDecoder(MeshoptDecoder);
+  dragonLoader.load(
+    dragonUrl,
+    (gltf) => {
+      dragonRoot = gltf.scene;
+      dragonRoot.name = 'LUBIAK_DRAGON_GUARDIAN';
+      dragonRoot.traverse((object) => {
+        if (!object.isMesh && !object.isSkinnedMesh) return;
+        object.frustumCulled = false;
+        object.castShadow = false;
+        object.receiveShadow = false;
+      });
+
+      const dragonBox = new THREE.Box3().setFromObject(dragonRoot);
+      const dragonSize = dragonBox.getSize(new THREE.Vector3());
+      const targetLength = Math.max(7, Math.min(16, districtSize.x * 0.13));
+      const sourceLength = Math.max(dragonSize.x, dragonSize.y, dragonSize.z, 0.001);
+      dragonRoot.scale.setScalar(targetLength / sourceLength);
+      sampleDragonPosition(0, dragonRoot.position);
+      scene.add(dragonRoot);
+
+      if (gltf.animations?.length) {
+        const clip = gltf.animations.find((item) => item.name === 'guardian_45s') || gltf.animations[0];
+        dragonMixer = new THREE.AnimationMixer(dragonRoot);
+        dragonAction = dragonMixer.clipAction(clip);
+        dragonAction.setLoop(THREE.LoopRepeat, Infinity);
+        dragonAction.clampWhenFinished = false;
+        dragonAction.enabled = true;
+        dragonAction.play();
+        console.info('LUBIAK dragon animation', { clip: clip.name, duration: clip.duration });
+      } else {
+        console.warn('LUBIAK dragon loaded without animation clips.');
+      }
+    },
+    undefined,
+    (error) => {
+      console.warn('LUBIAK guardian dragon unavailable; district remains fully usable.', error);
+    },
+  );
 }
 
 const modelUrl = '/assets/assets/models/LUBIAK_master_optimized.glb?v=20260829-master-runtime-v2';
@@ -137,6 +276,7 @@ loader.load(
       makeFallbackDistrict();
       return;
     }
+    loadDragon();
     finishLoad('ENTER LUBIAK');
   },
   (xhr) => {
@@ -171,9 +311,11 @@ renderer.domElement.addEventListener('wheel', (event) => {
 }, { passive: true });
 
 const clock = new THREE.Clock();
+let worldElapsed = 0;
 function animate() {
   requestAnimationFrame(animate);
   const dt = Math.min(clock.getDelta(), 0.04);
+  worldElapsed += dt;
   const speed = 9.5 * dt;
   const forward = new THREE.Vector3(Math.sin(yaw), 0, -Math.cos(yaw));
   const right = new THREE.Vector3(Math.cos(yaw), 0, Math.sin(yaw));
@@ -185,6 +327,14 @@ function animate() {
   camera.rotation.order = 'YXZ';
   camera.rotation.y = yaw;
   camera.rotation.x = pitch;
+
+  if (dragonRoot) {
+    if (dragonMixer) dragonMixer.update(dt);
+    sampleDragonPosition(worldElapsed, dragonCurrent);
+    dragonRoot.position.copy(dragonCurrent);
+    orientDragon(worldElapsed, dt);
+  }
+
   renderer.render(scene, camera);
 }
 animate();
