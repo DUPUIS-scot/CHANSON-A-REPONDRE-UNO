@@ -22,7 +22,7 @@
       const center=panel.querySelector('.dds-center');
       if(!center)return false;
       let row=panel.querySelector('[data-jecker-output]');
-      if(!row){row=document.createElement('div');row.className='jecker-output';row.dataset.jeckerOutput='';row.innerHTML='<label>2JECKER OUT</label><input data-jecker-output-range type="range" min="0" max="100" step="1" value="92" aria-label="2JECKER output volume"><output data-jecker-output-value>92%</output>';const status=center.querySelector('.dds-status');center.insertBefore(row,status||null)}
+      if(!row){row=document.createElement('div');row.className='jecker-output';row.dataset.jeckerOutput='';row.innerHTML='<label>MASTER JESTER</label><input data-jecker-output-range type="range" min="0" max="100" step="1" value="92" aria-label="MASTER JESTER output volume"><output data-jecker-output-value>92%</output>';const status=center.querySelector('.dds-status');center.insertBefore(row,status||null)}
 
       const range=row.querySelector('[data-jecker-output-range]');
       const readout=row.querySelector('[data-jecker-output-value]');

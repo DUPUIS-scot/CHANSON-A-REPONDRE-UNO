@@ -76,29 +76,35 @@ jobs:
           polish=web/enochian-test/enochian-terminal-polish-v1.js
           shell=web/enochian-terminal/index.html
           spinner=web/enochian-test/double-jester-portal-spinner-v1.js
+          transport=web/enochian-test/double-jester-independent-transport-v1.js
+          output=web/enochian-test/double-jecker-output-v1.js
           mirror=assets/models/laboratory_portal_mirror.glb
 
-          grep -q "const VERSION='v12'" "$radial"
-          grep -q "doubleJesterRadialPanelRectV12" "$radial"
+          grep -Fq "const STORE='doubleJesterRadialPanelRectV13',VERSION='v13'" "$radial"
           grep -q "const VERSION='v11'" "$link"
           ! grep -q "mainLevel('instruments')" "$link"
           grep -q "__enochDoubleJesterAuthority" "$guard"
-          grep -q "const VERSION='v4'" "$perf"
+          grep -q "const VERSION='v6'" "$perf"
           ! grep -q "if(row&&!split)" "$perf"
           ! grep -q "const coords={A:{vocals:\[30,17\]" "$polish"
-          grep -q "double-jecker-radial-layout-v1.js?v=20260827-jester-radial-v10" "$shell"
+          grep -q "double-jecker-radial-layout-v1.js?v=20260829-jester-radial-v13" "$shell"
           grep -q "double-jecker-runtime-repair-v1.js?v=20260827-jester-authority-v11" "$shell"
           grep -q "enochian-terminal-polish-v1.js?v=20260827-polish-v3" "$shell"
-          grep -q "double-decker-main-stem-link-v1.js?v=20260829-stem-jester-v13" "$shell"
+          grep -q "double-decker-main-stem-link-v1.js?v=20260829-stem-jester-v14" "$shell"
           grep -q '"three":"/vendor/three.module.js"' "$shell"
           grep -q "laboratory_portal_mirror.glb" "$spinner"
-          grep -q "const VERSION='v3'" "$spinner"
+          grep -q "const VERSION='v4'" "$spinner"
           grep -q "rig.rotation.y" "$spinner"
           grep -q "deckFace.rotation.y=Math.PI" "$spinner"
           grep -q "faces:\['mirror','double-deck'\]" "$spinner"
-          grep -q "data-2j-mode=\"mix\"" "$spinner"
+          ! grep -q "data-2j-mode" "$spinner"
           grep -q "panel.classList.contains('open')" "$spinner"
-          grep -q "installEnochianDoubleJesterPortalSpinnerV3" "$link"
+          grep -q "installEnochianDoubleJesterPortalSpinnerV4" "$link"
+          grep -q "const VERSION='v2'" "$transport"
+          grep -q "data-jester-play" "$transport"
+          grep -q "data-jester-pause" "$transport"
+          grep -q "MASTER JESTER" "$output"
+          ! grep -q "SHUFFLE ALL" web/enochian-test/double-decker-special-v2.js
           test "$(head -c 4 "$mirror")" = "glTF"
 
       - name: Report

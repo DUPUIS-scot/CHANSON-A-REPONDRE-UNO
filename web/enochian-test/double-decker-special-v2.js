@@ -29,7 +29,7 @@
         takeoverHud=document.createElement('div');
         takeoverHud.className='dds-takeover-hud';
         takeoverHud.dataset.ddsTakeoverHud='';
-        takeoverHud.innerHTML='<strong>2JECKER MASTER</strong><output data-dds-phase>ARMED · MASTER CLOCK</output><button type="button" data-dds-transport>PLAY</button><button type="button" data-dds-return>RETURN MAIN</button>';
+        takeoverHud.innerHTML='<strong>2JESTER MASTER</strong><output data-dds-phase>ARMED · MASTER CLOCK</output><button type="button" data-dds-transport>PLAY</button><button type="button" data-dds-return>RETURN MAIN</button>';
         panel.insertBefore(takeoverHud,panel.firstChild);
       }
       let engineControl=panel.querySelector('[data-dds-engine-control]');
@@ -37,11 +37,11 @@
         engineControl=document.createElement('div');
         engineControl.className='dds-engine-control';
         engineControl.dataset.ddsEngineControl='';
-        engineControl.innerHTML='<button type="button" data-dds-engine-direct aria-pressed="false">▶ START 2JECKER</button><small>MAIN GOES ON HOLD · ROUND TABLE PLAYS</small>';
+        engineControl.innerHTML='<button type="button" data-dds-engine-direct aria-pressed="false">▶ START 2JESTER</button><small>MAIN GOES ON HOLD · ROUNDTABLE PLAYS</small>';
         panel.insertBefore(engineControl,panel.firstChild);
       }
       let actions=panel.querySelector('.dds-v2-actions');
-      if(!actions){actions=document.createElement('div');actions.className='dds-v2-actions';actions.innerHTML='<button type="button" data-dds-shuffle="A">SHUFFLE A</button><button type="button" data-dds-shuffle="ALL">SHUFFLE ALL</button><button type="button" data-dds-shuffle="B">SHUFFLE B</button>';center?.insertBefore(actions,center.querySelector('.dds-status'))}
+      if(!actions){actions=document.createElement('div');actions.className='dds-v2-actions';actions.innerHTML='<button type="button" data-dds-shuffle="A">SHUFFLE A</button><button type="button" data-dds-shuffle="B">SHUFFLE B</button>';center?.insertBefore(actions,center.querySelector('.dds-status'))}
       ['A','B'].forEach(name=>{const deckEl=panel.querySelector(`[data-dds-deck="${name}"]`);if(!deckEl)return;let b=deckEl.querySelector('[data-dds-deck-shuffle]');if(!b){b=document.createElement('button');b.type='button';b.className='dds-deck-shuffle';b.textContent='RANDOM / SHUFFLE STEM SOURCES';b.dataset.ddsDeckShuffle=name;deckEl.insertBefore(b,deckEl.children[1]||null)}});
       const status=panel.querySelector('.dds-status');
       let holdLine=panel.querySelector('[data-dds-master-hold]');
@@ -50,7 +50,7 @@
       if(typeof api.state.crossfader!=='number')api.state.crossfader=0;
       if(typeof api.state.quantize!=='string')api.state.quantize='1bar';
       let perf=panel.querySelector('[data-dds-performance]');
-      if(!perf){perf=document.createElement('div');perf.className='dds-performance';perf.dataset.ddsPerformance='';perf.innerHTML='<div class="dds-performance-row"><label>DECK A</label><input data-dds-crossfader type="range" min="0" max="100" step="1" value="0" aria-label="2JECKER A B crossfader"><output data-dds-crossfader-value>A 100%</output></div><div class="dds-perf-buttons"><button type="button" data-dds-take="A" class="active">TAKE A</button><button type="button" data-dds-cue-b>PREP B</button><button type="button" data-dds-take="B">TAKE B</button></div><div class="dds-quantize"><label>QUANTIZE</label><select data-dds-quantize><option value="now">NOW</option><option value="1beat">1 BEAT</option><option value="1bar" selected>1 BAR</option><option value="4bar">4 BARS</option></select></div>';center?.insertBefore(perf,status||null)}
+      if(!perf){perf=document.createElement('div');perf.className='dds-performance';perf.dataset.ddsPerformance='';perf.innerHTML='<div class="dds-performance-row"><label>DECK A</label><input data-dds-crossfader type="range" min="0" max="100" step="1" value="0" aria-label="2JESTER A B crossfader"><output data-dds-crossfader-value>A 100%</output></div><div class="dds-perf-buttons"><button type="button" data-dds-take="A" class="active">TAKE A</button><button type="button" data-dds-cue-b>PREP B</button><button type="button" data-dds-take="B">TAKE B</button></div><div class="dds-quantize"><label>QUANTIZE</label><select data-dds-quantize><option value="now">NOW</option><option value="1beat">1 BEAT</option><option value="1bar" selected>1 BAR</option><option value="4bar">4 BARS</option></select></div>';center?.insertBefore(perf,status||null)}
       const xf=perf.querySelector('[data-dds-crossfader]'),xfOut=perf.querySelector('[data-dds-crossfader-value]'),quant=perf.querySelector('[data-dds-quantize]');
       const randomKey=avoid=>{const pool=catalog.filter(x=>x!==avoid);return pool[Math.floor(Math.random()*pool.length)]||catalog[0]};
       const slotState=(deckName,stem)=>api.state?.slots?.[deckName]?.[stem]||null;
@@ -95,7 +95,7 @@
           try{
             if(on){
               if(mainWasPlaying===null)mainWasPlaying=!master.paused;
-              // Keep the muted master running as the shared beat clock. Pausing it would trigger the base engine's pause listener and silence every 2JECKER stem along with it.
+              // Keep the muted master running as the shared beat clock. Pausing it would trigger the base engine's pause listener and silence every 2JESTER stem along with it.
               master.muted=true;
             }else{
               master.muted=false;
@@ -107,7 +107,7 @@
         }
         if(holdLine){
           holdLine.classList.toggle('active',!!on);
-          holdLine.textContent=on?'MAIN HOLD · 2JECKER LIVE':'MASTER LIVE';
+          holdLine.textContent=on?'MAIN HOLD · 2JESTER LIVE':'MASTER LIVE';
         }
       };
       const jeckerPlaying=()=>['A','B'].some(deckName=>stems.some(stem=>{const slot=slotState(deckName,stem);return slot?.on!==false&&slot?.media&&!slot.media.paused&&!slot.media.ended}));
@@ -117,7 +117,7 @@
         if(on){
           if(!badge){badge=d.createElement('i');badge.className='jecker-main-badge';badge.setAttribute('aria-hidden','true');mainPlay.appendChild(badge)}
           const playing=jeckerPlaying();mainPlay.classList.add('jecker-main-live');mainPlay.firstChild&&(mainPlay.firstChild.textContent=playing?'❚❚':'▶');badge.textContent='2J';
-          mainPlay.title=playing?'2JECKER LIVE · pause hybrid master':'2JECKER LIVE · play hybrid master';mainPlay.setAttribute('aria-label',mainPlay.title);
+          mainPlay.title=playing?'2JESTER LIVE · pause hybrid master':'2JESTER LIVE · play hybrid master';mainPlay.setAttribute('aria-label',mainPlay.title);
         }else{badge?.remove();mainPlay.classList.remove('jecker-main-live');mainPlay.removeAttribute('title');mainPlay.removeAttribute('aria-label')}
       };
       const toggleJeckerTransport=async()=>{
@@ -126,16 +126,16 @@
         setMasterHold(true);setMainPlayIndicator(true);return jeckerPlaying();
       };
       const setTakeover=on=>{
-        // STEMS MIX remains the live performance surface while it routes 2JECKER.
+        // STEMS MIX remains the live performance surface while it routes 2JESTER.
         const active=false;
         panel.classList.toggle('jecker-takeover',active);
         document.documentElement.classList.toggle('double-jecker-takeover',active);
         const phase=takeoverHud?.querySelector('[data-dds-phase]');
         const play=takeoverHud?.querySelector('[data-dds-transport]');
-        if(phase)phase.textContent=active?(jeckerPlaying()?'2JECKER · MASTER LIVE':'2JECKER · PAUSED'):'ARMED · MASTER CLOCK';
+        if(phase)phase.textContent=active?(jeckerPlaying()?'2JESTER · MASTER LIVE':'2JESTER · PAUSED'):'ARMED · MASTER CLOCK';
         if(play)play.textContent=jeckerPlaying()?'PAUSE':'PLAY';
       };
-      const paint=()=>{const on=!!api.state?.enabled;setTakeover(on);const btn=panel.querySelector('[data-dds-enable]');btn?.classList.toggle('active',on);btn?.classList.toggle('dds-engine-live',on);if(btn)btn.textContent=on?'2JECKER LIVE · MAIN HOLD':'START 2JECKER';const direct=engineControl?.querySelector('[data-dds-engine-direct]');if(direct){direct.classList.toggle('active',on);direct.setAttribute('aria-pressed',String(on));direct.textContent=on?'■ STOP 2JECKER':'▶ START 2JECKER';direct.title=on?'Stop 2JECKER and return main stems':'Start 2JECKER roundtable'}launcher.classList.toggle('active',on);setMasterHold(on);setMainPlayIndicator(on);w.__enochStemJecker?.syncUi?.()};
+      const paint=()=>{const on=!!api.state?.enabled;setTakeover(on);const btn=panel.querySelector('[data-dds-enable]');btn?.classList.toggle('active',on);btn?.classList.toggle('dds-engine-live',on);if(btn)btn.textContent=on?'2JESTER LIVE · MAIN HOLD':'START 2JESTER';const direct=engineControl?.querySelector('[data-dds-engine-direct]');if(direct){direct.classList.toggle('active',on);direct.setAttribute('aria-pressed',String(on));direct.textContent=on?'■ STOP 2JESTER':'▶ START 2JESTER';direct.title=on?'Stop 2JESTER and return main stems':'Start 2JESTER roundtable'}launcher.classList.toggle('active',on);setMasterHold(on);setMainPlayIndicator(on);w.__enochStemJecker?.syncUi?.()};
       if(mainPlay&&mainPlay.dataset.ddsJeckerTransportBound!=='v9'){mainPlay.dataset.ddsJeckerTransportBound='v9';mainPlay.addEventListener('click',e=>{if(!api.state?.enabled)return;e.preventDefault();e.stopImmediatePropagation();void toggleJeckerTransport()},{capture:true})}
       takeoverHud?.querySelector('[data-dds-transport]')?.addEventListener('click',async()=>{await toggleJeckerTransport();paint()});
       takeoverHud?.querySelector('[data-dds-return]')?.addEventListener('click',async()=>{if(api.state?.enabled){api.disable?.();await restoreNormalStems();setMasterHold(false)}paint();if(panel.classList.contains('open'))launcher.click()});
@@ -156,7 +156,7 @@
         master.dataset.ddsPerfBound='v8';
         master.addEventListener('play',()=>{
           if(api.state?.enabled){
-            // 2JECKER keeps the master transport running but muted as its shared beat clock.
+            // 2JESTER keeps the master transport running but muted as its shared beat clock.
             // Pausing it would fire the base pause handler and silence every special stem.
             master.muted=true;
             setMasterHold(true);

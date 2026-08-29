@@ -32,8 +32,9 @@ jobs:
           from pathlib import Path
           import re
           html = Path('web/enochian-terminal/index.html').read_text(encoding='utf-8')
-          scripts = re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', html, re.S)
-          inline = '\n'.join(s for s in scripts if s.strip())
+          scripts = re.findall(r'<script([^>]*)>(.*?)</script>', html, re.S)
+          inline = '\n'.join(body for attrs, body in scripts
+                             if body.strip() and 'src=' not in attrs and 'type="importmap"' not in attrs)
           Path('/tmp/enochian-inline.js').write_text(inline, encoding='utf-8')
           PY
           node --check /tmp/enochian-inline.js

@@ -12,10 +12,10 @@
       if(document.documentElement.dataset.doubleJeckerTurntableShield==='v1')return true;
       document.documentElement.dataset.doubleJeckerTurntableShield='v1';
 
-      panel.setAttribute('aria-label','DOUBLE JECKER SPECIAL');
-      panel.querySelectorAll('strong,.dds-foot span').forEach(el=>{el.textContent=el.textContent.replace(/DOUBLE DECKER SPECIAL/g,'DOUBLE JECKER SPECIAL')});
-      launcher.textContent='DOUBLE JECKER SPECIAL';
-      launcher.setAttribute('aria-label','Open DOUBLE JECKER SPECIAL');
+      panel.setAttribute('aria-label','2JESTER');
+      panel.querySelectorAll('strong,.dds-foot span').forEach(el=>{el.textContent=el.textContent.replace(/DOUBLE DECKER SPECIAL/g,'2JESTER')});
+      launcher.textContent='2JESTER';
+      launcher.setAttribute('aria-label','Open 2JESTER');
 
       let style=document.getElementById('double-jecker-turntable-shield-style');
       if(!style){
@@ -43,8 +43,8 @@
 
       let shield=document.getElementById('doubleJeckerShield');
       if(!shield){
-        shield=document.createElement('section');shield.id='doubleJeckerShield';shield.setAttribute('role','group');shield.setAttribute('aria-label','DOUBLE JECKER SPECIAL floating turntable');
-        shield.innerHTML='<div class="djs-rim"></div><div class="djs-link"></div><div class="djs-platter"></div><div class="djs-title">DOUBLE JECKER SPECIAL</div><i class="djs-stem s-vocals" data-jecker-stem="vocals"></i><i class="djs-stem s-drums" data-jecker-stem="drums"></i><i class="djs-stem s-bass" data-jecker-stem="bass"></i><i class="djs-stem s-other" data-jecker-stem="other"></i><button type="button" class="djs-center" aria-label="Open DOUBLE JECKER SPECIAL">2J</button><div class="djs-state">READY</div>';
+        shield=document.createElement('section');shield.id='doubleJeckerShield';shield.setAttribute('role','group');shield.setAttribute('aria-label','2JESTER floating turntable');
+        shield.innerHTML='<div class="djs-rim"></div><div class="djs-link"></div><div class="djs-platter"></div><div class="djs-title">2JESTER</div><i class="djs-stem s-vocals" data-jecker-stem="vocals"></i><i class="djs-stem s-drums" data-jecker-stem="drums"></i><i class="djs-stem s-bass" data-jecker-stem="bass"></i><i class="djs-stem s-other" data-jecker-stem="other"></i><button type="button" class="djs-center" aria-label="Open 2JESTER">2J</button><div class="djs-state">READY</div>';
         document.body.appendChild(shield);
       }
 
@@ -64,8 +64,8 @@
         const engineOn=!!api.state?.enabled,playing=engineOn&&['A','B'].some(deckName=>['vocals','drums','bass','other'].some(stem=>{const media=api.state?.slots?.[deckName]?.[stem]?.media;return media&&!media.paused&&!media.ended})),linked=!!(w.__enochStemJecker||w.__enochStemDecker)?.linked,open=panel.classList.contains('open');
         shield.classList.toggle('engine-on',engineOn);shield.classList.toggle('playing',playing);shield.classList.toggle('jecker-linked',linked);shield.classList.toggle('panel-open',open);shield.classList.toggle('takeover-active',engineOn&&panel.classList.contains('jecker-takeover'));
         const m=mask();Object.entries(m).forEach(([stem,on])=>shield.querySelector(`[data-jecker-stem="${stem}"]`)?.classList.toggle('live',!!on));
-        const state=shield.querySelector('.djs-state');if(state)state.textContent=engineOn?(playing?'ENGINE · PLAY':'ENGINE · PAUSE'):(linked?'STEM JECKER':'READY');
-        center.setAttribute('aria-expanded',String(open));center.title=open?'DOUBLE JECKER SPECIAL OPEN':'Open DOUBLE JECKER SPECIAL';
+        const state=shield.querySelector('.djs-state');if(state)state.textContent=engineOn?(playing?'ENGINE · PLAY':'ENGINE · PAUSE'):(linked?'STEM JESTER':'READY');
+        center.setAttribute('aria-expanded',String(open));center.title=open?'2JESTER OPEN':'Open 2JESTER';
       };
       master.addEventListener('play',paint);master.addEventListener('pause',paint);master.addEventListener('ended',paint);
       const observer=new MutationObserver(paint);observer.observe(panel,{attributes:true,attributeFilter:['class']});

@@ -60,7 +60,7 @@
 
         let launcher=d.getElementById('doubleDeckerSpecialLaunch');
         if(!launcher){
-          launcher=d.createElement('button');launcher.type='button';launcher.id='doubleDeckerSpecialLaunch';launcher.className='btn double-decker-special-launch';launcher.textContent='DOUBLE DECKER SPECIAL';launcher.setAttribute('aria-label','Open DOUBLE DECKER SPECIAL');
+          launcher=d.createElement('button');launcher.type='button';launcher.id='doubleDeckerSpecialLaunch';launcher.className='btn double-decker-special-launch';launcher.textContent='DOUBLE JESTER SPECIAL';launcher.setAttribute('aria-label','Open DOUBLE JESTER SPECIAL');
           const left=d.querySelector('.grid>aside:first-child');
           const stemBox=d.querySelector('.stem-isolator');
           if(stemBox&&stemBox.parentNode)stemBox.insertAdjacentElement('beforebegin',launcher);else if(left)left.appendChild(launcher);else d.body.appendChild(launcher);
@@ -68,10 +68,10 @@
 
         let panel=outer.getElementById('doubleDeckerSpecial');
         if(!panel){
-          panel=outer.createElement('section');panel.id='doubleDeckerSpecial';panel.setAttribute('role','dialog');panel.setAttribute('aria-label','DOUBLE DECKER SPECIAL');
+          panel=outer.createElement('section');panel.id='doubleDeckerSpecial';panel.setAttribute('role','dialog');panel.setAttribute('aria-label','DOUBLE JESTER SPECIAL');
           const options=catalog.map(x=>`<option value="${x.key}">${x.label}</option>`).join('');
           const deckMarkup=name=>`<section class="dds-deck" data-dds-deck="${name}"><h3>DECK ${name}</h3>${stems.map(st=>`<div class="dds-slot" data-slot="${st}"><label>${st.toUpperCase()}</label><select data-source>${options}</select><input data-level type="range" min="0" max="100" value="100"><output data-value>100%</output></div>`).join('')}</section>`;
-          panel.innerHTML=`<div class="dds-bar"><button type="button" data-dds-enable>ENGINE OFF</button><strong>DOUBLE DECKER SPECIAL · HYBRID STEM ROUTING</strong><button type="button" data-dds-reset>RESET</button><button type="button" data-dds-close>RESTORE</button></div><div class="dds-body">${deckMarkup('A')}<section class="dds-center"><h3>HYBRID MASTER</h3><div class="dds-cross"><div><span>DECK A</span><span>DECK B</span></div><input data-cross type="range" min="0" max="100" value="0"></div><div class="dds-status"><b data-dds-state>READY</b><br>8 LIVE STEM SLOTS<br>TRANSPORT LOCK · MASTER CLOCK</div><div class="dds-note">Each slot can load a stem from a different source track. Opening the panel does not change sound. ENGINE ON routes the eight special slots and uses the normal deck transport as clock.</div></section>${deckMarkup('B')}</div><div class="dds-foot"><span>DOUBLE DECKER SPECIAL · ATTACHED TO DECK ENGINE</span><button class="dds-btn" type="button" data-dds-sync>SYNC NOW</button><button class="dds-btn" type="button" data-dds-close>HIDE</button></div>`;
+          panel.innerHTML=`<div class="dds-bar"><button type="button" data-dds-enable>ENGINE OFF</button><strong>DOUBLE JESTER SPECIAL · HYBRID STEM ROUTING</strong><button type="button" data-dds-reset>RESET</button><button type="button" data-dds-close>RESTORE</button></div><div class="dds-body">${deckMarkup('A')}<section class="dds-center"><h3>HYBRID MASTER</h3><div class="dds-cross"><div><span>DECK A</span><span>DECK B</span></div><input data-cross type="range" min="0" max="100" value="0"></div><div class="dds-status"><b data-dds-state>READY</b><br>8 LIVE STEM SLOTS<br>TRANSPORT LOCK · MASTER CLOCK</div><div class="dds-note">Each slot can load a stem from a different source track. Opening the panel does not change sound. ENGINE ON routes the eight special slots and uses the normal deck transport as clock.</div></section>${deckMarkup('B')}</div><div class="dds-foot"><span>DOUBLE JESTER SPECIAL · ATTACHED TO DECK ENGINE</span><button class="dds-btn" type="button" data-dds-sync>SYNC NOW</button><button class="dds-btn" type="button" data-dds-close>HIDE</button></div>`;
           outer.body.appendChild(panel);
         }
 
@@ -97,8 +97,8 @@
         const resetAssignments=async()=>{const key=currentTrack().key;panel.querySelectorAll('[data-dds-deck]').forEach(deckEl=>{const deckName=deckEl.dataset.ddsDeck;deckEl.querySelectorAll('.dds-slot').forEach(slotEl=>{const st=slotEl.dataset.slot,select=slotEl.querySelector('[data-source]'),range=slotEl.querySelector('[data-level]'),out=slotEl.querySelector('[data-value]');select.value=key;range.value='100';out.textContent='100%';if(state.slots[deckName]?.[st]){state.slots[deckName][st].level=1;applySlotLevel(deckName,st);loadSlot(deckName,st,key)}})});state.crossfade=0;panel.querySelector('[data-cross]').value='0';applyCrossfade();setStateText(state.enabled?'ENGINE ON':'READY')};
         const enable=async()=>{try{await ensureAudio();state.enabled=true;state.savedMasterMuted=!!masterAudio.muted;masterAudio.muted=true;panel.querySelector('[data-dds-enable]').classList.add('active');panel.querySelector('[data-dds-enable]').textContent='ENGINE ON';launcher.classList.add('active');setStateText('ENGINE ON');if(!masterAudio.paused)await playAll()}catch(_){state.enabled=false;masterAudio.muted=state.savedMasterMuted;setStateText('ENGINE ERROR')}};
         const disable=()=>{state.enabled=false;pauseAll();masterAudio.muted=state.savedMasterMuted;panel.querySelector('[data-dds-enable]').classList.remove('active');panel.querySelector('[data-dds-enable]').textContent='ENGINE OFF';launcher.classList.remove('active');setStateText('READY')};
-        const open=()=>{panel.classList.add('open');launcher.textContent='DOUBLE DECKER SPECIAL · OPEN';try{const saved=JSON.parse(localStorage.getItem('doubleDeckerSpecialRect')||'null');if(saved&&innerWidth>720){panel.style.left=saved.left+'px';panel.style.top=saved.top+'px';panel.style.width=saved.width+'px';panel.style.height=saved.height+'px';panel.style.transform='none'}}catch(_){}};
-        const close=()=>{try{if(innerWidth>720){const r=panel.getBoundingClientRect();localStorage.setItem('doubleDeckerSpecialRect',JSON.stringify({left:r.left,top:r.top,width:r.width,height:r.height}))}}catch(_){}panel.classList.remove('open');launcher.textContent='DOUBLE DECKER SPECIAL'};
+        const open=()=>{panel.classList.add('open');launcher.textContent='DOUBLE JESTER SPECIAL · OPEN';try{const saved=JSON.parse(localStorage.getItem('doubleDeckerSpecialRect')||'null');if(saved&&innerWidth>720){panel.style.left=saved.left+'px';panel.style.top=saved.top+'px';panel.style.width=saved.width+'px';panel.style.height=saved.height+'px';panel.style.transform='none'}}catch(_){}};
+        const close=()=>{try{if(innerWidth>720){const r=panel.getBoundingClientRect();localStorage.setItem('doubleDeckerSpecialRect',JSON.stringify({left:r.left,top:r.top,width:r.width,height:r.height}))}}catch(_){}panel.classList.remove('open');launcher.textContent='DOUBLE JESTER SPECIAL'};
         launcher.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();panel.classList.contains('open')?close():open()});
         panel.querySelectorAll('[data-dds-close]').forEach(b=>b.addEventListener('click',close));
         panel.querySelector('[data-dds-enable]').addEventListener('click',()=>state.enabled?disable():enable());
@@ -110,7 +110,7 @@
         masterAudio.addEventListener('play',()=>{if(state.enabled)playAll()});masterAudio.addEventListener('pause',()=>{if(state.enabled)pauseAll()});masterAudio.addEventListener('seeking',()=>{if(state.enabled)syncAll(true)});masterAudio.addEventListener('seeked',()=>{if(state.enabled)syncAll(true)});masterAudio.addEventListener('ratechange',()=>{if(state.enabled)syncAll(true)});
         let driftTimer=0;const drift=()=>{if(state.enabled&&!masterAudio.paused)syncAll(false);driftTimer=w.setTimeout(drift,280)};driftTimer=w.setTimeout(drift,280);
         w.addEventListener('pagehide',()=>{if(driftTimer)w.clearTimeout(driftTimer);disable()},{once:true});
-        w.__enochDoubleDeckerSpecial={version:'v1',name:'DOUBLE DECKER SPECIAL',state,open,close,enable,disable,sync:()=>syncAll(true),setSource:loadSlot};
+        w.__enochDoubleDeckerSpecial={version:'v1',name:'DOUBLE JESTER SPECIAL',state,open,close,enable,disable,sync:()=>syncAll(true),setSource:loadSlot};
         return true;
       }catch(_){return false}
     }

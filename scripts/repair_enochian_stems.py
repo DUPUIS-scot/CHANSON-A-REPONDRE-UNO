@@ -6,7 +6,7 @@ for marker in ['window.__enochStemRuntimeApi=','stemMasterToggle','masterGate','
  if marker not in runtime: raise SystemExit(f'missing runtime marker: {marker}')
 for marker in ['stem-four-channel-ui-v1.js?v=20260827-v4','two-virtual-mice-v1.js?v=20260827-lock-workflow-v3','two-mix-master-anchor-v1.js?v=20260827-signal-memory-v10','analyser-data-bus.js?v=20260824-v2','installEnochianTwoMixMasterAnchorV1',"twoMixMasterLayout==='v10'","twoMixVirtualMice==='v3'"]:
  if marker not in shell: raise SystemExit(f'missing terminal shell marker: {marker}')
-for marker,source,label in [("const VERSION='v11'",stem_link,'STEM JESTER'),("VERSION='v12'",radial,'radial authority'),("const VERSION='v11'",repair,'runtime authority'),("const VERSION='v6'",performance,'spinner'),("const VERSION='v8'",ui_repairs,'UI repairs'),("stemFourChannel==='v4'",four_stem,'four stem UI'),("analyserControlsContained='v6'",contained,'analyser ownership')]:
+for marker,source,label in [("const VERSION='v11'",stem_link,'STEM JESTER'),("VERSION='v13'",radial,'radial authority'),("const VERSION='v11'",repair,'runtime authority'),("const VERSION='v6'",performance,'spinner'),("const VERSION='v8'",ui_repairs,'UI repairs'),("stemFourChannel==='v4'",four_stem,'four stem UI'),("analyserControlsContained='v6'",contained,'analyser ownership')]:
  if marker not in source: raise SystemExit(f'missing {label}: {marker}')
 for marker in ["['mix','stem','jog']","b.dataset.mode=m","setMode","applyStem","applyJog","continuousSpin:true","dragOuterRig:true"]:
  if marker not in performance: raise SystemExit(f'2J MIX/STEM/JOG v6 contract missing: {marker}')

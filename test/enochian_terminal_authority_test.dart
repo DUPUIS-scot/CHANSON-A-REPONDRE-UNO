@@ -25,6 +25,11 @@ void main() {
         .readAsStringSync();
     final twoJ = File('web/enochian-test/double-jester-portal-spinner-v1.js')
         .readAsStringSync();
+    final jesterTransport =
+        File('web/enochian-test/double-jester-independent-transport-v1.js')
+            .readAsStringSync();
+    final jesterOutput = File('web/enochian-test/double-jecker-output-v1.js')
+        .readAsStringSync();
 
     expect(liveCopy, contains('window.__enochStemRuntimeApi='));
     expect(liveCopy, contains("version:'v1'"));
@@ -38,9 +43,9 @@ void main() {
     expect(terminal,
         contains('authoritative-runtime.js?v=20260825-runtime-api-v2'));
     expect(terminal,
-        contains('double-decker-main-stem-link-v1.js?v=20260829-stem-jester-v13'));
+        contains('double-decker-main-stem-link-v1.js?v=20260829-stem-jester-v14'));
     expect(terminal,
-        contains('double-jecker-radial-layout-v1.js?v=20260827-jester-radial-v10'));
+        contains('double-jecker-radial-layout-v1.js?v=20260829-jester-radial-v13'));
     expect(terminal,
         contains('double-jecker-runtime-repair-v1.js?v=20260827-jester-authority-v11'));
     expect(terminal,
@@ -54,10 +59,10 @@ void main() {
     expect(terminal,
         contains('two-mix-master-anchor-v1.js?v=20260827-signal-memory-v10'));
 
-    expect(radial, contains("VERSION='v12'"));
-    expect(radial, contains('doubleJesterRadialPanelRectV12'));
+    expect(radial, contains("VERSION='v13'"));
+    expect(radial, contains('doubleJesterRadialPanelRectV13'));
     expect(radial, contains('jesterRadialAuthority===VERSION'));
-    expect(radial, contains("panel.dataset.jeckerRadial='v10'"));
+    expect(radial, contains("panel.dataset.jeckerRadial='v13'"));
     expect(radial, contains("content:none!important;display:none!important"));
     expect(radial, contains('other:[22,34]'));
     expect(radial, contains('vocals:[34,82]'));
@@ -69,11 +74,15 @@ void main() {
     expect(polish, contains("VERSION='20260827-polish-v3'"));
     expect(polish, isNot(contains('const coords={A:{vocals:[30,17]')));
     expect(polish, isNot(contains('JECKER_STORE=')));
-    expect(twoJ, contains("const VERSION='v3'"));
+    expect(twoJ, contains("const VERSION='v4'"));
     expect(twoJ, contains("faces:['mirror','double-deck']"));
     expect(twoJ, contains('STEMS DOUBLE DECK'));
-    expect(twoJ, contains('data-2j-mode="mix"'));
-    expect(twoJ, contains("source:'2J'"));
+    expect(twoJ, contains("modeAuthority:'2J performance v6'"));
+    expect(twoJ, isNot(contains('data-2j-mode')));
+    expect(jesterTransport, contains("const VERSION='v2'"));
+    expect(jesterTransport, contains('data-jester-play'));
+    expect(jesterTransport, contains('data-jester-pause'));
+    expect(jesterOutput, contains('MASTER JESTER'));
 
     expect(terminal, contains('installEnochianUiRepairsV1'));
     expect(terminal, contains('installEnochianAnalyserControlsContainedV1'));
