@@ -1,4 +1,4 @@
-deploy-request: 2026-08-29T18:40:00+01:00
+deploy-request: 2026-08-29T19:04:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: switch LUBIAK path to assets/models/LUBIAK_master_optimized.glb as the authoritative 3D environment model
+reason: repair LUBIAK master model framing, clipping, backface visibility and material depth without rebuilding the GLB
