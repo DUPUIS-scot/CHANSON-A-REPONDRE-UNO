@@ -1,4 +1,5 @@
-deploy-request: 2026-08-29T10:06:00+01:00
+deploy-request: 2026-08-29T10:20:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy replacement PLAY Jester GLB with locked torso-up framing and fixed-root gesture motion
+reason: deploy final 2J and 2JESTER release contract with one mode authority, independent PLAY/PAUSE, corrected layout, naming, mirror lighting, and repaired CI
+source-commit: 23bc52250d1df6d002f216258498494cbb66495d
