@@ -1,4 +1,4 @@
-deploy-request: 2026-08-29T13:52:00+01:00
+deploy-request: 2026-08-29T14:05:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy current main including HP image asset
+reason: deploy authoritative live LINE IN waveform analyser with Windows input discovery and device switching
