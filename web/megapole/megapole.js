@@ -159,8 +159,9 @@ function frameEnvironment(root) {
   camera.far = Math.max(1000, distance + radius * 8);
   camera.updateProjectionMatrix();
   camera.lookAt(0, 0, 0);
-  yaw = 0;
-  pitch = 0;
+  camera.rotation.order = 'YXZ';
+  yaw = camera.rotation.y;
+  pitch = camera.rotation.x;
 
   movementBounds = new THREE.Box3(
     new THREE.Vector3(-size.x * 0.8, -size.y * 0.5, -size.z * 0.8),
@@ -184,6 +185,8 @@ function frameEnvironment(root) {
     fitDistance: distance,
     meshCount: meshes,
     camera: camera.position.toArray(),
+    yaw,
+    pitch,
   });
   return meshes;
 }
@@ -191,7 +194,7 @@ function frameEnvironment(root) {
 async function installEnvironment() {
   setStatus('ENTERING THE DRAGON', 4);
   const decoder = await getMeshoptDecoder();
-  const url = '/assets/assets/models/SILMARI_LLION_MEGAPOLE_LUBIAK.glb?v=20260829-megapole-visible-v5';
+  const url = '/assets/assets/models/SILMARI_LLION_MEGAPOLE_LUBIAK.glb?v=20260829-megapole-camera-v6';
   try {
     const gltf = await loadGlb(url, decoder);
     const root = gltf.scene;
