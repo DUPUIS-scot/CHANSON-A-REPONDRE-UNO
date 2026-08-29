@@ -1,4 +1,4 @@
-deploy-request: 2026-08-29T21:51:00+01:00
+deploy-request: 2026-08-29T22:03:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: place optimized Scene 11 GLB inside LUBIAK circus interior and show YouTube video 24rx276VBk0 on the circus screen
+reason: deploy SILMARI'LLION Megapole narrative lighting and raw AI GLB framing
