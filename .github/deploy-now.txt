@@ -1,4 +1,4 @@
-deploy-request: 2026-08-29T19:04:00+01:00
+deploy-request: 2026-08-29T19:10:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: repair LUBIAK master model framing, clipping, backface visibility and material depth without rebuilding the GLB
+reason: repair LUBIAK master GLB loading with Meshopt decoder, absolute deployed asset URL and cache-busted runtime
