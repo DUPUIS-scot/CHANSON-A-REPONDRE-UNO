@@ -185,5 +185,16 @@ def main():
     args = p.parse_args()
     upgrade(args.glb)
 
+    # The deployment workflow already invokes this upgrader after Flutter has
+    # produced build/web. Apply the approved night PBR treatment directly to
+    # the deployed exterior castle GLB in the same build pass.
+    castle = os.path.join(os.path.dirname(args.glb), 'castle_exterior.glb')
+    if os.path.isfile(castle) and os.path.getsize(castle) > 0:
+        from upgrade_castle_exterior_glb import upgrade as upgrade_castle
+        upgrade_castle(castle)
+        print(f'CASTLE exterior deployment texture pass complete: {castle}')
+    else:
+        raise FileNotFoundError(f'Expected exterior castle GLB beside Megapole target: {castle}')
+
 if __name__ == '__main__':
     main()
