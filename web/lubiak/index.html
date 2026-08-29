@@ -29,5 +29,31 @@
     <div id="help">DRAG · LOOK &nbsp; WHEEL / ↑↓ · MOVE &nbsp; A/D · STRAFE</div>
   </div>
   <script type="module" src="lubiak.js?v=20260829-lubiak-boot-v3"></script>
+  <script>
+    (() => {
+      const maxGap = 650;
+      const maxTravel = 72;
+      let clicks = [];
+      window.addEventListener('pointerdown', (event) => {
+        if (!event.shiftKey || event.button !== 0) {
+          clicks = [];
+          return;
+        }
+        const now = performance.now();
+        clicks = clicks.filter((item) => now - item.t <= maxGap * 2);
+        const first = clicks[0];
+        if (first && Math.hypot(event.clientX - first.x, event.clientY - first.y) > maxTravel) clicks = [];
+        clicks.push({ t: now, x: event.clientX, y: event.clientY });
+        if (clicks.length < 3) return;
+        const a = clicks[clicks.length - 3];
+        const b = clicks[clicks.length - 2];
+        const c = clicks[clicks.length - 1];
+        if (b.t - a.t <= maxGap && c.t - b.t <= maxGap) {
+          clicks = [];
+          location.assign('../megapole/');
+        }
+      }, true);
+    })();
+  </script>
 </body>
 </html>
