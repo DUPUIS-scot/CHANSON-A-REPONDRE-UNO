@@ -1,4 +1,4 @@
-deploy-request: 2026-08-29T13:01:00+01:00
+deploy-request: 2026-08-29T13:12:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy one PRIVATE I/O launcher under MAIN for MIDI + LINE IN with one shared password/session gate
+reason: deploy enlarged rig-anchored PLAY Jester bust with procedural idle and dealer draw flip present receive discard animation state machine
