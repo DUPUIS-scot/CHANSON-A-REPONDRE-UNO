@@ -1,4 +1,4 @@
-deploy-request: 2026-08-29T11:42:00+01:00
+deploy-request: 2026-08-29T11:53:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy PLAY Jester rig-anchored bust framing using Head and Spine02, auto-upright orientation, and fixed torso-up viewport
+reason: deploy certified CHANSON À RÉPONDRE UNO release 3.7.3.7
