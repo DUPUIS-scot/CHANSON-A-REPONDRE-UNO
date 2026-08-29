@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#05080d" />
+  <title>SILMARI'LLION — Megapole</title>
+  <style>
+    html,body,#stage{width:100%;height:100%;margin:0;overflow:hidden;background:#05080d}
+    body{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:#f2cf82}
+    canvas{display:block;width:100%;height:100%;touch-action:none}
+    #hud{position:fixed;inset:0;pointer-events:none}
+    .top{position:absolute;left:18px;top:18px;padding:10px 13px;border:1px solid #d1a04e66;background:#05080dcc;backdrop-filter:blur(8px)}
+    .title{letter-spacing:.18em;font-weight:800}.sub{margin-top:4px;font-size:11px;opacity:.72}
+    #back{pointer-events:auto;position:absolute;right:18px;top:18px;color:#f2cf82;text-decoration:none;border:1px solid #d1a04e88;background:#05080ddd;padding:9px 12px}
+    #progress{position:absolute;left:50%;bottom:34px;transform:translateX(-50%);width:min(460px,72vw);height:3px;background:#142130;transition:opacity .4s}
+    #bar{height:100%;width:0;background:#efc66b;transition:width .15s linear}
+    #status{position:absolute;left:50%;bottom:46px;transform:translateX(-50%);font-size:11px;letter-spacing:.12em;white-space:nowrap;transition:opacity .4s}
+    #help{position:absolute;right:18px;bottom:18px;font-size:10px;opacity:.5;text-align:right}
+  </style>
+  <script type="importmap">{"imports":{"three":"../vendor/three.module.js"}}</script>
+</head>
+<body>
+  <div id="stage"></div>
+  <div id="hud">
+    <div class="top"><div class="title">SILMARI'LLION</div><div class="sub">MEGAPOLE · INSIDE THE DRAGON</div></div>
+    <a id="back" href="../lubiak/">LUBIAK</a>
+    <div id="status">ENTERING THE MEGAPOLE</div><div id="progress"><div id="bar"></div></div>
+    <div id="help">DRAG · LOOK &nbsp; WHEEL / ↑↓ · MOVE &nbsp; A/D · STRAFE</div>
+  </div>
+  <script type="module" src="megapole.js?v=20260829-megapole-v1"></script>
+</body>
+</html>
