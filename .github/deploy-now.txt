@@ -1,4 +1,4 @@
-deploy-request: 2026-08-29T02:20:00+01:00
+deploy-request: 2026-08-29T02:39:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: restore permanent MIDI CONTROLLER with CONNECT USB MIDI and MIDI launcher directly under MASTER while retaining floating dual-deck MIDI and WAV note transcription
+reason: deploy explicit MAIN to MIDI CONTROLLER to USB MIDI to MAIN 3D SIGNAL routing with MIDI spectrum events while retaining WAV note transcription
