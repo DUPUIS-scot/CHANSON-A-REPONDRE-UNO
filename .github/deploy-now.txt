@@ -1,4 +1,5 @@
-deploy-request: 2026-08-29T03:56:00+01:00
+deploy-request: 2026-08-29T00:00:00Z
 source: chat
 workflow: WEB — Deploy Live Site
-reason: sustain AI Comptroller MIDI sculpt modulation while notes are held, fix normalized MIDI spectrum energy scaling, and refresh MOD SCULPT v6 authorities
+reason: deploy the two-sided 2J performance turntable while preserving the separate 2JESTER preparation/player interface
+source-commit: abc0d7fd6952eebb2d82ae44b8e00d8f22d8d294
