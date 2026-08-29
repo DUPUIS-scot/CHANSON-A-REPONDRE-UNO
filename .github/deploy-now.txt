@@ -1,4 +1,4 @@
-deploy-request: 2026-08-29T01:57:00+01:00
+deploy-request: 2026-08-29T02:05:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: restore complete Enochian late-authority loader including required 2MIX authorities while retaining floating USB MIDI and MOD MIDI LIVE
+reason: deploy dual MIDI deck routing with independent USB input, channel and instrument assignment while retaining 3D SIGNAL response
