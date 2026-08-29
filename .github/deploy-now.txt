@@ -1,4 +1,4 @@
-deploy-request: 2026-08-29T15:08:00+01:00
+deploy-request: 2026-08-29T15:13:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy corrected 2JESTER v3 authority regression contract
+reason: restore main terminal PLAY audio authority

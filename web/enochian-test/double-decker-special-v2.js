@@ -136,7 +136,10 @@
         if(play)play.textContent=jeckerPlaying()?'PAUSE':'PLAY';
       };
       const paint=()=>{const on=!!api.state?.enabled;setTakeover(on);const btn=panel.querySelector('[data-dds-enable]');btn?.classList.toggle('active',on);btn?.classList.toggle('dds-engine-live',on);if(btn)btn.textContent=on?'2JESTER LIVE · MAIN HOLD':'START 2JESTER';const direct=engineControl?.querySelector('[data-dds-engine-direct]');if(direct){direct.classList.toggle('active',on);direct.setAttribute('aria-pressed',String(on));direct.textContent=on?'■ STOP 2JESTER':'▶ START 2JESTER';direct.title=on?'Stop 2JESTER and return main stems':'Start 2JESTER roundtable'}launcher.classList.toggle('active',on);setMasterHold(on);setMainPlayIndicator(on);w.__enochStemJecker?.syncUi?.()};
-      if(mainPlay&&mainPlay.dataset.ddsJeckerTransportBound!=='v9'){mainPlay.dataset.ddsJeckerTransportBound='v9';mainPlay.addEventListener('click',e=>{if(!api.state?.enabled)return;e.preventDefault();e.stopImmediatePropagation();void toggleJeckerTransport()},{capture:true})}
+      // The base PLAY handler is the sole authority for the master AudioContext and
+      // transport. 2JESTER may reflect that state, but must never consume this click:
+      // doing so prevents ensureAudio() from running and leaves the master silent.
+      if(mainPlay&&mainPlay.dataset.ddsJeckerTransportBound!=='v10'){mainPlay.dataset.ddsJeckerTransportBound='v10';mainPlay.addEventListener('click',()=>{if(!api.state?.enabled)return;w.setTimeout(()=>{setMainPlayIndicator(jeckerPlaying());paint()},0)})}
       takeoverHud?.querySelector('[data-dds-transport]')?.addEventListener('click',async()=>{await toggleJeckerTransport();paint()});
       takeoverHud?.querySelector('[data-dds-return]')?.addEventListener('click',async()=>{if(api.state?.enabled){api.disable?.();await restoreNormalStems();setMasterHold(false)}paint();if(panel.classList.contains('open'))launcher.click()});
       const engineBtn=panel.querySelector('[data-dds-enable]');
@@ -183,7 +186,7 @@
         }
       });panel.querySelectorAll('[data-level]').forEach(range=>{range.disabled=false;range.style.pointerEvents='auto'});
       launcher.disabled=false;launcher.style.pointerEvents='auto';setCrossfader(api.state.crossfader);paint();
-      api.version='v12';api.shuffle=shuffle;api.shuffleDeck=shuffleDeck;api.setStemOn=setStemOn;api.setStemLevel=setStemLevel;api.toggleStem=(deckName,stem)=>{const slot=slotState(deckName,stem);return quantized(()=>setStemOn(deckName,stem,slot?.on===false))};api.setMasterHold=setMasterHold;api.enforceActivePlayback=enforceActivePlayback;api.suspendNormalStems=suspendNormalStems;api.restoreNormalStems=restoreNormalStems;api.setCrossfader=setCrossfader;api.quantized=quantized;api.toggleTransport=toggleJeckerTransport;
+      api.version='v13';api.shuffle=shuffle;api.shuffleDeck=shuffleDeck;api.setStemOn=setStemOn;api.setStemLevel=setStemLevel;api.toggleStem=(deckName,stem)=>{const slot=slotState(deckName,stem);return quantized(()=>setStemOn(deckName,stem,slot?.on===false))};api.setMasterHold=setMasterHold;api.enforceActivePlayback=enforceActivePlayback;api.suspendNormalStems=suspendNormalStems;api.restoreNormalStems=restoreNormalStems;api.setCrossfader=setCrossfader;api.quantized=quantized;api.toggleTransport=toggleJeckerTransport;
       w.__enochDoubleJeckerEngine=api;
       return true;
     }catch(_){return false}

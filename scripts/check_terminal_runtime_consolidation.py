@@ -5,6 +5,7 @@ root = Path(__file__).resolve().parents[1]
 terminal = root / "web" / "enochian-test"
 shell = (root / "web" / "enochian-terminal" / "index.html").read_text(encoding="utf-8")
 transport = (terminal / "double-jester-independent-transport-v1.js").read_text(encoding="utf-8")
+double_decker = (terminal / "double-decker-special-v2.js").read_text(encoding="utf-8")
 midi = (terminal / "midi-signal-live-v1.js").read_text(encoding="utf-8")
 expressive = (terminal / "midi-expressive-signal-v1.js").read_text(encoding="utf-8")
 ios = (terminal / "ios-touch-tuning.js").read_text(encoding="utf-8")
@@ -15,6 +16,7 @@ installer = (terminal / "terminal-installer-singleton-v1.js").read_text(encoding
 checks = {
     "master PLAY is not capture-intercepted": "stopImmediatePropagation();pauseStems();state.mainHeld=false" not in transport,
     "master PLAY retains native audio activation": "Main PLAY always belongs to the master deck" in transport,
+    "2JESTER does not capture-intercept master PLAY": "e.preventDefault();e.stopImmediatePropagation();void toggleJeckerTransport()" not in double_decker,
     "USB MIDI waits for CONNECT": "btn.onclick=connect;status.textContent='USB MIDI READY · PRESS CONNECT'" in midi,
     "expressive MIDI waits for CONNECT": "},500);connect();hookBus()" not in expressive,
     "iOS loader reuses existing authorities": "typeof window[name]==='function'" in ios,
