@@ -100,7 +100,7 @@ jobs:
           ! grep -q "data-2j-mode" "$spinner"
           grep -q "panel.classList.contains('open')" "$spinner"
           grep -q "installEnochianDoubleJesterPortalSpinnerV4" "$link"
-          grep -q "const VERSION='v2'" "$transport"
+          grep -q "const VERSION='v3'" "$transport"
           grep -q "data-jester-play" "$transport"
           grep -q "data-jester-pause" "$transport"
           grep -q "MASTER JESTER" "$output"
