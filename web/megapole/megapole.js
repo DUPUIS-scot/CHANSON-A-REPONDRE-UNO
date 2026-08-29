@@ -8,11 +8,11 @@ const progress = document.querySelector('#progress');
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x140e12);
-scene.fog = new THREE.FogExp2(0x1a1116, 0.0012);
+scene.fog = new THREE.FogExp2(0x1a1116, 0.00045);
 
 const camera = new THREE.PerspectiveCamera(54, innerWidth / innerHeight, 0.03, 5000);
 let yaw = 0;
-let pitch = -0.035;
+let pitch = 0;
 let movementBounds = null;
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -20,27 +20,22 @@ renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
 renderer.setSize(innerWidth, innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.28;
+renderer.toneMappingExposure = 1.35;
 host.appendChild(renderer.domElement);
 
-// SILMARI'LLION narrative lighting: warm dragon interior, sacred gold monuments,
-// cyan AI fountains, cold glass peaks and sparse hard white police-zone pools.
-const dragonBellyAmbient = new THREE.AmbientLight(0x7a3a22, 1.15);
-const skyHemi = new THREE.HemisphereLight(0xaed8ff, 0x3a170f, 1.65);
-
-const monumentKey = new THREE.DirectionalLight(0xffd89a, 2.8);
+const dragonBellyAmbient = new THREE.AmbientLight(0x7a3a22, 1.2);
+const skyHemi = new THREE.HemisphereLight(0xaed8ff, 0x3a170f, 1.5);
+const monumentKey = new THREE.DirectionalLight(0xffd89a, 2.5);
 monumentKey.position.set(-26, 52, 28);
-const coldPeakFill = new THREE.DirectionalLight(0x89d8ff, 1.8);
+const coldPeakFill = new THREE.DirectionalLight(0x89d8ff, 1.6);
 coldPeakFill.position.set(34, 30, -38);
-
-const dragonCoreGlow = new THREE.PointLight(0xff7a3c, 140, 280, 1.5);
-const aiFountainGlowA = new THREE.PointLight(0x4de1d4, 120, 190, 1.6);
-const aiFountainGlowB = new THREE.PointLight(0x7ee6ff, 90, 170, 1.6);
-const glassPeakGlowA = new THREE.PointLight(0xdff6ff, 120, 240, 1.25);
-const glassPeakGlowB = new THREE.PointLight(0x9fd7ff, 100, 240, 1.25);
-const policeWashA = new THREE.PointLight(0xffffff, 55, 90, 2.0);
-const policeWashB = new THREE.PointLight(0xbfd8ff, 40, 80, 2.0);
-
+const dragonCoreGlow = new THREE.PointLight(0xff7a3c, 120, 320, 1.5);
+const aiFountainGlowA = new THREE.PointLight(0x4de1d4, 105, 220, 1.6);
+const aiFountainGlowB = new THREE.PointLight(0x7ee6ff, 90, 210, 1.6);
+const glassPeakGlowA = new THREE.PointLight(0xdff6ff, 100, 260, 1.25);
+const glassPeakGlowB = new THREE.PointLight(0x9fd7ff, 90, 260, 1.25);
+const policeWashA = new THREE.PointLight(0xffffff, 42, 100, 2.0);
+const policeWashB = new THREE.PointLight(0xbfd8ff, 34, 95, 2.0);
 scene.add(
   dragonBellyAmbient,
   skyHemi,
@@ -62,126 +57,12 @@ function setStatus(label, pct) {
   if (Number.isFinite(pct)) bar.style.width = `${THREE.MathUtils.clamp(pct, 0, 100)}%`;
 }
 
-function finishLoad() {
-  setStatus('MEGAPOLE OPEN', 100);
+function finishLoad(meshes) {
+  setStatus(`MEGAPOLE OPEN · ${meshes} MESH${meshes === 1 ? '' : 'ES'}`, 100);
   setTimeout(() => {
     status.style.opacity = '0';
     progress.style.opacity = '0';
-  }, 1000);
-}
-
-function visibleMeshCount(root) {
-  let count = 0;
-  root.traverse((object) => { if (object.isMesh) count += 1; });
-  return count;
-}
-
-function frameEnvironment(root) {
-  root.updateMatrixWorld(true);
-  let box = new THREE.Box3().setFromObject(root);
-  if (box.isEmpty()) return false;
-
-  let size = box.getSize(new THREE.Vector3());
-  let maxDim = Math.max(size.x, size.y, size.z);
-  if (!Number.isFinite(maxDim) || maxDim <= 0) return false;
-
-  const rawMaxDim = maxDim;
-
-  // Raw 3D-AI / quantized GLBs can arrive normalized to roughly [-1,+1].
-  // Promote them to real environment scale before any camera or light placement.
-  if (maxDim < 25) {
-    const targetWorldSize = 120;
-    const boost = targetWorldSize / maxDim;
-    root.scale.multiplyScalar(boost);
-    root.updateMatrixWorld(true);
-    box = new THREE.Box3().setFromObject(root);
-    size = box.getSize(new THREE.Vector3());
-    maxDim = Math.max(size.x, size.y, size.z);
-  }
-
-  // Recenter only after the final world scale is established.
-  const center = box.getCenter(new THREE.Vector3());
-  root.position.sub(center);
-  root.updateMatrixWorld(true);
-  box = new THREE.Box3().setFromObject(root);
-  size = box.getSize(new THREE.Vector3());
-  maxDim = Math.max(size.x, size.y, size.z);
-
-  let meshes = 0;
-  root.traverse((object) => {
-    if (!object.isMesh) return;
-    meshes += 1;
-    object.visible = true;
-    object.frustumCulled = false;
-
-    const materials = Array.isArray(object.material) ? object.material : [object.material];
-    for (const material of materials) {
-      if (!material) continue;
-      material.visible = true;
-      material.side = THREE.DoubleSide;
-      material.depthTest = true;
-      material.depthWrite = true;
-      material.transparent = false;
-      material.opacity = 1;
-
-      if ('metalness' in material) material.metalness = Math.min(material.metalness ?? 0, 0.12);
-      if ('roughness' in material) material.roughness = Math.max(material.roughness ?? 0.7, 0.72);
-
-      if (material.map) {
-        material.map.colorSpace = THREE.SRGBColorSpace;
-        material.map.needsUpdate = true;
-      }
-
-      // Preserve the raw AI texture while giving it enough self-light to remain
-      // legible inside the dragon without flattening the scene to full white.
-      if ('emissive' in material) {
-        material.emissive.setHex(0x5a4332);
-        material.emissiveIntensity = 0.34;
-        if (material.map) material.emissiveMap = material.map;
-      }
-
-      material.needsUpdate = true;
-    }
-  });
-  if (!meshes) return false;
-
-  const eye = Math.max(2.0, Math.min(size.y * 0.1, 8));
-  const distance = Math.max(size.z * 0.68, maxDim * 0.52, 16);
-  camera.position.set(0, eye, distance);
-  camera.near = Math.max(0.02, maxDim / 50000);
-  camera.far = Math.max(900, maxDim * 10);
-  camera.updateProjectionMatrix();
-  yaw = 0;
-  pitch = -0.035;
-
-  movementBounds = new THREE.Box3(
-    new THREE.Vector3(-size.x * 0.75, 1.55, -size.z * 0.78),
-    new THREE.Vector3(size.x * 0.75, Math.max(20, size.y * 1.2), size.z * 0.92),
-  );
-
-  // Narrative light placement derived from the environment bounds.
-  dragonCoreGlow.position.set(0, Math.max(10, size.y * 0.18), size.z * 0.14);
-
-  aiFountainGlowA.position.set(-size.x * 0.18, Math.max(4, size.y * 0.08), size.z * 0.06);
-  aiFountainGlowB.position.set(size.x * 0.14, Math.max(4, size.y * 0.09), -size.z * 0.02);
-
-  glassPeakGlowA.position.set(-size.x * 0.22, Math.max(12, size.y * 0.42), -size.z * 0.18);
-  glassPeakGlowB.position.set(size.x * 0.24, Math.max(14, size.y * 0.48), -size.z * 0.22);
-
-  policeWashA.position.set(-size.x * 0.08, 3.2, size.z * 0.18);
-  policeWashB.position.set(size.x * 0.09, 3.0, size.z * 0.22);
-
-  monumentKey.target.position.set(0, size.y * 0.16, 0);
-  coldPeakFill.target.position.set(0, size.y * 0.32, -size.z * 0.12);
-
-  console.info('MEGAPOLE environment ready', {
-    rawMaxDim,
-    finalSize: size.toArray(),
-    meshCount: meshes,
-    camera: camera.position.toArray(),
-    bounds: [movementBounds.min.toArray(), movementBounds.max.toArray()],
-  });
-  return true;
+  }, 1400);
 }
 
 async function getMeshoptDecoder() {
@@ -212,17 +93,113 @@ function loadGlb(url, decoder) {
   });
 }
 
+function forceVisibleMaterial(mesh) {
+  const source = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
+  const map = source?.map || null;
+  if (map) {
+    map.colorSpace = THREE.SRGBColorSpace;
+    map.needsUpdate = true;
+  }
+  mesh.material = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    map,
+    side: THREE.DoubleSide,
+    transparent: false,
+    opacity: 1,
+    depthTest: true,
+    depthWrite: true,
+    toneMapped: true,
+  });
+  mesh.visible = true;
+  mesh.frustumCulled = false;
+}
+
+function frameEnvironment(root) {
+  root.updateMatrixWorld(true);
+  let box = new THREE.Box3().setFromObject(root);
+  if (box.isEmpty()) return 0;
+
+  let size = box.getSize(new THREE.Vector3());
+  let maxDim = Math.max(size.x, size.y, size.z);
+  if (!Number.isFinite(maxDim) || maxDim <= 0) return 0;
+
+  const rawMaxDim = maxDim;
+  if (maxDim < 25) {
+    const boost = 120 / maxDim;
+    root.scale.multiplyScalar(boost);
+    root.updateMatrixWorld(true);
+    box = new THREE.Box3().setFromObject(root);
+    size = box.getSize(new THREE.Vector3());
+    maxDim = Math.max(size.x, size.y, size.z);
+  }
+
+  const center = box.getCenter(new THREE.Vector3());
+  root.position.sub(center);
+  root.updateMatrixWorld(true);
+  box = new THREE.Box3().setFromObject(root);
+  size = box.getSize(new THREE.Vector3());
+
+  let meshes = 0;
+  root.traverse((object) => {
+    if (!object.isMesh) return;
+    meshes += 1;
+    forceVisibleMaterial(object);
+  });
+  if (!meshes) return 0;
+
+  const sphere = box.getBoundingSphere(new THREE.Sphere());
+  const radius = Math.max(sphere.radius, 1);
+  const vFov = THREE.MathUtils.degToRad(camera.fov);
+  const fitDistance = radius / Math.sin(vFov / 2);
+  const distance = fitDistance * 1.18;
+  const eye = THREE.MathUtils.clamp(size.y * 0.06, 2.5, 10);
+
+  camera.position.set(0, eye, distance);
+  camera.near = Math.max(0.03, distance - radius * 1.6);
+  camera.far = Math.max(1000, distance + radius * 8);
+  camera.updateProjectionMatrix();
+  camera.lookAt(0, 0, 0);
+  yaw = 0;
+  pitch = 0;
+
+  movementBounds = new THREE.Box3(
+    new THREE.Vector3(-size.x * 0.8, -size.y * 0.5, -size.z * 0.8),
+    new THREE.Vector3(size.x * 0.8, size.y * 0.7, Math.max(distance, size.z)),
+  );
+
+  dragonCoreGlow.position.set(0, Math.max(10, size.y * 0.18), size.z * 0.14);
+  aiFountainGlowA.position.set(-size.x * 0.18, Math.max(4, size.y * 0.08), size.z * 0.06);
+  aiFountainGlowB.position.set(size.x * 0.14, Math.max(4, size.y * 0.09), -size.z * 0.02);
+  glassPeakGlowA.position.set(-size.x * 0.22, Math.max(12, size.y * 0.42), -size.z * 0.18);
+  glassPeakGlowB.position.set(size.x * 0.24, Math.max(14, size.y * 0.48), -size.z * 0.22);
+  policeWashA.position.set(-size.x * 0.08, 3.2, size.z * 0.18);
+  policeWashB.position.set(size.x * 0.09, 3.0, size.z * 0.22);
+  monumentKey.target.position.set(0, size.y * 0.16, 0);
+  coldPeakFill.target.position.set(0, size.y * 0.32, -size.z * 0.12);
+
+  console.info('MEGAPOLE environment ready', {
+    rawMaxDim,
+    finalSize: size.toArray(),
+    sphereRadius: radius,
+    fitDistance: distance,
+    meshCount: meshes,
+    camera: camera.position.toArray(),
+  });
+  return meshes;
+}
+
 async function installEnvironment() {
   setStatus('ENTERING THE DRAGON', 4);
   const decoder = await getMeshoptDecoder();
-  const url = '/assets/assets/models/SILMARI_LLION_MEGAPOLE_LUBIAK.glb?v=20260829-megapole-text-light-v3';
+  const url = '/assets/assets/models/SILMARI_LLION_MEGAPOLE_LUBIAK.glb?v=20260829-megapole-visible-v5';
   try {
     const gltf = await loadGlb(url, decoder);
     const root = gltf.scene;
     root.name = 'SILMARI_LLION_MEGAPOLE';
     scene.add(root);
-    if (!frameEnvironment(root)) throw new Error(`Invalid Megapole scene: ${visibleMeshCount(root)} meshes`);
-    finishLoad();
+    const meshes = frameEnvironment(root);
+    if (!meshes) throw new Error('Megapole scene contains no renderable mesh');
+    finishLoad(meshes);
   } catch (error) {
     console.error('Megapole GLB failed to render.', error);
     setStatus('MEGAPOLE MODEL FAILED TO RENDER', 100);
@@ -232,6 +209,7 @@ async function installEnvironment() {
 const keys = new Set();
 addEventListener('keydown', (event) => keys.add(event.key.toLowerCase()));
 addEventListener('keyup', (event) => keys.delete(event.key.toLowerCase()));
+
 let drag = null;
 renderer.domElement.addEventListener('pointerdown', (event) => {
   drag = { x: event.clientX, y: event.clientY };
@@ -248,13 +226,12 @@ renderer.domElement.addEventListener('pointerup', () => { drag = null; });
 renderer.domElement.addEventListener('pointercancel', () => { drag = null; });
 renderer.domElement.addEventListener('wheel', (event) => {
   const forward = new THREE.Vector3(Math.sin(yaw), 0, -Math.cos(yaw));
-  camera.position.addScaledVector(forward, -Math.sign(event.deltaY) * 2.2);
+  camera.position.addScaledVector(forward, -Math.sign(event.deltaY) * 2.6);
 }, { passive: true });
 
 const clock = new THREE.Clock();
 function animate() {
   requestAnimationFrame(animate);
-
   const dt = Math.min(clock.getDelta(), 0.04);
   const t = performance.now() * 0.001;
   const speed = 12 * dt;
@@ -267,11 +244,11 @@ function animate() {
   if (keys.has('d') || keys.has('arrowright')) camera.position.addScaledVector(right, speed);
   if (movementBounds) camera.position.clamp(movementBounds.min, movementBounds.max);
 
-  dragonCoreGlow.intensity = 130 + Math.sin(t * 0.9) * 10;
-  aiFountainGlowA.intensity = 110 + Math.sin(t * 1.8) * 18;
-  aiFountainGlowB.intensity = 85 + Math.sin(t * 2.1 + 1.2) * 16;
-  glassPeakGlowA.intensity = 112 + Math.sin(t * 0.8 + 0.6) * 10;
-  glassPeakGlowB.intensity = 96 + Math.sin(t * 0.95 + 1.7) * 8;
+  dragonCoreGlow.intensity = 115 + Math.sin(t * 0.9) * 9;
+  aiFountainGlowA.intensity = 100 + Math.sin(t * 1.8) * 15;
+  aiFountainGlowB.intensity = 86 + Math.sin(t * 2.1 + 1.2) * 14;
+  glassPeakGlowA.intensity = 96 + Math.sin(t * 0.8 + 0.6) * 8;
+  glassPeakGlowB.intensity = 88 + Math.sin(t * 0.95 + 1.7) * 7;
 
   camera.rotation.order = 'YXZ';
   camera.rotation.y = yaw;
