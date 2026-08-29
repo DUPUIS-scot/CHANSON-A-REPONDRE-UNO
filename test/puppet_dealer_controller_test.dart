@@ -7,17 +7,20 @@ void main() {
     final events = <String>[];
 
     controller.attach(
-      deal: (path) async => events.add('deal:$path'),
+      deal: (verso, recto) async => events.add('deal:$verso->$recto'),
       receive: (path) async => events.add('receive:$path'),
       setQuality: (quality) => events.add('quality:${quality.name}'),
     );
 
-    await controller.dealToPlayer('assets/cards/deal.png');
+    await controller.dealToPlayer(
+      'assets/cards/category_versos/classique.png',
+      'assets/cards/deal.png',
+    );
     await controller.receiveFromPlayer('assets/cards/play.png');
     controller.setQuality(PuppetQuality.high);
 
     expect(events, [
-      'deal:assets/cards/deal.png',
+      'deal:assets/cards/category_versos/classique.png->assets/cards/deal.png',
       'receive:assets/cards/play.png',
       'quality:high',
     ]);
@@ -26,13 +29,13 @@ void main() {
   test('detached controller remains safe to call', () async {
     final controller = PuppetDealerController();
     controller.attach(
-      deal: (_) async {},
+      deal: (_, _) async {},
       receive: (_) async {},
       setQuality: (_) {},
     );
     controller.detach();
 
-    await controller.dealToPlayer('unused');
+    await controller.dealToPlayer('unused-verso', 'unused-recto');
     await controller.receiveFromPlayer('unused');
     controller.setQuality(PuppetQuality.low);
   });
