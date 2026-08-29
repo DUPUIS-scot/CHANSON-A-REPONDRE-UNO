@@ -188,6 +188,13 @@ def main():
     upgrade_interior(interior)
     print(f'CASTLE interior deployment texture pass complete: {interior}')
 
+    laboratory = os.path.join(model_dir, 'laboratory_interior.glb')
+    if not os.path.isfile(laboratory) or os.path.getsize(laboratory) == 0:
+        raise FileNotFoundError(f'Expected laboratory interior GLB beside Megapole target: {laboratory}')
+    from upgrade_laboratory_interior_glb import upgrade as upgrade_laboratory
+    upgrade_laboratory(laboratory)
+    print(f'LABORATORY deployment texture pass complete: {laboratory}')
+
 
 if __name__ == '__main__':
     main()
