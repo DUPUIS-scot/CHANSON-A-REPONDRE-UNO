@@ -113,8 +113,7 @@ async function installEnvironment() {
   setStatus('ENTERING THE DRAGON', 4);
   const decoder = await getMeshoptDecoder();
   const candidates = [
-    '/assets/assets/models/SILMARI_LLION_MEGAPOLE.glb?v=20260829-megapole-v1',
-    '/assets/assets/models/ChatGPT_Image_Aug_29_2026_07_3_Futuristic_cityscape_with_elaborate_architecture_Prism_31_e7e2df31.glb?v=20260829-megapole-v1',
+    '/assets/assets/models/SILMARI_LLION_MEGAPOLE_LUBIAK.glb?v=20260829-megapole-lubiak-v1',
   ];
 
   let lastError;
