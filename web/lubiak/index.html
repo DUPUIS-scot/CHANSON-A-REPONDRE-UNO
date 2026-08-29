@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#080504" />
+  <title>LUBIAK — Freak Street, June 2001</title>
+  <style>
+    html,body,#stage{width:100%;height:100%;margin:0;overflow:hidden;background:#050303}
+    body{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:#f0d7ad}
+    canvas{display:block;width:100%;height:100%;touch-action:none}
+    #hud{position:fixed;inset:0;pointer-events:none}
+    .top{position:absolute;left:18px;top:18px;padding:10px 13px;border:1px solid #c47b3d66;background:#080504cc;backdrop-filter:blur(8px)}
+    .title{letter-spacing:.18em;font-weight:800}.sub{margin-top:4px;font-size:11px;opacity:.72}
+    #home{pointer-events:auto;position:absolute;right:18px;top:18px;color:#f0d7ad;text-decoration:none;border:1px solid #c47b3d88;background:#080504dd;padding:9px 12px}
+    #progress{position:absolute;left:50%;bottom:34px;transform:translateX(-50%);width:min(460px,72vw);height:3px;background:#2b1710;transition:opacity .4s}
+    #bar{height:100%;width:0;background:#d68a43;transition:width .15s linear}
+    #status{position:absolute;left:50%;bottom:46px;transform:translateX(-50%);font-size:11px;letter-spacing:.12em;white-space:nowrap;transition:opacity .4s}
+    #help{position:absolute;right:18px;bottom:18px;font-size:10px;opacity:.55;text-align:right}
+  </style>
+  <script type="importmap">{"imports":{"three":"../vendor/three.module.js"}}</script>
+</head>
+<body>
+  <div id="stage"></div>
+  <div id="hud">
+    <div class="top"><div class="title">LUBIAK</div><div class="sub">FREAK STREET → KUMARI GHAR PLACE · JUNE 2001 · NIGHT</div></div>
+    <a id="home" href="../#/home">HOME</a>
+    <div id="status">LOADING DISTRICT</div><div id="progress"><div id="bar"></div></div>
+    <div id="help">DRAG · LOOK &nbsp; WHEEL / ↑↓ · MOVE &nbsp; A/D · STRAFE</div>
+  </div>
+  <script type="module" src="lubiak.js?v=20260829-lubiak-path-v1"></script>
+</body>
+</html>
