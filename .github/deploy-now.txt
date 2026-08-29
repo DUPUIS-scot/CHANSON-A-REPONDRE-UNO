@@ -1,4 +1,4 @@
-deploy-request: 2026-08-29T21:08:00+01:00
+deploy-request: 2026-08-29T21:14:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: brighten Megapole, force textured emissive visibility, refresh Megapole cache
+reason: normalize raw AI Megapole GLB world scale, repair camera framing/navigation bounds, and refresh Megapole runtime
