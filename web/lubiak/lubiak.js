@@ -5,6 +5,8 @@ const host = document.querySelector('#stage');
 const bar = document.querySelector('#bar');
 const status = document.querySelector('#status');
 const progress = document.querySelector('#progress');
+const circusYoutube = document.querySelector('#circus-youtube');
+const bandcamp = document.querySelector('#bandcamp');
 
 const scene = new THREE.Scene();
 const exteriorBackground = new THREE.Color(0x0d1018);
@@ -22,6 +24,8 @@ let dragonMixer = null;
 let exteriorRoot = null;
 let fallbackRoot = null;
 let circusInterior = null;
+let circusSetRoot = null;
+let circusSetPromise = null;
 let worldMode = 'exterior';
 let transitionLockUntil = 0;
 const circusGate = new THREE.Vector3(12, 2, -9);
@@ -88,6 +92,14 @@ function setExteriorVisibility(visible) {
   streetFillA.visible = visible;
   streetFillB.visible = visible;
   dragonLight.visible = visible;
+}
+
+function setCircusMediaVisible(visible) {
+  if (circusYoutube) circusYoutube.classList.toggle('is-visible', visible);
+  if (bandcamp) {
+    bandcamp.style.opacity = visible ? '0' : '1';
+    bandcamp.style.pointerEvents = visible ? 'none' : 'auto';
+  }
 }
 
 function makeCircusInterior() {
@@ -166,6 +178,84 @@ function makeCircusInterior() {
   return group;
 }
 
+async function getMeshoptDecoder() {
+  try {
+    const module = await import('../vendor/meshopt_decoder.module.js');
+    const decoder = module.MeshoptDecoder;
+    if (!decoder) throw new Error('MeshoptDecoder export missing');
+    await decoder.ready;
+    return decoder;
+  } catch (error) {
+    console.warn('LUBIAK Meshopt decoder unavailable; uncompressed fallback remains enabled.', error);
+    return null;
+  }
+}
+
+function loadGlb(url, decoder, label, reportProgress = true) {
+  return new Promise((resolve, reject) => {
+    const loader = new GLTFLoader();
+    if (decoder) loader.setMeshoptDecoder(decoder);
+    loader.load(url, resolve, (xhr) => {
+      if (reportProgress && xhr.total) {
+        const local = Math.min(99, (xhr.loaded / xhr.total) * 100);
+        setStatus(label, local);
+      }
+    }, reject);
+  });
+}
+
+async function installCircusSet() {
+  if (circusSetRoot) return circusSetRoot;
+  if (circusSetPromise) return circusSetPromise;
+
+  circusSetPromise = (async () => {
+    try {
+      showStatus('LOADING CIRCUS STAGE', 0);
+      const decoder = await getMeshoptDecoder();
+      const gltf = await loadGlb(
+        '/assets/assets/models/lubiak_scene11_web_ultralight.glb?v=20260829-circus-scene11-v1',
+        decoder,
+        'LOADING CIRCUS STAGE',
+        true,
+      );
+      const root = gltf.scene;
+      root.name = 'LUBIAK_CIRCUS_SCENE11';
+      root.updateMatrixWorld(true);
+      const box = new THREE.Box3().setFromObject(root);
+      if (box.isEmpty()) throw new Error('Scene 11 GLB has empty bounds');
+      const center = box.getCenter(new THREE.Vector3());
+      root.position.set(-center.x, -box.min.y + 0.04, -center.z);
+      root.rotation.y = 0;
+      root.traverse((object) => {
+        if (!object.isMesh) return;
+        object.frustumCulled = false;
+        const materials = Array.isArray(object.material) ? object.material : [object.material];
+        for (const material of materials) {
+          if (!material) continue;
+          material.side = THREE.DoubleSide;
+          material.needsUpdate = true;
+        }
+      });
+      makeCircusInterior().add(root);
+      circusSetRoot = root;
+      console.info('LUBIAK Scene 11 installed inside circus', {
+        bounds: box.getSize(new THREE.Vector3()).toArray(),
+        position: root.position.toArray(),
+      });
+      if (worldMode === 'circus') showStatus('CIRCUS STAGE READY', 850);
+      return root;
+    } catch (error) {
+      console.warn('LUBIAK optimized circus stage unavailable; procedural circus remains active.', error);
+      if (worldMode === 'circus') showStatus('CIRCUS INTERIOR READY', 850);
+      return null;
+    } finally {
+      circusSetPromise = null;
+    }
+  })();
+
+  return circusSetPromise;
+}
+
 function enterCircus() {
   if (worldMode !== 'exterior' || performance.now() < transitionLockUntil) return;
   makeCircusInterior();
@@ -184,6 +274,8 @@ function enterCircus() {
   yaw = 0;
   pitch = -0.02;
   movementBounds = new THREE.Box3(new THREE.Vector3(-19, 1.55, -19), new THREE.Vector3(19, 8, 22.5));
+  setCircusMediaVisible(true);
+  installCircusSet();
   showStatus('INSIDE LUBIAK CIRCUS', 1100);
 }
 
@@ -192,6 +284,7 @@ function exitCircus() {
   worldMode = 'exterior';
   transitionLockUntil = performance.now() + 1400;
   if (circusInterior) circusInterior.visible = false;
+  setCircusMediaVisible(false);
   setExteriorVisibility(true);
   scene.background = exteriorBackground.clone();
   scene.fog = new THREE.FogExp2(exteriorFogColor, 0.0024);
@@ -320,32 +413,6 @@ function frameLoadedEnvironment(root) {
   return true;
 }
 
-async function getMeshoptDecoder() {
-  try {
-    const module = await import('../vendor/meshopt_decoder.module.js');
-    const decoder = module.MeshoptDecoder;
-    if (!decoder) throw new Error('MeshoptDecoder export missing');
-    await decoder.ready;
-    return decoder;
-  } catch (error) {
-    console.warn('LUBIAK Meshopt decoder unavailable; uncompressed fallback remains enabled.', error);
-    return null;
-  }
-}
-
-function loadGlb(url, decoder, label, reportProgress = true) {
-  return new Promise((resolve, reject) => {
-    const loader = new GLTFLoader();
-    if (decoder) loader.setMeshoptDecoder(decoder);
-    loader.load(url, resolve, (xhr) => {
-      if (reportProgress && xhr.total) {
-        const local = Math.min(99, (xhr.loaded / xhr.total) * 100);
-        setStatus(label, local);
-      }
-    }, reject);
-  });
-}
-
 function prepareDragon(root) {
   root.name = 'LUBIAK_DRAGON_GUARDIAN';
   root.updateMatrixWorld(true);
@@ -407,8 +474,8 @@ async function installEnvironment() {
   setStatus('STARTING 3D ENGINE', 4);
   const decoder = await getMeshoptDecoder();
   const candidates = [
-    { url: '/assets/assets/models/LUBIAK_master_optimized.glb?v=20260829-dragon-anim-v1', label: 'LOADING LUBIAK MASTER', finish: 'ENTER LUBIAK' },
-    { url: '/assets/assets/models/LUBIAK.glb?v=20260829-dragon-anim-v1', label: 'LOADING LUBIAK FALLBACK', finish: 'ENTER LUBIAK · RECOVERY MODEL' },
+    { url: '/assets/assets/models/LUBIAK_master_optimized.glb?v=20260829-circus-scene11-v1', label: 'LOADING LUBIAK MASTER', finish: 'ENTER LUBIAK' },
+    { url: '/assets/assets/models/LUBIAK.glb?v=20260829-circus-scene11-v1', label: 'LOADING LUBIAK FALLBACK', finish: 'ENTER LUBIAK · RECOVERY MODEL' },
   ];
 
   for (const candidate of candidates) {
