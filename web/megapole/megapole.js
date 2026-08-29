@@ -7,8 +7,8 @@ const status = document.querySelector('#status');
 const progress = document.querySelector('#progress');
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x140e12);
-scene.fog = new THREE.FogExp2(0x1a1116, 0.00045);
+scene.background = new THREE.Color(0x12090a);
+scene.fog = new THREE.FogExp2(0x160a0b, 0.00048);
 
 const camera = new THREE.PerspectiveCamera(54, innerWidth / innerHeight, 0.03, 5000);
 let yaw = 0;
@@ -20,22 +20,22 @@ renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
 renderer.setSize(innerWidth, innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.35;
+renderer.toneMappingExposure = 1.48;
 host.appendChild(renderer.domElement);
 
-const dragonBellyAmbient = new THREE.AmbientLight(0x7a3a22, 1.2);
-const skyHemi = new THREE.HemisphereLight(0xaed8ff, 0x3a170f, 1.5);
-const monumentKey = new THREE.DirectionalLight(0xffd89a, 2.5);
+const dragonBellyAmbient = new THREE.AmbientLight(0x7c321c, 0.9);
+const skyHemi = new THREE.HemisphereLight(0x9edfff, 0x2b0d08, 1.15);
+const monumentKey = new THREE.DirectionalLight(0xffc074, 2.8);
 monumentKey.position.set(-26, 52, 28);
-const coldPeakFill = new THREE.DirectionalLight(0x89d8ff, 1.6);
+const coldPeakFill = new THREE.DirectionalLight(0x70dfff, 1.9);
 coldPeakFill.position.set(34, 30, -38);
-const dragonCoreGlow = new THREE.PointLight(0xff7a3c, 120, 320, 1.5);
-const aiFountainGlowA = new THREE.PointLight(0x4de1d4, 105, 220, 1.6);
-const aiFountainGlowB = new THREE.PointLight(0x7ee6ff, 90, 210, 1.6);
-const glassPeakGlowA = new THREE.PointLight(0xdff6ff, 100, 260, 1.25);
-const glassPeakGlowB = new THREE.PointLight(0x9fd7ff, 90, 260, 1.25);
-const policeWashA = new THREE.PointLight(0xffffff, 42, 100, 2.0);
-const policeWashB = new THREE.PointLight(0xbfd8ff, 34, 95, 2.0);
+const dragonCoreGlow = new THREE.PointLight(0xff5b20, 145, 340, 1.5);
+const aiFountainGlowA = new THREE.PointLight(0x35f2df, 125, 230, 1.5);
+const aiFountainGlowB = new THREE.PointLight(0x6ee8ff, 112, 220, 1.5);
+const glassPeakGlowA = new THREE.PointLight(0xe8fbff, 118, 280, 1.2);
+const glassPeakGlowB = new THREE.PointLight(0x9ee8ff, 108, 270, 1.2);
+const policeWashA = new THREE.PointLight(0xffc278, 48, 105, 2.0);
+const policeWashB = new THREE.PointLight(0xa8ddff, 44, 105, 2.0);
 scene.add(
   dragonBellyAmbient,
   skyHemi,
@@ -93,25 +93,98 @@ function loadGlb(url, decoder) {
   });
 }
 
-function forceVisibleMaterial(mesh) {
-  const source = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
-  const map = source?.map || null;
-  if (map) {
-    map.colorSpace = THREE.SRGBColorSpace;
-    map.needsUpdate = true;
-  }
-  mesh.material = new THREE.MeshBasicMaterial({
-    color: 0xffffff,
-    map,
+function cloneTexture(texture, srgb = false) {
+  if (!texture) return null;
+  const cloned = texture.clone();
+  if (srgb) cloned.colorSpace = THREE.SRGBColorSpace;
+  cloned.anisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), 8);
+  cloned.needsUpdate = true;
+  return cloned;
+}
+
+function buildMegapoleMaterial(source, semanticKey) {
+  const key = semanticKey.toLowerCase();
+  const isGlyph = /(glyph|rune|cunei|script|text|inscri|eno|symbol|letter)/.test(key);
+  const isWater = /(water|fountain|pool|liquid|aqua)/.test(key);
+  const isGlass = /(glass|crystal|ice|peak|dome|lantern|light)/.test(key);
+  const isCave = /(cave|rock|rib|dragon|belly|ceiling|bone|organic)/.test(key);
+  const isMetal = /(metal|rail|frame|bridge|beam|column|pillar)/.test(key);
+
+  const material = new THREE.MeshStandardMaterial({
+    color: 0x31140e,
+    roughness: 0.76,
+    metalness: 0.08,
     side: THREE.DoubleSide,
     transparent: false,
     opacity: 1,
     depthTest: true,
     depthWrite: true,
-    toneMapped: true,
+    vertexColors: Boolean(source?.vertexColors),
   });
+
+  if (source) {
+    material.map = cloneTexture(source.map, true);
+    material.normalMap = cloneTexture(source.normalMap);
+    material.roughnessMap = cloneTexture(source.roughnessMap);
+    material.metalnessMap = cloneTexture(source.metalnessMap);
+    material.aoMap = cloneTexture(source.aoMap);
+    if (source.normalScale) material.normalScale.copy(source.normalScale);
+  }
+
+  if (isCave) {
+    material.color.setHex(0x532016);
+    material.roughness = 0.93;
+    material.metalness = 0.0;
+  } else if (isWater) {
+    material.color.setHex(0x4af4e2);
+    material.emissive.setHex(0x0d817d);
+    material.emissiveIntensity = 1.8;
+    material.roughness = 0.16;
+    material.metalness = 0.05;
+    material.transparent = true;
+    material.opacity = 0.82;
+    material.depthWrite = false;
+  } else if (isGlass) {
+    material.color.setHex(0xd8f7ff);
+    material.emissive.setHex(0x73cde8);
+    material.emissiveIntensity = 1.15;
+    material.roughness = 0.18;
+    material.metalness = 0.18;
+    material.transparent = true;
+    material.opacity = 0.78;
+    material.depthWrite = true;
+  } else if (isGlyph) {
+    material.color.setHex(0xffc56e);
+    material.emissive.setHex(0xff6a16);
+    material.emissiveIntensity = 2.55;
+    material.roughness = 0.42;
+    material.metalness = 0.03;
+  } else if (isMetal) {
+    material.color.setHex(0x3b1c14);
+    material.roughness = 0.48;
+    material.metalness = 0.36;
+  }
+
+  if (source?.emissive && source.emissive.getHex() !== 0x000000 && !isGlyph && !isWater && !isGlass) {
+    material.emissive.copy(source.emissive);
+    material.emissiveIntensity = Math.max(source.emissiveIntensity || 1, 0.9);
+  }
+
+  material.needsUpdate = true;
+  return material;
+}
+
+function textureMegapoleMesh(mesh) {
+  const sources = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+  const styled = sources.map((source, index) => {
+    const semanticKey = `${mesh.name || ''} ${source?.name || ''} ${index}`;
+    return buildMegapoleMaterial(source, semanticKey);
+  });
+  mesh.material = Array.isArray(mesh.material) ? styled : styled[0];
   mesh.visible = true;
   mesh.frustumCulled = false;
+  mesh.castShadow = false;
+  mesh.receiveShadow = false;
 }
 
 function frameEnvironment(root) {
@@ -143,7 +216,7 @@ function frameEnvironment(root) {
   root.traverse((object) => {
     if (!object.isMesh) return;
     meshes += 1;
-    forceVisibleMaterial(object);
+    textureMegapoleMesh(object);
   });
   if (!meshes) return 0;
 
@@ -178,7 +251,7 @@ function frameEnvironment(root) {
   monumentKey.target.position.set(0, size.y * 0.16, 0);
   coldPeakFill.target.position.set(0, size.y * 0.32, -size.z * 0.12);
 
-  console.info('MEGAPOLE environment ready', {
+  console.info('MEGAPOLE textured environment ready', {
     rawMaxDim,
     finalSize: size.toArray(),
     sphereRadius: radius,
@@ -194,7 +267,7 @@ function frameEnvironment(root) {
 async function installEnvironment() {
   setStatus('ENTERING THE DRAGON', 4);
   const decoder = await getMeshoptDecoder();
-  const url = '/assets/assets/models/SILMARI_LLION_MEGAPOLE_LUBIAK.glb?v=20260829-megapole-camera-v6';
+  const url = '/assets/assets/models/SILMARI_LLION_MEGAPOLE_LUBIAK.glb?v=20260829-megapole-texture-v7';
   try {
     const gltf = await loadGlb(url, decoder);
     const root = gltf.scene;
@@ -247,11 +320,11 @@ function animate() {
   if (keys.has('d') || keys.has('arrowright')) camera.position.addScaledVector(right, speed);
   if (movementBounds) camera.position.clamp(movementBounds.min, movementBounds.max);
 
-  dragonCoreGlow.intensity = 115 + Math.sin(t * 0.9) * 9;
-  aiFountainGlowA.intensity = 100 + Math.sin(t * 1.8) * 15;
-  aiFountainGlowB.intensity = 86 + Math.sin(t * 2.1 + 1.2) * 14;
-  glassPeakGlowA.intensity = 96 + Math.sin(t * 0.8 + 0.6) * 8;
-  glassPeakGlowB.intensity = 88 + Math.sin(t * 0.95 + 1.7) * 7;
+  dragonCoreGlow.intensity = 138 + Math.sin(t * 0.9) * 12;
+  aiFountainGlowA.intensity = 118 + Math.sin(t * 1.8) * 18;
+  aiFountainGlowB.intensity = 106 + Math.sin(t * 2.1 + 1.2) * 17;
+  glassPeakGlowA.intensity = 112 + Math.sin(t * 0.8 + 0.6) * 10;
+  glassPeakGlowB.intensity = 102 + Math.sin(t * 0.95 + 1.7) * 9;
 
   camera.rotation.order = 'YXZ';
   camera.rotation.y = yaw;
