@@ -1,4 +1,4 @@
-deploy-request: 2026-08-29T02:41:00+01:00
+deploy-request: 2026-08-29T02:45:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-reason: deploy MP3 and WAV note transcription through shared MOD SCULPT and 3D GEOMETRY MOD OUTPUT to MAIN 3D SIGNAL while retaining USB MIDI routing
+reason: reconnect SIGNAL MOD cursor and MOD SCULPT geometry output to MAIN 3D SIGNAL renderer with guaranteed sculpt anchor and MIDI/audio geometry bridge
