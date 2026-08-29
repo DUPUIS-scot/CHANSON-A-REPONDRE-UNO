@@ -40,20 +40,17 @@ def colorize_atlas(base):
     graded = Image.blend(base, warm, 0.58)
     graded = ImageEnhance.Contrast(graded).enhance(1.18)
     graded = ImageEnhance.Color(graded).enhance(1.12)
-
     r, g, b = base.split()
     cyan_seed = ImageChops.subtract(ImageChops.darker(g, b), r, scale=1.0, offset=0)
     cyan_seed = ImageOps.autocontrast(cyan_seed).filter(ImageFilter.GaussianBlur(0.8))
     cyan_mask = cyan_seed.point(lambda x: 0 if x < 72 else min(255, int((x - 72) * 2.7)))
     cyan_layer = ImageOps.colorize(gray, black=(0, 35, 38), white=(85, 255, 250))
     graded = Image.composite(cyan_layer, graded, cyan_mask)
-
     amber_seed = ImageChops.subtract(r, b, scale=1.0, offset=0)
     bright = gray.point(lambda x: 0 if x < 105 else min(255, int((x - 105) * 2.2)))
     amber_mask = ImageChops.multiply(ImageOps.autocontrast(amber_seed), bright).filter(ImageFilter.GaussianBlur(0.55))
     amber_layer = ImageOps.colorize(gray, black=(55, 8, 1), white=(255, 184, 70))
     graded = Image.composite(amber_layer, graded, amber_mask)
-
     shadow = gray.point(lambda x: max(0, 255 - x * 3))
     dark = ImageEnhance.Brightness(graded).enhance(0.62)
     graded = Image.composite(dark, graded, shadow)
@@ -147,22 +144,14 @@ def upgrade(path):
     emissive = build_emissive(gray, cyan_mask, amber_mask)
     metalrough = build_metal_rough(gray, cyan_mask)
     ao = build_ao(gray)
-
     albedo_i = append_texture(doc, binary, 'MEGAPOLE_PBR_ALBEDO_2048', jpeg(albedo, 90))
     normal_i = append_texture(doc, binary, 'MEGAPOLE_PBR_NORMAL_1024', jpeg(normal, 88))
     emissive_i = append_texture(doc, binary, 'MEGAPOLE_PBR_EMISSIVE_1024', jpeg(emissive, 91))
     mr_i = append_texture(doc, binary, 'MEGAPOLE_PBR_METALROUGH_1024', jpeg(metalrough, 88))
     ao_i = append_texture(doc, binary, 'MEGAPOLE_PBR_AO_1024', jpeg(ao, 88))
-
     mat = doc['materials'][0]
     mat['name'] = 'SILMARI_LLION_MEGAPOLE_PBR_MATERIAL'
-    mat['pbrMetallicRoughness'] = {
-        'baseColorFactor': [1, 1, 1, 1],
-        'baseColorTexture': {'index': albedo_i},
-        'metallicFactor': 1.0,
-        'roughnessFactor': 1.0,
-        'metallicRoughnessTexture': {'index': mr_i},
-    }
+    mat['pbrMetallicRoughness'] = {'baseColorFactor': [1, 1, 1, 1], 'baseColorTexture': {'index': albedo_i}, 'metallicFactor': 1.0, 'roughnessFactor': 1.0, 'metallicRoughnessTexture': {'index': mr_i}}
     mat['normalTexture'] = {'index': normal_i, 'scale': 0.68}
     mat['occlusionTexture'] = {'index': ao_i, 'strength': 0.62}
     mat['emissiveTexture'] = {'index': emissive_i}
@@ -172,7 +161,6 @@ def upgrade(path):
         doc['extensionsUsed'].append('KHR_materials_emissive_strength')
     doc.setdefault('asset', {})['generator'] = 'CHANSON A REPONDRE UNO Megapole PBR build upgrader v8'
     doc['asset']['extras'] = {'look': 'dark mineral monumental; burnt bronze; amber glyphs; cyan water; frosted blue-white light'}
-
     temp = path + '.pbr.tmp'
     write_glb(temp, doc, binary)
     os.replace(temp, path)
@@ -184,17 +172,22 @@ def main():
     p.add_argument('glb')
     args = p.parse_args()
     upgrade(args.glb)
+    model_dir = os.path.dirname(args.glb)
 
-    # The deployment workflow already invokes this upgrader after Flutter has
-    # produced build/web. Apply the approved night PBR treatment directly to
-    # the deployed exterior castle GLB in the same build pass.
-    castle = os.path.join(os.path.dirname(args.glb), 'castle_exterior.glb')
-    if os.path.isfile(castle) and os.path.getsize(castle) > 0:
-        from upgrade_castle_exterior_glb import upgrade as upgrade_castle
-        upgrade_castle(castle)
-        print(f'CASTLE exterior deployment texture pass complete: {castle}')
-    else:
-        raise FileNotFoundError(f'Expected exterior castle GLB beside Megapole target: {castle}')
+    exterior = os.path.join(model_dir, 'castle_exterior.glb')
+    if not os.path.isfile(exterior) or os.path.getsize(exterior) == 0:
+        raise FileNotFoundError(f'Expected exterior castle GLB beside Megapole target: {exterior}')
+    from upgrade_castle_exterior_glb import upgrade as upgrade_exterior
+    upgrade_exterior(exterior)
+    print(f'CASTLE exterior deployment texture pass complete: {exterior}')
+
+    interior = os.path.join(model_dir, 'castle_interior.glb')
+    if not os.path.isfile(interior) or os.path.getsize(interior) == 0:
+        raise FileNotFoundError(f'Expected interior castle GLB beside Megapole target: {interior}')
+    from upgrade_castle_interior_glb import upgrade as upgrade_interior
+    upgrade_interior(interior)
+    print(f'CASTLE interior deployment texture pass complete: {interior}')
+
 
 if __name__ == '__main__':
     main()
