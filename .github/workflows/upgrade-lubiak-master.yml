@@ -22,7 +22,22 @@ jobs:
         with:
           python-version: '3.12'
       - run: python -m pip install --disable-pip-version-check pillow
-      - name: Upgrade LUBIAK master GLB textures
+      - name: Validate palace-place PBR maps
+        run: |
+          python - <<'PY'
+          from PIL import Image
+          files = [
+            'assets/models/lubiak_pbr_refs/palace_albedo.jpg',
+            'assets/models/lubiak_pbr_refs/palace_normal.jpg',
+            'assets/models/lubiak_pbr_refs/palace_dark.jpg',
+            'assets/models/lubiak_pbr_refs/palace_clay.jpg',
+          ]
+          for f in files:
+              with Image.open(f) as im:
+                  im.verify()
+                  print(f, 'OK')
+          PY
+      - name: Upgrade Palace Place textures in LUBIAK master GLB
         run: |
           set -euo pipefail
           python scripts/upgrade_lubiak_master_glb.py \
@@ -44,5 +59,5 @@ jobs:
             echo "No GLB changes"
             exit 0
           fi
-          git commit -m "Upgrade LUBIAK master palace PBR textures"
+          git commit -m "Upgrade LUBIAK master Palace Place PBR textures"
           git push origin HEAD:main
