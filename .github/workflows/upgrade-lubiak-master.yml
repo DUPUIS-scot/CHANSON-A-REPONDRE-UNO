@@ -1,0 +1,48 @@
+name: Upgrade LUBIAK master PBR
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/upgrade-lubiak-master-now.txt'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  upgrade:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install --disable-pip-version-check pillow
+      - name: Upgrade LUBIAK master GLB textures
+        run: |
+          set -euo pipefail
+          python scripts/upgrade_lubiak_master_glb.py \
+            --input assets/models/LUBIAK_master_optimized.glb \
+            --output assets/models/LUBIAK_master_optimized.upgraded.glb \
+            --albedo assets/models/lubiak_pbr_refs/palace_albedo.jpg \
+            --normal assets/models/lubiak_pbr_refs/palace_normal.jpg \
+            --dark assets/models/lubiak_pbr_refs/palace_dark.jpg \
+            --clay assets/models/lubiak_pbr_refs/palace_clay.jpg
+          mv assets/models/LUBIAK_master_optimized.upgraded.glb assets/models/LUBIAK_master_optimized.glb
+          test -s assets/models/LUBIAK_master_optimized.glb
+      - name: Commit upgraded master GLB
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/models/LUBIAK_master_optimized.glb
+          if git diff --cached --quiet; then
+            echo "No GLB changes"
+            exit 0
+          fi
+          git commit -m "Upgrade LUBIAK master palace PBR textures"
+          git push origin HEAD:main
