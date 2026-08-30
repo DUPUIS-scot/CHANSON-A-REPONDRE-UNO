@@ -1,4 +1,3 @@
-deploy-request: 2026-08-30T20:12+01:00
+deploy-request: 2026-08-30
 source: chat
-scope: LUBIAK previous-version lighting restoration
-reason: remove post-render CSS brightness/contrast filter and use previous Three.js lighting/tone-mapping unchanged while preserving current geometry, navigation, djinn, broom, circus, dragon and Megapole gateway
+scope: LUBIAK RIDE 2MIX-style flight tray
