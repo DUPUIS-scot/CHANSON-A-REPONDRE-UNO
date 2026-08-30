@@ -1,0 +1,41 @@
+name: LUBIAK standing ground zero v1
+
+on:
+  push:
+    paths:
+      - '.lubiak-standing-groundzero-v1-trigger'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Apply standing pose repair
+        run: node scripts/patch-lubiak-standing-groundzero-v1.mjs
+      - name: Validate runtime
+        run: node --check web/lubiak/lubiak.js
+      - name: Trigger live deployment
+        run: |
+          cat > .github/deploy-now.txt <<'EOF'
+          deploy-request: 2026-08-30
+          source: chat
+          scope: LUBIAK djinn standing ground zero
+          reason: force straight-leg upright walk/idle pose and isolate broom ride pose to explicit mount transition
+          EOF
+      - name: Commit repair
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add web/lubiak/lubiak.js .github/deploy-now.txt
+          git diff --cached --quiet && exit 0
+          git commit -m 'Keep LUBIAK djinn upright at ground zero'
+          git push
