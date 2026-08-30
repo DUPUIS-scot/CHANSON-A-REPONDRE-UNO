@@ -94,9 +94,10 @@ class _SearchScreenState extends State<SearchScreen> {
             storedCategory is String && isKnownCardCategory(storedCategory)
             ? normalizeCardCategoryLabel(storedCategory)
             : null;
-        _castleActive = json.containsKey('castleActive')
-            ? json['castleActive'] == true
-            : _category != null;
+        // Search always reopens at the category foyer.  Restoring an old
+        // in-castle state made a direct /#/search visit skip its own entry
+        // point and could restore a stale card selection.
+        _castleActive = false;
         _selectedCardId = json['selectedCardId'] as String?;
         _discoveredCardIds = (json['discoveredCardIds'] as List<dynamic>? ?? [])
             .whereType<String>()

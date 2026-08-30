@@ -69,9 +69,11 @@
     document.body.dataset.surfaceAnchorMode='direct-raycast-all-decks-v42';document.body.dataset.surfaceAnchorCount=String(anchors.length);return anchors.slice(0,limit);
   }
 
-  function postJesterStageReady(){const b=document.body,e=b.dataset.exteriorEnvironment,j=b.dataset.castleJester,f=b.dataset.castleLoaderFallback;return e==='ready'&&(j==='ready'||j==='failed'||f==='jester-timeout'||f==='jester-failed');}
+  // Cards are usable as soon as their environment is ready.  The gatekeeper
+  // must never be able to hold card discovery behind its own load timeout.
+  function exteriorStageReady(){return document.body.dataset.exteriorEnvironment==='ready';}
   function scheduleRenderRetry(){if(retryTimer)return;retryTimer=setTimeout(()=>{retryTimer=0;renderWhenReady();},100);}
-  function renderWhenReady(){if(!pendingCards)return;if(!postJesterStageReady()){document.body.dataset.directCardsStage='waiting-for-environment-and-jester';if(stagingAttempts++<1200)scheduleRenderRetry();return;}const THREE=window.THREE,runtime=window.__castleSearchRuntime;if(!THREE||!runtime?.scene||!runtime?.renderer||!runtime?.camera||!runtime?.castleRoot){if(installAttempts++<240)scheduleRenderRetry();return;}document.body.dataset.directCardsStage='post-jester-textures';const payload=pendingCards;pendingCards=null;stagingAttempts=installAttempts=0;renderCards(THREE,runtime,payload);}
+  function renderWhenReady(){if(!pendingCards)return;if(!exteriorStageReady()){document.body.dataset.directCardsStage='waiting-for-environment';if(stagingAttempts++<1200)scheduleRenderRetry();return;}const THREE=window.THREE,runtime=window.__castleSearchRuntime;if(!THREE||!runtime?.scene||!runtime?.renderer||!runtime?.camera||!runtime?.castleRoot){if(installAttempts++<240)scheduleRenderRetry();return;}document.body.dataset.directCardsStage='environment-ready-textures';const payload=pendingCards;pendingCards=null;stagingAttempts=installAttempts=0;renderCards(THREE,runtime,payload);}
 
   function renderCards(THREE,runtime,payload){
     let group=runtime.scene.getObjectByName('castle-direct-card-previews');if(!group){group=new THREE.Group();group.name='castle-direct-card-previews';runtime.scene.add(group);installInteractions(THREE,runtime,group);}
@@ -88,12 +90,13 @@
   }
 
   function installInteractions(THREE,runtime,group){
-    const canvas=runtime.renderer.domElement,raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();let down=null;
+    const canvas=runtime.renderer.domElement,raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2(),LONG_PRESS_MS=600;let down=null,longPressTimer=0;
     const hitCard=event=>{const rect=canvas.getBoundingClientRect();pointer.x=((event.clientX-rect.left)/Math.max(1,rect.width))*2-1;pointer.y=-((event.clientY-rect.top)/Math.max(1,rect.height))*2+1;raycaster.setFromCamera(pointer,runtime.camera);return raycaster.intersectObjects(group.children,false)[0]?.object||null;};
-    canvas.addEventListener('pointerdown',event=>{const mesh=hitCard(event);if(!mesh)return;down={id:event.pointerId,x:event.clientX,y:event.clientY,mesh};},true);
-    canvas.addEventListener('pointermove',event=>{if(!down||down.id!==event.pointerId)return;if(Math.hypot(event.clientX-down.x,event.clientY-down.y)>12)down=null;},true);
-    const release=event=>{if(!down||down.id!==event.pointerId)return;const current=down;down=null;if(hitCard(event)===current.mesh){event.preventDefault();event.stopPropagation();parent.postMessage(JSON.stringify({type:'cardSelected',cardId:current.mesh.userData.card.id}),location.origin);}};
-    canvas.addEventListener('pointerup',release,true);canvas.addEventListener('pointercancel',()=>{down=null;},true);
+    const cancelLongPress=()=>{if(longPressTimer){clearTimeout(longPressTimer);longPressTimer=0;}};
+    canvas.addEventListener('pointerdown',event=>{const mesh=hitCard(event);if(!mesh)return;down={id:event.pointerId,x:event.clientX,y:event.clientY,mesh,longPressed:false};longPressTimer=setTimeout(()=>{if(!down||down.id!==event.pointerId)return;down.longPressed=true;parent.postMessage(JSON.stringify({type:'cardLongPressed',cardId:mesh.userData.card.id}),location.origin);},LONG_PRESS_MS);},true);
+    canvas.addEventListener('pointermove',event=>{if(!down||down.id!==event.pointerId)return;if(Math.hypot(event.clientX-down.x,event.clientY-down.y)>12){cancelLongPress();down=null;}},true);
+    const release=event=>{if(!down||down.id!==event.pointerId)return;const current=down;cancelLongPress();down=null;if(hitCard(event)===current.mesh){event.preventDefault();event.stopPropagation();if(!current.longPressed)parent.postMessage(JSON.stringify({type:'cardSelected',cardId:current.mesh.userData.card.id}),location.origin);}};
+    canvas.addEventListener('pointerup',release,true);canvas.addEventListener('pointercancel',()=>{cancelLongPress();down=null;},true);
   }
   setTimeout(renderWhenReady,1000);
 })();
