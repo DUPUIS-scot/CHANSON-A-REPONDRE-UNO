@@ -1,0 +1,43 @@
+name: Optimize textured GLB comparison
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/optimize-textured-glb-now.txt'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  optimize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install glTF Transform CLI
+        run: npm install --global @gltf-transform/cli@4
+      - name: Optimize Megapole and LUBIAK textured candidates
+        shell: bash
+        run: |
+          set -euo pipefail
+          DIR='assets/models/textured-glb-comparison'
+          gltf-transform optimize "$DIR/MEGAPOLE_PBR_TERRAIN_UPGRADED.glb" "$DIR/MEGAPOLE_PBR_TERRAIN_UPGRADED_WEB_OPTIMIZED.glb" --compress draco --texture-compress webp
+          gltf-transform optimize "$DIR/LUBIAK_master_optimized_4_ELEMENT_PBR.glb" "$DIR/LUBIAK_master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED.glb" --compress draco --texture-compress webp
+          ls -lh "$DIR"/*WEB_OPTIMIZED.glb
+      - name: Commit optimized GLBs
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/models/textured-glb-comparison/*WEB_OPTIMIZED.glb
+          if git diff --cached --quiet; then
+            echo 'No optimized changes to commit.'
+            exit 0
+          fi
+          git commit -m 'Optimize textured Megapole and LUBIAK GLBs for web'
+          git push
