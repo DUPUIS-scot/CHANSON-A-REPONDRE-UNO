@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../models/card_image_model.dart';
@@ -32,19 +34,29 @@ class FiveCardHand extends StatelessWidget {
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
-      final wide = constraints.maxWidth >= 820;
+      // Animated route transitions can briefly hand this widget a zero or
+      // unbounded constraint. Keep every card dimension finite so Flutter's
+      // layout pass cannot leave a transformed child without a RenderBox size.
+      final availableWidth = constraints.hasBoundedWidth
+          ? math.max(0.0, constraints.maxWidth)
+          : 820.0;
+      final availableHeight = constraints.hasBoundedHeight
+          ? math.max(0.0, constraints.maxHeight)
+          : 620.0;
+      final wide = availableWidth >= 820;
       final gap = wide ? 18.0 : 12.0;
-      final maxHeight = constraints.maxHeight * .68;
-      final cardWidth = wide
-          ? ((constraints.maxWidth - gap * (cards.length - 1)) / cards.length)
-                .clamp(100.0, 260.0)
-          : (constraints.maxWidth * .48).clamp(150.0, 220.0);
+      final maxHeight = math.max(0.0, availableHeight * .68);
+      final cardWidth = (wide
+              ? ((availableWidth - gap * (cards.length - 1)) / cards.length)
+              : availableWidth * .48)
+          .clamp(100.0, 260.0)
+          .toDouble();
       final handWidth = cards.isEmpty
           ? 0.0
           : cardWidth * cards.length + gap * (cards.length - 1);
       final row = SizedBox(
-        width: wide ? constraints.maxWidth : handWidth,
-        height: constraints.maxHeight,
+        width: wide ? availableWidth : handWidth,
+        height: availableHeight,
         child: Row(
           mainAxisAlignment: wide
               ? MainAxisAlignment.center
