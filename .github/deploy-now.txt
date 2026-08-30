@@ -1,4 +1,4 @@
-deploy-request: 2026-08-30T05:42:00+01:00
+deploy-request: 2026-08-30
 source: chat
-scope: MEGAPOLE GLB visibility over dragon cave background
-reason: remove canvas opacity fade, force transparent canvas background, bump viewer caches, keep GLB at full opacity
+scope: LUBIAK aerial dragon patrol
+reason: dragon patrols around LUBIAK in aerial camera mode and returns to guardian zone

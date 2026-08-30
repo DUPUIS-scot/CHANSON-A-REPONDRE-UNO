@@ -21,6 +21,11 @@ let movementBounds = null;
 let environmentSize = null;
 let dragonRoot = null;
 let dragonMixer = null;
+// LUBIAK_AERIAL_DRAGON_PATROL_V1
+let dragonGuardianPosition = new THREE.Vector3();
+let dragonGuardianQuaternion = new THREE.Quaternion();
+let dragonPatrolPhase = 0;
+let dragonPatrolBlend = 0;
 let exteriorRoot = null;
 let fallbackRoot = null;
 let circusInterior = null;
@@ -688,6 +693,10 @@ function prepareDragon(root) {
     }
   });
   dragonLight.position.set(0, targetHeight * 0.55, root.position.z + targetHeight * 0.35);
+  dragonGuardianPosition.copy(root.position);
+  dragonGuardianQuaternion.copy(root.quaternion);
+  dragonPatrolPhase = 0;
+  dragonPatrolBlend = 0;
 }
 
 async function installDragon(decoder) {
@@ -1546,6 +1555,54 @@ function updateFollowCamera(dt) {
   camera.lookAt(target);
 }
 
+function updateDragonPatrol(dt) {
+  if (!dragonRoot || worldMode !== 'exterior') return;
+  const env = environmentSize || new THREE.Vector3(76, 30, 130);
+  const targetBlend = cameraMode === 'aerial' ? 1 : 0;
+  dragonPatrolBlend += (targetBlend - dragonPatrolBlend) * (1 - Math.exp(-dt * (targetBlend ? 1.8 : 1.25)));
+
+  if (dragonPatrolBlend < 0.001 && targetBlend === 0) {
+    dragonRoot.position.copy(dragonGuardianPosition);
+    dragonRoot.quaternion.copy(dragonGuardianQuaternion);
+    dragonLight.position.set(
+      dragonRoot.position.x,
+      dragonRoot.position.y + Math.max(4, env.y * 0.18),
+      dragonRoot.position.z + Math.max(3, env.z * 0.035),
+    );
+    return;
+  }
+
+  if (cameraMode === 'aerial') dragonPatrolPhase += dt * 0.19;
+  const a = dragonPatrolPhase * Math.PI * 2;
+  const rx = Math.max(22, env.x * 0.42);
+  const rz = Math.max(34, env.z * 0.34);
+  const baseY = Math.max(10, env.y * 0.42);
+  const patrolPos = new THREE.Vector3(
+    Math.sin(a) * rx,
+    baseY + Math.sin(a * 2.0 + 0.7) * Math.max(2.5, env.y * 0.07),
+    Math.cos(a) * rz,
+  );
+  const tangent = new THREE.Vector3(
+    Math.cos(a) * rx,
+    Math.cos(a * 2.0 + 0.7) * Math.max(5, env.y * 0.14),
+    -Math.sin(a) * rz,
+  ).normalize();
+  const patrolQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(
+    THREE.MathUtils.clamp(-tangent.y * 0.22, -0.18, 0.18),
+    Math.atan2(tangent.x, tangent.z),
+    THREE.MathUtils.clamp(-Math.sin(a) * 0.13, -0.13, 0.13),
+    'YXZ',
+  ));
+
+  dragonRoot.position.lerpVectors(dragonGuardianPosition, patrolPos, dragonPatrolBlend);
+  dragonRoot.quaternion.copy(dragonGuardianQuaternion).slerp(patrolQuat, dragonPatrolBlend);
+  dragonLight.position.set(
+    dragonRoot.position.x,
+    dragonRoot.position.y + Math.max(4, env.y * 0.18),
+    dragonRoot.position.z + Math.max(3, env.z * 0.035),
+  );
+}
+
 function updateAerialCamera(dt) {
   if (!playerReady || cameraMode !== 'aerial') return;
   const input = combinedMoveInput();
@@ -1589,6 +1646,7 @@ function animate() {
   requestAnimationFrame(animate);
   const dt = Math.min(clock.getDelta(), 0.04);
   if (dragonMixer && worldMode === 'exterior') dragonMixer.update(dt);
+  updateDragonPatrol(dt);
   if (playerReady) {
     if (cameraMode === 'aerial') {
       // Freeze the djinn and broom exactly where they are while the detached camera explores LUBIAK.
