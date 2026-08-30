@@ -1,4 +1,4 @@
-deploy-request: 2026-08-30T03:18:00+01:00
+deploy-request: 2026-08-30T03:24:00+01:00
 source: chat
-scope: LUBIAK shared plaza ground authority
-reason: unify master, circus, ember terrain, and djinn on one plaza datum; restore walkable-surface grounding
+scope: LUBIAK djinn animation + broom carry
+reason: animate walking gait; one hand grips broom at side while opposite end rests over shoulder
