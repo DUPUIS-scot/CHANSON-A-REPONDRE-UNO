@@ -23,6 +23,10 @@ class BrowseSelectedCardScreen extends StatelessWidget {
     if (result == CardShareResult.failed) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Unable to share this card')));
   }
 
+  void _returnToBrowse(BuildContext context, CardImageModel card) => context.go(
+        AppRoutes.browseCard(card.id, category: card.category),
+      );
+
   @override
   Widget build(BuildContext context) {
     final decks = context.watch<DeckProvider>();
@@ -42,6 +46,15 @@ class BrowseSelectedCardScreen extends StatelessWidget {
                   child: StoredImage(source: liveCard.imagePath, fit: BoxFit.contain),
                 ),
               ),
+            ),
+          ),
+          Positioned(
+            top: 4,
+            left: 8,
+            child: IconButton.outlined(
+              tooltip: 'Return to Browse Cards',
+              onPressed: () => _returnToBrowse(context, liveCard),
+              icon: const Icon(Icons.arrow_back_rounded),
             ),
           ),
           const Positioned(top: 4, right: 8, child: HomeNavigationButton()),
