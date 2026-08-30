@@ -1,4 +1,4 @@
-deploy-request: 2026-08-30
+deploy-request: 2026-08-30T07:18:00+01:00
 source: chat
-scope: LUBIAK djinn standing ground zero
-reason: force straight-leg upright walk/idle pose and isolate broom ride pose to explicit mount transition
+scope: MEGAPOLE GLB visibility V13
+reason: normalize extreme GLB bounds, use scale-aware fog, force mesh visibility and deterministic camera framing while preserving dragon cave background
