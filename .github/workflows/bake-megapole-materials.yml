@@ -1,0 +1,53 @@
+name: Bake Megapole materials
+
+on:
+  push:
+    paths:
+      - '.megapole-material-bake-trigger'
+      - 'scripts/bake-megapole-materials.py'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  bake:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Bake semantic PBR into Megapole GLB
+        run: python scripts/bake-megapole-materials.py assets/models/SILMARI_LLION_MEGAPOLE_LUBIAK.glb assets/models/SILMARI_LLION_MEGAPOLE_LUBIAK.glb
+      - name: Validate GLB material bake
+        run: |
+          python - <<'PY'
+          import json,struct
+          p='assets/models/SILMARI_LLION_MEGAPOLE_LUBIAK.glb'
+          b=open(p,'rb').read(); assert b[:4]==b'glTF'
+          n=struct.unpack('<I',b[12:16])[0]
+          j=json.loads(b[20:20+n].rstrip(b' \0'))
+          assert 'KHR_materials_emissive_strength' in j.get('extensionsUsed',[])
+          assert j.get('materials')
+          assert all('pbrMetallicRoughness' in m for m in j['materials'])
+          print('Megapole PBR bake OK',len(j['materials']),'materials')
+          PY
+      - name: Commit baked Megapole and request deployment
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/models/SILMARI_LLION_MEGAPOLE_LUBIAK.glb
+          if ! git diff --cached --quiet; then
+            git commit -m 'Bake Megapole semantic PBR materials into GLB'
+          fi
+          printf 'megapole-material-deploy: %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > .github/deploy-now.txt
+          git add .github/deploy-now.txt
+          if ! git diff --cached --quiet; then
+            git commit -m 'Deploy baked Megapole materials'
+          fi
+          git pull --rebase origin main
+          git push origin HEAD:main
