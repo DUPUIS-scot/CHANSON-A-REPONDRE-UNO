@@ -1,0 +1,37 @@
+name: LUBIAK Freak Street right spawn
+
+on:
+  push:
+    paths:
+      - 'scripts/patch-lubiak-freak-street-right-spawn.mjs'
+      - '.github/workflows/lubiak-freak-street-right-spawn.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Move djinn to Freak Street right entrance/banner
+        run: node scripts/patch-lubiak-freak-street-right-spawn.mjs
+      - name: Validate runtime syntax
+        run: node --check web/lubiak/lubiak.js
+      - name: Commit runtime change
+        run: |
+          if git diff --quiet -- web/lubiak/lubiak.js; then
+            echo 'No runtime changes needed.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add web/lubiak/lubiak.js
+          git commit -m 'Start djinn beside Freak Street right entrance banner'
+          git push
