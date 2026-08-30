@@ -918,7 +918,10 @@ function preparePlayer(root) {
   // The authored GLB is centred around the origin. Its public/street entrance is on
   // the +Z side (the same side from which frameLoadedEnvironment initially views it).
   // Start OUTSIDE that edge and scan inward; never guess from an interior percentage.
-  const entranceAnchor = new THREE.Vector3(0, 0.08, env.z * 0.60);
+  // LUBIAK_FREAK_STREET_RIGHT_SPAWN_V1
+  // Begin beside the right-hand side of the Freak Street entrance/banner, not centred
+  // in front of the doorway. Positive X is screen-right from the +Z entrance camera.
+  const entranceAnchor = new THREE.Vector3(env.x * 0.16, 0.08, env.z * 0.60);
   playerRoot.position.copy(entranceAnchor);
   playerBaseY = playerRoot.position.y;
   playerHeading = Math.PI;
@@ -1257,7 +1260,8 @@ function findSafeEntranceSpawn(anchor, includeBroom=true) {
   // the first authored walkable apron with enough room for the complete broom span.
   for (const zRatio of [0.60, 0.56, 0.52, 0.49, 0.46, 0.43, 0.40, 0.36, 0.32, 0.28, 0.24]) {
     const z = env.z * zRatio;
-    for (const xRatio of [0, 0.035, -0.035, 0.07, -0.07, 0.11, -0.11, 0.15, -0.15]) {
+    // Prefer the banner/right apron first; only drift toward centre if that zone is blocked.
+    for (const xRatio of [0.16, 0.20, 0.12, 0.24, 0.08, 0.28, 0.04, 0, -0.04]) {
       candidates.push(new THREE.Vector3(env.x * xRatio, anchor.y, z));
     }
   }
@@ -1269,7 +1273,7 @@ function findSafeEntranceSpawn(anchor, includeBroom=true) {
   }
   // Never fall back into the mesh. If the authored apron cannot be resolved, stay
   // visibly outside the +Z shell until a valid walkable point is available.
-  return new THREE.Vector3(0, 0.08, env.z * 0.62);
+  return new THREE.Vector3(env.x * 0.18, 0.08, env.z * 0.62);
 }
 
 function resolvePlayerCollision(from, to, includeBroom=false) {
