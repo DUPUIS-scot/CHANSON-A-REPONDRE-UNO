@@ -9,8 +9,8 @@ const circusYoutube = document.querySelector('#circus-youtube');
 const bandcamp = document.querySelector('#bandcamp');
 
 const scene = new THREE.Scene();
-const exteriorBackground = new THREE.Color(0x0d1018);
-const exteriorFogColor = new THREE.Color(0x101018);
+const exteriorBackground = new THREE.Color(0x000000);
+const exteriorFogColor = new THREE.Color(0x050303);
 scene.background = exteriorBackground.clone();
 scene.fog = new THREE.FogExp2(exteriorFogColor, 0.0024);
 
@@ -231,6 +231,74 @@ function loadGlb(url, decoder, label, reportProgress = true) {
       }
     }, reject);
   });
+}
+
+// LUBIAK_VALLEY_BLACK_SURFACE_V1
+// The Kathmandu valley artwork is a physical render texture only. It is never
+// composited behind the whole viewport. Choose one large, thin, near-black,
+// untextured authored surface and leave every other black surface untouched.
+function applyValleyToBlackBackdrop(root) {
+  root.updateMatrixWorld(true);
+  let best = null;
+  let bestScore = -Infinity;
+  root.traverse((object) => {
+    if (!object.isMesh || object.userData?.lubiakEmberGround) return;
+    const materials = Array.isArray(object.material) ? object.material : [object.material];
+    const darkSlots = materials.map((material, index) => {
+      if (!material || material.map || !material.color) return -1;
+      const c = material.color;
+      const maxC = Math.max(c.r, c.g, c.b);
+      const minC = Math.min(c.r, c.g, c.b);
+      return maxC <= 0.16 && (maxC - minC) <= 0.08 ? index : -1;
+    }).filter((index) => index >= 0);
+    if (!darkSlots.length) return;
+
+    const box = new THREE.Box3().setFromObject(object);
+    if (box.isEmpty()) return;
+    const s = box.getSize(new THREE.Vector3());
+    const horizontalSpan = Math.max(s.x, s.z);
+    const thinAxis = Math.min(s.x, s.z);
+    const isBackdropShape = s.y >= 2.5 && horizontalSpan >= 5 && thinAxis <= Math.max(1.2, horizontalSpan * 0.12);
+    if (!isBackdropShape) return;
+
+    const semantic = [object.name, ...materials.map((m) => m?.name || '')].join(' ');
+    const nameBoost = /backdrop|background|panorama|valley|screen|black|sky/i.test(semantic) ? 4 : 1;
+    const score = (s.y * horizontalSpan / Math.max(0.18, thinAxis)) * nameBoost;
+    if (score > bestScore) { bestScore = score; best = { object, darkSlots }; }
+  });
+
+  if (!best) {
+    console.warn('LUBIAK valley backdrop: no qualifying black surface found; viewport remains black.');
+    return;
+  }
+
+  const texture = new THREE.TextureLoader().load(
+    'lubiak-kathmandu-night.svg?v=20260830-valley-surface-v1',
+    () => console.info('LUBIAK valley texture loaded on black backdrop', { mesh: best.object.name || '(unnamed)' }),
+    undefined,
+    (error) => console.warn('LUBIAK valley texture failed to load; black backdrop retained.', error),
+  );
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = THREE.ClampToEdgeWrapping;
+  texture.wrapT = THREE.ClampToEdgeWrapping;
+  texture.needsUpdate = true;
+
+  const valleyMaterial = new THREE.MeshBasicMaterial({
+    name: 'LUBIAK_Kathmandu_Valley_Backdrop',
+    map: texture,
+    color: 0xffffff,
+    side: THREE.DoubleSide,
+    depthTest: true,
+    depthWrite: true,
+    toneMapped: false,
+  });
+
+  if (Array.isArray(best.object.material)) {
+    best.object.material = best.object.material.map((material, index) => best.darkSlots.includes(index) ? valleyMaterial : material);
+  } else {
+    best.object.material = valleyMaterial;
+  }
+  best.object.userData.lubiakValleyBackdrop = true;
 }
 
 async function installCircusSet() {
@@ -513,6 +581,7 @@ function frameLoadedEnvironment(root) {
     emberGroundCount += 1;
   });
   console.info('LUBIAK embedded ember/coal material applied', { emberGroundCount });
+  applyValleyToBlackBackdrop(root);
 
   root.traverse((object) => {
     if (!object.isMesh) return;

@@ -8,10 +8,10 @@
   <style>
     html,body,#stage{width:100%;height:100%;margin:0;overflow:hidden}
     html,body{background:#050303}
-    #stage{position:relative;background:#050303 url('lubiak-kathmandu-night.svg?v=20260830-valley-v2') center center/cover no-repeat fixed}
-    #stage::before{content:"";position:absolute;z-index:0;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(3,8,15,.02) 0%,rgba(6,4,3,0) 48%,rgba(5,3,2,.08) 100%)}
+    #stage{position:relative;background:#000}
+    #stage::before{content:"";position:absolute;z-index:0;inset:0;pointer-events:none;background:none}
     body{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:#f0d7ad}
-    canvas{position:relative;z-index:1;display:block;width:100%;height:100%;touch-action:none;opacity:.78;mix-blend-mode:screen}
+    canvas{position:relative;z-index:1;display:block;width:100%;height:100%;touch-action:none;opacity:1;mix-blend-mode:normal}
     #hud{position:fixed;z-index:10;inset:0;pointer-events:none}
     .top{position:absolute;left:18px;top:18px;padding:10px 13px;border:1px solid #c47b3d66;background:#080504cc;backdrop-filter:blur(8px)}
     .title{letter-spacing:.18em;font-weight:800}.sub{margin-top:4px;font-size:11px;opacity:.72}
@@ -31,7 +31,7 @@
     #cinematic-skip{position:absolute;right:max(18px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));z-index:2;border:1px solid #f0d7ad66;background:#080504aa;color:#f0d7ad;padding:9px 12px;font:700 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.12em;cursor:pointer}
     #cinematic-play{position:absolute;z-index:3;border:1px solid #f0d7ad88;background:#080504dd;color:#f0d7ad;padding:13px 18px;font:800 11px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.16em;cursor:pointer;display:none}
     @media (max-width:900px){#circus-youtube{left:7vw;top:24vh;width:52vw}}
-    @media (max-width:720px){canvas{opacity:.74}#bandcamp{left:max(12px,env(safe-area-inset-left));right:auto;bottom:max(12px,env(safe-area-inset-bottom));width:min(54vw,330px);min-width:180px}#help{right:max(14px,env(safe-area-inset-right));bottom:182px}#circus-youtube{left:8vw;top:28vh;width:62vw}}
+    @media (max-width:720px){canvas{opacity:1}#bandcamp{left:max(12px,env(safe-area-inset-left));right:auto;bottom:max(12px,env(safe-area-inset-bottom));width:min(54vw,330px);min-width:180px}#help{right:max(14px,env(safe-area-inset-right));bottom:182px}#circus-youtube{left:8vw;top:28vh;width:62vw}}
   </style>
   <script type="importmap">{"imports":{"three":"../vendor/three.module.js"}}</script>
 </head>
