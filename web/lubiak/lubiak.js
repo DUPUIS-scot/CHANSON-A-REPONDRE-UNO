@@ -42,6 +42,13 @@ let playerBaseY = 0;
 let followYaw = 0;
 let followPitch = -0.12;
 let followDistance = 6.6;
+// LUBIAK_AERIAL_CAMERA_V1
+let cameraMode = 'follow';
+let aerialYaw = 0;
+let aerialPitch = -0.28;
+let aerialSpeed = 18;
+let aerialReturnBlend = 0;
+const aerialSaved = { followYaw: 0, followPitch: -0.12, followDistance: 6.6 };
 let walkPhase = 0;
 let walkBlend = 0;
 let mountTransition = 0;
@@ -715,6 +722,15 @@ joystickStyle.textContent = `
 `;
 document.head.appendChild(joystickStyle);
 
+const aerialToggle = document.createElement('button');
+aerialToggle.id = 'lubiak-aerial-toggle';
+aerialToggle.type = 'button';
+aerialToggle.textContent = 'AERIAL';
+aerialToggle.setAttribute('aria-label', 'Toggle aerial observation camera');
+aerialToggle.style.cssText = 'position:fixed;right:18px;bottom:22px;z-index:70;border:1px solid #f6c28b88;border-radius:999px;padding:10px 14px;background:#160b08dd;color:#ffe2bd;font:700 10px/1 system-ui;letter-spacing:.14em;box-shadow:0 6px 20px #0009;cursor:pointer';
+aerialToggle.addEventListener('click', () => setCameraMode(cameraMode === 'follow' ? 'aerial' : 'follow'));
+document.body.appendChild(aerialToggle);
+
 const joystickVector = new THREE.Vector2();
 let joystickPointer = null;
 function updateJoystick(event) {
@@ -828,11 +844,43 @@ function handleDragonGatePointer(event) {
 }
 
 const keys = new Set();
-addEventListener('keydown', (event) => keys.add(event.key.toLowerCase()));
+function setCameraMode(nextMode) {
+  if (!playerReady || !playerRoot || nextMode === cameraMode) return;
+  if (nextMode === 'aerial') {
+    aerialSaved.followYaw = followYaw;
+    aerialSaved.followPitch = followPitch;
+    aerialSaved.followDistance = followDistance;
+    const dir = new THREE.Vector3();
+    camera.getWorldDirection(dir);
+    aerialYaw = Math.atan2(-dir.x, -dir.z);
+    aerialPitch = Math.asin(THREE.MathUtils.clamp(dir.y, -1, 1));
+    cameraMode = 'aerial';
+    aerialReturnBlend = 0;
+    showStatus('AERIAL OBSERVATION · V TO RETURN', 1200);
+  } else {
+    cameraMode = 'follow';
+    followYaw = aerialSaved.followYaw;
+    followPitch = aerialSaved.followPitch;
+    followDistance = aerialSaved.followDistance;
+    aerialReturnBlend = 1;
+    showStatus('RETURNING TO DJINN', 800);
+  }
+  if (aerialToggle) aerialToggle.textContent = cameraMode === 'aerial' ? 'RETURN' : 'AERIAL';
+}
+
+addEventListener('keydown', (event) => {
+  const key = event.key.toLowerCase();
+  if (key === 'v' && !event.repeat) {
+    setCameraMode(cameraMode === 'follow' ? 'aerial' : 'follow');
+    event.preventDefault();
+    return;
+  }
+  keys.add(key);
+});
 addEventListener('keyup', (event) => keys.delete(event.key.toLowerCase()));
 let drag = null;
 renderer.domElement.addEventListener('pointerdown', (event) => {
-  if (handlePlayerGatePointer(event) || handleDragonGatePointer(event)) {
+  if (cameraMode === 'follow' && (handlePlayerGatePointer(event) || handleDragonGatePointer(event))) {
     event.preventDefault();
     return;
   }
@@ -841,7 +889,11 @@ renderer.domElement.addEventListener('pointerdown', (event) => {
 });
 renderer.domElement.addEventListener('pointermove', (event) => {
   if (!drag) return;
-  if (playerReady) {
+  if (playerReady && cameraMode === 'aerial') {
+    aerialYaw -= (event.clientX - drag.x) * 0.0042;
+    aerialPitch -= (event.clientY - drag.y) * 0.0032;
+    aerialPitch = THREE.MathUtils.clamp(aerialPitch, -1.32, 1.20);
+  } else if (playerReady) {
     followYaw -= (event.clientX - drag.x) * 0.0042;
     followPitch -= (event.clientY - drag.y) * 0.0032;
     followPitch = THREE.MathUtils.clamp(followPitch, -0.58, 0.38);
@@ -855,7 +907,9 @@ renderer.domElement.addEventListener('pointermove', (event) => {
 renderer.domElement.addEventListener('pointerup', () => { drag = null; });
 renderer.domElement.addEventListener('pointercancel', () => { drag = null; });
 renderer.domElement.addEventListener('wheel', (event) => {
-  if (playerReady) {
+  if (playerReady && cameraMode === 'aerial') {
+    aerialSpeed = THREE.MathUtils.clamp(aerialSpeed + Math.sign(event.deltaY) * 2.2, 5, 48);
+  } else if (playerReady) {
     followDistance = THREE.MathUtils.clamp(followDistance + Math.sign(event.deltaY) * 0.55, 3.4, 11);
   } else {
     const forward = new THREE.Vector3(Math.sin(yaw), 0, -Math.cos(yaw));
@@ -1118,6 +1172,30 @@ function updateFollowCamera(dt) {
   camera.lookAt(target);
 }
 
+function updateAerialCamera(dt) {
+  if (!playerReady || cameraMode !== 'aerial') return;
+  const input = combinedMoveInput();
+  const cp = Math.cos(aerialPitch);
+  const forward = new THREE.Vector3(-Math.sin(aerialYaw) * cp, Math.sin(aerialPitch), -Math.cos(aerialYaw) * cp).normalize();
+  const right = new THREE.Vector3(Math.cos(aerialYaw), 0, -Math.sin(aerialYaw)).normalize();
+  const vertical = (keys.has(' ') || keys.has('space') || keys.has('pageup') || keys.has('e') ? 1 : 0)
+    - (keys.has('control') || keys.has('ctrl') || keys.has('pagedown') || keys.has('q') ? 1 : 0);
+  const delta = new THREE.Vector3();
+  delta.addScaledVector(forward, input.y * aerialSpeed * dt);
+  delta.addScaledVector(right, input.x * aerialSpeed * dt);
+  delta.y += vertical * aerialSpeed * dt;
+  camera.position.add(delta);
+  if (movementBounds) {
+    const pad = Math.max(10, (environmentSize?.y || 30) * 1.5);
+    camera.position.x = THREE.MathUtils.clamp(camera.position.x, movementBounds.min.x - pad, movementBounds.max.x + pad);
+    camera.position.z = THREE.MathUtils.clamp(camera.position.z, movementBounds.min.z - pad, movementBounds.max.z + pad);
+    camera.position.y = THREE.MathUtils.clamp(camera.position.y, 0.8, movementBounds.max.y + pad * 2);
+  }
+  camera.rotation.order = 'YXZ';
+  camera.rotation.y = aerialYaw;
+  camera.rotation.x = aerialPitch;
+}
+
 function updateFallbackCamera(dt) {
   const speed = 9.5 * dt;
   const forward = new THREE.Vector3(Math.sin(yaw), 0, -Math.cos(yaw));
@@ -1138,8 +1216,14 @@ function animate() {
   const dt = Math.min(clock.getDelta(), 0.04);
   if (dragonMixer && worldMode === 'exterior') dragonMixer.update(dt);
   if (playerReady) {
-    updatePlayer(dt);
-    updateFollowCamera(dt);
+    if (cameraMode === 'aerial') {
+      // Freeze the djinn and broom exactly where they are while the detached camera explores LUBIAK.
+      updateAerialCamera(dt);
+    } else {
+      updatePlayer(dt);
+      updateFollowCamera(dt);
+      if (aerialReturnBlend > 0) aerialReturnBlend = Math.max(0, aerialReturnBlend - dt * 1.4);
+    }
   } else {
     updateFallbackCamera(dt);
   }
