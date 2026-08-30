@@ -1,4 +1,4 @@
 deploy-request: 2026-08-30
 source: chat
-scope: HOME→LUBIAK and LUBIAK→MEGAPOLE cinematic transition videos
-reason: play uploaded transition MP4s fullscreen before revealing each 3D destination
+scope: MEGAPOLE dragon body cave background
+reason: render the Megapole 3D environment over the uploaded interior dragon rib-cavern image
