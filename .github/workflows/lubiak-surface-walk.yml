@@ -1,0 +1,35 @@
+name: LUBIAK surface walk
+
+on:
+  push:
+    paths:
+      - '.lubiak-surface-walk-trigger'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Apply surface-relative locomotion
+        run: node scripts/patch-lubiak-surface-walk.mjs
+      - name: Commit and push safely
+        run: |
+          if git diff --quiet -- web/lubiak/lubiak.js; then
+            echo 'No surface-walk patch required.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add web/lubiak/lubiak.js
+          git commit -m 'Enable djinn surface-relative climbing locomotion'
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
