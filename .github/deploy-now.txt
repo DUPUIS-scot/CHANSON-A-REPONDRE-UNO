@@ -1,5 +1,5 @@
-deploy-request: 2026-08-30T16:05:00+01:00
+deploy-request: 2026-08-30T16:24:00+01:00
 source: chat
-scope: Laboratory Blender texture + VideoBookPage live video
-reason: deploy newly textured laboratory_interior.glb and bind enochian JJ DUPUIS loop to VideoBookPage_Left and VideoBookPage_Right
-source-commits: 1e688293a23caa30e587da07a7fa70e7cb668db9, b3224aaee02bd3ae5a0b3dd5022f5711c404bf90
+scope: Castle Laboratory v79 regression repair
+reason: publish VideoBookPage v79 runtime after aligning stale Laboratory tests and bridge cache revision
+source-commits: e69032995703b79f4577ef5af5fe94b2c9011f67, daeb58e905f654dc14abb85bb588bb6c4b0472b2, 9f65e7b374fbe87dad9ae3f6703c315723a37e99
