@@ -20,20 +20,34 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Generate signal mesh cyan ground GLB
+      - name: Generate baked coal ember SIGNAL ground GLB
         run: node scripts/generate-megapole-signal-ground.mjs
-      - name: Commit generated GLB
+      - name: Validate baked ground material
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const b=fs.readFileSync('assets/models/SILMARI_LLION_MEGAPOLE_signal_ground.glb');
+          const n=b.readUInt32LE(12); const j=JSON.parse(b.subarray(20,20+n).toString().replace(/\0|\s+$/g,''));
+          const m=j.materials?.[0];
+          if(!m || m.name!=='Coal_Ember_SIGNAL') throw new Error('coal ember material missing');
+          if((m.extensions?.KHR_materials_emissive_strength?.emissiveStrength||0)<4) throw new Error('ember emissive too weak');
+          console.log('ground material OK',m.name,m.emissiveFactor);
+          NODE
+      - name: Commit generated GLB and request deploy
         run: |
           set -euo pipefail
           target='assets/models/SILMARI_LLION_MEGAPOLE_signal_ground.glb'
           test -s "$target"
-          if [ -z "$(git status --porcelain -- "$target")" ]; then
-            echo 'No generated change.'
-            exit 0
-          fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add "$target"
-          git commit -m 'Generate Megapole 40x28 cyan SIGNAL terrain'
+          if ! git diff --cached --quiet; then
+            git commit -m 'Bake Megapole 40x28 coal ember SIGNAL terrain'
+          fi
+          printf 'megapole-ground-deploy: %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > .github/deploy-now.txt
+          git add .github/deploy-now.txt
+          if ! git diff --cached --quiet; then
+            git commit -m 'Deploy baked Megapole ground'
+          fi
           git pull --rebase origin main
           git push origin HEAD:main
