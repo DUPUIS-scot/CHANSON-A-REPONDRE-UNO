@@ -1,4 +1,4 @@
 deploy-request: 2026-08-30
 source: chat
-scope: LUBIAK aerial dragon patrol
-reason: dragon patrols around LUBIAK in aerial camera mode and returns to guardian zone
+scope: LUBIAK djinn standing ground zero
+reason: force straight-leg upright walk/idle pose and isolate broom ride pose to explicit mount transition

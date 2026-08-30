@@ -823,6 +823,61 @@ function applyWalkCarryPose(blend = 1, swing = 0) {
   }
 }
 
+function restoreStandingWalkPose() {
+  // LUBIAK_STANDING_GROUND_ZERO_V1
+  // Walk/idle owns an upright human stance. Riding geometry may never leak back here.
+  if (!playerVisual || !playerBoneCache) return;
+  const b = playerBoneCache;
+
+  // Feet remain calibrated to the authored GLB foot plane; playerRoot supplies terrain Y.
+  playerVisual.position.y = playerVisualGroundOffsetY;
+  playerRoot.rotation.x = 0;
+  playerRoot.rotation.z = 0;
+
+  if (b.hips) {
+    b.hips.rotation.x = 0;
+    b.hips.rotation.y = 0;
+    b.hips.rotation.z = 0;
+  }
+  if (b.chest) {
+    b.chest.rotation.x = 0;
+    b.chest.rotation.y = 0;
+    b.chest.rotation.z = 0;
+  }
+  if (b.leftLeg) {
+    b.leftLeg.rotation.x = 0;
+    b.leftLeg.rotation.y = 0;
+    b.leftLeg.rotation.z = 0;
+  }
+  if (b.rightLeg) {
+    b.rightLeg.rotation.x = 0;
+    b.rightLeg.rotation.y = 0;
+    b.rightLeg.rotation.z = 0;
+  }
+  if (b.leftLowerLeg) {
+    b.leftLowerLeg.rotation.x = 0;
+    b.leftLowerLeg.rotation.y = 0;
+    b.leftLowerLeg.rotation.z = 0;
+  }
+  if (b.rightLowerLeg) {
+    b.rightLowerLeg.rotation.x = 0;
+    b.rightLowerLeg.rotation.y = 0;
+    b.rightLowerLeg.rotation.z = 0;
+  }
+
+  // If a prior ride state ever owned the broom, return it to the authoritative hand socket.
+  if (broomRoot && broomShoulderSocket && broomRoot.parent !== broomShoulderSocket) {
+    broomShoulderSocket.attach(broomRoot);
+    broomRoot.scale.setScalar(broomRoot.scale.x);
+    broomRoot.rotation.set(0.06, Math.PI * 0.5, 0.05);
+    broomRoot.position.set(-0.54, -0.015, -0.015);
+    broomRideStart = null;
+  }
+
+  // Re-establish the shoulder carry only after the body is upright.
+  applyWalkCarryPose(1, 0);
+}
+
 function prepareBroomForRide() {
   if (!broomRoot || !playerRoot) return;
   // Reparent exactly once while preserving world transform. From this point onward
@@ -956,6 +1011,7 @@ async function installPlayer(decoder) {
       const broomGltf = await loadGlb('/assets/assets/models/lubiak_da_noble_y2k_broom_ultralight.glb?v=20260829-djinn-player-v1', decoder, 'PREPARING DA NOBLE Y2K', false);
       broomRoot = broomGltf.scene;
       attachBroomToShoulder();
+      restoreStandingWalkPose();
     } catch (broomError) {
       console.warn('DA NOBLE Y2K broom unavailable; player remains active without broom.', broomError);
     }
@@ -1404,6 +1460,12 @@ function combinedMoveInput() {
 
 function proceduralWalk(dt, speed01) {
   if (!playerVisual || !playerBoneCache) return;
+  // Idle is a strict straight-leg stance at ground zero; gait begins only with real movement.
+  if (speed01 < 0.035) {
+    walkBlend += (0 - walkBlend) * Math.min(1, dt * 12);
+    restoreStandingWalkPose();
+    return;
+  }
   walkBlend += (speed01 - walkBlend) * Math.min(1, dt * 9);
   walkPhase += dt * (3.4 + speed01 * 4.8);
   const swing = Math.sin(walkPhase);
@@ -1433,6 +1495,8 @@ function updatePlayer(dt) {
   const input = combinedMoveInput();
 
   if (playerMode === 'walk') {
+    // Standing is the walk/idle baseline. Clear all ride transforms before locomotion.
+    restoreStandingWalkPose();
     const mag = THREE.MathUtils.clamp(input.length(), 0, 1);
     if (mag > 0.05) {
       const desired = groundMoveVector(input);
