@@ -1,0 +1,69 @@
+name: Publish LUBIAK textured GLB live
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'assets/models/LUBIAK_master_optimized.glb'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Bust LUBIAK model and runtime caches
+        env:
+          CACHE_TOKEN: pbr-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const token = process.env.CACHE_TOKEN;
+          const jsPath = 'web/lubiak/lubiak.js';
+          let js = fs.readFileSync(jsPath, 'utf8');
+          js = js.replace(/(LUBIAK_master_optimized\.glb\?v=)[^'"\s]+/g, `$1${token}`);
+          fs.writeFileSync(jsPath, js);
+
+          const htmlPath = 'web/lubiak/index.html';
+          let html = fs.readFileSync(htmlPath, 'utf8');
+          html = html.replace(/(lubiak-terrain-addon\.js\?v=)[^'"\s]+/g, `$1${token}`);
+          html = html.replace(/(lubiak\.js\?v=)[^'"\s]+/g, `$1${token}`);
+          fs.writeFileSync(htmlPath, html);
+          NODE
+          grep -q "LUBIAK_master_optimized.glb?v=${CACHE_TOKEN}" web/lubiak/lubiak.js
+          grep -q "lubiak.js?v=${CACHE_TOKEN}" web/lubiak/index.html
+      - name: Request Pages deployment
+        env:
+          CACHE_TOKEN: pbr-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          cat > .github/deploy-now.txt <<EOF
+          deploy-request: $(date -u +%Y-%m-%dT%H:%M:%SZ)
+          source: LUBIAK textured GLB publish
+          cache-token: ${CACHE_TOKEN}
+          scope: LUBIAK architecture textures
+          EOF
+      - name: Commit live cache bust and deploy request
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add web/lubiak/lubiak.js web/lubiak/index.html .github/deploy-now.txt
+          if git diff --cached --quiet; then
+            echo 'No live publication changes required.'
+            exit 0
+          fi
+          git commit -m 'Publish latest LUBIAK textured GLB live'
+          for attempt in 1 2 3; do
+            git pull --rebase origin main && git push origin HEAD:main && exit 0
+            git rebase --abort || true
+            sleep $((attempt * 2))
+          done
+          exit 1
