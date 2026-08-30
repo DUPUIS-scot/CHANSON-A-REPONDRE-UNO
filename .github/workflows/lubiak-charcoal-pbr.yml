@@ -1,0 +1,43 @@
+name: LUBIAK charcoal terrain PBR
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/lubiak-charcoal-pbr.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Patch existing grey terrain mesh to charcoal PBR
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('web/lubiak/lubiak.js')
+          s=p.read_text()
+          old="const coal=new THREE.MeshStandardMaterial({name:'LUBIAK_TERRAIN_COAL_V2',color:0x070302,emissive:0xd92705,emissiveIntensity:1.85,roughness:0.96,metalness:0,side:THREE.DoubleSide});"
+          new="""// LUBIAK_CHARCOAL_PBR_V3 — texture the existing authored terrain mesh; never add a replacement plane.\n  const terrainLoader=new THREE.TextureLoader();\n  const terrainTexture=(url,srgb=false)=>{\n    const t=terrainLoader.load(url);\n    if(srgb) t.colorSpace=THREE.SRGBColorSpace;\n    t.wrapS=t.wrapT=THREE.RepeatWrapping;\n    t.repeat.set(5,5);\n    t.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());\n    return t;\n  };\n  const coalAlbedo=terrainTexture('/assets/textures/lubiak/charcoal_albedo.jpg?v=20260830-pbr3',true);\n  const coalNormal=terrainTexture('/assets/textures/lubiak/charcoal_normal.jpg?v=20260830-pbr3');\n  const coalHeight=terrainTexture('/assets/textures/lubiak/charcoal_height.jpg?v=20260830-pbr3');\n  const coalRoughAo=terrainTexture('/assets/textures/lubiak/charcoal_roughness_ao.jpg?v=20260830-pbr3');\n  const coal=new THREE.MeshStandardMaterial({\n    name:'LUBIAK_TERRAIN_CHARCOAL_PBR_V3',\n    map:coalAlbedo, emissiveMap:coalAlbedo, emissive:0x5b1004, emissiveIntensity:0.72,\n    normalMap:coalNormal, normalScale:new THREE.Vector2(0.72,0.72),\n    bumpMap:coalHeight, bumpScale:0.18,\n    roughnessMap:coalRoughAo, aoMap:coalRoughAo, roughness:0.94, aoMapIntensity:0.85,\n    metalness:0, side:THREE.DoubleSide\n  });"""
+          if 'LUBIAK_CHARCOAL_PBR_V3' in s:
+              print('already patched')
+          elif old not in s:
+              raise SystemExit('coal material anchor not found')
+          else:
+              p.write_text(s.replace(old,new,1))
+          PY
+          node --check web/lubiak/lubiak.js
+      - name: Commit runtime patch
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add web/lubiak/lubiak.js
+          git diff --cached --quiet && exit 0
+          git commit -m "Apply charcoal PBR maps to existing LUBIAK terrain mesh"
+          git push
