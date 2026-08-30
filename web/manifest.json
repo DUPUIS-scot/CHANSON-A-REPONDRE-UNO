@@ -1,11 +1,11 @@
 {
-    "name": "Chanson à Répondre UNO — Version 3.7.3.7",
+    "name": "Chanson à Répondre UNO — Version 3.7.7.3",
     "short_name": "Chanson UNO",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "The approved and certified Chanson à Répondre UNO v3.7.3.7 card experience.",
+    "description": "The approved and certified Chanson à Répondre UNO v3.7.7.3 card experience.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
