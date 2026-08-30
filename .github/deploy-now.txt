@@ -1,5 +1,5 @@
-deploy-request: 2026-08-30T17:32:00+01:00
+deploy-request: 2026-08-30T19:10:00+01:00
 source: chat
-scope: LUBIAK textured GLB live cache repair
-reason: force fresh per-deployment cache tokens for LUBIAK_master_optimized.glb and lubiak.js so newly baked PBR textures cannot be masked by the stale 20260829-djinn-player-v1 URL
-source-commit: ee8ce185227e1a3fcb8885ba1a7ae90208462080
+scope: Promote all textured GLBs to live runtime
+reason: publish textured Castle interior, Laboratory book-video interior, Scene11, and optimized textured LUBIAK/Megapole assets to their active runtime model paths
+source-commit: 7858cc024c82c5e587becbc0b22ed212f42f19da
