@@ -1,0 +1,42 @@
+name: LUBIAK aerial dragon patrol
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.lubiak-aerial-dragon-patrol-trigger'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Apply patrol patch
+        run: node scripts/patch-lubiak-aerial-dragon-patrol.mjs
+      - name: Validate JS
+        run: node --check web/lubiak/lubiak.js
+      - name: Trigger live deploy
+        run: |
+          cat > .github/deploy-now.txt <<'EOF'
+          deploy-request: 2026-08-30
+          source: chat
+          scope: LUBIAK aerial dragon patrol
+          reason: dragon patrols around LUBIAK in aerial camera mode and returns to guardian zone
+          EOF
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add web/lubiak/lubiak.js .github/deploy-now.txt
+          git diff --cached --quiet && exit 0
+          git commit -m 'Patrol dragon around LUBIAK in aerial mode'
+          git push
