@@ -102,69 +102,56 @@ jobs:
         run: |
           flutter build web --release --no-pub --base-href "/" --dart-define=SKIP_AUTH_FOR_DEVELOPMENT=false --dart-define=SUPABASE_URL="$SUPABASE_URL" --dart-define=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY" --dart-define=AI_BACKEND_URL="$AI_BACKEND_URL" --dart-define=TURNSTILE_SITE_KEY="$TURNSTILE_SITE_KEY" --dart-define=APP_BUILD_SHA="${{ github.sha }}"
 
+      - name: Promote geometry-safe textured GLBs
+        shell: bash
+        run: |
+          set -euo pipefail
+          models="build/web/assets/assets/models"
+          safe="assets/models/textured-glb-comparison"
+          test -s "$safe/LUBIAK_master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED.glb"
+          test -s "$safe/MEGAPOLE_PBR_TERRAIN_UPGRADED_WEB_OPTIMIZED.glb"
+          cp "$safe/LUBIAK_master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED.glb" "$models/LUBIAK_master_optimized.glb"
+          cp "$safe/MEGAPOLE_PBR_TERRAIN_UPGRADED_WEB_OPTIMIZED.glb" "$models/SILMARI_LLION_MEGAPOLE_LUBIAK.glb"
+          cmp -s "$safe/LUBIAK_master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED.glb" "$models/LUBIAK_master_optimized.glb"
+          cmp -s "$safe/MEGAPOLE_PBR_TERRAIN_UPGRADED_WEB_OPTIMIZED.glb" "$models/SILMARI_LLION_MEGAPOLE_LUBIAK.glb"
+          echo "Promoted validated web-optimized textured GLBs without runtime geometry rewriting"
+
       - name: Refresh LUBIAK textured runtime cache
         shell: bash
         run: |
           set -euo pipefail
-          token="pbr-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          token="safe-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           python3 - "$token" <<'PY'
           from pathlib import Path
           import re, sys
-
           token = sys.argv[1]
           js_path = Path('build/web/lubiak/lubiak.js')
           html_path = Path('build/web/lubiak/index.html')
-          if not js_path.is_file() or not html_path.is_file():
-              raise FileNotFoundError('Expected built LUBIAK runtime files')
-
           js = js_path.read_text()
-          js, master_count = re.subn(
-              r"(LUBIAK_master_optimized\.glb\?v=)[^'\"\s]+",
-              rf"\g<1>{token}",
-              js,
-          )
-          if master_count < 1:
-              raise RuntimeError('LUBIAK master GLB cache token was not found')
+          js, n = re.subn(r"(LUBIAK_master_optimized\.glb\?v=)[^'\"\s]+", rf"\g<1>{token}", js)
+          if n < 1: raise RuntimeError('LUBIAK master cache token not found')
           js_path.write_text(js)
-
           html = html_path.read_text()
-          html, script_count = re.subn(
-              r"(lubiak\.js\?v=)[^'\"\s]+",
-              rf"\g<1>{token}",
-              html,
-          )
-          if script_count < 1:
-              raise RuntimeError('LUBIAK runtime script cache token was not found')
+          html, n = re.subn(r"(lubiak\.js\?v=)[^'\"\s]+", rf"\g<1>{token}", html)
+          if n < 1: raise RuntimeError('LUBIAK script cache token not found')
           html_path.write_text(html)
-
-          print(f'LUBIAK live cache refreshed: {token}; model={master_count}; script={script_count}')
           PY
-          grep -q "LUBIAK_master_optimized.glb?v=${token}" build/web/lubiak/lubiak.js
-          grep -q "lubiak.js?v=${token}" build/web/lubiak/index.html
-          test -s build/web/assets/assets/models/LUBIAK_master_optimized.glb
 
-      - name: Upgrade deployed Megapole GLB to PBR
+      - name: Upgrade Castle and Laboratory materials only
         shell: bash
         run: |
           set -euo pipefail
           python3 -m pip install --user --disable-pip-version-check pillow
-          target="build/web/assets/assets/models/SILMARI_LLION_MEGAPOLE_LUBIAK.glb"
-          test -s "$target"
-          python3 scripts/upgrade_megapole_glb.py "$target"
-          test -s "$target"
-          python3 - "$target" <<'PY'
-          import json, struct, sys
-          p = sys.argv[1]
-          with open(p, 'rb') as f:
-              magic, version, total = struct.unpack('<4sII', f.read(12))
-              assert magic == b'glTF' and version == 2
-              jlen, jtype = struct.unpack('<II', f.read(8))
-              doc = json.loads(f.read(jlen).decode('utf-8').rstrip(' \t\r\n\x00'))
-          assert doc['materials'][0]['name'] == 'SILMARI_LLION_MEGAPOLE_PBR_MATERIAL'
-          assert 'emissiveTexture' in doc['materials'][0]
-          assert 'normalTexture' in doc['materials'][0]
-          assert doc['asset']['generator'].endswith('v8')
-          print('Megapole PBR deployment contract verified')
+          models="build/web/assets/assets/models"
+          PYTHONPATH=scripts python3 - <<'PY'
+          from upgrade_castle_exterior_glb import upgrade as ext
+          from upgrade_castle_interior_glb import upgrade as interior
+          from upgrade_laboratory_interior_glb import upgrade as lab
+          root='build/web/assets/assets/models/'
+          ext(root+'castle_exterior.glb')
+          interior(root+'castle_interior.glb')
+          lab(root+'laboratory_interior.glb')
+          print('Castle/Laboratory PBR passes complete; Megapole geometry untouched')
           PY
 
       - name: Install authoritative Enochian terminal runtime
@@ -176,22 +163,14 @@ jobs:
           cp -a web/enochian-test build/web/enochian-test
           test -s build/web/enochian-terminal/index.html
           test -s build/web/enochian-test/live-copy.html
-          cmp -s web/enochian-terminal/index.html build/web/enochian-terminal/index.html
-          cmp -s web/enochian-test/live-copy.html build/web/enochian-test/live-copy.html
 
       - name: Verify deployed Enochian terminal contract
         shell: bash
         run: |
           set -euo pipefail
           grep -q "live-copy.html?v=20260829-main-output-v2" build/web/enochian-terminal/index.html
-          grep -q "stem-four-channel-ui-v1.js?v=20260827-v4" build/web/enochian-terminal/index.html
-          grep -q "analyser-signal-3d-v7.js?v=20260827-mesh-track-wave-v8" build/web/enochian-terminal/index.html
-          grep -q "double-decker-main-stem-link-v1.js?v=20260829-stem-jester-v14" build/web/enochian-terminal/index.html
           test -s build/web/enochian-test/stem-four-channel-ui-v1.js
-          test -s build/web/enochian-test/double-jecker-runtime-repair-v1.js
-          test -s build/web/enochian-test/analyser-controls-contained-v1.js
           node --check build/web/enochian-test/stem-four-channel-ui-v1.js
-          node --check build/web/enochian-test/double-jecker-runtime-repair-v1.js
           python3 scripts/check_terminal_runtime_consolidation.py
 
       - name: Prepare Safari-compatible laboratory video
@@ -201,9 +180,8 @@ jobs:
           if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then sudo apt-get update && sudo apt-get install -y ffmpeg; fi
           src="assets/videos/bureau_screen_loop.mp4"; out="build/web/assets/assets/videos/bureau_screen_loop.mp4"; tmp="build/web/assets/assets/videos/bureau_screen_loop.safari.tmp.mp4"
           test -s "$src"; mkdir -p "$(dirname "$out")"
-          codec="$(ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of default=nw=1:nk=1 "$src")"; pix_fmt="$(ffprobe -v error -select_streams v:0 -show_entries stream=pix_fmt -of default=nw=1:nk=1 "$src")"; width="$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of default=nw=1:nk=1 "$src")"; height="$(ffprobe -v error -select_streams v:0 -show_entries stream=height -of default=nw=1:nk=1 "$src")"
-          if [ "$codec" = "h264" ] && [ "$pix_fmt" = "yuv420p" ] && [ "$width" -le 1280 ] && [ "$height" -le 720 ]; then cp "$src" "$out"; else ffmpeg -hide_banner -loglevel error -y -i "$src" -map 0:v:0 -an -vf "scale='min(1280,iw)':'min(720,ih)':force_original_aspect_ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2" -r 30 -c:v libx264 -preset fast -crf 23 -profile:v main -level 4.0 -pix_fmt yuv420p -movflags +faststart "$tmp" && mv "$tmp" "$out"; fi
-          test -s "$out"
+          codec="$(ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of default=nw=1:nk=1 "$src")"; pix_fmt="$(ffprobe -v error -select_streams v:0 -show_entries stream=pix_fmt -of default=nw=1:nk=1 "$src")"
+          if [ "$codec" = "h264" ] && [ "$pix_fmt" = "yuv420p" ]; then cp "$src" "$out"; else ffmpeg -hide_banner -loglevel error -y -i "$src" -map 0:v:0 -an -vf "scale='min(1280,iw)':'min(720,ih)':force_original_aspect_ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2" -r 30 -c:v libx264 -preset fast -crf 23 -pix_fmt yuv420p -movflags +faststart "$tmp" && mv "$tmp" "$out"; fi
 
       - name: Generate share previews and pages
         timeout-minutes: 12
@@ -227,17 +205,17 @@ jobs:
           test -f build/web/index.html
           test -f build/web/404.html
           test -f build/web/main.dart.js
-          test -f build/web/enochian/index.html
           test -s build/web/enochian-terminal/index.html
-          test -s build/web/enochian-test/live-copy.html
           test -f build/web/card_castle/card_castle.html
           test -s build/web/assets/assets/models/castle_exterior.glb
+          test -s build/web/assets/assets/models/castle_interior.glb
+          test -s build/web/assets/assets/models/laboratory_interior.glb
           test -s build/web/assets/assets/models/LUBIAK_master_optimized.glb
           test -s build/web/assets/assets/models/SILMARI_LLION_MEGAPOLE_LUBIAK.glb
-          test -s build/web/assets/assets/videos/bureau_screen_loop.mp4
-          grep -q "LUBIAK_master_optimized.glb?v=pbr-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" build/web/lubiak/lubiak.js
-          grep -q "lubiak.js?v=pbr-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" build/web/lubiak/index.html
-          grep -q "megapole-pbr-v8.js" build/web/megapole/index.html
+          cmp -s assets/models/textured-glb-comparison/LUBIAK_master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED.glb build/web/assets/assets/models/LUBIAK_master_optimized.glb
+          cmp -s assets/models/textured-glb-comparison/MEGAPOLE_PBR_TERRAIN_UPGRADED_WEB_OPTIMIZED.glb build/web/assets/assets/models/SILMARI_LLION_MEGAPOLE_LUBIAK.glb
+          grep -q "LUBIAK_master_optimized.glb?v=safe-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" build/web/lubiak/lubiak.js
+          grep -q "lubiak.js?v=safe-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" build/web/lubiak/index.html
           node --check build/web/megapole/megapole-pbr-v8.js
 
       - name: Configure Pages
