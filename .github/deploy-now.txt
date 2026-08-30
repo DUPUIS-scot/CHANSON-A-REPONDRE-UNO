@@ -1,4 +1,4 @@
-deploy-request: 2026-08-29T23:59:00+01:00
+deploy-request: 2026-08-30T01:08:00+01:00
 source: chat
-workflow: WEB — Deploy Live Site
-reason: upgrade deployed SILMARI'LLION Megapole GLB to embedded PBR v8 maps and switch viewer to PBR-preserving runtime
+scope: LUBIAK
+reason: deploy repaired multi-region PBR master GLB (Freak Street + Palace Place + circus exterior + circus interior)
