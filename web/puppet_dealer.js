@@ -2,19 +2,17 @@ import * as THREE from 'three';
 import { GLTFLoader } from './vendor/GLTFLoader.js';
 
 const dealers = new Map();
-const pendingMounts = new Map();
-const MODEL_REVISION = 'play-jester-rigged-20260829-safe-skin-v2';
-const MODEL_URL = new URL('assets/assets/models/play_jester_rigged.glb', document.baseURI).href;
+const MODEL_REVISION = 'play-jester-rigged-remesh-rest-bind-20260830-v1';
+const MODEL_URL = new URL(`assets/assets/models/play_jester_rigged.glb?rev=${MODEL_REVISION}`, document.baseURI).href;
 const MODEL_FACING_Y = Math.PI * 1.5;
 const DEAL_DURATION = 4200;
 const RECEIVE_DURATION = 2600;
+const REST_POSE_ONLY = true;
 
 const clamp01 = (v) => Math.max(0, Math.min(1, v));
-const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const lerp = THREE.MathUtils.lerp;
 const smoother = (v) => { const t = clamp01(v); return t * t * t * (t * (t * 6 - 15) + 10); };
 const segment = (v, a, b) => smoother((v - a) / Math.max(b - a, 0.0001));
-const pulse = (v, a, p, b) => segment(v, a, p) * (1 - segment(v, p, b));
 
 function cubicBezier(out, a, b, c, d, t) {
   const x = clamp01(t), u = 1 - x, xx = x * x, uu = u * u;
@@ -43,7 +41,10 @@ function makeCard() {
   const edge = new THREE.MeshStandardMaterial({ color: 0xe8d9b8, roughness: 0.54, metalness: 0.02 });
   const frontFallback = new THREE.MeshStandardMaterial({ color: 0x22100f, roughness: 0.65 });
   const backFallback = new THREE.MeshStandardMaterial({ color: 0x77151d, roughness: 0.68 });
-  const card = new THREE.Mesh(new THREE.BoxGeometry(0.82, 1.24, 0.04), [edge, edge, edge, edge, frontFallback, backFallback]);
+  const card = new THREE.Mesh(
+    new THREE.BoxGeometry(0.82, 1.24, 0.04),
+    [edge, edge, edge, edge, frontFallback, backFallback],
+  );
   card.visible = false;
   card.castShadow = true;
   Object.assign(card.userData, { edgeMaterial: edge, frontFallback, backFallback });
@@ -61,44 +62,35 @@ function loadTexture(url, quality) {
 }
 
 class JesterDealer {
-  constructor(host, quality) {
+  constructor(host, quality = 'medium') {
     this.host = host;
-    this.quality = 'medium';
+    this.quality = quality;
     this.disposed = false;
     this.visible = true;
     this.frame = 0;
     this.animation = null;
-    this.clock = new THREE.Clock();
-    this.elapsed = 0;
     this.bones = new Map();
-    this.restQuaternions = new Map();
-    this.userPose = {
-      head: { x: 0, y: 0, z: 0 }, torso: { x: 0, y: 0, z: 0 },
-      leftUpper: { x: 0, y: 0, z: 0 }, leftFore: { x: 0, y: 0, z: 0 }, leftHand: { x: 0, y: 0, z: 0 },
-      rightUpper: { x: 0, y: 0, z: 0 }, rightFore: { x: 0, y: 0, z: 0 }, rightHand: { x: 0, y: 0, z: 0 },
-    };
-    this.pointer = null;
+    this.skinnedMeshes = [];
 
     host.dataset.dealerStatus = 'loading';
     host.dataset.dealerAnimation = 'IDLE';
     host.dataset.modelRevision = MODEL_REVISION;
-    host.dataset.skinSafety = 'conservative-bone-rotation';
+    host.dataset.poseMode = REST_POSE_ONLY ? 'rest-only' : 'procedural';
+    host.dataset.bindPosePolicy = 'preserve-imported-inverse-bind-matrices';
     host.dataset.animationVocabulary = 'IDLE,LOOK_PLAYER,REACH_DECK,DRAW_CARD,HOLD_VERSO,FLIP_CARD,PRESENT_RECTO,TAKE_CARD,DISCARD,RETURN_IDLE';
 
     this.status = document.createElement('div');
     this.status.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;text-align:center;font:600 14px Georgia,serif;letter-spacing:.04em;color:#f0c56b;background:rgba(5,3,2,.28);pointer-events:none;opacity:0;transition:opacity .2s ease;z-index:2';
     host.appendChild(this.status);
 
+    this.scene = new THREE.Scene();
     this.modelRoot = new THREE.Group();
-    this.gestureRoot = new THREE.Group();
     this.puppetRoot = new THREE.Group();
     this.puppetRoot.rotation.y = MODEL_FACING_Y;
-    this.gestureRoot.add(this.puppetRoot);
-    this.modelRoot.add(this.gestureRoot);
-    this.scene = new THREE.Scene();
+    this.modelRoot.add(this.puppetRoot);
     this.scene.add(this.modelRoot);
-    this.camera = new THREE.PerspectiveCamera(32, 1, 0.05, 100);
 
+    this.camera = new THREE.PerspectiveCamera(32, 1, 0.05, 100);
     this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'high-performance' });
     this.renderer.setClearColor(0x000000, 0);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -106,14 +98,13 @@ class JesterDealer {
     this.renderer.toneMappingExposure = 1.08;
     this.renderer.domElement.id = `${host.id}-canvas`;
     this.renderer.domElement.dataset.renderer = 'three.js-gltf';
-    this.renderer.domElement.style.cssText = 'position:absolute;inset:0;display:block;width:100%;height:100%;pointer-events:auto;touch-action:none;cursor:grab';
+    this.renderer.domElement.style.cssText = 'position:absolute;inset:0;display:block;width:100%;height:100%;pointer-events:none;touch-action:none';
     host.insertBefore(this.renderer.domElement, this.status);
 
     this.card = makeCard();
     this.scene.add(this.card);
     this.setupLights();
     this.setQuality(quality);
-    this.bindPointerControls();
 
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(host);
@@ -123,8 +114,8 @@ class JesterDealer {
     });
     this.intersectionObserver.observe(host);
     document.addEventListener('visibilitychange', this.onVisibilityChange);
-    this.resize();
     this.loadModel();
+    this.resize();
   }
 
   showError(message) { this.status.textContent = message; this.status.style.opacity = '1'; }
@@ -137,17 +128,27 @@ class JesterDealer {
     const rim = new THREE.DirectionalLight(0xff4058, 2.4); rim.position.set(3, 5, -4); this.scene.add(rim);
   }
 
-  cacheRig() {
-    const names = ['Head', 'Spine02', 'L_Upperarm', 'L_Forearm', 'L_Hand', 'R_Upperarm', 'R_Forearm', 'R_Hand'];
-    this.bones.clear(); this.restQuaternions.clear();
-    for (const name of names) {
-      const bone = this.model.getObjectByName(name);
-      if (!bone) continue;
-      this.bones.set(name, bone);
-      this.restQuaternions.set(name, bone.quaternion.clone());
+  preserveImportedBindPose() {
+    this.model.updateMatrixWorld(true);
+    for (const mesh of this.skinnedMeshes) {
+      mesh.skeleton.pose();
+      mesh.skeleton.update();
     }
-    this.host.dataset.rigged = String(this.bones.size >= 6);
-    this.host.dataset.rigControls = 'head,torso,left-arm,left-hand,right-arm,right-hand';
+    this.model.updateMatrixWorld(true);
+  }
+
+  cacheRig() {
+    const required = ['Head', 'Spine02', 'L_Upperarm', 'L_Forearm', 'L_Hand', 'R_Upperarm', 'R_Forearm', 'R_Hand'];
+    this.bones.clear();
+    for (const name of required) {
+      const bone = this.model.getObjectByName(name);
+      if (bone?.isBone) this.bones.set(name, bone);
+    }
+    const allBones = [];
+    this.model.traverse((object) => { if (object.isBone) allBones.push(object); });
+    this.host.dataset.dealerBoneCount = String(allBones.length);
+    this.host.dataset.requiredBones = `${this.bones.size}/${required.length}`;
+    this.host.dataset.rigged = String(allBones.length === 41 && this.bones.size === required.length);
   }
 
   boneWorld(name) {
@@ -158,19 +159,22 @@ class JesterDealer {
   }
 
   fitModelFromRig() {
-    const head = this.boneWorld('Head'), spine = this.boneWorld('Spine02');
+    const head = this.boneWorld('Head');
+    const spine = this.boneWorld('Spine02');
     if (!head || !spine) return false;
     const rawSpan = Math.max(head.distanceTo(spine), 0.001);
-    this.model.scale.multiplyScalar(clamp(2.45 / rawSpan, 0.01, 100));
+    this.model.scale.multiplyScalar(2.45 / rawSpan);
     this.puppetRoot.updateMatrixWorld(true);
-    let h = this.boneWorld('Head'), s = this.boneWorld('Spine02');
-    if (!h || !s) return false;
-    if (h.y < s.y) {
+    let h = this.boneWorld('Head');
+    let s = this.boneWorld('Spine02');
+    if (h && s && h.y < s.y) {
       this.model.rotation.z += Math.PI;
       this.puppetRoot.updateMatrixWorld(true);
       h = this.boneWorld('Head'); s = this.boneWorld('Spine02');
       this.host.dataset.rigOrientation = 'auto-upright';
-    } else this.host.dataset.rigOrientation = 'upright';
+    } else {
+      this.host.dataset.rigOrientation = 'upright';
+    }
     if (!h || !s) return false;
     const localHead = this.puppetRoot.worldToLocal(h.clone());
     const localSpine = this.puppetRoot.worldToLocal(s.clone());
@@ -183,18 +187,22 @@ class JesterDealer {
   }
 
   updateBustFrame() {
-    const head = this.boneWorld('Head'), spine = this.boneWorld('Spine02');
+    const head = this.boneWorld('Head');
+    const spine = this.boneWorld('Spine02');
     if (!head || !spine) return false;
     const rigSpan = Math.max(head.distanceTo(spine), 0.25);
     const up = head.clone().sub(spine).normalize();
     const target = spine.clone().lerp(head, 0.56).addScaledVector(up, rigSpan * 0.08);
-    const ls = this.boneWorld('L_Upperarm'), rs = this.boneWorld('R_Upperarm');
+    const ls = this.boneWorld('L_Upperarm');
+    const rs = this.boneWorld('R_Upperarm');
     const shoulderSpan = ls && rs ? ls.distanceTo(rs) : rigSpan * 1.35;
-    const width = Math.max(this.host.clientWidth, 1), height = Math.max(this.host.clientHeight, 1);
+    const width = Math.max(this.host.clientWidth, 1);
+    const height = Math.max(this.host.clientHeight, 1);
     const narrow = width < 720;
     this.camera.fov = narrow ? 34 : 30;
+    this.camera.aspect = width / height;
     const vfov = THREE.MathUtils.degToRad(this.camera.fov);
-    const hfov = 2 * Math.atan(Math.tan(vfov / 2) * (width / height));
+    const hfov = 2 * Math.atan(Math.tan(vfov / 2) * this.camera.aspect);
     const visibleHeight = rigSpan * (narrow ? 1.72 : 1.62);
     const visibleWidth = Math.max(shoulderSpan * (narrow ? 1.30 : 1.22), rigSpan * 1.38);
     const dh = (visibleHeight * 0.5) / Math.max(Math.tan(vfov / 2), 0.001);
@@ -203,8 +211,8 @@ class JesterDealer {
     const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(this.puppetRoot.getWorldQuaternion(new THREE.Quaternion()));
     this.camera.position.copy(target).addScaledVector(forward, distance);
     this.camera.lookAt(target);
-    this.camera.updateProjectionMatrix(); this.camera.updateMatrixWorld(true);
-    this.host.dataset.puppetFit = 'animated-rig-bust-large';
+    this.camera.updateProjectionMatrix();
+    this.host.dataset.puppetFit = 'rest-rig-bust';
     this.host.dataset.puppetCameraDistance = distance.toFixed(3);
     return true;
   }
@@ -214,22 +222,43 @@ class JesterDealer {
     new GLTFLoader().load(MODEL_URL, (gltf) => {
       if (this.disposed) return disposeObject(gltf.scene);
       this.model = gltf.scene;
+      this.skinnedMeshes = [];
       this.model.traverse((object) => {
         if (/string|marionette|control[_ -]?line/i.test(object.name)) object.visible = false;
-        if (object.isMesh) {
-          object.castShadow = this.quality !== 'low'; object.receiveShadow = this.quality !== 'low'; object.frustumCulled = false;
+        if (object.isMesh || object.isSkinnedMesh) {
+          object.castShadow = this.quality !== 'low';
+          object.receiveShadow = this.quality !== 'low';
+          object.frustumCulled = false;
+          if (object.material) {
+            const materials = Array.isArray(object.material) ? object.material : [object.material];
+            for (const material of materials) material.side = THREE.DoubleSide;
+          }
         }
+        if (object.isSkinnedMesh && object.skeleton) this.skinnedMeshes.push(object);
       });
-      this.puppetRoot.add(this.model); this.puppetRoot.updateMatrixWorld(true); this.cacheRig();
+      this.puppetRoot.add(this.model);
+      this.puppetRoot.updateMatrixWorld(true);
+      this.cacheRig();
+      this.preserveImportedBindPose();
       if (!this.fitModelFromRig()) {
-        const bounds = new THREE.Box3().setFromObject(this.model), size = bounds.getSize(new THREE.Vector3()), center = bounds.getCenter(new THREE.Vector3());
-        this.model.position.sub(center); this.model.scale.setScalar(5.2 / Math.max(size.y, 0.001)); this.host.dataset.rigAnchor = 'fallback-bounds';
+        const bounds = new THREE.Box3().setFromObject(this.model);
+        const size = bounds.getSize(new THREE.Vector3());
+        const center = bounds.getCenter(new THREE.Vector3());
+        this.model.position.sub(center);
+        this.model.scale.setScalar(5.2 / Math.max(size.y, 0.001));
+        this.host.dataset.rigAnchor = 'fallback-bounds';
       }
       this.resize();
-      this.host.dataset.dealerStatus = 'ready'; this.host.dataset.modelAnimations = String(gltf.animations.length);
-      this.clearError(); this.resume();
+      this.host.dataset.dealerStatus = 'ready';
+      this.host.dataset.modelAnimations = String(gltf.animations.length);
+      this.host.dataset.skinCount = String(this.skinnedMeshes.length);
+      this.host.dataset.bindPose = 'imported-rest-verified';
+      this.clearError();
+      this.resume();
     }, undefined, (error) => {
-      this.host.dataset.dealerStatus = 'failed'; this.host.dataset.modelError = String(error?.message || error); this.showError('3D jester failed to load.');
+      this.host.dataset.dealerStatus = 'failed';
+      this.host.dataset.modelError = String(error?.message || error);
+      this.showError('3D jester failed to load.');
     });
   }
 
@@ -237,217 +266,172 @@ class JesterDealer {
     this.quality = ['low', 'medium', 'high'].includes(value) ? value : 'medium';
     const ratios = { low: 0.75, medium: 1.15, high: 1.6 };
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, ratios[this.quality]));
-    this.renderer.shadowMap.enabled = this.quality !== 'low'; this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    this.keyLight.castShadow = this.quality !== 'low'; this.resize();
+    this.renderer.shadowMap.enabled = this.quality !== 'low';
+    this.keyLight.castShadow = this.quality !== 'low';
+    this.resize();
   }
 
   resize() {
-    const width = Math.max(this.host.clientWidth, 1), height = Math.max(this.host.clientHeight, 1);
-    this.renderer.setSize(width, height, false); this.camera.aspect = width / height;
-    this.modelRoot.position.set(0, 0, 0); this.modelRoot.scale.setScalar(1);
-    if (!this.updateBustFrame()) { this.camera.position.set(0, 0.3, width < 720 ? 6.0 : 5.3); this.camera.lookAt(0, 0.3, 0); this.camera.updateProjectionMatrix(); }
+    const width = Math.max(this.host.clientWidth, 1);
+    const height = Math.max(this.host.clientHeight, 1);
+    this.renderer.setSize(width, height, false);
+    this.camera.aspect = width / height;
+    if (!this.model || !this.updateBustFrame()) {
+      this.camera.position.set(0, 0.3, width < 720 ? 6.0 : 5.3);
+      this.camera.lookAt(0, 0.3, 0);
+      this.camera.updateProjectionMatrix();
+    }
   }
 
-  async updateCardTextures(frontUrl, backUrl) {
+  async updateCardTextures(rectoUrl, versoUrl) {
     try {
       this.host.dataset.cardTexture = 'loading';
-      const [frontTexture, backTexture] = await Promise.all([loadTexture(frontUrl, this.quality), loadTexture(backUrl || frontUrl, this.quality)]);
-      if (this.disposed) { frontTexture.dispose(); backTexture.dispose(); return; }
-      this.card.userData.frontTexture?.dispose(); this.card.userData.backTexture?.dispose();
-      this.card.userData.frontMaterial?.dispose(); this.card.userData.backMaterial?.dispose();
-      const front = new THREE.MeshStandardMaterial({ map: frontTexture, roughness: 0.5 });
-      const back = new THREE.MeshStandardMaterial({ map: backTexture, roughness: 0.54 });
+      const [rectoTexture, versoTexture] = await Promise.all([
+        loadTexture(rectoUrl, this.quality),
+        loadTexture(versoUrl || rectoUrl, this.quality),
+      ]);
+      if (this.disposed) { rectoTexture.dispose(); versoTexture.dispose(); return; }
+      this.card.userData.frontTexture?.dispose();
+      this.card.userData.backTexture?.dispose();
+      this.card.userData.frontMaterial?.dispose();
+      this.card.userData.backMaterial?.dispose();
+      const front = new THREE.MeshStandardMaterial({ map: rectoTexture, roughness: 0.5 });
+      const back = new THREE.MeshStandardMaterial({ map: versoTexture, roughness: 0.54 });
       const edge = this.card.userData.edgeMaterial;
       this.card.material = [edge, edge, edge, edge, front, back];
-      Object.assign(this.card.userData, { frontTexture, backTexture, frontMaterial: front, backMaterial: back });
+      Object.assign(this.card.userData, {
+        frontTexture: rectoTexture, backTexture: versoTexture,
+        frontMaterial: front, backMaterial: back,
+      });
       this.host.dataset.cardTexture = 'ready';
-    } catch (error) { this.host.dataset.cardTexture = 'failed'; console.warn('Unable to load dealer card textures.', error); }
-  }
-
-  setPhase(phase) { if (this.host.dataset.dealerAnimation !== phase) this.host.dataset.dealerAnimation = phase; }
-  setGesturePose({ ry = 0, rz = 0, squash = 0 } = {}) {
-    this.gestureRoot.position.set(0, 0, 0);
-    this.gestureRoot.rotation.set(0, clamp(ry, -0.025, 0.025), clamp(rz, -0.02, 0.02));
-    this.gestureRoot.scale.set(1 + squash * 0.006, 1 - squash * 0.006, 1);
-  }
-  resetGesture() { this.setGesturePose(); }
-
-  poseBone(name, auto = {}, user = {}) {
-    const bone = this.bones.get(name), rest = this.restQuaternions.get(name);
-    if (!bone || !rest) return;
-    const safe = /Upperarm/.test(name) ? 0.22 : /Forearm/.test(name) ? 0.30 : /Hand/.test(name) ? 0.14 : name === 'Head' ? 0.16 : 0.08;
-    const ax = clamp((auto.x || 0) + (user.x || 0), -safe, safe);
-    const ay = clamp((auto.y || 0) + (user.y || 0), -safe, safe);
-    const az = clamp((auto.z || 0) + (user.z || 0), -safe, safe);
-    bone.quaternion.copy(rest).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(ax, ay, az, 'XYZ')));
-  }
-
-  applyRigPose(t = null, receive = false) {
-    let reach = 0, lift = 0, present = 0, release = 0, look = 0;
-    if (t !== null && !receive) {
-      look = segment(t, 0.00, 0.10) * (1 - segment(t, 0.92, 1.0));
-      reach = segment(t, 0.10, 0.28); lift = segment(t, 0.22, 0.42); present = segment(t, 0.56, 0.80); release = segment(t, 0.88, 1.0);
-    } else if (t !== null) {
-      look = segment(t, 0.00, 0.14) * (1 - segment(t, 0.84, 1.0));
-      reach = segment(t, 0.08, 0.32); lift = segment(t, 0.24, 0.52); present = segment(t, 0.46, 0.66); release = segment(t, 0.72, 1.0);
+    } catch (error) {
+      this.host.dataset.cardTexture = 'failed';
+      console.warn('Unable to load dealer card textures.', error);
     }
-    const side = receive ? 'right' : 'left', a = receive ? -1 : 1;
-    const autoUpper = t === null ? {} : { x: a * (-0.16 * reach + 0.08 * present - 0.06 * release), y: 0.05 * present, z: a * (-0.18 * lift + 0.06 * release) };
-    const autoFore = t === null ? {} : { x: a * (-0.24 * lift + 0.10 * present - 0.07 * release), y: -0.04 * present, z: a * 0.07 * reach };
-    const autoHand = t === null ? {} : { x: -0.06 * present, y: a * 0.08 * present, z: a * -0.05 * lift };
-    const upper = receive ? 'R_Upperarm' : 'L_Upperarm', fore = receive ? 'R_Forearm' : 'L_Forearm', hand = receive ? 'R_Hand' : 'L_Hand';
-    this.poseBone(upper, autoUpper, this.userPose[`${side}Upper`]); this.poseBone(fore, autoFore, this.userPose[`${side}Fore`]); this.poseBone(hand, autoHand, this.userPose[`${side}Hand`]);
-    const other = receive ? 'left' : 'right';
-    this.poseBone(receive ? 'L_Upperarm' : 'R_Upperarm', {}, this.userPose[`${other}Upper`]);
-    this.poseBone(receive ? 'L_Forearm' : 'R_Forearm', {}, this.userPose[`${other}Fore`]);
-    this.poseBone(receive ? 'L_Hand' : 'R_Hand', {}, this.userPose[`${other}Hand`]);
-    this.poseBone('Head', t === null ? {} : { x: -0.04 * look, y: (receive ? -0.05 : 0.05) * look, z: 0.012 * Math.sin(t * Math.PI * 2) }, this.userPose.head);
-    this.poseBone('Spine02', t === null ? {} : { x: 0.01 * look, y: (receive ? -0.012 : 0.012) * look }, this.userPose.torso);
   }
 
-  applyIdlePose(delta) {
-    this.elapsed += delta;
-    const breath = Math.sin(this.elapsed * 1.35), glance = Math.sin(this.elapsed * 0.42);
-    this.poseBone('Head', { x: -0.012 + breath * 0.006, y: glance * 0.022, z: Math.sin(this.elapsed * 0.31) * 0.008 }, this.userPose.head);
-    this.poseBone('Spine02', { x: breath * 0.005, y: glance * -0.006, z: breath * 0.003 }, this.userPose.torso);
-    this.poseBone('L_Upperarm', {}, this.userPose.leftUpper); this.poseBone('L_Forearm', {}, this.userPose.leftFore); this.poseBone('L_Hand', {}, this.userPose.leftHand);
-    this.poseBone('R_Upperarm', {}, this.userPose.rightUpper); this.poseBone('R_Forearm', {}, this.userPose.rightFore); this.poseBone('R_Hand', {}, this.userPose.rightHand);
-    this.setPhase('IDLE');
-  }
+  setPhase(phase) { this.host.dataset.dealerAnimation = phase; }
 
-  handWorldPosition(left = true) {
-    const hand = this.bones.get(left ? 'L_Hand' : 'R_Hand'); if (!hand) return null;
-    hand.updateWorldMatrix(true, false); return hand.getWorldPosition(new THREE.Vector3());
-  }
-
-  startDeal(frontUrl, backUrl, receive = false) {
+  startDeal(versoUrl, rectoUrl, receive = false) {
     if (this.animation || !this.model) return false;
-    this.updateCardTextures(frontUrl, backUrl || frontUrl);
-    this.animation = { kind: receive ? 'receive' : 'deal', started: performance.now(), duration: receive ? RECEIVE_DURATION : DEAL_DURATION };
-    this.card.visible = true; this.card.scale.setScalar(receive ? 1.0 : 1.08);
+    this.updateCardTextures(rectoUrl || versoUrl, versoUrl);
+    this.animation = {
+      kind: receive ? 'receive' : 'deal',
+      started: performance.now(),
+      duration: receive ? RECEIVE_DURATION : DEAL_DURATION,
+    };
+    this.card.visible = true;
+    this.card.scale.setScalar(receive ? 1.0 : 1.08);
     this.card.position.set(receive ? 0.15 : -2.6, receive ? -2.5 : -1.15, 2.6);
     this.card.rotation.set(-0.18, receive ? 0 : Math.PI, 0);
-    this.setPhase('LOOK_PLAYER'); this.resume(); return true;
+    this.setPhase('LOOK_PLAYER');
+    this.resume();
+    return true;
   }
 
   updateDeal(t) {
-    const lift = segment(t, 0.20, 0.40), flip = segment(t, 0.50, 0.67), pass = segment(t, 0.72, 0.91);
-    this.applyRigPose(t, false);
-    const hand = this.handWorldPosition(true);
-    const present = hand ? hand.clone().add(new THREE.Vector3(0.05, 0.08, 0.42)) : new THREE.Vector3(-0.30, 0.50, 2.7);
-    const deck = new THREE.Vector3(-2.35, -1.05, 2.55), player = new THREE.Vector3(0.10, -2.25, 2.75);
-    this.setGesturePose({ ry: lerp(0, 0.018, segment(t, 0.35, 0.60)), squash: pulse(t, 0.14, 0.30, 0.48) });
-    if (t < 0.10) this.setPhase('LOOK_PLAYER'); else if (t < 0.27) this.setPhase('REACH_DECK'); else if (t < 0.44) this.setPhase('DRAW_CARD');
-    else if (t < 0.52) this.setPhase('HOLD_VERSO'); else if (t < 0.69) this.setPhase('FLIP_CARD'); else if (t < 0.92) this.setPhase('PRESENT_RECTO'); else this.setPhase('RETURN_IDLE');
-    if (t < 0.44) cubicBezier(this.card.position, deck, new THREE.Vector3(-1.9, -0.55, 2.6), new THREE.Vector3(-1.0, 0.10, 2.55), present, t / 0.44);
-    else if (t < 0.72) this.card.position.lerp(present, 0.38);
-    else cubicBezier(this.card.position, present, present.clone().add(new THREE.Vector3(0.20, -0.14, 0.05)), new THREE.Vector3(0.12, -1.25, 2.72), player, pass);
-    this.card.rotation.x = lerp(-0.18, -0.03, lift); this.card.rotation.y = lerp(Math.PI, 0, flip); this.card.rotation.z = Math.sin(t * Math.PI) * -0.05;
-    this.card.scale.setScalar(1.06 + pulse(t, 0.44, 0.66, 0.84) * 0.24); if (t > 0.96) this.card.visible = false;
-  }
-
-  updateReceive(t) {
-    const lift = segment(t, 0.18, 0.50), throwPhase = segment(t, 0.54, 0.86);
-    this.applyRigPose(t, true);
-    const hand = this.handWorldPosition(false);
-    const catchPoint = hand ? hand.clone().add(new THREE.Vector3(-0.05, 0.08, 0.36)) : new THREE.Vector3(0.45, 0.28, 2.65);
-    const player = new THREE.Vector3(0.10, -2.25, 2.75), discard = new THREE.Vector3(2.35, -1.05, 2.55);
-    this.setGesturePose({ ry: lerp(0, -0.018, lift) });
-    if (t < 0.12) this.setPhase('LOOK_PLAYER'); else if (t < 0.54) this.setPhase('TAKE_CARD'); else if (t < 0.88) this.setPhase('DISCARD'); else this.setPhase('RETURN_IDLE');
-    if (t < 0.54) cubicBezier(this.card.position, player, new THREE.Vector3(0.12, -1.25, 2.72), new THREE.Vector3(0.42, -0.08, 2.65), catchPoint, t / 0.54);
-    else cubicBezier(this.card.position, catchPoint, catchPoint.clone().add(new THREE.Vector3(0.55, 0.40, 0.12)), new THREE.Vector3(1.85, 0.04, 2.62), discard, throwPhase);
-    this.card.rotation.x = lerp(-0.18, -0.04, lift); this.card.rotation.y = lerp(0, -0.36, throwPhase); this.card.rotation.z = lerp(0, 0.46, throwPhase);
+    const lift = segment(t, 0.20, 0.40);
+    const flip = segment(t, 0.50, 0.67);
+    const pass = segment(t, 0.72, 0.91);
+    const deck = new THREE.Vector3(-2.35, -1.05, 2.55);
+    const hold = new THREE.Vector3(-0.38, 0.34, 2.72);
+    const player = new THREE.Vector3(0.10, -2.25, 2.75);
+    if (t < 0.10) this.setPhase('LOOK_PLAYER');
+    else if (t < 0.27) this.setPhase('REACH_DECK');
+    else if (t < 0.44) this.setPhase('DRAW_CARD');
+    else if (t < 0.52) this.setPhase('HOLD_VERSO');
+    else if (t < 0.69) this.setPhase('FLIP_CARD');
+    else if (t < 0.92) this.setPhase('PRESENT_RECTO');
+    else this.setPhase('RETURN_IDLE');
+    if (t < 0.44) {
+      cubicBezier(this.card.position, deck, new THREE.Vector3(-1.8, -0.55, 2.62), new THREE.Vector3(-1.0, 0.10, 2.66), hold, t / 0.44);
+    } else if (t < 0.72) {
+      this.card.position.lerp(hold, 0.38);
+    } else {
+      cubicBezier(this.card.position, hold, hold.clone().add(new THREE.Vector3(0.20, -0.14, 0.05)), new THREE.Vector3(0.12, -1.25, 2.72), player, pass);
+    }
+    this.card.rotation.x = lerp(-0.18, -0.03, lift);
+    this.card.rotation.y = lerp(Math.PI, 0, flip);
+    this.card.rotation.z = Math.sin(t * Math.PI) * -0.05;
     if (t > 0.96) this.card.visible = false;
   }
 
-  chooseControl(x, y) {
-    const w = Math.max(this.renderer.domElement.clientWidth, 1), h = Math.max(this.renderer.domElement.clientHeight, 1);
-    const nx = x / w, ny = y / h;
-    if (ny < 0.38 && nx > 0.30 && nx < 0.70) return 'head';
-    if (nx < 0.34) return ny > 0.64 ? 'leftHand' : 'leftUpper';
-    if (nx > 0.66) return ny > 0.64 ? 'rightHand' : 'rightUpper';
-    return 'torso';
-  }
-
-  bindPointerControls() {
-    const canvas = this.renderer.domElement;
-    this.onPointerDown = (event) => {
-      if (this.animation) return;
-      const rect = canvas.getBoundingClientRect();
-      this.pointer = { id: event.pointerId, x: event.clientX, y: event.clientY, part: this.chooseControl(event.clientX - rect.left, event.clientY - rect.top) };
-      canvas.setPointerCapture?.(event.pointerId); canvas.style.cursor = 'grabbing'; this.host.dataset.userControl = this.pointer.part; event.preventDefault();
-    };
-    this.onPointerMove = (event) => {
-      if (!this.pointer || event.pointerId !== this.pointer.id || this.animation) return;
-      const dx = (event.clientX - this.pointer.x) / Math.max(canvas.clientWidth, 1), dy = (event.clientY - this.pointer.y) / Math.max(canvas.clientHeight, 1);
-      this.pointer.x = event.clientX; this.pointer.y = event.clientY;
-      const pose = this.userPose[this.pointer.part]; if (!pose) return;
-      const max = this.pointer.part === 'head' ? 0.12 : this.pointer.part === 'torso' ? 0.06 : /Hand$/.test(this.pointer.part) ? 0.10 : 0.16;
-      pose.y = clamp(pose.y + dx * 0.55, -max, max); pose.x = clamp(pose.x + dy * 0.45, -max, max);
-      if (this.pointer.part !== 'head' && this.pointer.part !== 'torso') pose.z = clamp(pose.z + dx * 0.35, -max, max);
-      this.applyRigPose(); this.resume(); event.preventDefault();
-    };
-    this.onPointerUp = (event) => {
-      if (!this.pointer || event.pointerId !== this.pointer.id) return;
-      canvas.releasePointerCapture?.(event.pointerId); this.pointer = null; canvas.style.cursor = 'grab'; this.host.dataset.userControl = 'idle';
-    };
-    this.onDoubleClick = () => { for (const pose of Object.values(this.userPose)) pose.x = pose.y = pose.z = 0; this.applyRigPose(); this.host.dataset.userControl = 'reset'; this.resume(); };
-    canvas.addEventListener('pointerdown', this.onPointerDown); canvas.addEventListener('pointermove', this.onPointerMove); canvas.addEventListener('pointerup', this.onPointerUp);
-    canvas.addEventListener('pointercancel', this.onPointerUp); canvas.addEventListener('dblclick', this.onDoubleClick);
+  updateReceive(t) {
+    const lift = segment(t, 0.18, 0.50);
+    const throwPhase = segment(t, 0.54, 0.86);
+    const player = new THREE.Vector3(0.10, -2.25, 2.75);
+    const catchPoint = new THREE.Vector3(0.42, 0.28, 2.65);
+    const discard = new THREE.Vector3(2.35, -1.05, 2.55);
+    if (t < 0.12) this.setPhase('LOOK_PLAYER');
+    else if (t < 0.54) this.setPhase('TAKE_CARD');
+    else if (t < 0.88) this.setPhase('DISCARD');
+    else this.setPhase('RETURN_IDLE');
+    if (t < 0.54) {
+      cubicBezier(this.card.position, player, new THREE.Vector3(0.12, -1.25, 2.72), new THREE.Vector3(0.42, -0.08, 2.65), catchPoint, t / 0.54);
+    } else {
+      cubicBezier(this.card.position, catchPoint, catchPoint.clone().add(new THREE.Vector3(0.55, 0.40, 0.12)), new THREE.Vector3(1.85, 0.04, 2.62), discard, throwPhase);
+    }
+    this.card.rotation.x = lerp(-0.18, -0.04, lift);
+    this.card.rotation.y = lerp(0, -0.36, throwPhase);
+    this.card.rotation.z = lerp(0, 0.46, throwPhase);
+    if (t > 0.96) this.card.visible = false;
   }
 
   update() {
-    const delta = this.clock.getDelta();
     if (this.animation) {
       const t = clamp01((performance.now() - this.animation.started) / this.animation.duration);
       if (this.animation.kind === 'receive') this.updateReceive(t); else this.updateDeal(t);
-      if (t >= 1) { this.animation = null; this.card.visible = false; this.resetGesture(); this.applyRigPose(); this.setPhase('IDLE'); }
-    } else this.applyIdlePose(delta);
+      if (t >= 1) {
+        this.animation = null;
+        this.card.visible = false;
+        this.setPhase('IDLE');
+      }
+    } else {
+      this.setPhase('IDLE');
+    }
   }
 
   render = () => {
     if (this.disposed || !this.visible || document.hidden) return;
-    this.update(); this.renderer.render(this.scene, this.camera); this.frame = requestAnimationFrame(this.render);
+    this.update();
+    this.renderer.render(this.scene, this.camera);
+    this.frame = requestAnimationFrame(this.render);
   };
-  resume() { if (!this.disposed && this.visible && !this.frame && !document.hidden) { this.clock.getDelta(); this.frame = requestAnimationFrame(this.render); } }
-  pause() { if (this.frame) cancelAnimationFrame(this.frame); this.frame = 0; }
+
+  resume() {
+    if (!this.disposed && this.visible && !this.frame && !document.hidden) this.frame = requestAnimationFrame(this.render);
+  }
+
+  pause() {
+    if (this.frame) cancelAnimationFrame(this.frame);
+    this.frame = 0;
+  }
+
   onVisibilityChange = () => { if (document.hidden) this.pause(); else this.resume(); };
 
   dispose() {
-    this.disposed = true; this.pause(); this.resizeObserver.disconnect(); this.intersectionObserver.disconnect(); document.removeEventListener('visibilitychange', this.onVisibilityChange);
-    const canvas = this.renderer.domElement;
-    canvas.removeEventListener('pointerdown', this.onPointerDown); canvas.removeEventListener('pointermove', this.onPointerMove); canvas.removeEventListener('pointerup', this.onPointerUp);
-    canvas.removeEventListener('pointercancel', this.onPointerUp); canvas.removeEventListener('dblclick', this.onDoubleClick);
-    this.card.userData.frontTexture?.dispose(); this.card.userData.backTexture?.dispose(); this.card.userData.frontMaterial?.dispose(); this.card.userData.backMaterial?.dispose();
-    disposeMaterial(this.card.userData.edgeMaterial); disposeMaterial(this.card.userData.frontFallback); disposeMaterial(this.card.userData.backFallback);
-    disposeObject(this.model); this.renderer.dispose(); this.host.replaceChildren();
+    this.disposed = true;
+    this.pause();
+    this.resizeObserver?.disconnect();
+    this.intersectionObserver?.disconnect();
+    document.removeEventListener('visibilitychange', this.onVisibilityChange);
+    disposeObject(this.model);
+    disposeObject(this.card);
+    this.renderer.dispose();
+    this.renderer.domElement.remove();
+    this.status.remove();
   }
 }
 
-window.puppetDealerCreate = function puppetDealerCreate(id, quality) {
-  if (dealers.has(id)) return;
-  const host = document.getElementById(id);
-  if (!host) {
-    if (!pendingMounts.has(id)) {
-      let attempts = 0;
-      pendingMounts.set(id, setInterval(() => {
-        attempts += 1; const mounted = document.getElementById(id);
-        if (mounted) { clearInterval(pendingMounts.get(id)); pendingMounts.delete(id); dealers.set(id, new JesterDealer(mounted, quality)); }
-        else if (attempts > 30) { clearInterval(pendingMounts.get(id)); pendingMounts.delete(id); }
-      }, 100));
-    }
-    return;
-  }
-  dealers.set(id, new JesterDealer(host, quality));
+window.puppetDealerCreate = async (id, container, quality = 'medium') => {
+  if (!id || !container) return false;
+  dealers.get(id)?.dispose();
+  const dealer = new JesterDealer(container, quality);
+  dealers.set(id, dealer);
+  return true;
 };
-// Return whether an animation actually started so Flutter never treats a busy
-// or unmounted dealer as a completed card transfer.
-window.puppetDealerDeal = (id, versoUrl, rectoUrl) =>
-  dealers.get(id)?.startDeal(rectoUrl || versoUrl, versoUrl, false) ?? false;
-window.puppetDealerReceive = (id, imageUrl) =>
-  dealers.get(id)?.startDeal(imageUrl, imageUrl, true) ?? false;
-window.puppetDealerSetQuality = (id, quality) => dealers.get(id)?.setQuality(quality);
-window.puppetDealerDestroy = function puppetDealerDestroy(id) {
-  if (pendingMounts.has(id)) { clearInterval(pendingMounts.get(id)); pendingMounts.delete(id); }
-  const dealer = dealers.get(id); if (!dealer) return; dealer.dispose(); dealers.delete(id);
-};
+
+window.puppetDealerDeal = (id, versoUrl, rectoUrl) => dealers.get(id)?.startDeal(versoUrl, rectoUrl, false) ?? false;
+window.puppetDealerReceive = (id, cardUrl) => dealers.get(id)?.startDeal(cardUrl, cardUrl, true) ?? false;
+window.puppetDealerSetQuality = (id, quality) => { dealers.get(id)?.setQuality(quality); };
+window.puppetDealerDestroy = (id) => { dealers.get(id)?.dispose(); dealers.delete(id); };
