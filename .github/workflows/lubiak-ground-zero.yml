@@ -1,4 +1,4 @@
-name: LUBIAK shared plaza ground repair
+name: LUBIAK elevated plaza ground repair
 
 on:
   push:
@@ -19,35 +19,32 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Apply shared plaza-ground repair
+      - name: Apply elevated plaza-ground repair
         run: node scripts/patch-lubiak-ground-zero-circus.mjs
       - name: Validate runtime
         run: |
           node --check web/lubiak/lubiak.js
           node --check web/lubiak/lubiak-terrain-addon.js
-          grep -q 'LUBIAK_PLAZA_DATUM_V2' web/lubiak/lubiak.js
-          grep -q 'LUBIAK_CIRCUS_GROUND_ZERO_V2' web/lubiak/lubiak.js
-          grep -q 'groundSurfaceBelow(playerRoot.position,6.5)' web/lubiak/lubiak.js
-          grep -q 'new THREE.Vector3(envCenter.x, 0.025, envCenter.z)' web/lubiak/lubiak-terrain-addon.js
-          if grep -q 'const targetY=0' web/lubiak/lubiak.js; then
-            echo 'Hardcoded player ground zero is still present' >&2
-            exit 1
-          fi
+          grep -q 'LUBIAK_PLAZA_TERRACE_V1' web/lubiak/lubiak.js
+          grep -q 'LUBIAK_DISTRICT_LEVELS_V2' web/lubiak/lubiak.js
+          grep -q 'KUMARI_PLAZA_Y = 4.0' web/lubiak/lubiak.js
+          grep -q 'groundSurfaceBelow(playerRoot.position,12)' web/lubiak/lubiak.js
+          ! grep -q 'const targetY=0' web/lubiak/lubiak.js
       - name: Request deployment
         run: |
           cat > .github/deploy-now.txt <<'EOF'
-          deploy-request: 2026-08-30T03:18:00+01:00
+          deploy-request: 2026-08-30T03:23:00+01:00
           source: chat
-          scope: LUBIAK shared plaza ground authority
-          reason: unify master, circus, ember terrain, and djinn on one plaza datum; restore walkable-surface grounding
+          scope: LUBIAK elevated Kumari Ghar plaza
+          reason: raise plaza terrace above Freak Street and circus; preserve raycast walking hierarchy
           EOF
       - name: Commit and push repair
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add web/lubiak/lubiak.js web/lubiak/lubiak-terrain-addon.js .github/deploy-now.txt
+          git add web/lubiak/lubiak.js .github/deploy-now.txt
           if git diff --cached --quiet; then exit 0; fi
-          git commit -m 'Fix LUBIAK shared plaza ground authority'
+          git commit -m 'Raise LUBIAK Kumari Ghar plaza terrace'
           for attempt in 1 2 3; do
             git fetch origin main
             git rebase origin/main && git push origin HEAD:main && exit 0
