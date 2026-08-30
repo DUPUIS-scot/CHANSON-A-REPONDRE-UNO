@@ -1,6 +1,6 @@
-upgrade-request: 2026-08-30T03:33:00+01:00
+upgrade-request: 2026-08-30T03:47:00+01:00
 source: chat
 target: assets/models/LUBIAK_master_optimized.glb
-texture-set: palace+circus-exterior+circus-interior
+texture-set: palace+freak-street+circus-exterior+circus-interior
 status: rebuild-then-auto-publish
-reason: textures not visible live; force PBR rebuild and cache-busted Pages deployment
+reason: bake uploaded Freak Street albedo+normal+roughness+height into LUBIAK master and force cache-busted Pages deployment
