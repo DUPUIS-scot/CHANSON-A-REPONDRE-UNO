@@ -7,7 +7,9 @@ const status = document.querySelector('#status');
 const progress = document.querySelector('#progress');
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x100708);
+// Keep the CSS dragon-body cave permanently visible behind WebGL.
+// A non-null scene.background makes Three.js clear the entire canvas opaque.
+scene.background = null;
 scene.fog = new THREE.FogExp2(0x16090a, 0.00042);
 
 const camera = new THREE.PerspectiveCamera(54, innerWidth / innerHeight, 0.02, 5000);
@@ -17,7 +19,8 @@ let movementBounds = null;
 let worldRadius = 100;
 
 const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, premultipliedAlpha: true, powerPreference: 'high-performance' });
+renderer.setClearColor(0x000000, 0);
 renderer.setPixelRatio(Math.min(devicePixelRatio, IS_IOS ? 1.18 : 1.5));
 renderer.setSize(innerWidth, innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
