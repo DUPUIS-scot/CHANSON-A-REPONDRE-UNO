@@ -11,8 +11,24 @@ const bandcamp = document.querySelector('#bandcamp');
 const scene = new THREE.Scene();
 const exteriorBackground = new THREE.Color(0x000000);
 const exteriorFogColor = new THREE.Color(0x050303);
-scene.background = exteriorBackground.clone();
+let exteriorBackgroundTexture = null;
+scene.background = exteriorBackgroundTexture || exteriorBackground.clone();
 scene.fog = new THREE.FogExp2(exteriorFogColor, 0.0024);
+
+// LUBIAK_KATHMANDU_360_BACKGROUND_V2
+// The supplied equirectangular Kathmandu night panorama is the exterior world background.
+new THREE.TextureLoader().load(
+  'assets/lubiak-kathmandu-360.jpg?v=20260830-kathmandu-360-v2',
+  (texture) => {
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.mapping = THREE.EquirectangularReflectionMapping;
+    texture.needsUpdate = true;
+    exteriorBackgroundTexture = texture;
+    if (worldMode === 'exterior') scene.background = texture;
+  },
+  undefined,
+  (error) => console.warn('LUBIAK Kathmandu 360 background failed; black fallback retained.', error),
+);
 
 const camera = new THREE.PerspectiveCamera(52, innerWidth / innerHeight, 0.03, 1200);
 let yaw = 0;
@@ -497,7 +513,7 @@ function exitCircus() {
   if (circusInterior) circusInterior.visible = false;
   setCircusMediaVisible(false);
   setExteriorVisibility(true);
-  scene.background = exteriorBackground.clone();
+  scene.background = exteriorBackgroundTexture || exteriorBackground.clone();
   scene.fog = new THREE.FogExp2(exteriorFogColor, 0.0024);
   renderer.toneMappingExposure = 1.55;
   if (playerReady) {
@@ -1263,7 +1279,7 @@ function handlePlayerGatePointer(event) {
 }
 
 function handleDragonGatePointer(event) {
-  if (!event.shiftKey || event.button !== 0 || !pointerHitsDragon(event)) {
+  if (event.button !== 0 || !pointerHitsDragon(event)) {
     dragonGateClicks.length = 0;
     return false;
   }
@@ -1321,7 +1337,7 @@ addEventListener('keydown', (event) => {
 addEventListener('keyup', (event) => keys.delete(event.key.toLowerCase()));
 let drag = null;
 renderer.domElement.addEventListener('pointerdown', (event) => {
-  if (cameraMode === 'follow' && (handlePlayerGatePointer(event) || handleDragonGatePointer(event))) {
+  if ((cameraMode === 'follow' && handlePlayerGatePointer(event)) || handleDragonGatePointer(event)) {
     event.preventDefault();
     return;
   }
