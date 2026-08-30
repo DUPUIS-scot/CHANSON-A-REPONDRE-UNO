@@ -1,1 +1,1 @@
-2026-08-30 GLB terrain gravity: walk glued to mesh surface; mounted flight maintains terrain-relative clearance
+2026-08-30 repair master GLB vertical alignment to ground Y=0.02 and install terrain-relative player/broom grounding
