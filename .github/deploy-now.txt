@@ -1,4 +1,4 @@
-deploy-request: 2026-08-30T03:02:13.035Z
-source: codex
-scope: LUBIAK circus ground + djinn grounding
-reason: remove ember terrain, lower circus hierarchy to ground datum, preserve calibrated foot offset, and keep walk raycasts on reachable surfaces
+deploy-request: 2026-08-30T04:40:00+01:00
+source: chat
+scope: LUBIAK djinn + DA NOBLE Y2K broom
+reason: hand-authoritative walk grip and isolated mount/flight pose ownership
