@@ -1,4 +1,4 @@
-deploy-request: 2026-08-30T20:03+01:00
+deploy-request: 2026-08-30T20:12+01:00
 source: chat
-scope: LUBIAK live night rendering recovery
-reason: remove white overexposure, restore dark June 2001 presentation, force fresh runtime/addon cache while preserving navigation and Megapole transition
+scope: LUBIAK previous-version lighting restoration
+reason: remove post-render CSS brightness/contrast filter and use previous Three.js lighting/tone-mapping unchanged while preserving current geometry, navigation, djinn, broom, circus, dragon and Megapole gateway
