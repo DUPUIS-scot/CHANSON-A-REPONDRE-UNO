@@ -1,0 +1,35 @@
+name: LUBIAK dragon observer behavior
+
+on:
+  push:
+    paths:
+      - '.lubiak-dragon-observer-trigger'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Apply dragon behavior
+        run: node scripts/patch-lubiak-dragon-observer.mjs
+      - name: Commit dragon behavior
+        run: |
+          if git diff --quiet -- web/lubiak/lubiak.js; then
+            echo 'No dragon behavior patch required.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add web/lubiak/lubiak.js
+          git commit -m 'Animate LUBIAK dragon observation patrol states'
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
