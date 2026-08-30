@@ -10,9 +10,9 @@
   <title>SILMARI'LLION — Megapole</title>
   <style>
     html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#140e12}
-    #stage{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;background:#140e12 url('./dragon_body_cave_background.jpg?v=20260830-dragon-cave-v1') center center/cover no-repeat}
+    #stage{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;background:#140e12 url('./dragon_body_cave_background.jpg?v=20260830-dragon-cave-v2') center center/cover no-repeat}
     body{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:#f2cf82}
-    canvas{display:block;width:100%;height:100%;touch-action:none;opacity:.90}
+    canvas{display:block;width:100%;height:100%;touch-action:none;opacity:1!important;background:transparent!important}
     #hud{position:fixed;inset:0;pointer-events:none}
     .top{position:absolute;left:max(18px,env(safe-area-inset-left));top:max(18px,env(safe-area-inset-top));padding:10px 13px;border:1px solid #d1a04e66;background:#140e12cc;backdrop-filter:blur(8px)}
     .title{letter-spacing:.18em;font-weight:800}.sub{margin-top:4px;font-size:11px;opacity:.72}
@@ -28,12 +28,12 @@
     #cinematic-play{position:absolute;z-index:3;border:1px solid #f2cf8288;background:#140e12dd;color:#f2cf82;padding:13px 18px;font:800 11px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.16em;cursor:pointer;display:none}
     @media(max-width:720px){#help{font-size:9px}.sub{font-size:9px}.top{padding:8px 10px}}
   </style>
-  <script type="importmap">{"imports":{"three":"../vendor/three.module.js?v=20260830-megapole-v11"}}</script>
+  <script type="importmap">{"imports":{"three":"../vendor/three.module.js?v=20260830-megapole-v12"}}</script>
 </head>
 <body>
   <div id="stage"></div>
   <div id="hud">
-    <div class="top"><div class="title">SILMARI'LLION</div><div class="sub">MEGAPOLE · INSIDE THE DRAGON · PBR V11 · DRAGON BODY CAVE · SIGNAL GROUND 40×28</div></div>
+    <div class="top"><div class="title">SILMARI'LLION</div><div class="sub">MEGAPOLE · INSIDE THE DRAGON · PBR V12 · GLB FULL OPACITY · SIGNAL GROUND 40×28</div></div>
     <a id="back" href="../lubiak/">LUBIAK</a>
     <div id="status">ENTERING THE MEGAPOLE</div><div id="progress"><div id="bar"></div></div>
     <div id="help">DRAG · LOOK &nbsp; WHEEL / ↑↓ · MOVE &nbsp; A/D · STRAFE &nbsp; E/Q · UP/DOWN</div>
@@ -88,7 +88,7 @@
       }, 8000);
     })();
   </script>
-  <script type="module" src="megapole-terrain-addon.js?v=20260830-signal-ground-v3"></script>
-  <script type="module" src="megapole-pbr-v8.js?v=20260830-viewer-v11"></script>
+  <script type="module" src="megapole-terrain-addon.js?v=20260830-signal-ground-v4"></script>
+  <script type="module" src="megapole-pbr-v8.js?v=20260830-viewer-v12"></script>
 </body>
 </html>
