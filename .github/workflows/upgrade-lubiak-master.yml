@@ -21,21 +21,86 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: python -m pip install --disable-pip-version-check pillow
-      - name: Validate palace-place PBR maps
+      - name: Install image decoders
+        run: python -m pip install --disable-pip-version-check pillow pillow-heif pillow-avif-plugin
+      - name: Normalize and validate Palace Place PBR maps
         run: |
+          set -euo pipefail
+          mkdir -p .tmp/lubiak_pbr
           python - <<'PY'
+          from pathlib import Path
+          from io import BytesIO
+          import base64
           from PIL import Image
-          files = [
-            'assets/models/lubiak_pbr_refs/palace_albedo.jpg',
-            'assets/models/lubiak_pbr_refs/palace_normal.jpg',
-            'assets/models/lubiak_pbr_refs/palace_dark.jpg',
-            'assets/models/lubiak_pbr_refs/palace_clay.jpg',
-          ]
-          for f in files:
-              with Image.open(f) as im:
-                  im.verify()
-                  print(f, 'OK')
+
+          try:
+              import pillow_avif  # noqa: F401
+          except Exception:
+              pass
+          try:
+              from pillow_heif import register_heif_opener
+              register_heif_opener()
+          except Exception:
+              pass
+
+          refs = {
+              'albedo': Path('assets/models/lubiak_pbr_refs/palace_albedo.jpg'),
+              'normal': Path('assets/models/lubiak_pbr_refs/palace_normal.jpg'),
+              'rough': Path('assets/models/lubiak_pbr_refs/palace_dark.jpg'),
+              'height': Path('assets/models/lubiak_pbr_refs/palace_clay.jpg'),
+          }
+
+          def candidates(raw):
+              yield raw, 'raw'
+              # Recover files that were accidentally stored with a short binary/text wrapper.
+              signatures = [
+                  (b'\xff\xd8\xff', b'\xff\xd9', 'jpeg'),
+                  (b'\x89PNG\r\n\x1a\n', None, 'png'),
+                  (b'RIFF', None, 'webp'),
+              ]
+              for start, end, label in signatures:
+                  i = raw.find(start)
+                  if i >= 0:
+                      if end:
+                          j = raw.rfind(end)
+                          if j >= i:
+                              yield raw[i:j+len(end)], f'embedded-{label}'
+                      else:
+                          yield raw[i:], f'embedded-{label}'
+              # Recover base64/data-URI payloads if a reference was committed as encoded text.
+              try:
+                  text = raw.decode('ascii').strip()
+                  if 'base64,' in text:
+                      text = text.split('base64,', 1)[1]
+                  compact = ''.join(text.split())
+                  if len(compact) >= 32:
+                      yield base64.b64decode(compact, validate=True), 'base64'
+              except Exception:
+                  pass
+
+          for role, src in refs.items():
+              raw = src.read_bytes()
+              print(f'{src}: {len(raw)} bytes; head={raw[:32].hex()}')
+              img = None
+              source_kind = None
+              last_error = None
+              for payload, kind in candidates(raw):
+                  try:
+                      probe = Image.open(BytesIO(payload))
+                      probe.load()
+                      img = probe
+                      source_kind = kind
+                      break
+                  except Exception as exc:
+                      last_error = exc
+              if img is None:
+                  raise RuntimeError(f'Cannot decode {src}; head={raw[:32].hex()}; last={last_error!r}')
+              out = Path('.tmp/lubiak_pbr') / f'{role}.jpg'
+              mode = 'RGB' if role in ('albedo', 'normal') else 'L'
+              img.convert(mode).save(out, 'JPEG', quality=95, optimize=True)
+              with Image.open(out) as check:
+                  check.verify()
+              print(f'{role}: {source_kind} -> {out} OK')
           PY
       - name: Upgrade Palace Place textures in LUBIAK master GLB
         run: |
@@ -43,12 +108,12 @@ jobs:
           python scripts/upgrade_lubiak_master_glb.py \
             --input assets/models/LUBIAK_master_optimized.glb \
             --output assets/models/LUBIAK_master_optimized.upgraded.glb \
-            --albedo assets/models/lubiak_pbr_refs/palace_albedo.jpg \
-            --normal assets/models/lubiak_pbr_refs/palace_normal.jpg \
-            --dark assets/models/lubiak_pbr_refs/palace_dark.jpg \
-            --clay assets/models/lubiak_pbr_refs/palace_clay.jpg
+            --palace-albedo .tmp/lubiak_pbr/albedo.jpg \
+            --palace-normal .tmp/lubiak_pbr/normal.jpg \
+            --palace-rough .tmp/lubiak_pbr/rough.jpg \
+            --palace-height .tmp/lubiak_pbr/height.jpg
+          test -s assets/models/LUBIAK_master_optimized.upgraded.glb
           mv assets/models/LUBIAK_master_optimized.upgraded.glb assets/models/LUBIAK_master_optimized.glb
-          test -s assets/models/LUBIAK_master_optimized.glb
       - name: Commit upgraded master GLB
         run: |
           set -euo pipefail
@@ -60,4 +125,5 @@ jobs:
             exit 0
           fi
           git commit -m "Upgrade LUBIAK master Palace Place PBR textures"
+          git pull --rebase origin main
           git push origin HEAD:main
