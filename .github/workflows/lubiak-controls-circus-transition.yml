@@ -1,0 +1,46 @@
+name: LUBIAK controls and circus transition
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.lubiak-controls-circus-trigger'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Apply viewport and circus transition patch
+        run: node scripts/patch-lubiak-controls-circus-transition.mjs
+      - name: Validate runtime
+        run: |
+          node --check web/lubiak/lubiak.js
+          grep -q 'LUBIAK_CIRCUS_ENTRY_FADE_V1' web/lubiak/lubiak.js
+          grep -q 'right:max(20px,env(safe-area-inset-right))' web/lubiak/lubiak.js
+          grep -q 'bottom:158px' web/lubiak/lubiak.js
+      - name: Request deployment
+        run: |
+          cat > .github/deploy-now.txt <<'EOF'
+          deploy-request: 2026-08-30T05:30:00+01:00
+          source: chat
+          scope: LUBIAK Bandcamp + circus transition + sphere control
+          reason: isolate bottom-left Bandcamp, move MOVE sphere bottom-right, stack AERIAL/help, soften circus entry
+          EOF
+      - name: Commit and push
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add web/lubiak/lubiak.js .github/deploy-now.txt
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Fix LUBIAK viewport controls and circus entry'
+          git pull --rebase origin main
+          git push origin HEAD:main
