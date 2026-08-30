@@ -1,0 +1,76 @@
+name: LUBIAK 360 Kathmandu background
+
+on:
+  push:
+    paths:
+      - '.github/workflows/lubiak-360-background.yml'
+      - 'web/lubiak/assets/lubiak-kathmandu-360.jpg'
+
+permissions:
+  contents: write
+
+jobs:
+  install-background:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Wire equirectangular Kathmandu panorama into LUBIAK
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('web/lubiak/lubiak.js')
+          s = p.read_text()
+          old = """const scene = new THREE.Scene();
+const exteriorBackground = new THREE.Color(0x000000);
+const exteriorFogColor = new THREE.Color(0x050303);
+scene.background = exteriorBackground.clone();
+scene.fog = new THREE.FogExp2(exteriorFogColor, 0.0024);"""
+          new = """const scene = new THREE.Scene();
+const exteriorBackground = new THREE.Color(0x000000); // fallback only
+const exteriorFogColor = new THREE.Color(0x050303);
+let exteriorBackgroundTexture = null;
+scene.background = exteriorBackground.clone();
+scene.fog = new THREE.FogExp2(exteriorFogColor, 0.0024);
+
+// LUBIAK_KATHMANDU_360_BACKGROUND_V1
+// Equirectangular panorama replaces the former black exterior background and remains camera-centred at infinity.
+new THREE.TextureLoader().load(
+  'assets/lubiak-kathmandu-360.jpg?v=20260830-kathmandu-360-v1',
+  (texture) => {
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.mapping = THREE.EquirectangularReflectionMapping;
+    texture.needsUpdate = true;
+    exteriorBackgroundTexture = texture;
+    if (typeof worldMode === 'undefined' || worldMode === 'exterior') scene.background = texture;
+  },
+  undefined,
+  (error) => console.warn('LUBIAK Kathmandu 360 background failed; black fallback retained.', error),
+);"""
+          if old not in s:
+              raise SystemExit('Expected LUBIAK scene background bootstrap not found')
+          s = s.replace(old, new, 1)
+          old_exit = "scene.background = exteriorBackground.clone();\n  scene.fog = new THREE.FogExp2(exteriorFogColor, 0.0024);"
+          new_exit = "scene.background = exteriorBackgroundTexture || exteriorBackground.clone();\n  scene.fog = new THREE.FogExp2(exteriorFogColor, 0.0024);"
+          if old_exit not in s:
+              raise SystemExit('Expected circus exterior-return background assignment not found')
+          s = s.replace(old_exit, new_exit, 1)
+          p.write_text(s)
+          PY
+      - name: Mark deployment
+        run: |
+          cat > .github/deploy-now.txt <<'EOF'
+          deploy-request: 2026-08-30T07:30:00+01:00
+          source: chat
+          scope: LUBIAK Kathmandu 360 panorama
+          reason: replace black exterior background with supplied equirectangular Kathmandu night panorama
+          EOF
+      - name: Commit background wiring
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add web/lubiak/lubiak.js .github/deploy-now.txt
+          git diff --cached --quiet && exit 0
+          git commit -m 'Wire Kathmandu 360 panorama into LUBIAK background'
+          git push
