@@ -440,8 +440,12 @@ window.puppetDealerCreate = function puppetDealerCreate(id, quality) {
   }
   dealers.set(id, new JesterDealer(host, quality));
 };
-window.puppetDealerDeal = (id, versoUrl, rectoUrl) => dealers.get(id)?.startDeal(rectoUrl || versoUrl, versoUrl, false) ?? false;
-window.puppetDealerReceive = (id, imageUrl) => dealers.get(id)?.startDeal(imageUrl, imageUrl, true) ?? false;
+// Return whether an animation actually started so Flutter never treats a busy
+// or unmounted dealer as a completed card transfer.
+window.puppetDealerDeal = (id, versoUrl, rectoUrl) =>
+  dealers.get(id)?.startDeal(rectoUrl || versoUrl, versoUrl, false) ?? false;
+window.puppetDealerReceive = (id, imageUrl) =>
+  dealers.get(id)?.startDeal(imageUrl, imageUrl, true) ?? false;
 window.puppetDealerSetQuality = (id, quality) => dealers.get(id)?.setQuality(quality);
 window.puppetDealerDestroy = function puppetDealerDestroy(id) {
   if (pendingMounts.has(id)) { clearInterval(pendingMounts.get(id)); pendingMounts.delete(id); }
