@@ -1,4 +1,4 @@
-deploy-request: 2026-08-30T19:48+01:00
+deploy-request: 2026-08-30T20:03+01:00
 source: chat
-scope: MEGAPOLE aerial arrival + Castle-style GLB manipulation
-reason: preserve dragon-swallow aerial overview; normal drag controls viewpoint; wheel scroll moves viewpoint; pressed middle mouse drag rotates Megapole GLB root
+scope: LUBIAK live night rendering recovery
+reason: remove white overexposure, restore dark June 2001 presentation, force fresh runtime/addon cache while preserving navigation and Megapole transition
