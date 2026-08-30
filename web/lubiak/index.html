@@ -6,9 +6,12 @@
   <meta name="theme-color" content="#080504" />
   <title>LUBIAK — Freak Street, June 2001</title>
   <style>
-    html,body,#stage{width:100%;height:100%;margin:0;overflow:hidden;background:#050303}
+    html,body,#stage{width:100%;height:100%;margin:0;overflow:hidden}
+    html,body{background:#050303}
+    #stage{background:#050303 url('lubiak-kathmandu-night.svg') center center/cover no-repeat fixed}
+    #stage::before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(3,8,15,.08) 0%,rgba(6,4,3,.03) 48%,rgba(5,3,2,.16) 100%)}
     body{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:#f0d7ad}
-    canvas{display:block;width:100%;height:100%;touch-action:none}
+    canvas{position:relative;z-index:1;display:block;width:100%;height:100%;touch-action:none;opacity:.90}
     #hud{position:fixed;inset:0;pointer-events:none}
     .top{position:absolute;left:18px;top:18px;padding:10px 13px;border:1px solid #c47b3d66;background:#080504cc;backdrop-filter:blur(8px)}
     .title{letter-spacing:.18em;font-weight:800}.sub{margin-top:4px;font-size:11px;opacity:.72}
@@ -37,6 +40,6 @@
     <div id="status">LOADING DISTRICT</div><div id="progress"><div id="bar"></div></div>
     <div id="help">DRAG · LOOK &nbsp; WHEEL / ↑↓ · MOVE &nbsp; A/D · STRAFE</div>
   </div>
-  <script type="module" src="lubiak.js?v=20260829-circus-scene11-v1"></script>
+  <script type="module" src="lubiak.js?v=20260830-kathmandu-background-v1"></script>
 </body>
 </html>
