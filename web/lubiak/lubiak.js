@@ -780,17 +780,18 @@ function preparePlayer(root) {
   });
   playerRoot.add(root);
   const env = environmentSize || new THREE.Vector3(76, 30, 130);
-  playerRoot.position.set(0, 0.08, Math.min(env.z * 0.34, 42));
+  // Spawn on the open entrance apron of the authored LUBIAK GLB, facing inward.
+  // The camera also frames the district from +Z, so this keeps entrance semantics stable
+  // across optimized/fallback GLBs while avoiding close mesh borders.
+  const entranceAnchor = new THREE.Vector3(0, 0.08, Math.min(env.z * 0.40, 48));
+  playerRoot.position.copy(entranceAnchor);
   playerBaseY = playerRoot.position.y;
   playerHeading = Math.PI;
   playerRoot.rotation.set(0, playerHeading, 0, 'YXZ');
   scene.add(playerRoot);
-  // Spawn on the real walkable architecture after all environment transforms.
-  const spawnGround = groundSurfaceBelow(playerRoot.position, 12);
-  if (spawnGround) {
-    playerRoot.position.y = spawnGround.hit.point.y + 0.045;
-    playerBaseY = playerRoot.position.y;
-  }
+  const safeEntrance = findSafeEntranceSpawn(entranceAnchor, true);
+  playerRoot.position.copy(safeEntrance);
+  playerBaseY = playerRoot.position.y;
   cachePlayerBones();
   playerReady = true;
 }
@@ -1065,6 +1066,14 @@ const collisionOrigins = [
 ];
 const PLAYER_COLLISION_RADIUS = 0.34;
 const BROOM_COLLISION_RADIUS = 0.28;
+// LUBIAK_ENTRANCE_CLEARANCE_V1
+// Keep the complete djinn + DA NOBLE Y2K silhouette away from nearby mesh borders.
+const PLAYER_BORDER_CLEARANCE = 0.62;
+const BROOM_BORDER_CLEARANCE = 0.78;
+const clearanceDirections = Array.from({ length: 12 }, (_, i) => {
+  const a = (i / 12) * Math.PI * 2;
+  return new THREE.Vector3(Math.cos(a), 0, Math.sin(a));
+});
 
 function activeCollisionRoots() {
   const roots=[];
@@ -1088,6 +1097,35 @@ function rayBlocked(origin, direction, distance) {
     if(hits.some(h=>h.distance<=distance)) return true;
   }
   return false;
+}
+
+function hasMeshClearance(point, includeBroom=false) {
+  const radius = PLAYER_BORDER_CLEARANCE + (includeBroom ? BROOM_BORDER_CLEARANCE : 0);
+  for (const h of [0.24, 0.82, 1.36]) {
+    const origin = point.clone().add(new THREE.Vector3(0, h, 0));
+    for (const dir of clearanceDirections) {
+      if (rayBlocked(origin, dir, radius)) return false;
+    }
+  }
+  return true;
+}
+
+function findSafeEntranceSpawn(anchor, includeBroom=true) {
+  const candidates = [anchor.clone()];
+  // Entrance apron search: first spread sideways, then slightly outward/inward.
+  for (const zOffset of [0, 1.2, -1.2, 2.4, -2.4, 3.6]) {
+    for (const xOffset of [0, 1.2, -1.2, 2.4, -2.4, 3.6, -3.6]) {
+      if (xOffset === 0 && zOffset === 0) continue;
+      candidates.push(anchor.clone().add(new THREE.Vector3(xOffset, 0, zOffset)));
+    }
+  }
+  for (const candidate of candidates) {
+    const ground = groundSurfaceBelow(candidate, 12);
+    if (!ground) continue;
+    candidate.y = ground.hit.point.y + 0.045;
+    if (hasMeshClearance(candidate, includeBroom)) return candidate;
+  }
+  return anchor.clone();
 }
 
 function resolvePlayerCollision(from, to, includeBroom=false) {
@@ -1115,13 +1153,16 @@ function movePlayerWithCollision(delta, includeBroom=false) {
   if(!playerRoot || delta.lengthSq()<1e-10) return;
   const start=playerRoot.position.clone();
   const desired=start.clone().add(delta);
-  const solved=resolvePlayerCollision(start,desired,includeBroom);
+  let solved=resolvePlayerCollision(start,desired,includeBroom);
+  if(!solved.equals(start) && !hasMeshClearance(solved, includeBroom)) solved=start.clone();
   if(solved.equals(start)) {
     // Try axis-separated sliding so walls feel physical instead of sticky.
-    const xTry=resolvePlayerCollision(start,start.clone().add(new THREE.Vector3(delta.x,0,0)),includeBroom);
+    let xTry=resolvePlayerCollision(start,start.clone().add(new THREE.Vector3(delta.x,0,0)),includeBroom);
+    if(!xTry.equals(start) && !hasMeshClearance(xTry, includeBroom)) xTry=start.clone();
     playerRoot.position.copy(xTry);
     const zStart=playerRoot.position.clone();
-    const zTry=resolvePlayerCollision(zStart,zStart.clone().add(new THREE.Vector3(0,delta.y,delta.z)),includeBroom);
+    let zTry=resolvePlayerCollision(zStart,zStart.clone().add(new THREE.Vector3(0,delta.y,delta.z)),includeBroom);
+    if(!zTry.equals(zStart) && !hasMeshClearance(zTry, includeBroom)) zTry=zStart.clone();
     playerRoot.position.copy(zTry);
     if(playerRoot.position.distanceTo(start)<1e-5) playerVelocity.multiplyScalar(0.15);
   } else playerRoot.position.copy(solved);

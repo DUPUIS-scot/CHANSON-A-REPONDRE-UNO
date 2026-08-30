@@ -1,4 +1,4 @@
-deploy-request: 2026-08-30T05:30:00+01:00
+deploy-request: 2026-08-30
 source: chat
-scope: LUBIAK Bandcamp + circus transition + sphere control
-reason: isolate bottom-left Bandcamp, move MOVE sphere bottom-right, stack AERIAL/help, soften circus entry
+scope: LUBIAK entrance djinn+broom clearance
+reason: spawn at LUBIAK GLB entrance in open walkable space and keep player away from close mesh borders
