@@ -74,10 +74,10 @@ void main() {
     expect(fastLoader, contains('ios-draco-direct-v40'));
     expect(fastLoader, contains('android-draco-mobile-v41-staged-cards'));
     expect(fastLoader, contains('windows-draco-direct-v40'));
-    expect(fastLoader, contains('jester-timeout'));
+    expect(fastLoader, contains('jester-loading'));
     expect(fastLoader, contains('jester-failed'));
     expect(fastLoader, contains('renderer-failed'));
-    expect(fastLoader, contains('90000'));
+    expect(fastLoader, contains('6000'));
     expect(fastLoader, isNot(contains('search_castle.glb')));
 
     expect(environment, contains('castle_exterior_ground.png'));
