@@ -1,4 +1,4 @@
-deploy-request: 2026-08-30T19:20+01:00
+deploy-request: 2026-08-30T19:29+01:00
 source: chat
-scope: LUBIAK + MEGAPOLE geometry-safe textured GLB repair
-reason: promote web-optimized textured assets, prevent Megapole runtime geometry rewrite, preserve Castle/Laboratory PBR passes, force fresh LUBIAK cache
+scope: MEGAPOLE dragon-swallow aerial entry + navigation
+reason: rotate city front toward arrival camera, start high in AERIAL/RIDE mode, add LUBIAK-style forward/strafe/up/down navigation, fresh Megapole cache
