@@ -103,14 +103,20 @@ void main() {
       compactDirectCards,
       contains("surfaceAnchorMode='direct-raycast-all-decks-v42'"),
     );
-    expect(compactDirectCards, contains('functionpostJesterStageReady()'));
+    expect(compactDirectCards, contains('functionexteriorStageReady()'));
     expect(
       compactDirectCards,
-      contains("directCardsStage='waiting-for-environment-and-jester'"),
+      contains("directCardsStage='waiting-for-environment'"),
     );
-    expect(compactDirectCards, contains("e==='ready'"));
-    expect(compactDirectCards, contains("j==='ready'"));
-    expect(compactDirectCards, contains("f==='jester-timeout'"));
+    expect(
+      compactDirectCards,
+      contains("document.body.dataset.exteriorEnvironment==='ready'"),
+    );
+    expect(compactDirectCards, isNot(contains('functionpostJesterStageReady()')));
+    expect(
+      compactDirectCards,
+      isNot(contains("directCardsStage='waiting-for-environment-and-jester'")),
+    );
     expect(compactDirectCards, contains('isAndroid=/Android/i'));
     expect(compactDirectCards, contains('isAndroid?2'));
     expect(directCards, contains('directCardTextureConcurrency'));
