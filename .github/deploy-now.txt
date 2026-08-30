@@ -1,4 +1,4 @@
-deploy-request: 2026-08-30T19:29+01:00
+deploy-request: 2026-08-30T19:48+01:00
 source: chat
-scope: MEGAPOLE dragon-swallow aerial entry + navigation
-reason: rotate city front toward arrival camera, start high in AERIAL/RIDE mode, add LUBIAK-style forward/strafe/up/down navigation, fresh Megapole cache
+scope: MEGAPOLE aerial arrival + Castle-style GLB manipulation
+reason: preserve dragon-swallow aerial overview; normal drag controls viewpoint; wheel scroll moves viewpoint; pressed middle mouse drag rotates Megapole GLB root
