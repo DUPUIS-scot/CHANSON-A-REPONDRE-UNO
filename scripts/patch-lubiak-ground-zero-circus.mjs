@@ -1,145 +1,56 @@
 import fs from 'node:fs';
 
-const runtimePath='web/lubiak/lubiak.js';
-const terrainPath='web/lubiak/lubiak-terrain-addon.js';
-let js=fs.readFileSync(runtimePath,'utf8');
-let terrain=fs.readFileSync(terrainPath,'utf8');
+const path='web/lubiak/lubiak.js';
+let js=fs.readFileSync(path,'utf8');
 let changed=false;
 
-function replaceRuntime(from,to,label){
+function replaceOnce(from,to,label){
   if(js.includes(to)) return;
-  if(!js.includes(from)) throw new Error(`Missing runtime ${label} anchor`);
+  if(!js.includes(from)) throw new Error(`Missing ${label} anchor`);
   js=js.replace(from,to); changed=true;
 }
-function replaceTerrain(from,to,label){
-  if(terrain.includes(to)) return;
-  if(!terrain.includes(from)) throw new Error(`Missing terrain ${label} anchor`);
-  terrain=terrain.replace(from,to); changed=true;
+
+const plazaConstants=`// LUBIAK_PLAZA_TERRACE_V1\nconst FREAK_STREET_GROUND_Y = 0;\nconst CIRCUS_GROUND_Y = 0;\nconst KUMARI_PLAZA_Y = 4.0; // deliberately >= 2x the lower district reference rise\n`;
+if(!js.includes('LUBIAK_PLAZA_TERRACE_V1')){
+  const anchor="const exteriorReturn = { position: new THREE.Vector3(), yaw: 0, pitch: 0 };\n";
+  if(!js.includes(anchor)) throw new Error('Missing plaza constants anchor');
+  js=js.replace(anchor,anchor+'\n'+plazaConstants); changed=true;
 }
 
-replaceRuntime(
-`  root.position.set(-center.x, -box.min.y, -center.z);
-  root.updateMatrixWorld(true);`,
-`  // LUBIAK_PLAZA_DATUM_V2
-  // Centre X/Z first, then infer the authored plaza height from mesh bases instead
-  // of trusting the scene's absolute minimum (which may be foundations/stray geo).
-  root.position.set(-center.x, 0, -center.z);
-  root.updateMatrixWorld(true);
-  const meshBaseSamples = [];
-  root.traverse((object) => {
-    if (!object.isMesh) return;
-    const meshBox = new THREE.Box3().setFromObject(object);
-    if (meshBox.isEmpty()) return;
-    const h = meshBox.max.y - meshBox.min.y;
-    if (!Number.isFinite(meshBox.min.y) || !Number.isFinite(h)) return;
-    meshBaseSamples.push(meshBox.min.y);
-  });
-  meshBaseSamples.sort((a,b) => a-b);
-  const q = (arr,p) => arr.length ? arr[Math.max(0, Math.min(arr.length-1, Math.floor((arr.length-1)*p)))] : 0;
-  const authoredPlazaY = meshBaseSamples.length >= 6 ? q(meshBaseSamples, 0.35) : box.min.y;
-  const PLAZA_Y = 0;
-  root.position.y = PLAZA_Y - authoredPlazaY;
-  root.updateMatrixWorld(true);`,
-  'plaza datum'
+// Keep the environment centred horizontally, but do not let arbitrary deep geometry
+// define vertical placement. Lower district remains the stable world datum.
+replaceOnce(
+  '  root.position.set(-center.x, -box.min.y, -center.z);\n  root.updateMatrixWorld(true);',
+  '  root.position.set(-center.x, FREAK_STREET_GROUND_Y, -center.z);\n  root.updateMatrixWorld(true);',
+  'environment vertical authority'
 );
 
-const oldCircus=`  // LUBIAK_CIRCUS_GROUND_ZERO_V1
-  // The authored big-top sits below the plaza in the master GLB. Move only the
-  // outermost circus-labelled subtree upward; never move the terrain or whole city.
-  const circusTerms = /circus|big[ _-]?top|bigtop|tent|marquee|foetus|fetus/i;
-  const circusRoots = [];
-  root.traverse((object) => {
-    if (object === root || !circusTerms.test(object.name || '')) return;
-    let parent = object.parent;
-    while (parent && parent !== root) {
-      if (circusTerms.test(parent.name || '')) return;
-      parent = parent.parent;
-    }
-    circusRoots.push(object);
-  });
-  if (circusRoots.length) {
-    const circusBox = new THREE.Box3();
-    for (const object of circusRoots) circusBox.expandByObject(object);
-    const plazaY = 0;
-    if (!circusBox.isEmpty() && circusBox.min.y < plazaY - 0.05) {
-      const lift = plazaY - circusBox.min.y + 0.04;
-      for (const object of circusRoots) object.position.y += lift;
-      root.updateMatrixWorld(true);
-      console.info('LUBIAK circus lifted to plaza ground zero', { lift, roots: circusRoots.map(o => o.name) });
-    }
-  }`;
+// Replace the older circus-only lift with explicit lower-district/circus alignment and
+// a separate elevated Kumari Ghar plaza terrace. Prefer semantic names when present,
+// but fall back to compact upper-central geometry so the authored plaza moves together.
+const oldStart='  // LUBIAK_CIRCUS_GROUND_ZERO_V1';
+const oldEnd="  const eyeHeight = Math.max(1.7, Math.min(size.y * 0.12, 5));";
+if(js.includes(oldStart)){
+  const a=js.indexOf(oldStart);
+  const b=js.indexOf(oldEnd,a);
+  if(b<0) throw new Error('Missing old circus repair terminator');
+  const replacement=`  // LUBIAK_DISTRICT_LEVELS_V2\n  // Freak Street and circus share the lower datum. Kumari Ghar plaza is an\n  // intentionally elevated terrace, clearly above both lower zones.\n  const lowerTerms = /circus|big[ _-]?top|bigtop|tent|marquee|freak[ _-]?street/i;\n  const plazaTerms = /kumari|ghar|plaza|place|square|courtyard|chowk/i;\n  const lowerRoots = [];\n  const plazaRoots = [];\n  root.traverse((object) => {\n    if (object === root) return;\n    const name = object.name || '';\n    if (plazaTerms.test(name)) plazaRoots.push(object);\n    else if (lowerTerms.test(name)) lowerRoots.push(object);\n  });\n\n  function outermost(nodes){\n    return nodes.filter((node) => !nodes.some((other) => other !== node && node.parent && (other === node.parent || other.getObjectById?.(node.parent.id))));\n  }\n\n  const lowerSet = outermost(lowerRoots);\n  if (lowerSet.length) {\n    const lowerBox = new THREE.Box3();\n    lowerSet.forEach((object) => lowerBox.expandByObject(object));\n    if (!lowerBox.isEmpty()) {\n      const lift = CIRCUS_GROUND_Y - lowerBox.min.y;\n      lowerSet.forEach((object) => object.position.y += lift);\n    }\n  }\n\n  let plazaSet = outermost(plazaRoots);\n  if (!plazaSet.length) {\n    const candidates=[];\n    root.children.forEach((child) => {\n      const cb=new THREE.Box3().setFromObject(child);\n      if(cb.isEmpty()) return;\n      const cs=cb.getSize(new THREE.Vector3());\n      const cc=cb.getCenter(new THREE.Vector3());\n      if (cs.x < size.x*0.72 && cs.z < size.z*0.72 && Math.abs(cc.x) < size.x*0.32 && Math.abs(cc.z) < size.z*0.32) candidates.push(child);\n    });\n    plazaSet=candidates;\n  }\n  if (plazaSet.length) {\n    const plazaBox = new THREE.Box3();\n    plazaSet.forEach((object) => plazaBox.expandByObject(object));\n    if (!plazaBox.isEmpty()) {\n      const lift = KUMARI_PLAZA_Y - plazaBox.min.y;\n      plazaSet.forEach((object) => object.position.y += lift);\n      root.updateMatrixWorld(true);\n      console.info('LUBIAK district levels aligned', { freakStreetY:FREAK_STREET_GROUND_Y, circusY:CIRCUS_GROUND_Y, kumariPlazaY:KUMARI_PLAZA_Y, plazaRoots:plazaSet.map(o=>o.name) });\n    }\n  }\n\n`;
+  js=js.slice(0,a)+replacement+js.slice(b); changed=true;
+}
 
-const newCircus=`  // LUBIAK_CIRCUS_GROUND_ZERO_V2
-  // Resolve a stable circus branch from labelled descendants, then lift that
-  // compact branch as one rigid object to the same plaza datum used everywhere.
-  const circusTerms = /circus|big[ _-]?top|bigtop|tent|marquee|foetus|fetus/i;
-  const circusRoots = [];
-  const maxFootprintX = size.x * 0.48;
-  const maxFootprintZ = size.z * 0.48;
-  root.traverse((object) => {
-    if (object === root || !circusTerms.test(object.name || '')) return;
-    let candidate = object;
-    let parent = object.parent;
-    while (parent && parent !== root) {
-      const parentBox = new THREE.Box3().setFromObject(parent);
-      const parentSize = parentBox.getSize(new THREE.Vector3());
-      if (parentSize.x > maxFootprintX || parentSize.z > maxFootprintZ) break;
-      candidate = parent;
-      parent = parent.parent;
-    }
-    if (!circusRoots.includes(candidate)) circusRoots.push(candidate);
-  });
-  if (circusRoots.length) {
-    const uniqueRoots = circusRoots.filter((candidate, index, arr) =>
-      !arr.some((other, otherIndex) => otherIndex !== index && candidate.parent && other === candidate.parent)
-    );
-    const circusBox = new THREE.Box3();
-    for (const object of uniqueRoots) circusBox.expandByObject(object);
-    if (!circusBox.isEmpty() && circusBox.min.y < PLAZA_Y - 0.03) {
-      const lift = PLAZA_Y - circusBox.min.y + 0.04;
-      for (const object of uniqueRoots) object.position.y += lift;
-      root.updateMatrixWorld(true);
-      console.info('LUBIAK circus aligned to plaza datum', { lift, roots: uniqueRoots.map(o => o.name) });
-    }
-  }`;
-replaceRuntime(oldCircus,newCircus,'circus branch alignment');
+// Restore true walkable-surface grounding. This lets the djinn climb from Freak Street
+// to the elevated plaza and remain attached to the authored terrace instead of Y=0.
+const hardcoded=`function applyGroundGravity(dt, clearance=0.0){\n  if(!playerRoot || playerMode!=='walk') return;\n  const targetY=0;\n  playerRoot.position.y += (targetY-playerRoot.position.y)*(1-Math.exp(-dt*28));\n  if (Math.abs(playerRoot.position.y-targetY) < 0.001) playerRoot.position.y=targetY;\n  playerBaseY=targetY;`;
+const raycast=`function applyGroundGravity(dt, clearance=0.055){\n  if(!playerRoot || playerMode!=='walk') return;\n  const ground=groundSurfaceBelow(playerRoot.position,12);\n  if(!ground) return;\n  const targetY=ground.hit.point.y+clearance;\n  playerRoot.position.y += (targetY-playerRoot.position.y)*(1-Math.exp(-dt*22));\n  if (Math.abs(playerRoot.position.y-targetY) < 0.001) playerRoot.position.y=targetY;\n  playerBaseY=targetY;`;
+replaceOnce(hardcoded,raycast,'walkable surface grounding');
 
-replaceRuntime(
-`function applyGroundGravity(dt, clearance=0.0){
-  if(!playerRoot || playerMode!=='walk') return;
-  const targetY=0;
-  playerRoot.position.y += (targetY-playerRoot.position.y)*(1-Math.exp(-dt*28));
-  if (Math.abs(playerRoot.position.y-targetY) < 0.001) playerRoot.position.y=targetY;
-  playerBaseY=targetY;`,
-`function applyGroundGravity(dt, clearance=0.045){
-  if(!playerRoot || playerMode!=='walk') return;
-  const ground=groundSurfaceBelow(playerRoot.position,6.5);
-  if(ground){
-    const targetY=ground.hit.point.y+clearance;
-    playerRoot.position.y += (targetY-playerRoot.position.y)*(1-Math.exp(-dt*24));
-    if (Math.abs(playerRoot.position.y-targetY) < 0.0015) playerRoot.position.y=targetY;
-    playerBaseY=targetY;
-  }`,
-  'surface-following djinn gravity'
+// Spawn remains on the lower district; raycast takes authority immediately afterward.
+replaceOnce(
+  '  playerRoot.position.set(0, 0, Math.min(env.z * 0.34, 42));\n  playerBaseY = 0;',
+  '  playerRoot.position.set(0, FREAK_STREET_GROUND_Y + 0.055, Math.min(env.z * 0.34, 42));\n  playerBaseY = FREAK_STREET_GROUND_Y + 0.055;',
+  'player spawn lower datum'
 );
 
-replaceRuntime(
-`  playerRoot.position.set(0, 0, Math.min(env.z * 0.34, 42));
-  playerBaseY = 0;`,
-`  playerRoot.position.set(0, 0.08, Math.min(env.z * 0.34, 42));
-  playerBaseY = playerRoot.position.y;`,
-  'player spawn clearance'
-);
-
-replaceTerrain(
-`    const worldTarget = new THREE.Vector3(envCenter.x, envBox.min.y + Math.max(0.025, envSize.y * 0.002), envCenter.z);`,
-`    // Shared LUBIAK plaza datum: environment runtime normalizes the walkable plaza
-    // to world Y=0, so decorative ember terrain must never follow envBox.min.y.
-    const worldTarget = new THREE.Vector3(envCenter.x, 0.025, envCenter.z);`,
-  'terrain shared datum'
-);
-
-if(!changed){ console.log('LUBIAK shared plaza-ground repair already installed.'); process.exit(0); }
-fs.writeFileSync(runtimePath,js);
-fs.writeFileSync(terrainPath,terrain);
-console.log('Applied LUBIAK shared plaza datum, circus alignment, terrain datum, and djinn surface grounding.');
+if(!changed){ console.log('LUBIAK elevated plaza repair already installed.'); process.exit(0); }
+fs.writeFileSync(path,js);
+console.log('Applied elevated Kumari Ghar plaza + lower Freak Street/circus hierarchy.');
