@@ -15,7 +15,7 @@ void main() {
     final resetView = File('web/card_castle/castle_laboratory_entry_reset_v70.js').readAsStringSync();
 
     expect(bridge, contains("const VERSION = 'v79'"));
-    expect(bridge, contains('bureauVideoOwner = `castle-bureau-video-bridge-${VERSION}`'));
+    expect(bridge, contains(r'bureauVideoOwner = `castle-bureau-video-bridge-${VERSION}`'));
     expect(bridge, contains(r'const SCREEN_NAME = /^VideoBookPage_(Left|Right)$/i'));
     expect(bridge, contains("bureauVideoContract = 'VideoBookPage_Left|VideoBookPage_Right'"));
     expect(bridge, contains("expectedNames: ['VideoBookPage_Left', 'VideoBookPage_Right']"));
