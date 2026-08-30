@@ -449,6 +449,71 @@ function frameLoadedEnvironment(root) {
   root.position.y = PLAZA_Y - authoredPlazaY;
   root.updateMatrixWorld(true);
 
+  // LUBIAK_EMBEDDED_EMBER_GROUND_V1
+  // Re-skin only the broad, low, neutral/untextured ground surfaces already authored
+  // inside LUBIAK_master_optimized.glb. Geometry remains untouched so collision,
+  // ground gravity and the circus/plaza datum keep using the original mesh.
+  const emberGroundMaterial = new THREE.MeshStandardMaterial({
+    name: 'Charbons_Ardents_Runtime',
+    color: new THREE.Color(0x050201),
+    emissive: new THREE.Color(0xff1301),
+    emissiveIntensity: 3.8,
+    metalness: 0.0,
+    roughness: 0.94,
+    side: THREE.DoubleSide,
+    transparent: false,
+    opacity: 1,
+    depthTest: true,
+    depthWrite: true,
+  });
+  emberGroundMaterial.toneMapped = true;
+
+  const emberRejectTerms = /circus|big[ _-]?top|tent|marquee|stage|seat|chair|roof|wall|building|facade|door|window|dragon|player|djinn|broom|prop/i;
+  const emberGroundTerms = /ground|terrain|road|street|floor|plaza|square|pavement|asphalt|concrete|grey|gray/i;
+  const materialIsNeutral = (material) => {
+    if (!material || material.map) return false;
+    const color = material.color;
+    if (!color) return true;
+    const hsl = {};
+    color.getHSL(hsl);
+    const emissivePower = material.emissive ? Math.max(material.emissive.r, material.emissive.g, material.emissive.b) * (material.emissiveIntensity || 1) : 0;
+    return hsl.s < 0.16 && hsl.l > 0.05 && hsl.l < 0.82 && emissivePower < 0.2;
+  };
+
+  let emberGroundCount = 0;
+  root.traverse((object) => {
+    if (!object.isMesh) return;
+    const lineage = [];
+    let cursor = object;
+    while (cursor && cursor !== root) { lineage.push(cursor.name || ''); cursor = cursor.parent; }
+    const semanticName = lineage.join(' ');
+    if (emberRejectTerms.test(semanticName)) return;
+
+    const meshBox = new THREE.Box3().setFromObject(object);
+    if (meshBox.isEmpty()) return;
+    const meshSize = meshBox.getSize(new THREE.Vector3());
+    const footprint = meshSize.x * meshSize.z;
+    const broadEnough = footprint >= Math.max(18, size.x * size.z * 0.012)
+      || meshSize.x >= Math.max(8, size.x * 0.24)
+      || meshSize.z >= Math.max(12, size.z * 0.24);
+    const lowEnough = meshBox.min.y <= PLAZA_Y + 0.55
+      && meshBox.max.y <= PLAZA_Y + Math.max(1.25, size.y * 0.045)
+      && meshSize.y <= Math.max(1.4, size.y * 0.05);
+    if (!broadEnough || !lowEnough) return;
+
+    const materials = Array.isArray(object.material) ? object.material : [object.material];
+    const namedGround = emberGroundTerms.test(semanticName) || materials.some((m) => emberGroundTerms.test(m?.name || ''));
+    const neutralGround = materials.length > 0 && materials.every(materialIsNeutral);
+    if (!namedGround && !neutralGround) return;
+
+    object.material = Array.isArray(object.material)
+      ? object.material.map(() => emberGroundMaterial)
+      : emberGroundMaterial;
+    object.userData.lubiakEmberGround = true;
+    emberGroundCount += 1;
+  });
+  console.info('LUBIAK embedded ember/coal material applied', { emberGroundCount });
+
   root.traverse((object) => {
     if (!object.isMesh) return;
     object.frustumCulled = false;
