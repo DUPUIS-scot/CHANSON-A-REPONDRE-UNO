@@ -1,3 +1,5 @@
-deploy-request: 2026-08-30
+deploy-request: 2026-08-30T20:16:00+01:00
 source: chat
-scope: LUBIAK RIDE 2MIX-style flight tray
+workflow: WEB — Deploy Live Site
+scope: PLAY Jester torso-up rigged remesh rest-pose validation
+reason: deploy replacement play_jester_rigged.glb and rest-bind runtime with procedural Jester animation disabled
