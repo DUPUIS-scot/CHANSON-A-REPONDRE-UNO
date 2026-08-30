@@ -63,6 +63,12 @@ void main() {
       expect(browserScreen, isNot(contains("labelText: 'Card title'"))); expect(browserScreen, isNot(contains('var title = browser.titleFilter')));
     });
 
+    test('selected Browse card provides an in-app return to the focused hand', () {
+      final selectedCard = File('lib/screens/browse_selected_card_screen.dart').readAsStringSync();
+      expect(selectedCard, contains('Return to Browse Cards'));
+      expect(selectedCard, contains('AppRoutes.browseCard(card.id, category: card.category)'));
+    });
+
     test('permanent decks cannot be renamed, deleted, or replaced by bad id', () async {
       SharedPreferences.setMockInitialValues({});
       final storage = LocalStorageService(); final provider = DeckProvider(storage, DeckImportService(storage)); addTearDown(provider.dispose); await provider.load();
