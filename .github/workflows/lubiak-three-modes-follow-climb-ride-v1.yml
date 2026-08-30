@@ -1,0 +1,44 @@
+name: LUBIAK three modes follow climb ride v1
+
+on:
+  push:
+    paths:
+      - '.lubiak-three-modes-follow-climb-ride-v1-trigger'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Apply FOLLOW AERIAL RIDE selector
+        run: node scripts/patch-lubiak-three-modes-ride-v1.mjs
+      - name: Apply close follow and shared vertical controls
+        run: node scripts/patch-lubiak-follow-climb-ride-controls-v1.mjs
+      - name: Validate runtime
+        run: node --check web/lubiak/lubiak.js
+      - name: Trigger live deployment
+        run: |
+          cat > .github/deploy-now.txt <<'EOF'
+          deploy-request: 2026-08-30
+          source: chat
+          scope: LUBIAK FOLLOW AERIAL RIDE controls
+          reason: add explicit RIDE mode, close third-person FOLLOW, wall/mesh UP-DOWN climb, and RIDE altitude UP-DOWN triggers
+          EOF
+      - name: Commit repair
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add web/lubiak/lubiak.js .github/deploy-now.txt
+          git diff --cached --quiet && exit 0
+          git commit -m 'Add LUBIAK follow aerial ride controls'
+          git pull --rebase origin main
+          git push
