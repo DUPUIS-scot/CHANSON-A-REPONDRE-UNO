@@ -20,6 +20,11 @@
     #bar{height:100%;width:0;background:#efc66b;transition:width .15s linear}
     #status{position:absolute;left:50%;bottom:max(46px,calc(env(safe-area-inset-bottom) + 12px));transform:translateX(-50%);font-size:11px;letter-spacing:.12em;white-space:nowrap;transition:opacity .4s}
     #help{position:absolute;right:max(18px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));font-size:10px;opacity:.5;text-align:right}
+    #cinematic{position:fixed;inset:0;z-index:9999;background:#000;display:flex;align-items:center;justify-content:center;opacity:1;transition:opacity .55s ease;pointer-events:auto}
+    #cinematic.is-hidden{opacity:0;pointer-events:none}
+    #cinematic video{width:100%;height:100%;object-fit:cover;background:#000}
+    #cinematic-skip{position:absolute;right:max(18px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));z-index:2;border:1px solid #f2cf8266;background:#140e12aa;color:#f2cf82;padding:9px 12px;font:700 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.12em;cursor:pointer}
+    #cinematic-play{position:absolute;z-index:3;border:1px solid #f2cf8288;background:#140e12dd;color:#f2cf82;padding:13px 18px;font:800 11px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.16em;cursor:pointer;display:none}
     @media(max-width:720px){#help{font-size:9px}.sub{font-size:9px}.top{padding:8px 10px}}
   </style>
   <script type="importmap">{"imports":{"three":"../vendor/three.module.js?v=20260830-megapole-v10"}}</script>
@@ -32,6 +37,42 @@
     <div id="status">ENTERING THE MEGAPOLE</div><div id="progress"><div id="bar"></div></div>
     <div id="help">DRAG · LOOK &nbsp; WHEEL / ↑↓ · MOVE &nbsp; A/D · STRAFE &nbsp; E/Q · UP/DOWN</div>
   </div>
+  <div id="cinematic" aria-label="Entering the Megapole">
+    <video id="cinematic-video" preload="auto" playsinline src="../assets/assets/videos/0830(1).mp4"></video>
+    <button id="cinematic-play" type="button">ENTER MEGAPOLE</button>
+    <button id="cinematic-skip" type="button">SKIP</button>
+  </div>
+  <script>
+    (() => {
+      const overlay = document.querySelector('#cinematic');
+      const video = document.querySelector('#cinematic-video');
+      const play = document.querySelector('#cinematic-play');
+      const skip = document.querySelector('#cinematic-skip');
+      const cameFromLubiak = /\/lubiak\/?/i.test(document.referrer || '');
+      let closed = false;
+      const close = () => {
+        if (closed) return;
+        closed = true;
+        try { video.pause(); } catch (_) {}
+        overlay.classList.add('is-hidden');
+        setTimeout(() => overlay.remove(), 650);
+      };
+      if (!cameFromLubiak) {
+        close();
+        return;
+      }
+      video.addEventListener('ended', close, { once:true });
+      video.addEventListener('error', close, { once:true });
+      skip.addEventListener('click', close);
+      play.addEventListener('click', async () => {
+        play.style.display = 'none';
+        try { await video.play(); } catch (_) { close(); }
+      });
+      const attempt = video.play();
+      if (attempt && typeof attempt.catch === 'function') attempt.catch(() => { play.style.display = 'block'; });
+      setTimeout(() => { if (!closed && video.readyState === 0) close(); }, 8000);
+    })();
+  </script>
   <script>
     (() => {
       const status = () => document.querySelector('#status');
