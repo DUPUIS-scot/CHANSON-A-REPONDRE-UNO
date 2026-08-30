@@ -28,6 +28,7 @@ let circusSetRoot = null;
 let circusSetPromise = null;
 let worldMode = 'exterior';
 let transitionLockUntil = 0;
+let circusTransitioning = false;
 const circusGate = new THREE.Vector3(12, 2, -9);
 const exteriorReturn = { position: new THREE.Vector3(), yaw: 0, pitch: 0 };
 
@@ -281,32 +282,49 @@ async function installCircusSet() {
 }
 
 function enterCircus() {
-  if (worldMode !== 'exterior' || performance.now() < transitionLockUntil) return;
+  if (worldMode !== 'exterior' || circusTransitioning || performance.now() < transitionLockUntil) return;
+  circusTransitioning = true;
+  transitionLockUntil = performance.now() + 1250;
   makeCircusInterior();
   exteriorReturn.position.copy(playerReady ? playerRoot.position : camera.position);
   exteriorReturn.yaw = playerReady ? followYaw : yaw;
   exteriorReturn.pitch = playerReady ? followPitch : pitch;
 
-  worldMode = 'circus';
-  transitionLockUntil = performance.now() + 1400;
-  setExteriorVisibility(false);
-  circusInterior.visible = true;
-  if (playerRoot) playerRoot.visible = true;
-  scene.background = new THREE.Color(0x160b08);
-  scene.fog = new THREE.FogExp2(0x1e0d09, 0.012);
-  renderer.toneMappingExposure = 1.45;
-  if (playerReady) {
-    playerRoot.position.set(0, 0, 14.5);
-    playerBaseY = 0;
-  } else {
-    camera.position.set(0, 2.1, 14.5);
-    yaw = 0;
-    pitch = -0.02;
-  }
-  movementBounds = new THREE.Box3(new THREE.Vector3(-19, 0, -19), new THREE.Vector3(19, 8, 22.5));
-  setCircusMediaVisible(true);
-  installCircusSet();
-  showStatus('INSIDE LUBIAK CIRCUS', 1100);
+  // LUBIAK_CIRCUS_ENTRY_FADE_V1 — briefly veil the hard scene swap so walking
+  // through the tent reads as one continuous transition rather than a teleport.
+  renderer.domElement.style.transition = 'opacity .22s ease';
+  renderer.domElement.style.opacity = '0.08';
+  showStatus('ENTERING LUBIAK CIRCUS', 700);
+
+  setTimeout(() => {
+    worldMode = 'circus';
+    setExteriorVisibility(false);
+    circusInterior.visible = true;
+    if (playerRoot) playerRoot.visible = true;
+    scene.background = new THREE.Color(0x160b08);
+    scene.fog = new THREE.FogExp2(0x1e0d09, 0.012);
+    renderer.toneMappingExposure = 1.45;
+    if (playerReady) {
+      playerRoot.position.set(0, 0, 14.5);
+      playerBaseY = 0;
+    } else {
+      camera.position.set(0, 2.1, 14.5);
+      yaw = 0;
+      pitch = -0.02;
+    }
+    movementBounds = new THREE.Box3(new THREE.Vector3(-19, 0, -19), new THREE.Vector3(19, 8, 22.5));
+    setCircusMediaVisible(true);
+    installCircusSet();
+    requestAnimationFrame(() => {
+      renderer.domElement.style.opacity = '0.90';
+      setTimeout(() => {
+        circusTransitioning = false;
+        renderer.domElement.style.transition = '';
+        renderer.domElement.style.opacity = '';
+      }, 260);
+    });
+    showStatus('INSIDE LUBIAK CIRCUS', 1100);
+  }, 220);
 }
 
 function exitCircus() {
@@ -338,7 +356,7 @@ function exitCircus() {
 }
 
 function updateCircusTransition() {
-  if (performance.now() < transitionLockUntil) return;
+  if (circusTransitioning || performance.now() < transitionLockUntil) return;
   const p = playerReady ? playerRoot.position : camera.position;
   if (worldMode === 'exterior') {
     const dx = p.x - circusGate.x;
@@ -835,12 +853,12 @@ joystick.setAttribute('aria-label', 'LUBIAK spherical movement control');
 document.body.appendChild(joystick);
 const joystickStyle = document.createElement('style');
 joystickStyle.textContent = `
-#lubiak-sphere-control{position:fixed;left:22px;bottom:20px;width:118px;height:136px;z-index:60;display:grid;place-items:center;touch-action:none;user-select:none;color:#ffe2bd;font:700 10px/1 system-ui;letter-spacing:.18em;text-shadow:0 1px 4px #0008;opacity:.94}
+#lubiak-sphere-control{position:fixed;right:max(20px,env(safe-area-inset-right));left:auto;bottom:max(18px,env(safe-area-inset-bottom));width:118px;height:136px;z-index:60;display:grid;place-items:center;touch-action:none;user-select:none;color:#ffe2bd;font:700 10px/1 system-ui;letter-spacing:.18em;text-shadow:0 1px 4px #0008;opacity:.94}
 #lubiak-sphere-control .sphere-shell{position:relative;width:104px;height:104px;border-radius:50%;border:1px solid #f6c28b88;background:radial-gradient(circle at 32% 27%,#fff7 0 4%,#efad6d55 5% 17%,#6d3018bb 48%,#190a06ee 100%);box-shadow:inset -15px -18px 28px #000a,inset 9px 10px 22px #ffb76b2a,0 8px 28px #000a}
 #lubiak-sphere-control .sphere-shell:after{content:'';position:absolute;inset:10px;border-radius:50%;border:1px solid #ffd5a72b;box-shadow:inset 0 0 18px #ffb0671f}
 #lubiak-sphere-control .sphere-knob{position:absolute;left:50%;top:50%;width:38px;height:38px;border-radius:50%;transform:translate(-50%,-50%);background:radial-gradient(circle at 35% 28%,#fff8,#f2ae68 24%,#7c3415 66%,#210b04);box-shadow:0 4px 12px #000b,inset -5px -6px 8px #0008;border:1px solid #ffd7a1aa;will-change:transform}
 #lubiak-sphere-control span{position:absolute;bottom:2px;opacity:.78}
-@media (max-width:600px){#lubiak-sphere-control{left:12px;bottom:10px;transform:scale(.88);transform-origin:left bottom}}
+@media (max-width:600px){#lubiak-sphere-control{right:max(10px,env(safe-area-inset-right));left:auto;bottom:max(8px,env(safe-area-inset-bottom));transform:scale(.88);transform-origin:right bottom}}
 `;
 document.head.appendChild(joystickStyle);
 
@@ -849,7 +867,7 @@ aerialToggle.id = 'lubiak-aerial-toggle';
 aerialToggle.type = 'button';
 aerialToggle.textContent = 'AERIAL';
 aerialToggle.setAttribute('aria-label', 'Toggle aerial observation camera');
-aerialToggle.style.cssText = 'position:fixed;right:18px;bottom:22px;z-index:70;border:1px solid #f6c28b88;border-radius:999px;padding:10px 14px;background:#160b08dd;color:#ffe2bd;font:700 10px/1 system-ui;letter-spacing:.14em;box-shadow:0 6px 20px #0009;cursor:pointer';
+aerialToggle.style.cssText = 'position:fixed;right:max(26px,env(safe-area-inset-right));bottom:158px;z-index:70;border:1px solid #f6c28b88;border-radius:999px;padding:10px 14px;background:#160b08dd;color:#ffe2bd;font:700 10px/1 system-ui;letter-spacing:.14em;box-shadow:0 6px 20px #0009;cursor:pointer';
 aerialToggle.addEventListener('click', () => setCameraMode(cameraMode === 'follow' ? 'aerial' : 'follow'));
 document.body.appendChild(aerialToggle);
 

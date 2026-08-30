@@ -1,2 +1,4 @@
-deploy-request: 2026-08-30T05:25:00+01:00
-scope: LUBIAK djinn + DA NOBLE Y2K reference proportion and walking carry
+deploy-request: 2026-08-30T05:30:00+01:00
+source: chat
+scope: LUBIAK Bandcamp + circus transition + sphere control
+reason: isolate bottom-left Bandcamp, move MOVE sphere bottom-right, stack AERIAL/help, soften circus entry
