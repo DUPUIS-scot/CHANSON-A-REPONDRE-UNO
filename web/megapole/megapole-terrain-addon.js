@@ -1,16 +1,11 @@
 import * as THREE from 'three';
 import { GLTFLoader } from '../vendor/GLTFLoader.js';
 
-const TERRAIN_URL = '/assets/assets/models/SILMARI_LLION_MEGAPOLE_signal_ground.glb?v=20260830-signal-ground-v2';
+const TERRAIN_URL = '/assets/assets/models/SILMARI_LLION_MEGAPOLE_signal_ground.glb?v=20260830-signal-ground-coal-ember-v3';
 let installed = false;
 
-function signalMaterial(material) {
+function preserveBakedGroundMaterial(material) {
   if (!material) return;
-  if (material.color) material.color.setHex(0x030914);
-  if (material.emissive) material.emissive.setHex(0x008cff);
-  material.emissiveIntensity = Math.max(material.emissiveIntensity || 0, 2.8);
-  if ('roughness' in material) material.roughness = 0.94;
-  if ('metalness' in material) material.metalness = 0.02;
   material.side = THREE.DoubleSide;
   material.needsUpdate = true;
 }
@@ -35,16 +30,16 @@ async function installTerrain(megapoleRoot) {
       object.frustumCulled = false;
       object.receiveShadow = true;
       const materials = Array.isArray(object.material) ? object.material : [object.material];
-      materials.forEach(signalMaterial);
+      materials.forEach(preserveBakedGroundMaterial);
       const lattice = new THREE.Mesh(object.geometry, new THREE.MeshBasicMaterial({
-        color: 0x19a9ff,
+        color: 0xff3a0a,
         wireframe: true,
         transparent: true,
-        opacity: 0.34,
+        opacity: 0.31,
         depthWrite: false,
         blending: THREE.AdditiveBlending,
       }));
-      lattice.name = 'SIGNAL_40x28_LATTICE_GLOW';
+      lattice.name = 'SIGNAL_40x28_EMBER_LATTICE_GLOW';
       lattice.scale.setScalar(1.003);
       object.add(lattice);
     });
@@ -64,12 +59,12 @@ async function installTerrain(megapoleRoot) {
     terrain.position.copy(megapoleRoot.worldToLocal(worldTarget.clone()));
     megapoleRoot.add(terrain);
 
-    const cyanA = new THREE.PointLight(0x008cff, 54, Math.max(42, targetWidth * 1.7), 1.65);
-    cyanA.position.set(-targetWidth * 0.18 / Math.max(parentScale.x, 0.001), 0.8, targetDepth * 0.10 / Math.max(parentScale.z, 0.001));
-    const cyanB = new THREE.PointLight(0x36d7ff, 42, Math.max(38, targetWidth * 1.5), 1.7);
-    cyanB.position.set(targetWidth * 0.20 / Math.max(parentScale.x, 0.001), 0.65, -targetDepth * 0.14 / Math.max(parentScale.z, 0.001));
-    terrain.add(cyanA, cyanB);
-    console.info('MEGAPOLE 40x28 SIGNAL terrain addon installed', { targetWidth, targetDepth });
+    const emberA = new THREE.PointLight(0xff2d05, 58, Math.max(42, targetWidth * 1.7), 1.65);
+    emberA.position.set(-targetWidth * 0.18 / Math.max(parentScale.x, 0.001), 0.8, targetDepth * 0.10 / Math.max(parentScale.z, 0.001));
+    const emberB = new THREE.PointLight(0xff7a16, 44, Math.max(38, targetWidth * 1.5), 1.7);
+    emberB.position.set(targetWidth * 0.20 / Math.max(parentScale.x, 0.001), 0.65, -targetDepth * 0.14 / Math.max(parentScale.z, 0.001));
+    terrain.add(emberA, emberB);
+    console.info('MEGAPOLE 40x28 coal/ember SIGNAL terrain installed', { targetWidth, targetDepth });
   } catch (error) {
     installed = false;
     console.warn('Megapole SIGNAL terrain addon unavailable; main Megapole remains active.', error);
