@@ -50,7 +50,9 @@ async function installTerrain(environmentRoot) {
       targetDepth / Math.max(sourceSize.z, 0.001) / Math.max(parentScale.z, 0.001),
     );
 
-    const worldTarget = new THREE.Vector3(envCenter.x, envBox.min.y + Math.max(0.025, envSize.y * 0.002), envCenter.z);
+    // Shared LUBIAK plaza datum: environment runtime normalizes the walkable plaza
+    // to world Y=0, so decorative ember terrain must never follow envBox.min.y.
+    const worldTarget = new THREE.Vector3(envCenter.x, 0.025, envCenter.z);
     terrain.position.copy(environmentRoot.worldToLocal(worldTarget.clone()));
     environmentRoot.add(terrain);
 
