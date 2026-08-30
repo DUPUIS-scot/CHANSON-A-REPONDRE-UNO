@@ -1,0 +1,39 @@
+name: LUBIAK palace scale
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/lubiak-palace-scale.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Expand palace 2.6x above Freak Street
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('web/lubiak/lubiak.js')
+          s=p.read_text()
+          anchor="  // Seat the outermost circus assembly on the same Y=0 terrain datum; never float or bury it.\n"
+          block="""  // LUBIAK_PALACE_MONUMENTAL_SCALE_V1\n  // Palace must dominate Freak Street: broaden it modestly and raise it to 2.6x authored height, while keeping its base on terrain Y=0.\n  const palaceName=/palace|place|temple|citadel|kumari[ _-]?ghar/i;\n  const palaceCandidates=[];\n  exteriorRoot.traverse(o=>{\n    if(o!==exteriorRoot && palaceName.test(o.name||'')) palaceCandidates.push(o);\n  });\n  const palaceRoots=palaceCandidates.filter(o=>!palaceCandidates.some(p=>p!==o && p.getObjectById?.(o.parent?.id)));\n  palaceRoots.forEach(o=>{\n    if(o.userData?.lubiakPalaceMonumental) return;\n    const before=new THREE.Box3().setFromObject(o);\n    if(before.isEmpty()) return;\n    o.scale.x*=1.35;\n    o.scale.y*=2.60;\n    o.scale.z*=1.35;\n    o.updateMatrixWorld(true);\n    const after=new THREE.Box3().setFromObject(o);\n    o.position.y += (0-after.min.y);\n    o.userData.lubiakPalaceMonumental=true;\n  });\n  exteriorRoot.updateMatrixWorld(true);\n\n"""
+          if 'LUBIAK_PALACE_MONUMENTAL_SCALE_V1' not in s:
+              if anchor not in s: raise SystemExit('anchor not found')
+              s=s.replace(anchor,block+anchor,1)
+              p.write_text(s)
+          PY
+      - name: Validate runtime syntax
+        run: node --check web/lubiak/lubiak.js
+      - name: Commit palace scale
+        run: |
+          if git diff --quiet; then exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add web/lubiak/lubiak.js
+          git commit -m 'Expand LUBIAK palace over Freak Street'
+          git push
