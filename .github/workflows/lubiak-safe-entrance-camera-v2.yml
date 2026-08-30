@@ -1,0 +1,46 @@
+name: LUBIAK safe entrance camera v2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.lubiak-safe-entrance-camera-v2-trigger'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Apply safe entrance and camera repair
+        run: node scripts/patch-lubiak-safe-entrance-camera-v2.mjs
+      - name: Validate runtime
+        run: |
+          node --check web/lubiak/lubiak.js
+          grep -q 'LUBIAK_SAFE_ENTRANCE_CAMERA_V2' web/lubiak/lubiak.js
+          grep -q 'LUBIAK_CAMERA_VOLUME_GUARD_V2' web/lubiak/lubiak.js
+          grep -q 'env.z \* 0.62' web/lubiak/lubiak.js
+      - name: Request deployment
+        run: |
+          cat > .github/deploy-now.txt <<'EOF'
+          deploy-request: 2026-08-30T05:44:00+01:00
+          source: chat
+          scope: LUBIAK entrance spawn + follow camera volume
+          reason: keep djinn, broom and camera outside entrance mesh shell and prevent near-plane polygon clipping
+          EOF
+      - name: Commit and push
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add web/lubiak/lubiak.js .github/deploy-now.txt
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Fix LUBIAK entrance spawn and camera clipping'
+          git pull --rebase origin main
+          git push origin HEAD:main
