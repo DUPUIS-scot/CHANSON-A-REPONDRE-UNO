@@ -51,9 +51,9 @@ const standing=`function restoreStandingWalkPose() {
   // If a prior ride state ever owned the broom, return it to the authoritative hand socket.
   if (broomRoot && broomShoulderSocket && broomRoot.parent !== broomShoulderSocket) {
     broomShoulderSocket.attach(broomRoot);
-    broomRoot.scale.setScalar(broomRoot.scale.x);
     broomRoot.rotation.set(0.06, Math.PI * 0.5, 0.05);
-    broomRoot.position.set(-0.54, -0.015, -0.015);
+    // Canonical walk carry transform: identical to attachBroomToShoulder().
+    broomRoot.position.set(-0.42, -0.03, -0.01);
     broomRideStart = null;
   }
 
@@ -77,4 +77,4 @@ if(!s.includes(procNeedle)) throw new Error('proceduralWalk needle missing');
 s=s.replace(procNeedle,`function proceduralWalk(dt, speed01) {\n  if (!playerVisual || !playerBoneCache) return;\n  // Idle is a strict straight-leg stance at ground zero; gait begins only with real movement.\n  if (speed01 < 0.035) {\n    walkBlend += (0 - walkBlend) * Math.min(1, dt * 12);\n    restoreStandingWalkPose();\n    return;\n  }`);
 
 fs.writeFileSync(path,s);
-console.log('Patched LUBIAK standing ground-zero walk authority');
+console.log('Patched LUBIAK standing ground-zero walk authority with canonical broom return');
