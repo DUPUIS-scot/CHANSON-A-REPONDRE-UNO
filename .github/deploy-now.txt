@@ -1,4 +1,4 @@
-deploy-request: 2026-08-30T07:38:00+01:00
+deploy-request: 2026-08-30T10:56:00+01:00
 source: chat
-scope: MEGAPOLE Draco decoder V14
-reason: replacement SILMARI_LLION_MEGAPOLE_LUBIAK.glb uses KHR_draco_mesh_compression; attach DRACOLoader while retaining Meshopt, normalize/frame model, cache-bust viewer
+scope: LUBIAK + MEGAPOLE full repair
+reason: publish Kathmandu 360 exterior background, mode-independent dragon triple-click gateway, and restored in-runtime 40x28 charcoal/ember Megapole terrain
