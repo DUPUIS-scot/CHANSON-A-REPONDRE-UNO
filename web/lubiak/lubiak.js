@@ -1079,20 +1079,49 @@ function updatePlayer(dt) {
       showStatus('FLIGHT MODE · RIDING DA NOBLE Y2K', 900);
     }
   } else if (playerMode === 'flight') {
+    // LUBIAK_BROOM_FLIGHT_3D_V1
+    // Ride the broom as a true 3D vehicle: forward follows the camera look direction,
+    // so looking up/down and pushing forward climbs/dives. Space/PageUp climb; Ctrl/PageDown descend.
     applyRidePose(1);
-    const mag = THREE.MathUtils.clamp(input.length(), 0, 1);
-    const forward = new THREE.Vector3(Math.sin(followYaw), 0, -Math.cos(followYaw));
-    const right = new THREE.Vector3(Math.cos(followYaw), 0, Math.sin(followYaw));
-    const desired = forward.multiplyScalar(input.y).add(right.multiplyScalar(input.x));
+    const verticalKey = (keys.has(' ') || keys.has('space') || keys.has('pageup') || keys.has('e') ? 1 : 0)
+      - (keys.has('control') || keys.has('ctrl') || keys.has('pagedown') || keys.has('q') ? 1 : 0);
+    const mag2d = THREE.MathUtils.clamp(input.length(), 0, 1);
+    const lookForward = new THREE.Vector3();
+    camera.getWorldDirection(lookForward);
+    if (lookForward.lengthSq() < 1e-6) lookForward.set(Math.sin(followYaw), 0, -Math.cos(followYaw));
+    lookForward.normalize();
+    const right = new THREE.Vector3().crossVectors(lookForward, WORLD_UP);
+    if (right.lengthSq() < 1e-6) right.set(Math.cos(followYaw), 0, Math.sin(followYaw));
+    right.normalize();
+    const desired = lookForward.multiplyScalar(input.y).add(right.multiplyScalar(input.x));
+    desired.y += verticalKey * 0.95;
+    const mag3d = THREE.MathUtils.clamp(Math.hypot(mag2d, verticalKey), 0, 1);
     if (desired.lengthSq() > 0.001) desired.normalize();
-    playerVelocity.lerp(desired.multiplyScalar(9.5 * mag), Math.min(1, dt * 5));
+    playerVelocity.lerp(desired.multiplyScalar(9.5 * mag3d), Math.min(1, dt * 5));
     movePlayerWithCollision(playerVelocity.clone().multiplyScalar(dt), true);
-    playerRoot.position.y += (Math.max(playerBaseY + 2.6, 2.6) - playerRoot.position.y) * dt * 0.8;
-    if (mag > 0.05) {
-      const targetHeading = Math.atan2(desired.x, desired.z) + Math.PI;
-      const diff = THREE.MathUtils.euclideanModulo(targetHeading - playerHeading + Math.PI, Math.PI * 2) - Math.PI;
-      playerHeading += diff * Math.min(1, dt * 4.5);
-      playerRoot.rotation.y = playerHeading;
+
+    // Terrain is a floor, not an altitude lock: maintain only a minimum clearance from the GLB below.
+    const below = nearestSurface(playerRoot.position.clone().add(new THREE.Vector3(0,0.25,0)), WORLD_UP, 18);
+    if (below && below.normal.dot(WORLD_UP) > 0.25) {
+      const minY = below.hit.point.y + 1.05;
+      if (playerRoot.position.y < minY) playerRoot.position.y += (minY - playerRoot.position.y) * Math.min(1, dt * 12);
+    }
+
+    if (mag3d > 0.05 && desired.lengthSq() > 0.001) {
+      const flat = desired.clone(); flat.y = 0;
+      if (flat.lengthSq() > 0.001) {
+        const targetHeading = Math.atan2(flat.x, flat.z) + Math.PI;
+        const diff = THREE.MathUtils.euclideanModulo(targetHeading - playerHeading + Math.PI, Math.PI * 2) - Math.PI;
+        playerHeading += diff * Math.min(1, dt * 4.5);
+        playerRoot.rotation.y = playerHeading;
+      }
+      const pitchTarget = THREE.MathUtils.clamp(-desired.y * 0.34, -0.32, 0.32);
+      playerRoot.rotation.x += (pitchTarget - playerRoot.rotation.x) * Math.min(1, dt * 5);
+      const bankTarget = THREE.MathUtils.clamp(-input.x * 0.28, -0.28, 0.28);
+      playerRoot.rotation.z += (bankTarget - playerRoot.rotation.z) * Math.min(1, dt * 5);
+    } else {
+      playerRoot.rotation.x += (0 - playerRoot.rotation.x) * Math.min(1, dt * 3);
+      playerRoot.rotation.z += (0 - playerRoot.rotation.z) * Math.min(1, dt * 3);
     }
   }
 
