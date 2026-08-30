@@ -1,0 +1,57 @@
+name: LUBIAK iPhone repair
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.lubiak-ios-trigger'
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Apply ground alignment first
+        run: node scripts/patch-lubiak-ground-gravity.mjs
+      - name: Apply iPhone runtime profile
+        run: node scripts/patch-lubiak-ios.mjs
+      - name: Validate LUBIAK JavaScript
+        run: |
+          node --check web/lubiak/lubiak.js
+          node --check web/lubiak/lubiak-terrain-addon.js
+          grep -q "20260830-ios-v1" web/lubiak/index.html
+          grep -q "IS_IOS" web/lubiak/lubiak.js
+          grep -q "data-src=\"https://www.youtube-nocookie.com" web/lubiak/index.html
+      - name: Request deployment
+        run: |
+          cat > .github/deploy-now.txt <<'EOF'
+          deploy-request: 2026-08-30T02:55:00+01:00
+          source: chat
+          scope: LUBIAK iPhone/iOS
+          reason: mobile performance, touch, safe-area, lazy media, ground alignment
+          EOF
+      - name: Commit and push safely
+        run: |
+          if git diff --quiet -- web/lubiak/lubiak.js web/lubiak/index.html web/lubiak/lubiak-terrain-addon.js .github/deploy-now.txt; then
+            echo 'No LUBIAK iOS changes required.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add web/lubiak/lubiak.js web/lubiak/index.html web/lubiak/lubiak-terrain-addon.js .github/deploy-now.txt
+          git commit -m 'Optimize LUBIAK for iPhone Safari'
+          for attempt in 1 2 3; do
+            git fetch origin main
+            git rebase origin/main && git push origin HEAD:main && exit 0
+            git rebase --abort || true
+            sleep $((attempt * 2))
+          done
+          exit 1
