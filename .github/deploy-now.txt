@@ -1,5 +1,5 @@
-deploy-request: 2026-08-30T17:15:00+01:00
+deploy-request: 2026-08-30T17:32:00+01:00
 source: chat
-scope: Castle Laboratory v79 analyzer repair
-reason: publish VideoBookPage v79 runtime after escaping JavaScript interpolation in Dart regression contract
-source-commits: e69032995703b79f4577ef5af5fe94b2c9011f67, daeb58e905f654dc14abb85bb588bb6c4b0472b2, 9f65e7b374fbe87dad9ae3f6703c315723a37e99, c0040df2be9e73fed105852c5b1e1ce8c6b2542b
+scope: LUBIAK textured GLB live cache repair
+reason: force fresh per-deployment cache tokens for LUBIAK_master_optimized.glb and lubiak.js so newly baked PBR textures cannot be masked by the stale 20260829-djinn-player-v1 URL
+source-commit: ee8ce185227e1a3fcb8885ba1a7ae90208462080
