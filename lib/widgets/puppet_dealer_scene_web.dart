@@ -13,10 +13,10 @@ import 'puppet_dealer_controller.dart';
 external void _createDealer(String id, String quality);
 
 @JS('puppetDealerDeal')
-external void _dealCard(String id, String versoUrl, String rectoUrl);
+external bool _dealCard(String id, String versoUrl, String rectoUrl);
 
 @JS('puppetDealerReceive')
-external void _receiveCard(String id, String imageUrl);
+external bool _receiveCard(String id, String imageUrl);
 
 @JS('puppetDealerSetQuality')
 external void _setDealerQuality(String id, String quality);
@@ -90,13 +90,19 @@ class _PuppetDealerSceneState extends State<PuppetDealerScene> {
   }
 
   Future<void> _animateDeal(String versoPath, String rectoPath) async {
-    _dealCard(_elementId, _assetUrl(versoPath), _assetUrl(rectoPath));
-    await Future<void>.delayed(const Duration(milliseconds: 3300));
+    if (!_dealCard(_elementId, _assetUrl(versoPath), _assetUrl(rectoPath))) {
+      return;
+    }
+    // Keep the table locked until the 4.2-second Three.js deal completes.
+    await Future<void>.delayed(const Duration(milliseconds: 4300));
   }
 
   Future<void> _animateReceive(String imagePath) async {
-    _receiveCard(_elementId, _assetUrl(imagePath));
-    await Future<void>.delayed(const Duration(milliseconds: 1850));
+    if (!_receiveCard(_elementId, _assetUrl(imagePath))) {
+      return;
+    }
+    // Keep the table locked until the 2.6-second Three.js receive completes.
+    await Future<void>.delayed(const Duration(milliseconds: 2700));
   }
 
   @override
