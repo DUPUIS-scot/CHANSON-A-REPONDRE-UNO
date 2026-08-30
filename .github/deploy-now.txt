@@ -1,5 +1,5 @@
-deploy-request: 2026-08-30T11:16:00+01:00
+deploy-request: 2026-08-30T11:19:00+01:00
 source: chat
 scope: Webapp full live deploy
-reason: publish Browse Cards repair after clearing second Flutter analyzer blocker
-source-commits: 69c42137b25bc66278b5cb9d2a6743e649c8505b, 333763fba0ec0b4da7bf7b3a36047d97e36a0e82, 8693d165756763b4e24a258f6fb94c70c5b14fd5, 97b44656c5b745b7ccf10060d79b9d4f97991f2f, 45b7f160fff44c1f531489f9cfada44e5deaeff2, c45cb9f68c50670b6fbfd85a21e02d0a2fb38709
+reason: publish Browse Cards repair after analyzer and Castle regression contract fixes
+source-commits: 69c42137b25bc66278b5cb9d2a6743e649c8505b, 333763fba0ec0b4da7bf7b3a36047d97e36a0e82, 8693d165756763b4e24a258f6fb94c70c5b14fd5, 97b44656c5b745b7ccf10060d79b9d4f97991f2f, 45b7f160fff44c1f531489f9cfada44e5deaeff2, c45cb9f68c50670b6fbfd85a21e02d0a2fb38709, e7107d5ab7db33597416b7363e437e6baa36634e
