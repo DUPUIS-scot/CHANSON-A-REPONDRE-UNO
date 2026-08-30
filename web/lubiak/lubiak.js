@@ -94,6 +94,74 @@ streetFillB.position.set(18, 8, -28);
 const dragonLight = new THREE.PointLight(0xff5a24, 92, 95, 1.4);
 scene.add(ambient, hemi, moon, moonFill, circus, streetFillA, streetFillB, dragonLight);
 
+// LUBIAK_WORLD_CONTRACT_V2
+function enforceLubiakWorldContract(){
+  // WALK means feet on the authored terrain and a vertical body. Flight is only entered by the existing player triple-click mount transition.
+  if(playerRoot && playerMode==='walk'){
+    playerRoot.rotation.x=0;
+    playerRoot.rotation.z=0;
+    if(typeof groundSurfaceBelow==='function'){
+      const ground=groundSurfaceBelow(playerRoot.position,12);
+      if(ground?.hit?.point){
+        const y=ground.hit.point.y+0.055;
+        playerRoot.position.y=y;
+        playerBaseY=y;
+      }
+    }
+  }
+}
+
+let worldContractScanned=false;
+function repairLubiakStaticWorld(){
+  if(worldContractScanned || !exteriorRoot) return;
+  exteriorRoot.updateMatrixWorld(true);
+  const worldBox=new THREE.Box3().setFromObject(exteriorRoot);
+  const worldSize=worldBox.getSize(new THREE.Vector3());
+  const coal=new THREE.MeshStandardMaterial({name:'LUBIAK_TERRAIN_COAL_V2',color:0x070302,emissive:0xd92705,emissiveIntensity:1.85,roughness:0.96,metalness:0,side:THREE.DoubleSide});
+  const reject=/wall|roof|building|facade|door|window|dragon|djinn|broom|seat|chair|stage/i;
+  const groundName=/ground|terrain|road|street|floor|plaza|square|pavement|asphalt|concrete/i;
+  const circusName=/circus|big[ _-]?top|bigtop|tent|marquee/i;
+  const circusRoots=[];
+  exteriorRoot.traverse(o=>{
+    if(o===exteriorRoot) return;
+    if(circusName.test(o.name||'')) circusRoots.push(o);
+    if(!o.isMesh || reject.test(o.name||'')) return;
+    const b=new THREE.Box3().setFromObject(o); if(b.isEmpty()) return;
+    const s=b.getSize(new THREE.Vector3());
+    const broad=(s.x*s.z>Math.max(30,worldSize.x*worldSize.z*0.018)) || s.x>worldSize.x*0.38 || s.z>worldSize.z*0.38;
+    const flat=s.y<Math.max(1.5,worldSize.y*0.045);
+    const low=b.min.y<=worldBox.min.y+Math.max(5,worldSize.y*0.14);
+    if(broad && flat && low){
+      const mats=Array.isArray(o.material)?o.material:[o.material];
+      const pale=mats.some(m=>m?.color && Math.max(m.color.r,m.color.g,m.color.b)>0.48);
+      if(groundName.test(o.name||'') || pale || o.userData?.lubiakEmberGround){
+        o.material=Array.isArray(o.material)?o.material.map(()=>coal):coal;
+        o.userData.lubiakEmberGround=true;
+      }
+    }
+  });
+  // Seat the outermost circus assembly on the same Y=0 terrain datum; never float or bury it.
+  const roots=circusRoots.filter(o=>!circusRoots.some(p=>p!==o && o.parent && (p===o.parent || p.getObjectById?.(o.parent.id))));
+  roots.forEach(o=>{
+    const b=new THREE.Box3().setFromObject(o);
+    if(!b.isEmpty()) o.position.y += (0-b.min.y);
+  });
+  exteriorRoot.updateMatrixWorld(true);
+  worldContractScanned=true;
+}
+
+// In aerial mode the dragon remains a triple-click Megapole gateway. Walk mode keeps the existing authored handler.
+const aerialDragonClicks=[];
+renderer.domElement.addEventListener('pointerup',(event)=>{
+  if(playerMode==='walk' || !dragonRoot || worldMode!=='exterior') return;
+  const rect=renderer.domElement.getBoundingClientRect();
+  const ndc=new THREE.Vector2(((event.clientX-rect.left)/rect.width)*2-1,-((event.clientY-rect.top)/rect.height)*2+1);
+  const ray=new THREE.Raycaster(); ray.setFromCamera(ndc,camera);
+  if(!ray.intersectObject(dragonRoot,true).length) return;
+  const now=performance.now(); aerialDragonClicks.push(now); while(aerialDragonClicks.length && now-aerialDragonClicks[0]>900) aerialDragonClicks.shift();
+  if(aerialDragonClicks.length>=3){ aerialDragonClicks.length=0; window.location.assign('/megapole/'); }
+},true);
+
 function setStatus(label, pct) {
   status.textContent = label;
   if (Number.isFinite(pct)) bar.style.width = `${THREE.MathUtils.clamp(pct, 0, 100)}%`;
@@ -1724,6 +1792,8 @@ function animate() {
     updateFallbackCamera(dt);
   }
   updateCircusTransition();
+  enforceLubiakWorldContract();
+  repairLubiakStaticWorld();
   renderer.render(scene, camera);
 }
 animate();
