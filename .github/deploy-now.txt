@@ -1,4 +1,4 @@
-deploy-request: 2026-08-30T06:15:00+01:00
+deploy-request: 2026-08-30T05:41:00+01:00
 source: chat
-scope: LUBIAK valley black-surface presentation
-reason: remove full viewport valley filter/background and render valley image only on authored black backdrop mesh
+scope: MEGAPOLE persistent dragon-body cave background
+reason: make WebGL renderer transparent and remove opaque Three.js scene background so the cave image does not fade after 3D startup
