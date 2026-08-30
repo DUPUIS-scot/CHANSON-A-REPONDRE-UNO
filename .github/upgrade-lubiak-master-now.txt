@@ -1,7 +1,6 @@
-upgrade-request: 2026-08-30T02:55:00Z
+upgrade-request: 2026-08-30T03:33:00+01:00
 source: chat
 target: assets/models/LUBIAK_master_optimized.glb
 texture-set: palace+circus-exterior+circus-interior
-status: bake-and-deploy
-local-verified-master-sha256: 262f48cb39684ebf80066fb468d8c25b2411ddc000c0e47462d89031406dc582
-ground-alignment: y-min=0.02
+status: rebuild-then-auto-publish
+reason: textures not visible live; force PBR rebuild and cache-busted Pages deployment
