@@ -409,7 +409,7 @@ function frameLoadedEnvironment(root) {
   const maxDim = Math.max(size.x, size.y, size.z);
   if (!Number.isFinite(maxDim) || maxDim <= 0) return false;
 
-  root.position.sub(center);
+  root.position.set(-center.x, -box.min.y, -center.z);
   root.updateMatrixWorld(true);
 
   root.traverse((object) => {
@@ -428,6 +428,33 @@ function frameLoadedEnvironment(root) {
   });
 
   environmentSize = size.clone();
+
+  // LUBIAK_CIRCUS_GROUND_ZERO_V1
+  // The authored big-top sits below the plaza in the master GLB. Move only the
+  // outermost circus-labelled subtree upward; never move the terrain or whole city.
+  const circusTerms = /circus|big[ _-]?top|bigtop|tent|marquee|foetus|fetus/i;
+  const circusRoots = [];
+  root.traverse((object) => {
+    if (object === root || !circusTerms.test(object.name || '')) return;
+    let parent = object.parent;
+    while (parent && parent !== root) {
+      if (circusTerms.test(parent.name || '')) return;
+      parent = parent.parent;
+    }
+    circusRoots.push(object);
+  });
+  if (circusRoots.length) {
+    const circusBox = new THREE.Box3();
+    for (const object of circusRoots) circusBox.expandByObject(object);
+    const plazaY = 0;
+    if (!circusBox.isEmpty() && circusBox.min.y < plazaY - 0.05) {
+      const lift = plazaY - circusBox.min.y + 0.04;
+      for (const object of circusRoots) object.position.y += lift;
+      root.updateMatrixWorld(true);
+      console.info('LUBIAK circus lifted to plaza ground zero', { lift, roots: circusRoots.map(o => o.name) });
+    }
+  }
+
   const eyeHeight = Math.max(1.7, Math.min(size.y * 0.12, 5));
   const distance = Math.max(maxDim * 0.72, size.z * 0.72, 18);
   camera.position.set(0, eyeHeight, distance);
@@ -647,7 +674,7 @@ function preparePlayer(root) {
   playerRoot.add(root);
   const env = environmentSize || new THREE.Vector3(76, 30, 130);
   playerRoot.position.set(0, 0, Math.min(env.z * 0.34, 42));
-  playerBaseY = playerRoot.position.y;
+  playerBaseY = 0;
   playerHeading = Math.PI;
   playerRoot.rotation.y = playerHeading;
   scene.add(playerRoot);
@@ -1035,12 +1062,11 @@ function groundMoveVector(input){
   return desired;
 }
 
-function applyGroundGravity(dt, clearance=0.055){
+function applyGroundGravity(dt, clearance=0.0){
   if(!playerRoot || playerMode!=='walk') return;
-  const ground=groundSurfaceBelow(playerRoot.position,10);
-  if(!ground) return;
-  const targetY=ground.hit.point.y+clearance;
-  playerRoot.position.y += (targetY-playerRoot.position.y)*(1-Math.exp(-dt*20));
+  const targetY=0;
+  playerRoot.position.y += (targetY-playerRoot.position.y)*(1-Math.exp(-dt*28));
+  if (Math.abs(playerRoot.position.y-targetY) < 0.001) playerRoot.position.y=targetY;
   playerBaseY=targetY;
 
   // Keep the djinn upright in world gravity. Only yaw follows travel direction.

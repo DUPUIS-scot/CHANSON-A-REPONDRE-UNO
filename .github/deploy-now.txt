@@ -1,4 +1,4 @@
-deploy-request: 2026-08-30T02:38:00+01:00
+deploy-request: 2026-08-30T03:00:00+01:00
 source: chat
-scope: LUBIAK + SILMARI'LLION MEGAPOLE
-reason: deploy modular red-orange ember terrain and 40x28 cyan SIGNAL terrain addons
+scope: LUBIAK circus + djinn ground zero
+reason: raise buried circus independently; lock walking djinn feet to world Y=0
