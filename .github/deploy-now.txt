@@ -1,4 +1,4 @@
-deploy-request: 2026-08-30
+deploy-request: 2026-08-30T05:39+01:00
 source: chat
-scope: MEGAPOLE dragon body cave background
-reason: render the Megapole 3D environment over the uploaded interior dragon rib-cavern image
+scope: LUBIAK exterior environment
+reason: restore visible Kathmandu Valley night background, preserve circus ground placement, expose terrain and authored materials over the environment backdrop
