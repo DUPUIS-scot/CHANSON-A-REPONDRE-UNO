@@ -1,4 +1,4 @@
-deploy-request: 2026-08-30T07:35:00+01:00
+deploy-request: 2026-08-30T07:38:00+01:00
 source: chat
-scope: LUBIAK charcoal PBR terrain
-reason: apply charcoal albedo normal height roughness AO and controlled ember emission to existing authored grey terrain mesh without replacement ground plane
+scope: MEGAPOLE Draco decoder V14
+reason: replacement SILMARI_LLION_MEGAPOLE_LUBIAK.glb uses KHR_draco_mesh_compression; attach DRACOLoader while retaining Meshopt, normalize/frame model, cache-bust viewer
