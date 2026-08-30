@@ -20,17 +20,20 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Generate signal mesh ember ground GLB
+      - name: Generate signal mesh cyan ground GLB
         run: node scripts/generate-megapole-signal-ground.mjs
       - name: Commit generated GLB
         run: |
-          if git diff --quiet -- assets/models/SILMARI_LLION_MEGAPOLE_signal_ground.glb; then
+          set -euo pipefail
+          target='assets/models/SILMARI_LLION_MEGAPOLE_signal_ground.glb'
+          test -s "$target"
+          if [ -z "$(git status --porcelain -- "$target")" ]; then
             echo 'No generated change.'
             exit 0
           fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add assets/models/SILMARI_LLION_MEGAPOLE_signal_ground.glb
-          git commit -m 'Generate Megapole inverted signal ember terrain'
+          git add "$target"
+          git commit -m 'Generate Megapole 40x28 cyan SIGNAL terrain'
           git pull --rebase origin main
           git push origin HEAD:main
