@@ -1,4 +1,2 @@
-deploy-request: 2026-08-30T04:40:00+01:00
-source: chat
-scope: LUBIAK djinn + DA NOBLE Y2K broom
-reason: hand-authoritative walk grip and isolated mount/flight pose ownership
+deploy-request: 2026-08-30
+scope: LUBIAK broom rider seat alignment

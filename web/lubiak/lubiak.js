@@ -594,6 +594,7 @@ function cachePlayerBones() {
 
 let broomShoulderSocket = null;
 let broomRideStart = null;
+let broomRideCenterOffset = new THREE.Vector3();
 
 function attachBroomToShoulder() {
   if (!playerVisual || !broomRoot) return;
@@ -652,6 +653,14 @@ function prepareBroomForRide() {
   // the ride state owns the broom; the walk hand socket no longer influences it.
   broomRoot.updateMatrixWorld(true);
   playerRoot.attach(broomRoot);
+  // Measure the rendered broom centre in player-local space after reparenting.
+  // GLB origins are not guaranteed to sit on the shaft, so riding must align
+  // visible geometry rather than the asset pivot.
+  broomRoot.updateMatrixWorld(true);
+  const rideBox = new THREE.Box3().setFromObject(broomRoot);
+  const rideCenterWorld = rideBox.getCenter(new THREE.Vector3());
+  const rideCenterLocal = playerRoot.worldToLocal(rideCenterWorld.clone());
+  broomRideCenterOffset.copy(rideCenterLocal).sub(broomRoot.position);
   broomRideStart = {
     position: broomRoot.position.clone(),
     quaternion: broomRoot.quaternion.clone(),
@@ -702,7 +711,9 @@ function applyRidePose(t) {
 
   if (broomRoot && broomRideStart) {
     // Final riding geometry: shaft centered under the pelvis, running between both legs.
-    const targetPos = new THREE.Vector3(0, 0.58, 0.02);
+    // Seat the visible broom shaft directly beneath the djinn pelvis.
+    // Compensate for the GLB's off-centre pivot so the rider cannot float above it.
+    const targetPos = new THREE.Vector3(0, 0.72, 0.02).sub(broomRideCenterOffset);
     const targetQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0.0, 0, 0.0));
     broomRoot.position.lerpVectors(broomRideStart.position, targetPos, s);
     broomRoot.quaternion.slerpQuaternions(broomRideStart.quaternion, targetQuat, s);
