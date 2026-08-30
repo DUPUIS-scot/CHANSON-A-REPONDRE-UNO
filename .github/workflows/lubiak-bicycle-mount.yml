@@ -1,0 +1,45 @@
+name: LUBIAK bicycle broom mount
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.lubiak-bicycle-mount-trigger'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Apply bicycle-style broom mount
+        run: node scripts/patch-lubiak-bicycle-mount.mjs
+      - name: Validate mount runtime
+        run: |
+          node --check web/lubiak/lubiak.js
+          grep -q 'const swingOver = Math.sin(Math.PI \* s)' web/lubiak/lubiak.js
+          grep -q 'const targetPos = new THREE.Vector3(0, 0.58, 0.02)' web/lubiak/lubiak.js
+      - name: Request deployment
+        run: |
+          cat > .github/deploy-now.txt <<'EOF'
+          deploy-request: 2026-08-30T03:27:00+01:00
+          source: chat
+          scope: LUBIAK djinn broom mount
+          reason: bicycle-style mount with broom centered between legs before flight
+          EOF
+      - name: Commit and push
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add web/lubiak/lubiak.js .github/deploy-now.txt
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Animate bicycle-style djinn broom mount'
+          git pull --rebase origin main
+          git push origin HEAD:main
