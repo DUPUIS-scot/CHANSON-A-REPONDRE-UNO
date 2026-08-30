@@ -2,3 +2,4 @@ deploy-request: 2026-08-30T10:58:00+01:00
 source: chat
 scope: PLAY dealer animation repair
 reason: publish synchronized jester animation locks and busy-state bridge result handling
+Deploy Search Castle repair 97df97e85190
