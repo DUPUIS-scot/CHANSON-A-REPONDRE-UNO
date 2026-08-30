@@ -1,6 +1,6 @@
-upgrade-request: 2026-08-30T00:53:00+01:00
+upgrade-request: 2026-08-30T00:30:00Z
 source: chat
 target: assets/models/LUBIAK_master_optimized.glb
-texture-set: palace-place-pbr-v2
-status: repair-trigger
-workflow-repair: b87633f92a55746f12071f614dba7e44eda64622
+texture-set: palace+circus-exterior+circus-interior
+status: repaired-workflow-trigger
+workflow-repair: e79fddd3bb689fd36b2765e2dfd686bfe76dd4f4
