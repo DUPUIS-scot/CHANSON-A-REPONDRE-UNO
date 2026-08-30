@@ -1,0 +1,46 @@
+name: LUBIAK entrance clearance
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.lubiak-entrance-clearance-trigger'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Place djinn at open LUBIAK entrance
+        run: node scripts/patch-lubiak-entrance-clearance.mjs
+      - name: Validate runtime
+        run: |
+          node --check web/lubiak/lubiak.js
+          grep -q 'LUBIAK_ENTRANCE_CLEARANCE_V1' web/lubiak/lubiak.js
+          grep -q 'findSafeEntranceSpawn' web/lubiak/lubiak.js
+          grep -q 'entranceAnchor' web/lubiak/lubiak.js
+      - name: Request deployment
+        run: |
+          cat > .github/deploy-now.txt <<'EOF'
+          deploy-request: 2026-08-30
+          source: chat
+          scope: LUBIAK entrance djinn+broom clearance
+          reason: spawn at LUBIAK GLB entrance in open walkable space and keep player away from close mesh borders
+          EOF
+      - name: Commit and push
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add web/lubiak/lubiak.js .github/deploy-now.txt
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Place djinn and broom safely at LUBIAK entrance'
+          git pull --rebase origin main
+          git push origin HEAD:main
