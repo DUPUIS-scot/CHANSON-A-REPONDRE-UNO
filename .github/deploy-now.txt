@@ -1,4 +1,4 @@
 deploy-request: 2026-08-30
 source: chat
-scope: LUBIAK entrance djinn+broom clearance
-reason: spawn at LUBIAK GLB entrance in open walkable space and keep player away from close mesh borders
+scope: HOME→LUBIAK and LUBIAK→MEGAPOLE cinematic transition videos
+reason: play uploaded transition MP4s fullscreen before revealing each 3D destination
