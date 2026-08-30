@@ -652,20 +652,22 @@ function applyRidePose(t) {
   const b = playerBoneCache;
   if (!b) return;
   const s = THREE.MathUtils.smoothstep(t, 0, 1);
+  const swingOver = Math.sin(Math.PI * s); // one-leg bicycle-style swing during mount
   if (b.chest) {
     b.chest.rotation.x = THREE.MathUtils.lerp(0, -0.22, s);
     b.chest.rotation.z = THREE.MathUtils.lerp(-0.03, 0, s);
   }
   if (b.leftLeg) {
-    b.leftLeg.rotation.x = THREE.MathUtils.lerp(0, -0.92, s);
-    b.leftLeg.rotation.z = THREE.MathUtils.lerp(0, -0.34, s);
+    b.leftLeg.rotation.x = THREE.MathUtils.lerp(0, -0.78, s);
+    b.leftLeg.rotation.z = THREE.MathUtils.lerp(0, -0.26, s);
   }
   if (b.rightLeg) {
-    b.rightLeg.rotation.x = THREE.MathUtils.lerp(0, -0.92, s);
-    b.rightLeg.rotation.z = THREE.MathUtils.lerp(0, 0.34, s);
+    // Swing the right leg up and over the broom, then settle astride it.
+    b.rightLeg.rotation.x = THREE.MathUtils.lerp(0, -0.78, s) - swingOver * 0.42;
+    b.rightLeg.rotation.z = THREE.MathUtils.lerp(0, 0.26, s) + swingOver * 0.62;
   }
-  if (b.leftLowerLeg) b.leftLowerLeg.rotation.x = THREE.MathUtils.lerp(0, 1.18, s);
-  if (b.rightLowerLeg) b.rightLowerLeg.rotation.x = THREE.MathUtils.lerp(0, 1.18, s);
+  if (b.leftLowerLeg) b.leftLowerLeg.rotation.x = THREE.MathUtils.lerp(0, 1.02, s);
+  if (b.rightLowerLeg) b.rightLowerLeg.rotation.x = THREE.MathUtils.lerp(0, 1.02, s) + swingOver * 0.22;
   if (b.leftArm) {
     b.leftArm.rotation.x = THREE.MathUtils.lerp(0, -0.72, s);
     b.leftArm.rotation.z = THREE.MathUtils.lerp(0, -0.34, s);
@@ -678,8 +680,9 @@ function applyRidePose(t) {
   if (b.rightForeArm) b.rightForeArm.rotation.x = THREE.MathUtils.lerp(-0.28, -0.84, s);
 
   if (broomRoot && broomRideStart) {
-    const targetPos = new THREE.Vector3(0, 0.88, 0.12);
-    const targetQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0.02, 0, 0.03));
+    // Final riding geometry: shaft centered under the pelvis, running between both legs.
+    const targetPos = new THREE.Vector3(0, 0.58, 0.02);
+    const targetQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0.0, 0, 0.0));
     broomRoot.position.lerpVectors(broomRideStart.position, targetPos, s);
     broomRoot.quaternion.slerpQuaternions(broomRideStart.quaternion, targetQuat, s);
   }
@@ -1175,14 +1178,14 @@ function updatePlayer(dt) {
   } else if (playerMode === 'mounting') {
     mountTransition += dt;
     playerVelocity.multiplyScalar(Math.max(0, 1 - dt * 9));
-    const t = THREE.MathUtils.smoothstep(mountTransition, 0.15, 1.45);
+    const t = THREE.MathUtils.smoothstep(mountTransition, 0.10, 1.55);
     applyRidePose(t);
     const mountTarget = playerRoot.position.clone();
     mountTarget.y = playerBaseY + t * 2.6;
     const mountSolved = resolvePlayerCollision(playerRoot.position, mountTarget, true);
     playerRoot.position.y = mountSolved.y;
     playerRoot.rotation.x = -0.08 * t;
-    if (mountTransition > 1.65) {
+    if (mountTransition > 1.78) {
       playerMode = 'flight';
       applyRidePose(1);
       showStatus('FLIGHT MODE · RIDING DA NOBLE Y2K', 900);

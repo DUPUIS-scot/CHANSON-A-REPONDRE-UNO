@@ -1,4 +1,4 @@
-deploy-request: 2026-08-30T03:24:00+01:00
+deploy-request: 2026-08-30T03:27:00+01:00
 source: chat
-scope: LUBIAK djinn animation + broom carry
-reason: animate walking gait; one hand grips broom at side while opposite end rests over shoulder
+scope: LUBIAK djinn broom mount
+reason: bicycle-style mount with broom centered between legs before flight
