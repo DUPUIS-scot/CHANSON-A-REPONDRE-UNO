@@ -1,7 +1,8 @@
-name: LUBIAK two poses patch
+name: LUBIAK djinn hand-held broom walk
 
 on:
   push:
+    branches: [main]
     paths:
       - '.lubiak-two-poses-trigger'
 
@@ -18,17 +19,32 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Apply canonical walk and ride poses
-        run: node scripts/patch-lubiak-two-poses.mjs
+      - name: Apply animated hand-held broom walk
+        run: node scripts/patch-lubiak-hand-broom-walk-v2.mjs
+      - name: Validate runtime
+        run: |
+          node --check web/lubiak/lubiak.js
+          grep -q 'LUBIAK_HAND_HELD_BROOM_WALK_V2' web/lubiak/lubiak.js
+          grep -q 'applyWalkCarryPose(1, swing' web/lubiak/lubiak.js
+      - name: Request deployment
+        run: |
+          cat > .github/deploy-now.txt <<'EOF'
+          deploy-request: 2026-08-30T03:24:00+01:00
+          source: chat
+          scope: LUBIAK djinn animation + broom carry
+          reason: animate walking gait; one hand grips broom at side while opposite end rests over shoulder
+          EOF
       - name: Commit pose implementation
         run: |
-          if git diff --quiet -- web/lubiak/lubiak.js; then
-            echo 'No pose patch required.'
-            exit 0
-          fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add web/lubiak/lubiak.js
-          git commit -m 'Implement canonical djinn walk and broom ride poses'
-          git pull --rebase origin main
-          git push origin HEAD:main
+          git add web/lubiak/lubiak.js .github/deploy-now.txt
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Animate LUBIAK djinn hand-held broom walk'
+          for attempt in 1 2 3; do
+            git fetch origin main
+            git rebase origin/main && git push origin HEAD:main && exit 0
+            git rebase --abort || true
+            sleep $((attempt * 2))
+          done
+          exit 1
