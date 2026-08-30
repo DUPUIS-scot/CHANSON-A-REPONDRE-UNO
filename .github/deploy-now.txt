@@ -1,4 +1,4 @@
-deploy-request: 2026-08-30T07:18:00+01:00
+deploy-request: 2026-08-30T07:35:00+01:00
 source: chat
-scope: MEGAPOLE GLB visibility V13
-reason: normalize extreme GLB bounds, use scale-aware fog, force mesh visibility and deterministic camera framing while preserving dragon cave background
+scope: LUBIAK charcoal PBR terrain
+reason: apply charcoal albedo normal height roughness AO and controlled ember emission to existing authored grey terrain mesh without replacement ground plane
