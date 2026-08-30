@@ -1,0 +1,8 @@
+optimize-request: 2026-08-30T19:01:00+01:00
+scope: textured GLB comparison
+inputs:
+  - assets/models/textured-glb-comparison/MEGAPOLE_PBR_TERRAIN_UPGRADED.glb
+  - assets/models/textured-glb-comparison/LUBIAK_master_optimized_4_ELEMENT_PBR.glb
+outputs:
+  - assets/models/textured-glb-comparison/MEGAPOLE_PBR_TERRAIN_UPGRADED_WEB_OPTIMIZED.glb
+  - assets/models/textured-glb-comparison/LUBIAK_master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED.glb
