@@ -1,6 +1,7 @@
-upgrade-request: 2026-08-30T00:30:00Z
+upgrade-request: 2026-08-30T02:55:00Z
 source: chat
 target: assets/models/LUBIAK_master_optimized.glb
 texture-set: palace+circus-exterior+circus-interior
-status: repaired-workflow-trigger
-workflow-repair: e79fddd3bb689fd36b2765e2dfd686bfe76dd4f4
+status: bake-and-deploy
+local-verified-master-sha256: 262f48cb39684ebf80066fb468d8c25b2411ddc000c0e47462d89031406dc582
+ground-alignment: y-min=0.02
