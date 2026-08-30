@@ -23,10 +23,9 @@ jobs:
           python-version: '3.12'
       - name: Install image decoders
         run: python -m pip install --disable-pip-version-check pillow pillow-heif pillow-avif-plugin
-      - name: Normalize and validate Palace Place PBR maps
+      - name: Normalize and validate all LUBIAK PBR maps
         run: |
           set -euo pipefail
-          mkdir -p .tmp/lubiak_pbr
           python - <<'PY'
           from pathlib import Path
           from io import BytesIO
@@ -43,16 +42,32 @@ jobs:
           except Exception:
               pass
 
-          refs = {
-              'albedo': Path('assets/models/lubiak_pbr_refs/palace_albedo.jpg'),
-              'normal': Path('assets/models/lubiak_pbr_refs/palace_normal.jpg'),
-              'rough': Path('assets/models/lubiak_pbr_refs/palace_dark.jpg'),
-              'height': Path('assets/models/lubiak_pbr_refs/palace_clay.jpg'),
+          groups = {
+              'palace': {
+                  'albedo': 'palace_albedo.jpg',
+                  'normal': 'palace_normal.jpg',
+                  'rough': 'palace_dark.jpg',
+                  'height': 'palace_clay.jpg',
+              },
+              'circus_exterior': {
+                  'albedo': 'circus_exterior_albedo.jpg',
+                  'normal': 'circus_exterior_normal.jpg',
+                  'rough': 'circus_exterior_rough.jpg',
+                  'height': 'circus_exterior_height.jpg',
+              },
+              'circus_interior': {
+                  'albedo': 'circus_interior_albedo.jpg',
+                  'normal': 'circus_interior_normal.jpg',
+                  'rough': 'circus_interior_rough.jpg',
+                  'height': 'circus_interior_height.jpg',
+              },
           }
+          source_root = Path('assets/models/lubiak_pbr_refs')
+          out_root = Path('.tmp/lubiak_pbr')
+          out_root.mkdir(parents=True, exist_ok=True)
 
           def candidates(raw):
               yield raw, 'raw'
-              # Recover files that were accidentally stored with a short binary/text wrapper.
               signatures = [
                   (b'\xff\xd8\xff', b'\xff\xd9', 'jpeg'),
                   (b'\x89PNG\r\n\x1a\n', None, 'png'),
@@ -67,7 +82,6 @@ jobs:
                               yield raw[i:j+len(end)], f'embedded-{label}'
                       else:
                           yield raw[i:], f'embedded-{label}'
-              # Recover base64/data-URI payloads if a reference was committed as encoded text.
               try:
                   text = raw.decode('ascii').strip()
                   if 'base64,' in text:
@@ -78,42 +92,109 @@ jobs:
               except Exception:
                   pass
 
-          for role, src in refs.items():
-              raw = src.read_bytes()
-              print(f'{src}: {len(raw)} bytes; head={raw[:32].hex()}')
-              img = None
-              source_kind = None
-              last_error = None
-              for payload, kind in candidates(raw):
-                  try:
-                      probe = Image.open(BytesIO(payload))
-                      probe.load()
-                      img = probe
-                      source_kind = kind
-                      break
-                  except Exception as exc:
-                      last_error = exc
-              if img is None:
-                  raise RuntimeError(f'Cannot decode {src}; head={raw[:32].hex()}; last={last_error!r}')
-              out = Path('.tmp/lubiak_pbr') / f'{role}.jpg'
-              mode = 'RGB' if role in ('albedo', 'normal') else 'L'
-              img.convert(mode).save(out, 'JPEG', quality=95, optimize=True)
-              with Image.open(out) as check:
-                  check.verify()
-              print(f'{role}: {source_kind} -> {out} OK')
+          available = []
+          for group, refs in groups.items():
+              paths = {role: source_root / name for role, name in refs.items()}
+              present = [p.exists() for p in paths.values()]
+              if not any(present):
+                  print(f'{group}: source set absent; skipping')
+                  continue
+              if not all(present):
+                  missing = [str(p) for p in paths.values() if not p.exists()]
+                  raise RuntimeError(f'{group}: incomplete source set: {missing}')
+
+              group_out = out_root / group
+              group_out.mkdir(parents=True, exist_ok=True)
+              for role, src in paths.items():
+                  raw = src.read_bytes()
+                  img = None
+                  source_kind = None
+                  last_error = None
+                  for payload, kind in candidates(raw):
+                      try:
+                          probe = Image.open(BytesIO(payload))
+                          probe.load()
+                          img = probe
+                          source_kind = kind
+                          break
+                      except Exception as exc:
+                          last_error = exc
+                  if img is None:
+                      raise RuntimeError(f'Cannot decode {src}; head={raw[:32].hex()}; last={last_error!r}')
+                  out = group_out / f'{role}.jpg'
+                  mode = 'RGB' if role in ('albedo', 'normal') else 'L'
+                  img.convert(mode).save(out, 'JPEG', quality=95, optimize=True)
+                  with Image.open(out) as check:
+                      check.verify()
+                  print(f'{group}/{role}: {source_kind} -> {out} OK')
+              available.append(group)
+
+          if 'palace' not in available:
+              raise RuntimeError('Palace PBR source set is required')
+          Path('.tmp/lubiak_pbr/available.txt').write_text('\n'.join(available) + '\n')
+          print('available groups:', ', '.join(available))
           PY
-      - name: Upgrade Palace Place textures in LUBIAK master GLB
+      - name: Upgrade available region textures in LUBIAK master GLB
         run: |
           set -euo pipefail
-          python scripts/upgrade_lubiak_master_glb.py \
-            --input assets/models/LUBIAK_master_optimized.glb \
-            --output assets/models/LUBIAK_master_optimized.upgraded.glb \
-            --palace-albedo .tmp/lubiak_pbr/albedo.jpg \
-            --palace-normal .tmp/lubiak_pbr/normal.jpg \
-            --palace-rough .tmp/lubiak_pbr/rough.jpg \
-            --palace-height .tmp/lubiak_pbr/height.jpg
+          args=(
+            --input assets/models/LUBIAK_master_optimized.glb
+            --output assets/models/LUBIAK_master_optimized.upgraded.glb
+          )
+          has_group() { grep -qx "$1" .tmp/lubiak_pbr/available.txt; }
+          if has_group palace; then
+            args+=(
+              --palace-albedo .tmp/lubiak_pbr/palace/albedo.jpg
+              --palace-normal .tmp/lubiak_pbr/palace/normal.jpg
+              --palace-rough .tmp/lubiak_pbr/palace/rough.jpg
+              --palace-height .tmp/lubiak_pbr/palace/height.jpg
+            )
+          fi
+          if has_group circus_exterior; then
+            args+=(
+              --circus-exterior-albedo .tmp/lubiak_pbr/circus_exterior/albedo.jpg
+              --circus-exterior-normal .tmp/lubiak_pbr/circus_exterior/normal.jpg
+              --circus-exterior-rough .tmp/lubiak_pbr/circus_exterior/rough.jpg
+              --circus-exterior-height .tmp/lubiak_pbr/circus_exterior/height.jpg
+            )
+          fi
+          if has_group circus_interior; then
+            args+=(
+              --circus-interior-albedo .tmp/lubiak_pbr/circus_interior/albedo.jpg
+              --circus-interior-normal .tmp/lubiak_pbr/circus_interior/normal.jpg
+              --circus-interior-rough .tmp/lubiak_pbr/circus_interior/rough.jpg
+              --circus-interior-height .tmp/lubiak_pbr/circus_interior/height.jpg
+            )
+          fi
+          python scripts/upgrade_lubiak_master_glb.py "${args[@]}"
           test -s assets/models/LUBIAK_master_optimized.upgraded.glb
           mv assets/models/LUBIAK_master_optimized.upgraded.glb assets/models/LUBIAK_master_optimized.glb
+      - name: Validate upgraded GLB structure
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, struct
+          from pathlib import Path
+          p = Path('assets/models/LUBIAK_master_optimized.glb')
+          raw = p.read_bytes()
+          if len(raw) < 20 or raw[:4] != b'glTF':
+              raise RuntimeError('Invalid GLB header')
+          magic, version, total = struct.unpack('<4sII', raw[:12])
+          if version != 2 or total != len(raw):
+              raise RuntimeError(f'Invalid GLB length/version: version={version} total={total} actual={len(raw)}')
+          json_len, json_type = struct.unpack('<I4s', raw[12:20])
+          if json_type != b'JSON':
+              raise RuntimeError('Missing JSON chunk')
+          doc = json.loads(raw[20:20+json_len].rstrip(b' \x00'))
+          names = [i.get('name','') for i in doc.get('images',[])]
+          if not any(n.startswith('LUBIAK_PALACE_') for n in names):
+              raise RuntimeError('Palace PBR images not embedded')
+          available = Path('.tmp/lubiak_pbr/available.txt').read_text().split()
+          for group, prefix in [('circus_exterior','LUBIAK_CIRCUS_EXTERIOR_'), ('circus_interior','LUBIAK_CIRCUS_INTERIOR_')]:
+              if group in available and not any(n.startswith(prefix) for n in names):
+                  raise RuntimeError(f'{group} PBR images not embedded')
+          print('GLB OK:', len(raw), 'bytes,', len(doc.get('materials',[])), 'materials,', len(doc.get('images',[])), 'images')
+          PY
       - name: Commit upgraded master GLB
         run: |
           set -euo pipefail
@@ -124,6 +205,6 @@ jobs:
             echo "No GLB changes"
             exit 0
           fi
-          git commit -m "Upgrade LUBIAK master Palace Place PBR textures"
+          git commit -m "Upgrade LUBIAK master region PBR textures"
           git pull --rebase origin main
           git push origin HEAD:main
