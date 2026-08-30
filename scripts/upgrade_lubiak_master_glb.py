@@ -53,29 +53,38 @@ def append_image(data,binbuf,payload,name):
 
 def classify(name):
     n=name.lower()
-    if any(t in n for t in ('circus','tent','big top','bigtop','marquee','canvas','foetus','fetus','flag','curtain','lubiak')): return 'circus'
+    if any(t in n for t in ('circus interior','interior circus','inside circus','inner tent','inner canvas','ring wall','circus roof','circus floor','circus stage','circus lamp','interior tent')): return 'circus_interior'
+    if any(t in n for t in ('circus','tent','big top','bigtop','marquee','canvas','foetus','fetus','flag','curtain','lubiak')): return 'circus_exterior'
     if any(t in n for t in ('palace','place','temple','tower','guardian','lion','statue','monument','citadel','fountain','bridge','column')): return 'palace'
     return None
 
 def apply_region(m,tx,region):
     pbr=m.setdefault('pbrMetallicRoughness',{})
     pbr['baseColorTexture']={'index':tx['albedo']}; pbr['baseColorFactor']=[1,1,1,1]
-    m['normalTexture']={'index':tx['normal'],'scale':0.62 if region=='circus' else 0.50}
+    if region=='circus_interior':
+        normal_scale=0.72; metallic=0.02; roughness=0.66; emissive=[1.0,0.58,0.20]; strength=1.9
+    elif region=='circus_exterior':
+        normal_scale=0.62; metallic=0.03; roughness=0.72; emissive=[1.0,0.72,0.35]; strength=1.6
+    else:
+        normal_scale=0.50; metallic=0.08; roughness=0.58; emissive=[0.72,0.82,1.0]; strength=1.25
+    m['normalTexture']={'index':tx['normal'],'scale':normal_scale}
     m['occlusionTexture']={'index':tx['orm'],'strength':0.78}
     pbr['metallicRoughnessTexture']={'index':tx['orm']}
-    pbr['metallicFactor']=0.03 if region=='circus' else 0.08
-    pbr['roughnessFactor']=0.72 if region=='circus' else 0.58
+    pbr['metallicFactor']=metallic
+    pbr['roughnessFactor']=roughness
     m['emissiveTexture']={'index':tx['emissive']}
-    m['emissiveFactor']=[1.0,0.72,0.35] if region=='circus' else [0.72,0.82,1.0]
-    m.setdefault('extensions',{})['KHR_materials_emissive_strength']={'emissiveStrength':1.6 if region=='circus' else 1.25}
+    m['emissiveFactor']=emissive
+    m.setdefault('extensions',{})['KHR_materials_emissive_strength']={'emissiveStrength':strength}
 
-def upgrade(data,binbuf,palace_refs=None,circus_refs=None):
+def upgrade(data,binbuf,palace_refs=None,circus_exterior_refs=None,circus_interior_refs=None):
     regions={}
     if palace_refs:
         maps,prefix=prepare_maps(*palace_refs,'PALACE'); regions['palace']={k:append_image(data,binbuf,v,f'LUBIAK_{prefix}_{k.upper()}') for k,v in maps.items()}
-    if circus_refs:
-        maps,prefix=prepare_maps(*circus_refs,'CIRCUS'); regions['circus']={k:append_image(data,binbuf,v,f'LUBIAK_{prefix}_{k.upper()}') for k,v in maps.items()}
-    counts={'palace':0,'circus':0}
+    if circus_exterior_refs:
+        maps,prefix=prepare_maps(*circus_exterior_refs,'CIRCUS_EXTERIOR'); regions['circus_exterior']={k:append_image(data,binbuf,v,f'LUBIAK_{prefix}_{k.upper()}') for k,v in maps.items()}
+    if circus_interior_refs:
+        maps,prefix=prepare_maps(*circus_interior_refs,'CIRCUS_INTERIOR'); regions['circus_interior']={k:append_image(data,binbuf,v,f'LUBIAK_{prefix}_{k.upper()}') for k,v in maps.items()}
+    counts={'palace':0,'circus_exterior':0,'circus_interior':0}
     for m in data.setdefault('materials',[]):
         region=classify(m.get('name') or '')
         if region in regions:
@@ -95,11 +104,12 @@ def write_glb(path,data,binbuf):
 
 def main():
     ap=argparse.ArgumentParser(); ap.add_argument('--input',required=True); ap.add_argument('--output',required=True)
-    for p in ('palace','circus'):
+    for p in ('palace','circus-exterior','circus-interior'):
         ap.add_argument(f'--{p}-albedo'); ap.add_argument(f'--{p}-normal'); ap.add_argument(f'--{p}-rough'); ap.add_argument(f'--{p}-height')
     a=ap.parse_args()
     palace=(a.palace_albedo,a.palace_normal,a.palace_rough,a.palace_height) if all((a.palace_albedo,a.palace_normal,a.palace_rough,a.palace_height)) else None
-    circus=(a.circus_albedo,a.circus_normal,a.circus_rough,a.circus_height) if all((a.circus_albedo,a.circus_normal,a.circus_rough,a.circus_height)) else None
-    data,binbuf=read_glb(a.input); data,binbuf=upgrade(data,binbuf,palace,circus); write_glb(a.output,data,binbuf)
+    circus_exterior=(a.circus_exterior_albedo,a.circus_exterior_normal,a.circus_exterior_rough,a.circus_exterior_height) if all((a.circus_exterior_albedo,a.circus_exterior_normal,a.circus_exterior_rough,a.circus_exterior_height)) else None
+    circus_interior=(a.circus_interior_albedo,a.circus_interior_normal,a.circus_interior_rough,a.circus_interior_height) if all((a.circus_interior_albedo,a.circus_interior_normal,a.circus_interior_rough,a.circus_interior_height)) else None
+    data,binbuf=read_glb(a.input); data,binbuf=upgrade(data,binbuf,palace,circus_exterior,circus_interior); write_glb(a.output,data,binbuf)
     print('upgraded',a.output,'materials',len(data.get('materials',[])),'images',len(data.get('images',[])),'bytes',os.path.getsize(a.output))
 if __name__=='__main__': main()
