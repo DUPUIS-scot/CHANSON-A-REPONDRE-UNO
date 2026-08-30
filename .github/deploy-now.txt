@@ -1,2 +1,2 @@
-deploy-request: 2026-08-30
-scope: LUBIAK broom rider seat alignment
+deploy-request: 2026-08-30T05:25:00+01:00
+scope: LUBIAK djinn + DA NOBLE Y2K reference proportion and walking carry

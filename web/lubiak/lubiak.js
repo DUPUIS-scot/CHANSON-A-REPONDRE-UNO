@@ -607,25 +607,40 @@ function attachBroomToShoulder() {
   // The shoulder is only a visual contact point created by the broom's local angle.
   const gripParent = bones?.rightHand || bones?.rightForeArm || bones?.chest || playerVisual;
   gripParent.add(broomShoulderSocket);
-  broomShoulderSocket.position.set(0.08, -0.03, 0.02);
-  broomShoulderSocket.rotation.set(0.10, -0.22, 0.30);
+  // Primary shoulder carry: engine behind/left of head, shaft across upper back, right-hand grip.
+  broomShoulderSocket.position.set(0.055, 0.015, 0.035);
+  broomShoulderSocket.rotation.set(0.075, -0.18, 0.24);
   broomShoulderSocket.add(broomRoot);
 
   broomRoot.updateMatrixWorld(true);
   const box = new THREE.Box3().setFromObject(broomRoot);
   const size = box.getSize(new THREE.Vector3());
   const longest = Math.max(size.x, size.y, size.z, 0.001);
-  broomRoot.scale.setScalar(2.65 / longest);
+  // LUBIAK_BROOM_REFERENCE_PROPORTION_V2
+  // Reference: DA NOBLE Y2K spans about 1.9x the 1.72-unit djinn height.
+  broomRoot.scale.setScalar(3.34 / longest);
   broomRoot.rotation.set(0.06, Math.PI * 0.5, 0.05);
-  broomRoot.position.set(-0.42, -0.03, -0.01);
+  broomRoot.position.set(-0.54, -0.015, -0.015);
 }
 
 function applyWalkCarryPose(blend = 1, swing = 0) {
   const b = playerBoneCache;
   if (!b) return;
+
+  // LUBIAK_BROOM_WALK_VARIANTS_V2
+  // Keep the hand grip authoritative while the heavy engine subtly settles with the stride.
+  if (broomShoulderSocket) {
+    const gait = Math.abs(swing);
+    const weight = Math.sin(walkPhase * 0.5);
+    broomShoulderSocket.position.y = 0.015 - gait * 0.012 * blend;
+    broomShoulderSocket.rotation.x = 0.075 + swing * 0.035 * blend;
+    broomShoulderSocket.rotation.y = -0.18 + weight * 0.025 * blend;
+    broomShoulderSocket.rotation.z = 0.24 - gait * 0.04 * blend;
+  }
   if (b.chest) {
     b.chest.rotation.x = 0.025 * blend;
-    b.chest.rotation.z = 0.045 * blend;
+    // Counterbalance the oversized engine without disturbing locomotion.
+    b.chest.rotation.z = (0.045 - Math.abs(swing) * 0.018) * blend;
   }
 
   // Right arm is the carrying arm: elbow down, forearm across the hip and
