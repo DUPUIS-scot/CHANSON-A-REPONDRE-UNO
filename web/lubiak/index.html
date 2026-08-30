@@ -16,7 +16,7 @@
     .top{position:absolute;left:18px;top:18px;padding:10px 13px;border:1px solid #c47b3d66;background:#080504cc;backdrop-filter:blur(8px)}
     .title{letter-spacing:.18em;font-weight:800}.sub{margin-top:4px;font-size:11px;opacity:.72}
     #home{pointer-events:auto;position:absolute;right:18px;top:18px;color:#f0d7ad;text-decoration:none;border:1px solid #c47b3d88;background:#080504dd;padding:9px 12px}
-    #bandcamp{pointer-events:auto;position:absolute;left:18px;bottom:18px;width:min(460px,calc(100vw - 36px));height:42px;overflow:hidden;border:1px solid #c47b3d66;background:#080504dd;backdrop-filter:blur(8px);transition:opacity .25s}
+    #bandcamp{pointer-events:auto;position:absolute;z-index:50;left:max(18px,env(safe-area-inset-left));right:auto;bottom:max(18px,env(safe-area-inset-bottom));width:min(430px,calc(100vw - 190px));min-width:220px;height:42px;overflow:hidden;border:1px solid #c47b3d66;background:#080504dd;backdrop-filter:blur(8px);transition:opacity .25s}
     #bandcamp iframe{display:block;border:0;width:100%;height:42px}
     #circus-youtube{position:absolute;left:8vw;top:21vh;width:min(39vw,620px);aspect-ratio:16/9;opacity:0;visibility:hidden;pointer-events:none;transform:perspective(1100px) rotateY(7deg) rotateZ(-.5deg);transform-origin:center;transition:opacity .28s,visibility .28s;filter:drop-shadow(0 10px 30px #000a);border:1px solid #e9c49a66;background:#080504}
     #circus-youtube.is-visible{opacity:1;visibility:visible;pointer-events:auto}
@@ -24,9 +24,9 @@
     #progress{position:absolute;left:50%;bottom:34px;transform:translateX(-50%);width:min(460px,72vw);height:3px;background:#2b1710;transition:opacity .4s}
     #bar{height:100%;width:0;background:#d68a43;transition:width .15s linear}
     #status{position:absolute;left:50%;bottom:46px;transform:translateX(-50%);font-size:11px;letter-spacing:.12em;white-space:nowrap;transition:opacity .4s}
-    #help{position:absolute;right:18px;bottom:18px;font-size:10px;opacity:.55;text-align:right}
+    #help{position:absolute;right:max(20px,env(safe-area-inset-right));bottom:205px;font-size:10px;opacity:.55;text-align:right}
     @media (max-width:900px){#circus-youtube{left:7vw;top:24vh;width:52vw}}
-    @media (max-width:720px){#bandcamp{right:18px;width:auto}#help{bottom:70px}#circus-youtube{left:8vw;top:28vh;width:62vw}}
+    @media (max-width:720px){#bandcamp{left:max(12px,env(safe-area-inset-left));right:auto;bottom:max(12px,env(safe-area-inset-bottom));width:min(54vw,330px);min-width:180px}#help{right:max(14px,env(safe-area-inset-right));bottom:182px}#circus-youtube{left:8vw;top:28vh;width:62vw}}
   </style>
   <script type="importmap">{"imports":{"three":"../vendor/three.module.js"}}</script>
 </head>
@@ -40,6 +40,6 @@
     <div id="status">LOADING DISTRICT</div><div id="progress"><div id="bar"></div></div>
     <div id="help">DRAG · LOOK &nbsp; WHEEL / ↑↓ · MOVE &nbsp; A/D · STRAFE</div>
   </div>
-  <script type="module" src="lubiak.js?v=20260830-grounded-circus-v1"></script>
+  <script type="module" src="lubiak.js?v=20260830-controls-circus-v2"></script>
 </body>
 </html>
