@@ -1,4 +1,4 @@
-deploy-request: 2026-08-30T10:56:00+01:00
+deploy-request: 2026-08-30T10:58:00+01:00
 source: chat
-scope: LUBIAK + MEGAPOLE full repair
-reason: publish Kathmandu 360 exterior background, mode-independent dragon triple-click gateway, and restored in-runtime 40x28 charcoal/ember Megapole terrain
+scope: PLAY dealer animation repair
+reason: publish synchronized jester animation locks and busy-state bridge result handling
