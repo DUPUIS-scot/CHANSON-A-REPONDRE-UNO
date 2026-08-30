@@ -1,0 +1,40 @@
+name: LUBIAK ground gravity
+
+on:
+  push:
+    paths:
+      - '.lubiak-ground-gravity-trigger'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Apply GLB-surface gravity
+        run: node scripts/patch-lubiak-ground-gravity.mjs
+      - name: Commit and push safely
+        run: |
+          if git diff --quiet -- web/lubiak/lubiak.js; then
+            echo 'No gravity patch required.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add web/lubiak/lubiak.js
+          git commit -m 'Keep djinn and broom gravity-relative to GLB ground'
+          for attempt in 1 2 3; do
+            git fetch origin main
+            git rebase origin/main && git push origin HEAD:main && exit 0
+            git rebase --abort || true
+            sleep $((attempt * 2))
+          done
+          echo 'Could not push gravity patch after retries.' >&2
+          exit 1
