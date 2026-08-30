@@ -1,5 +1,5 @@
-deploy-request: 2026-08-30T10:58:00+01:00
+deploy-request: 2026-08-30T11:04:00+01:00
 source: chat
-scope: PLAY dealer animation repair
-reason: publish synchronized jester animation locks and busy-state bridge result handling
-Deploy Search Castle repair 97df97e85190
+scope: Browse Cards repair
+reason: publish finite Browse layout bounds and return-to-Browse navigation
+source-commits: 69c42137b25bc66278b5cb9d2a6743e649c8505b, 333763fba0ec0b4da7bf7b3a36047d97e36a0e82, 8693d165756763b4e24a258f6fb94c70c5b14fd5
