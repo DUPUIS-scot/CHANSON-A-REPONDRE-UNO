@@ -931,12 +931,12 @@ function movePlayerWithCollision(delta, includeBroom=false) {
   } else playerRoot.position.copy(solved);
 }
 
-// LUBIAK_SURFACE_GRAVITY_V1
-// Surface-relative gravity: the djinn can walk floors, walls, ceilings and both sides of double-sided GLB meshes.
+// LUBIAK_GROUND_GRAVITY_V2
+// Walk mode stays upright and attached only to walkable ground surfaces.
+// Walls and ceilings remain collision surfaces, never walking surfaces.
 const surfaceRaycaster = new THREE.Raycaster();
 const WORLD_UP = new THREE.Vector3(0,1,0);
-let playerSurfaceUp = new THREE.Vector3(0,1,0);
-let playerSurfacePoint = null;
+const WALKABLE_NORMAL_Y = 0.42;
 
 function activeSurfaceRoots(){
   const roots=[];
@@ -947,74 +947,51 @@ function activeSurfaceRoots(){
   return roots;
 }
 
-function worldHitNormal(hit, probeOrigin){
+function worldHitNormal(hit){
   if(!hit?.face || !hit?.object) return null;
   const normalMatrix=new THREE.Matrix3().getNormalMatrix(hit.object.matrixWorld);
-  const n=hit.face.normal.clone().applyMatrix3(normalMatrix).normalize();
-  // Choose the side facing the player. This keeps adhesion valid inside and outside closed meshes.
-  const towardPlayer=probeOrigin.clone().sub(hit.point);
-  if(n.dot(towardPlayer)<0) n.negate();
-  return n;
+  return hit.face.normal.clone().applyMatrix3(normalMatrix).normalize();
 }
 
-function nearestSurface(point, preferredUp=playerSurfaceUp, maxDistance=2.4){
+function groundSurfaceBelow(point, maxDistance=8){
   const roots=activeSurfaceRoots();
   if(!roots.length) return null;
-  const pUp=preferredUp.clone().normalize();
-  const dirs=[
-    pUp.clone().negate(), pUp.clone(),
-    new THREE.Vector3(1,0,0),new THREE.Vector3(-1,0,0),
-    new THREE.Vector3(0,1,0),new THREE.Vector3(0,-1,0),
-    new THREE.Vector3(0,0,1),new THREE.Vector3(0,0,-1),
-  ];
+  const origin=point.clone().add(new THREE.Vector3(0,2.2,0));
+  surfaceRaycaster.set(origin,new THREE.Vector3(0,-1,0));
+  surfaceRaycaster.near=0;
+  surfaceRaycaster.far=maxDistance+2.2;
   let best=null;
-  for(const dir of dirs){
-    const origin=point.clone().addScaledVector(dir,-0.08);
-    surfaceRaycaster.set(origin,dir);
-    surfaceRaycaster.near=0; surfaceRaycaster.far=maxDistance;
-    for(const root of roots){
-      const hit=surfaceRaycaster.intersectObject(root,true)[0];
-      if(!hit) continue;
-      if(!best || hit.distance<best.hit.distance){
-        const normal=worldHitNormal(hit,origin);
-        if(normal) best={hit,normal};
-      }
+  for(const root of roots){
+    const hits=surfaceRaycaster.intersectObject(root,true);
+    for(const hit of hits){
+      const normal=worldHitNormal(hit);
+      if(!normal || normal.dot(WORLD_UP)<WALKABLE_NORMAL_Y) continue;
+      if(hit.point.y>origin.y+0.05) continue;
+      if(!best || hit.point.y>best.hit.point.y) best={hit,normal};
     }
   }
   return best;
 }
 
-function surfaceMoveVector(input){
-  const up=playerSurfaceUp.clone().normalize();
-  const viewForward=new THREE.Vector3();
-  camera.getWorldDirection(viewForward);
-  viewForward.addScaledVector(up,-viewForward.dot(up));
-  if(viewForward.lengthSq()<1e-5){
-    viewForward.set(0,0,-1).applyQuaternion(playerRoot.quaternion);
-    viewForward.addScaledVector(up,-viewForward.dot(up));
-  }
-  viewForward.normalize();
-  const right=viewForward.clone().cross(up).normalize();
-  const desired=viewForward.multiplyScalar(input.y).add(right.multiplyScalar(input.x));
+function groundMoveVector(input){
+  const forward=new THREE.Vector3(Math.sin(followYaw),0,-Math.cos(followYaw));
+  const right=new THREE.Vector3(Math.cos(followYaw),0,Math.sin(followYaw));
+  const desired=forward.multiplyScalar(input.y).add(right.multiplyScalar(input.x));
   if(desired.lengthSq()>1e-6) desired.normalize();
   return desired;
 }
 
-function applySurfaceGravity(dt, clearance=0.055){
+function applyGroundGravity(dt, clearance=0.055){
   if(!playerRoot || playerMode!=='walk') return;
-  const probe=playerRoot.position.clone().addScaledVector(playerSurfaceUp,0.22);
-  const surface=nearestSurface(probe,playerSurfaceUp,2.6);
-  if(!surface) return;
-  playerSurfaceUp.lerp(surface.normal,1-Math.exp(-dt*16)).normalize();
-  playerSurfacePoint=surface.hit.point.clone();
-  const target=surface.hit.point.clone().addScaledVector(playerSurfaceUp,clearance);
-  playerRoot.position.lerp(target,1-Math.exp(-dt*18));
+  const ground=groundSurfaceBelow(playerRoot.position,10);
+  if(!ground) return;
+  const targetY=ground.hit.point.y+clearance;
+  playerRoot.position.y += (targetY-playerRoot.position.y)*(1-Math.exp(-dt*20));
+  playerBaseY=targetY;
 
-  // Reorient local Y to the contacted surface normal while preserving heading around that new up axis.
-  const qUp=new THREE.Quaternion().setFromUnitVectors(WORLD_UP,playerSurfaceUp);
-  const qHeading=new THREE.Quaternion().setFromAxisAngle(WORLD_UP,playerHeading);
-  const targetQ=qUp.multiply(qHeading);
-  playerRoot.quaternion.slerp(targetQ,1-Math.exp(-dt*12));
+  // Keep the djinn upright in world gravity. Only yaw follows travel direction.
+  const targetQ=new THREE.Quaternion().setFromEuler(new THREE.Euler(0,playerHeading,0,'YXZ'));
+  playerRoot.quaternion.slerp(targetQ,1-Math.exp(-dt*14));
 }
 
 function combinedMoveInput() {
@@ -1048,7 +1025,7 @@ function updatePlayer(dt) {
   if (playerMode === 'walk') {
     const mag = THREE.MathUtils.clamp(input.length(), 0, 1);
     if (mag > 0.05) {
-      const desired = surfaceMoveVector(input);
+      const desired = groundMoveVector(input);
       if (desired.lengthSq() > 0.001) {
         desired.normalize();
         const targetHeading = Math.atan2(desired.x, desired.z) + Math.PI;
@@ -1061,7 +1038,7 @@ function updatePlayer(dt) {
       playerVelocity.multiplyScalar(Math.max(0, 1 - dt * 8));
     }
     movePlayerWithCollision(playerVelocity.clone().multiplyScalar(dt), true);
-    applySurfaceGravity(dt);
+    applyGroundGravity(dt);
     proceduralWalk(dt, THREE.MathUtils.clamp(playerVelocity.length() / 5, 0, 1));
   } else if (playerMode === 'mounting') {
     mountTransition += dt;
