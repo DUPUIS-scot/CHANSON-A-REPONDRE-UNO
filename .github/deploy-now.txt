@@ -1,5 +1,4 @@
-deploy-request: 2026-08-30T19:10:00+01:00
+deploy-request: 2026-08-30
 source: chat
-scope: Promote all textured GLBs to live runtime
-reason: publish textured Castle interior, Laboratory book-video interior, Scene11, and optimized textured LUBIAK/Megapole assets to their active runtime model paths
-source-commit: 7858cc024c82c5e587becbc0b22ed212f42f19da
+scope: LUBIAK FOLLOW AERIAL RIDE controls
+reason: add explicit RIDE mode, close third-person FOLLOW, wall/mesh UP-DOWN climb, and RIDE altitude UP-DOWN triggers
