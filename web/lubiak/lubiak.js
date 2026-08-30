@@ -63,15 +63,15 @@ let playerVelocity = new THREE.Vector3();
 let playerHeading = Math.PI;
 let playerBaseY = 0;
 let followYaw = 0;
-let followPitch = -0.12;
-let followDistance = 6.6;
+let followPitch = -0.10;
+let followDistance = 4.35;
 // LUBIAK_AERIAL_CAMERA_V1
 let cameraMode = 'follow';
 let aerialYaw = 0;
 let aerialPitch = -0.28;
 let aerialSpeed = 18;
 let aerialReturnBlend = 0;
-const aerialSaved = { followYaw: 0, followPitch: -0.12, followDistance: 6.6 };
+const aerialSaved = { followYaw: 0, followPitch: -0.10, followDistance: 4.35 };
 let walkPhase = 0;
 let walkBlend = 0;
 let mountTransition = 0;
@@ -1101,8 +1101,8 @@ function preparePlayer(root) {
   playerRoot.position.copy(safeEntrance);
   playerBaseY = playerRoot.position.y;
   followYaw = 0;
-  followPitch = -0.10;
-  followDistance = 5.6;
+  followPitch = -0.08;
+  followDistance = 4.35;
   cachePlayerBones();
   playerReady = true;
   // Place the camera immediately on the safe exterior side before the first player frame.
@@ -1204,14 +1204,98 @@ joystickStyle.textContent = `
 `;
 document.head.appendChild(joystickStyle);
 
-const aerialToggle = document.createElement('button');
-aerialToggle.id = 'lubiak-aerial-toggle';
-aerialToggle.type = 'button';
-aerialToggle.textContent = 'AERIAL';
-aerialToggle.setAttribute('aria-label', 'Toggle aerial observation camera');
-aerialToggle.style.cssText = 'position:fixed;right:max(26px,env(safe-area-inset-right));bottom:158px;z-index:70;border:1px solid #f6c28b88;border-radius:999px;padding:10px 14px;background:#160b08dd;color:#ffe2bd;font:700 10px/1 system-ui;letter-spacing:.14em;box-shadow:0 6px 20px #0009;cursor:pointer';
-aerialToggle.addEventListener('click', () => setCameraMode(cameraMode === 'follow' ? 'aerial' : 'follow'));
-document.body.appendChild(aerialToggle);
+// LUBIAK_FOLLOW_CLIMB_RIDE_CONTROLS_V1
+// LUBIAK_THREE_MODE_SELECTOR_V1
+// Explicit control choices: grounded/follow camera, detached aerial camera, or broom ride.
+const modeDock = document.createElement('div');
+modeDock.id = 'lubiak-mode-dock';
+modeDock.style.cssText = 'position:fixed;right:max(18px,env(safe-area-inset-right));bottom:158px;z-index:70;display:flex;gap:6px;align-items:center;padding:5px;border:1px solid #f6c28b55;border-radius:999px;background:#100806dd;box-shadow:0 6px 20px #0009;backdrop-filter:blur(8px)';
+
+function makeModeButton(label, aria) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.textContent = label;
+  button.setAttribute('aria-label', aria);
+  button.style.cssText = 'border:1px solid #f6c28b66;border-radius:999px;padding:9px 12px;background:#160b08cc;color:#ffe2bd;font:700 9px/1 system-ui;letter-spacing:.12em;cursor:pointer;opacity:.72';
+  modeDock.appendChild(button);
+  return button;
+}
+
+const followToggle = makeModeButton('FOLLOW', 'Follow the djinn in third person');
+const aerialToggle = makeModeButton('AERIAL', 'Use detached aerial observation camera');
+const rideToggle = makeModeButton('RIDE', 'Mount DA NOBLE Y2K and fly');
+
+document.body.appendChild(modeDock);
+
+function refreshLubiakModeButtons() {
+  if (typeof refreshVerticalControls === 'function') refreshVerticalControls();
+  const riding = playerMode === 'mounting' || playerMode === 'flight';
+  const active = cameraMode === 'aerial' ? aerialToggle : riding ? rideToggle : followToggle;
+  for (const button of [followToggle, aerialToggle, rideToggle]) {
+    const isActive = button === active;
+    button.style.opacity = isActive ? '1' : '.62';
+    button.style.background = isActive ? '#6d3018ee' : '#160b08cc';
+    button.style.borderColor = isActive ? '#ffd7a1cc' : '#f6c28b66';
+    button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+  }
+}
+
+followToggle.addEventListener('click', () => {
+  if (cameraMode === 'aerial') setCameraMode('follow');
+  else {
+    cameraMode = 'follow';
+    showStatus(playerMode === 'flight' ? 'FOLLOWING RIDER' : 'FOLLOWING DJINN', 700);
+    refreshLubiakModeButtons();
+  }
+});
+
+aerialToggle.addEventListener('click', () => {
+  setCameraMode(cameraMode === 'aerial' ? 'follow' : 'aerial');
+  refreshLubiakModeButtons();
+});
+
+rideToggle.addEventListener('click', () => {
+  if (!playerReady || !playerRoot || !broomRoot) {
+    showStatus('DA NOBLE Y2K NOT READY', 900);
+    return;
+  }
+  if (cameraMode === 'aerial') setCameraMode('follow');
+  if (playerMode === 'walk') beginMountTransition();
+  else if (playerMode === 'mounting') showStatus('DA NOBLE Y2K · MOUNTING', 700);
+  else if (playerMode === 'flight') showStatus('RIDE MODE · DA NOBLE Y2K', 700);
+  refreshLubiakModeButtons();
+});
+
+refreshLubiakModeButtons();
+
+let verticalTrigger = 0;
+let climbAttached = false;
+const verticalDock = document.createElement('div');
+verticalDock.id = 'lubiak-vertical-dock';
+verticalDock.style.cssText = 'position:fixed;right:max(146px,calc(env(safe-area-inset-right) + 146px));bottom:max(22px,env(safe-area-inset-bottom));z-index:72;display:flex;flex-direction:column;gap:7px;pointer-events:auto';
+function makeVerticalButton(label, value) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.textContent = label;
+  button.style.cssText = 'min-width:64px;border:1px solid #f6c28b88;border-radius:12px;padding:10px;background:#160b08e8;color:#ffe2bd;font:800 9px/1 system-ui;letter-spacing:.12em;box-shadow:0 5px 16px #0009;touch-action:none;cursor:pointer';
+  const engage = (event) => { verticalTrigger = value; button.setPointerCapture?.(event.pointerId); event.preventDefault(); };
+  const release = () => { if (verticalTrigger === value) verticalTrigger = 0; };
+  button.addEventListener('pointerdown', engage);
+  button.addEventListener('pointerup', release);
+  button.addEventListener('pointercancel', release);
+  button.addEventListener('lostpointercapture', release);
+  verticalDock.appendChild(button);
+  return button;
+}
+const verticalUpButton = makeVerticalButton('▲ UP', 1);
+const verticalDownButton = makeVerticalButton('▼ DOWN', -1);
+document.body.appendChild(verticalDock);
+function refreshVerticalControls() {
+  const enabled = playerReady && cameraMode === 'follow' && (playerMode === 'walk' || playerMode === 'mounting' || playerMode === 'flight');
+  verticalDock.style.opacity = enabled ? '.94' : '.30';
+  verticalDock.style.pointerEvents = enabled ? 'auto' : 'none';
+  if (!enabled) verticalTrigger = 0;
+}
 
 const joystickVector = new THREE.Vector2();
 let joystickPointer = null;
@@ -1329,6 +1413,7 @@ function handleDragonGatePointer(event) {
 
 const keys = new Set();
 function setCameraMode(nextMode) {
+  if (typeof refreshVerticalControls === 'function') refreshVerticalControls();
   if (!playerReady || !playerRoot || nextMode === cameraMode) return;
   if (nextMode === 'aerial') {
     aerialSaved.followYaw = followYaw;
@@ -1349,13 +1434,20 @@ function setCameraMode(nextMode) {
     aerialReturnBlend = 1;
     showStatus('RETURNING TO DJINN', 800);
   }
-  if (aerialToggle) aerialToggle.textContent = cameraMode === 'aerial' ? 'RETURN' : 'AERIAL';
+  if (typeof refreshLubiakModeButtons === 'function') refreshLubiakModeButtons();
 }
 
 addEventListener('keydown', (event) => {
   const key = event.key.toLowerCase();
   if (key === 'v' && !event.repeat) {
     setCameraMode(cameraMode === 'follow' ? 'aerial' : 'follow');
+    event.preventDefault();
+    return;
+  }
+  if (key === 'r' && !event.repeat) {
+    if (cameraMode === 'aerial') setCameraMode('follow');
+    if (playerReady && broomRoot && playerMode === 'walk') beginMountTransition();
+    if (typeof refreshLubiakModeButtons === 'function') refreshLubiakModeButtons();
     event.preventDefault();
     return;
   }
@@ -1394,7 +1486,7 @@ renderer.domElement.addEventListener('wheel', (event) => {
   if (playerReady && cameraMode === 'aerial') {
     aerialSpeed = THREE.MathUtils.clamp(aerialSpeed + Math.sign(event.deltaY) * 2.2, 5, 48);
   } else if (playerReady) {
-    followDistance = THREE.MathUtils.clamp(followDistance + Math.sign(event.deltaY) * 0.55, 3.4, 11);
+    followDistance = THREE.MathUtils.clamp(followDistance + Math.sign(event.deltaY) * 0.45, 2.8, 7.2);
   } else {
     const forward = new THREE.Vector3(Math.sin(yaw), 0, -Math.cos(yaw));
     camera.position.addScaledVector(forward, -Math.sign(event.deltaY) * 1.7);
@@ -1426,6 +1518,50 @@ function activeCollisionRoots() {
     roots.push(circusInterior);
   }
   return roots;
+}
+
+function findClimbableSurface() {
+  if (!playerRoot || worldMode !== 'exterior') return null;
+  const origin = playerRoot.position.clone().add(new THREE.Vector3(0, 0.95, 0));
+  let best = null;
+  for (const dir of clearanceDirections) {
+    collisionRaycaster.set(origin, dir);
+    collisionRaycaster.near = 0.06;
+    collisionRaycaster.far = 1.15;
+    for (const root of activeCollisionRoots()) {
+      const hits = collisionRaycaster.intersectObject(root, true);
+      for (const hit of hits) {
+        const normal = worldHitNormal(hit);
+        if (!normal || Math.abs(normal.y) > 0.58) continue;
+        if (!best || hit.distance < best.hit.distance) best = { hit, normal };
+        break;
+      }
+    }
+  }
+  return best;
+}
+
+function applyFollowClimb(dt) {
+  if (!verticalTrigger || cameraMode !== 'follow' || playerMode !== 'walk') { climbAttached = false; return false; }
+  const wall = findClimbableSurface();
+  if (!wall) { climbAttached = false; return false; }
+  climbAttached = true;
+  playerVelocity.set(0, 0, 0);
+  restoreStandingWalkPose();
+  const nextY = playerRoot.position.y + verticalTrigger * 3.1 * dt;
+  playerRoot.position.y = THREE.MathUtils.clamp(nextY, 0, movementBounds?.max.y ?? 24);
+  playerBaseY = playerRoot.position.y;
+  const n = wall.normal.clone(); n.y = 0;
+  if (n.lengthSq() > 1e-6) {
+    n.normalize();
+    const hold = wall.hit.point.clone().addScaledVector(n, 0.46);
+    playerRoot.position.x += (hold.x - playerRoot.position.x) * Math.min(1, dt * 14);
+    playerRoot.position.z += (hold.z - playerRoot.position.z) * Math.min(1, dt * 14);
+    const face = Math.atan2(-n.x, -n.z);
+    playerHeading += (face - playerHeading) * Math.min(1, dt * 10);
+    playerRoot.rotation.y = playerHeading;
+  }
+  return true;
 }
 
 function rayBlocked(origin, direction, distance) {
@@ -1630,8 +1766,9 @@ function updatePlayer(dt) {
   if (playerMode === 'walk') {
     // Standing is the walk/idle baseline. Clear all ride transforms before locomotion.
     restoreStandingWalkPose();
+    const climbingNow = applyFollowClimb(dt);
     const mag = THREE.MathUtils.clamp(input.length(), 0, 1);
-    if (mag > 0.05) {
+    if (!climbingNow && mag > 0.05) {
       const desired = groundMoveVector(input);
       if (desired.lengthSq() > 0.001) {
         desired.normalize();
@@ -1644,9 +1781,13 @@ function updatePlayer(dt) {
     } else {
       playerVelocity.multiplyScalar(Math.max(0, 1 - dt * 8));
     }
-    movePlayerWithCollision(playerVelocity.clone().multiplyScalar(dt), true);
-    applyGroundGravity(dt);
-    proceduralWalk(dt, THREE.MathUtils.clamp(playerVelocity.length() / 5, 0, 1));
+    if (!climbingNow) {
+      movePlayerWithCollision(playerVelocity.clone().multiplyScalar(dt), true);
+      applyGroundGravity(dt);
+      proceduralWalk(dt, THREE.MathUtils.clamp(playerVelocity.length() / 5, 0, 1));
+    } else {
+      proceduralWalk(dt, 0);
+    }
   } else if (playerMode === 'mounting') {
     mountTransition += dt;
     playerVelocity.multiplyScalar(Math.max(0, 1 - dt * 9));
@@ -1660,15 +1801,18 @@ function updatePlayer(dt) {
     if (mountTransition > 1.78) {
       playerMode = 'flight';
       applyRidePose(1);
-      showStatus('FLIGHT MODE · RIDING DA NOBLE Y2K', 900);
+      if (typeof refreshLubiakModeButtons === 'function') refreshLubiakModeButtons();
+      if (typeof refreshVerticalControls === 'function') refreshVerticalControls();
+      showStatus('RIDE MODE · DA NOBLE Y2K', 900);
     }
   } else if (playerMode === 'flight') {
     // LUBIAK_BROOM_FLIGHT_3D_V1
     // Ride the broom as a true 3D vehicle: forward follows the camera look direction,
     // so looking up/down and pushing forward climbs/dives. Space/PageUp climb; Ctrl/PageDown descend.
     applyRidePose(1);
-    const verticalKey = (keys.has(' ') || keys.has('space') || keys.has('pageup') || keys.has('e') ? 1 : 0)
+    const keyboardVertical = (keys.has(' ') || keys.has('space') || keys.has('pageup') || keys.has('e') ? 1 : 0)
       - (keys.has('control') || keys.has('ctrl') || keys.has('pagedown') || keys.has('q') ? 1 : 0);
+    const verticalKey = THREE.MathUtils.clamp(keyboardVertical + verticalTrigger, -1, 1);
     const mag2d = THREE.MathUtils.clamp(input.length(), 0, 1);
     const lookForward = new THREE.Vector3();
     camera.getWorldDirection(lookForward);
@@ -1714,11 +1858,11 @@ function updatePlayer(dt) {
 
 function updateFollowCamera(dt) {
   if (!playerReady || !playerRoot) return;
-  const target = playerRoot.position.clone().add(new THREE.Vector3(0, playerMode === 'flight' ? 1.45 : 1.25, 0));
+  const target = playerRoot.position.clone().add(new THREE.Vector3(0, playerMode === 'flight' ? 1.40 : 1.18, 0));
   const cp = Math.cos(followPitch);
   const desired = target.clone().add(new THREE.Vector3(
     -Math.sin(followYaw) * cp * followDistance,
-    Math.sin(-followPitch) * followDistance + 1.05,
+    Math.sin(-followPitch) * followDistance + 0.72,
     Math.cos(followYaw) * cp * followDistance,
   ));
 

@@ -1,5 +1,4 @@
-deploy-request: 2026-08-30T20:16:00+01:00
+deploy-request: 2026-08-30
 source: chat
-workflow: WEB — Deploy Live Site
-scope: PLAY Jester torso-up rigged remesh rest-pose validation
-reason: deploy replacement play_jester_rigged.glb and rest-bind runtime with procedural Jester animation disabled
+scope: LUBIAK FOLLOW AERIAL RIDE controls + 2MIX flight tray
+reason: preserve close third-person FOLLOW, wall/mesh UP-DOWN climb, RIDE altitude UP-DOWN, and add the Terminal 2MIX visual/text tray while riding DA NOBLE Y2K
