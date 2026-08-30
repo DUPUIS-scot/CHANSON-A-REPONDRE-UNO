@@ -1,1 +1,4 @@
-megapole-ground-deploy: 2026-08-30T02:41:02Z
+deploy-request: 2026-08-30T03:02:13.035Z
+source: codex
+scope: LUBIAK circus ground + djinn grounding
+reason: remove ember terrain, lower circus hierarchy to ground datum, preserve calibrated foot offset, and keep walk raycasts on reachable surfaces

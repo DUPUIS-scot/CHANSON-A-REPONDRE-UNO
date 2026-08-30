@@ -33,6 +33,7 @@ const exteriorReturn = { position: new THREE.Vector3(), yaw: 0, pitch: 0 };
 
 let playerRoot = null;
 let playerVisual = null;
+let playerVisualGroundOffsetY = 0;
 let broomRoot = null;
 let playerReady = false;
 let playerMode = 'walk';
@@ -473,11 +474,16 @@ function frameLoadedEnvironment(root) {
     );
     const circusBox = new THREE.Box3();
     for (const object of uniqueRoots) circusBox.expandByObject(object);
-    if (!circusBox.isEmpty() && circusBox.min.y < PLAZA_Y - 0.03) {
-      const lift = PLAZA_Y - circusBox.min.y + 0.04;
-      for (const object of uniqueRoots) object.position.y += lift;
-      root.updateMatrixWorld(true);
-      console.info('LUBIAK circus aligned to plaza datum', { lift, roots: uniqueRoots.map(o => o.name) });
+    if (!circusBox.isEmpty()) {
+      // The circus is a rigid authored hierarchy, but its base belongs on the
+      // shared ground datum. Allow correction in either direction so a raised
+      // terrain/plaza pass cannot leave the tent floating above Freak Street.
+      const groundOffset = PLAZA_Y - circusBox.min.y + 0.04;
+      if (Math.abs(groundOffset) > 0.03) {
+        for (const object of uniqueRoots) object.position.y += groundOffset;
+        root.updateMatrixWorld(true);
+        console.info('LUBIAK circus aligned to ground datum', { groundOffset, roots: uniqueRoots.map(o => o.name) });
+      }
     }
   }
 
@@ -701,6 +707,7 @@ function preparePlayer(root) {
   const scale = 1.72 / Math.max(size.y, 0.001);
   root.scale.setScalar(scale);
   root.position.set(-center.x * scale, -box.min.y * scale, -center.z * scale);
+  playerVisualGroundOffsetY = root.position.y;
   root.traverse((object) => {
     if (!object.isMesh) return;
     object.frustumCulled = false;
@@ -717,8 +724,14 @@ function preparePlayer(root) {
   playerRoot.position.set(0, 0.08, Math.min(env.z * 0.34, 42));
   playerBaseY = playerRoot.position.y;
   playerHeading = Math.PI;
-  playerRoot.rotation.y = playerHeading;
+  playerRoot.rotation.set(0, playerHeading, 0, 'YXZ');
   scene.add(playerRoot);
+  // Spawn on the real walkable architecture after all environment transforms.
+  const spawnGround = groundSurfaceBelow(playerRoot.position, 12);
+  if (spawnGround) {
+    playerRoot.position.y = spawnGround.hit.point.y + 0.045;
+    playerBaseY = playerRoot.position.y;
+  }
   cachePlayerBones();
   playerReady = true;
 }
@@ -1088,7 +1101,9 @@ function groundSurfaceBelow(point, maxDistance=8){
     for(const hit of hits){
       const normal=worldHitNormal(hit);
       if(!normal || normal.dot(WORLD_UP)<WALKABLE_NORMAL_Y) continue;
-      if(hit.point.y>origin.y+0.05) continue;
+      // A walk probe may step onto curbs, but must not snap to the circus roof,
+      // raised decoration, or another surface above the djinn's feet.
+      if(hit.point.y > point.y + 0.55) continue;
       if(!best || hit.point.y>best.hit.point.y) best={hit,normal};
     }
   }
@@ -1134,7 +1149,8 @@ function proceduralWalk(dt, speed01) {
   walkPhase += dt * (3.4 + speed01 * 4.8);
   const swing = Math.sin(walkPhase);
   const bob = Math.sin(walkPhase * 2) * 0.018 * walkBlend;
-  playerVisual.position.y = bob;
+  // Bob around the calibrated feet-on-ground offset; never replace it.
+  playerVisual.position.y = playerVisualGroundOffsetY + bob;
   if (playerBoneCache.hips) {
     playerBoneCache.hips.rotation.y = swing * 0.065 * walkBlend;
     playerBoneCache.hips.rotation.z = Math.sin(walkPhase * 2) * 0.018 * walkBlend;
