@@ -18,8 +18,8 @@ for (let j=0;j<=rings;j++) {
     const u = i/segs;
     const x = (u-0.5)*width;
     const edge = Math.abs((u-0.5)*2);
-    const wave = Math.sin(z*0.23 + x*1.7)*0.035 + Math.sin(z*0.71 - x*0.8)*0.018;
-    const crown = (1-edge*edge)*0.06;
+    const wave = Math.sin(z*0.23 + x*1.7)*0.055 + Math.sin(z*0.71 - x*0.8)*0.028 + Math.sin(z*1.43 + x*2.1)*0.012;
+    const crown = (1-edge*edge)*0.075;
     vertices.push(x, wave+crown, z);
     normals.push(0,1,0);
     uvs.push(u, v*8);
@@ -43,8 +43,8 @@ function addBuffer(arr){const b=Buffer.from(arr.buffer,arr.byteOffset,arr.byteLe
 const pPos=addBuffer(positions), pNor=addBuffer(normalArr), pUv=addBuffer(uvArr), pIdx=addBuffer(indexArr);
 const bin=Buffer.concat(chunks);
 
-const min=[-width/2,-0.08,-length/2], max=[width/2,0.14,length/2];
-const gltf={asset:{version:'2.0',generator:'OpenAI LUBIAK ember-ground generator'},scene:0,scenes:[{nodes:[0]}],nodes:[{mesh:0,name:'LUBIAK_EmberGround'}],meshes:[{name:'LUBIAK_EmberGround',primitives:[{attributes:{POSITION:0,NORMAL:1,TEXCOORD_0:2},indices:3,material:0}]}],materials:[{name:'Charbons_Ardents',pbrMetallicRoughness:{baseColorFactor:[0.025,0.012,0.008,1],metallicFactor:0.05,roughnessFactor:0.92},emissiveFactor:[1.0,0.085,0.004],doubleSided:true}],buffers:[{byteLength:bin.length}],bufferViews:[{buffer:0,...pPos,target:34962},{buffer:0,...pNor,target:34962},{buffer:0,...pUv,target:34962},{buffer:0,...pIdx,target:34963}],accessors:[{bufferView:0,componentType:5126,count:positions.length/3,type:'VEC3',min,max},{bufferView:1,componentType:5126,count:normalArr.length/3,type:'VEC3'},{bufferView:2,componentType:5126,count:uvArr.length/2,type:'VEC2'},{bufferView:3,componentType:5125,count:indexArr.length,type:'SCALAR'}]};
+const min=[-width/2,-0.12,-length/2], max=[width/2,0.18,length/2];
+const gltf={asset:{version:'2.0',generator:'CHANSON A REPONDRE UNO LUBIAK ember terrain'},scene:0,scenes:[{nodes:[0]}],nodes:[{mesh:0,name:'LUBIAK_EmberGround'}],meshes:[{name:'LUBIAK_EmberGround',primitives:[{attributes:{POSITION:0,NORMAL:1,TEXCOORD_0:2},indices:3,material:0}]}],materials:[{name:'Charbons_Ardents',pbrMetallicRoughness:{baseColorFactor:[0.018,0.009,0.006,1],metallicFactor:0.0,roughnessFactor:0.94},emissiveFactor:[1.0,0.055,0.002],extensions:{KHR_materials_emissive_strength:{emissiveStrength:3.8}},doubleSided:true}],extensionsUsed:['KHR_materials_emissive_strength'],buffers:[{byteLength:bin.length}],bufferViews:[{buffer:0,...pPos,target:34962},{buffer:0,...pNor,target:34962},{buffer:0,...pUv,target:34962},{buffer:0,...pIdx,target:34963}],accessors:[{bufferView:0,componentType:5126,count:positions.length/3,type:'VEC3',min,max},{bufferView:1,componentType:5126,count:normalArr.length/3,type:'VEC3'},{bufferView:2,componentType:5126,count:uvArr.length/2,type:'VEC2'},{bufferView:3,componentType:5125,count:indexArr.length,type:'SCALAR'}]};
 const jsonBuf=Buffer.from(JSON.stringify(gltf)); const jsonPad=Buffer.alloc(pad4(jsonBuf.length),0x20);jsonBuf.copy(jsonPad);
 const total=12+8+jsonPad.length+8+bin.length; const out=Buffer.alloc(total); let o=0;
 out.writeUInt32LE(0x46546c67,o);o+=4;out.writeUInt32LE(2,o);o+=4;out.writeUInt32LE(total,o);o+=4;
