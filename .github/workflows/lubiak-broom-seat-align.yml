@@ -1,0 +1,34 @@
+name: LUBIAK broom seat alignment
+on:
+  push:
+    branches: [main]
+    paths: ['.lubiak-broom-seat-align-trigger']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - name: Align broom to rider
+        run: node scripts/patch-lubiak-broom-seat-align.mjs
+      - name: Validate
+        run: |
+          node --check web/lubiak/lubiak.js
+          grep -q 'broomRideCenterOffset' web/lubiak/lubiak.js
+          grep -q 'visible broom shaft directly beneath the djinn pelvis' web/lubiak/lubiak.js
+      - name: Request deployment
+        run: |
+          printf '%s\n' 'deploy-request: 2026-08-30' 'scope: LUBIAK broom rider seat alignment' > .github/deploy-now.txt
+      - name: Commit and push
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add web/lubiak/lubiak.js .github/deploy-now.txt
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Seat djinn directly on visible broom geometry'
+          git pull --rebase origin main
+          git push origin HEAD:main
