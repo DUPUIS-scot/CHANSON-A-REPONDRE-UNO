@@ -102,6 +102,47 @@ jobs:
         run: |
           flutter build web --release --no-pub --base-href "/" --dart-define=SKIP_AUTH_FOR_DEVELOPMENT=false --dart-define=SUPABASE_URL="$SUPABASE_URL" --dart-define=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY" --dart-define=AI_BACKEND_URL="$AI_BACKEND_URL" --dart-define=TURNSTILE_SITE_KEY="$TURNSTILE_SITE_KEY" --dart-define=APP_BUILD_SHA="${{ github.sha }}"
 
+      - name: Refresh LUBIAK textured runtime cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          token="pbr-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          python3 - "$token" <<'PY'
+          from pathlib import Path
+          import re, sys
+
+          token = sys.argv[1]
+          js_path = Path('build/web/lubiak/lubiak.js')
+          html_path = Path('build/web/lubiak/index.html')
+          if not js_path.is_file() or not html_path.is_file():
+              raise FileNotFoundError('Expected built LUBIAK runtime files')
+
+          js = js_path.read_text()
+          js, master_count = re.subn(
+              r"(LUBIAK_master_optimized\.glb\?v=)[^'\"\s]+",
+              rf"\g<1>{token}",
+              js,
+          )
+          if master_count < 1:
+              raise RuntimeError('LUBIAK master GLB cache token was not found')
+          js_path.write_text(js)
+
+          html = html_path.read_text()
+          html, script_count = re.subn(
+              r"(lubiak\.js\?v=)[^'\"\s]+",
+              rf"\g<1>{token}",
+              html,
+          )
+          if script_count < 1:
+              raise RuntimeError('LUBIAK runtime script cache token was not found')
+          html_path.write_text(html)
+
+          print(f'LUBIAK live cache refreshed: {token}; model={master_count}; script={script_count}')
+          PY
+          grep -q "LUBIAK_master_optimized.glb?v=${token}" build/web/lubiak/lubiak.js
+          grep -q "lubiak.js?v=${token}" build/web/lubiak/index.html
+          test -s build/web/assets/assets/models/LUBIAK_master_optimized.glb
+
       - name: Upgrade deployed Megapole GLB to PBR
         shell: bash
         run: |
@@ -191,8 +232,11 @@ jobs:
           test -s build/web/enochian-test/live-copy.html
           test -f build/web/card_castle/card_castle.html
           test -s build/web/assets/assets/models/castle_exterior.glb
+          test -s build/web/assets/assets/models/LUBIAK_master_optimized.glb
           test -s build/web/assets/assets/models/SILMARI_LLION_MEGAPOLE_LUBIAK.glb
           test -s build/web/assets/assets/videos/bureau_screen_loop.mp4
+          grep -q "LUBIAK_master_optimized.glb?v=pbr-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" build/web/lubiak/lubiak.js
+          grep -q "lubiak.js?v=pbr-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" build/web/lubiak/index.html
           grep -q "megapole-pbr-v8.js" build/web/megapole/index.html
           node --check build/web/megapole/megapole-pbr-v8.js
 
