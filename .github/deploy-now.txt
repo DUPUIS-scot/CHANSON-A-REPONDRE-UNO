@@ -1,4 +1,4 @@
-deploy-request: 2026-08-30T05:39+01:00
+deploy-request: 2026-08-30T05:44:00+01:00
 source: chat
-scope: LUBIAK exterior environment
-reason: restore visible Kathmandu Valley night background, preserve circus ground placement, expose terrain and authored materials over the environment backdrop
+scope: LUBIAK entrance spawn + follow camera volume
+reason: keep djinn, broom and camera outside entrance mesh shell and prevent near-plane polygon clipping
