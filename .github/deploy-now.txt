@@ -1,5 +1,5 @@
-deploy-request: 2026-08-30T11:29:00+01:00
+deploy-request: 2026-08-30T16:05:00+01:00
 source: chat
-scope: Certified release 3.7.7.3
-reason: publish and certify current live CHANSON À RÉPONDRE UNO baseline as 3.7.7.3
-source-commits: 2c8f5ae2cb0bcf436c8e686931a2be100a2ddd70, bc060788b9bd17a063e551af09cbdc9567b211e6, 88f9fb3dc056f47bcb75f90aa1c4557625bf43b8
+scope: Laboratory Blender texture + VideoBookPage live video
+reason: deploy newly textured laboratory_interior.glb and bind enochian JJ DUPUIS loop to VideoBookPage_Left and VideoBookPage_Right
+source-commits: 1e688293a23caa30e587da07a7fa70e7cb668db9, b3224aaee02bd3ae5a0b3dd5022f5711c404bf90
