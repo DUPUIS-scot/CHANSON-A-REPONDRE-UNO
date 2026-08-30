@@ -1,4 +1,4 @@
-deploy-request: 2026-08-30T05:41:00+01:00
+deploy-request: 2026-08-30T05:42:00+01:00
 source: chat
-scope: MEGAPOLE persistent dragon-body cave background
-reason: make WebGL renderer transparent and remove opaque Three.js scene background so the cave image does not fade after 3D startup
+scope: MEGAPOLE GLB visibility over dragon cave background
+reason: remove canvas opacity fade, force transparent canvas background, bump viewer caches, keep GLB at full opacity
