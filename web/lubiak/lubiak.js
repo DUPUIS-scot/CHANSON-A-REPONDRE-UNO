@@ -140,6 +140,28 @@ function repairLubiakStaticWorld(){
       }
     }
   });
+  // LUBIAK_PALACE_MONUMENTAL_SCALE_V1
+  // Palace must dominate Freak Street: broaden it modestly and raise it to 2.6x authored height, while keeping its base on terrain Y=0.
+  const palaceName=/palace|place|temple|citadel|kumari[ _-]?ghar/i;
+  const palaceCandidates=[];
+  exteriorRoot.traverse(o=>{
+    if(o!==exteriorRoot && palaceName.test(o.name||'')) palaceCandidates.push(o);
+  });
+  const palaceRoots=palaceCandidates.filter(o=>!palaceCandidates.some(p=>p!==o && p.getObjectById?.(o.parent?.id)));
+  palaceRoots.forEach(o=>{
+    if(o.userData?.lubiakPalaceMonumental) return;
+    const before=new THREE.Box3().setFromObject(o);
+    if(before.isEmpty()) return;
+    o.scale.x*=1.35;
+    o.scale.y*=2.60;
+    o.scale.z*=1.35;
+    o.updateMatrixWorld(true);
+    const after=new THREE.Box3().setFromObject(o);
+    o.position.y += (0-after.min.y);
+    o.userData.lubiakPalaceMonumental=true;
+  });
+  exteriorRoot.updateMatrixWorld(true);
+
   // Seat the outermost circus assembly on the same Y=0 terrain datum; never float or bury it.
   const roots=circusRoots.filter(o=>!circusRoots.some(p=>p!==o && o.parent && (p===o.parent || p.getObjectById?.(o.parent.id))));
   roots.forEach(o=>{
