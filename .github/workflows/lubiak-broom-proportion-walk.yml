@@ -1,0 +1,35 @@
+name: LUBIAK broom proportion and walking carry
+on:
+  push:
+    branches: [main]
+    paths: ['.lubiak-broom-proportion-walk-trigger']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - name: Apply reference proportion and walking carry
+        run: node scripts/patch-lubiak-broom-proportion-walk.mjs
+      - name: Validate
+        run: |
+          node --check web/lubiak/lubiak.js
+          grep -q 'LUBIAK_BROOM_REFERENCE_PROPORTION_V2' web/lubiak/lubiak.js
+          grep -q 'broomRoot.scale.setScalar(3.34 / longest)' web/lubiak/lubiak.js
+          grep -q 'LUBIAK_BROOM_WALK_VARIANTS_V2' web/lubiak/lubiak.js
+      - name: Request deployment
+        run: |
+          printf '%s\n' 'deploy-request: 2026-08-30T05:25:00+01:00' 'scope: LUBIAK djinn + DA NOBLE Y2K reference proportion and walking carry' > .github/deploy-now.txt
+      - name: Commit and push
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add web/lubiak/lubiak.js .github/deploy-now.txt
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Match DA NOBLE Y2K proportion and walking carry reference'
+          git pull --rebase origin main
+          git push origin HEAD:main
