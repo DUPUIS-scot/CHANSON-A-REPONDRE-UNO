@@ -60,28 +60,19 @@ void main() {
     expect(castle, contains('INTERIOR_LOAD_TIMEOUT_MS=26000'));
     expect(castle, contains("interior-load-slow-v75"));
     expect(castle, contains("delete document.body.dataset.interiorLoadSlow"));
-    expect(
-      castle,
-      isNot(contains(
-        "setTimeout(()=>finishError(new Error('interior-load-timeout",
-      )),
-    );
+    expect(castle, isNot(contains("setTimeout(()=>finishError(new Error('interior-load-timeout")));
     expect(castle, contains("state.interiorLoadPromise=null"));
     expect(castle, contains("dataset.interiorProgress"));
 
     expect(navigationCore, contains('LABORATORY_LOAD_TIMEOUT_MS = 26000'));
     expect(navigationCore, contains("laboratory-load-timeout-v74"));
     expect(navigationCore, contains("dataset.laboratoryProgress"));
-
     expect(navigationCore, contains('window.__castleOpenLaboratory ??= switchToLaboratory'));
     expect(navigationCore, contains('window.__castleRestoreInteriorFromLaboratory ??= restoreInterior'));
     expect(navigationCore, contains("castleNavigationControls = 'single-authority-v76'"));
     expect(navigationCore, contains("button.setAttribute('aria-hidden', 'true')"));
     expect(navigationCore, contains('restoreExterior();'));
-    expect(
-      resilience,
-      contains("'#bureau-of-ai, #laboratory-medallion-button, #laboratory-back-interior'"),
-    );
+    expect(resilience, contains("'#bureau-of-ai, #laboratory-medallion-button, #laboratory-back-interior'"));
     expect(resilience, isNot(contains("#return-exterior')){event.preventDefault")));
     expect(uiPatch, contains("window.__castleRestoreInteriorFromLaboratory?.()"));
     expect(uiPatch, contains("label.textContent='LABORATOIRE'"));
@@ -91,24 +82,26 @@ void main() {
     expect(resetView, contains("laboratory-entry-v70"));
     expect(resetView, contains("reset-button-v70"));
 
-    expect(bridge, contains(r'const SCREEN_NAME = /^VideoScreen_(Left|Right)$/i'));
+    expect(bridge, contains(r'const SCREEN_NAME = /^VideoBookPage_(Left|Right)$/i'));
+    expect(bridge, contains("bureauVideoContract = 'VideoBookPage_Left|VideoBookPage_Right'"));
     expect(bridge, contains('window.__castleBureauVideoPrime = primeFromGesture'));
     expect(bridge, contains('raycaster.intersectObjects([...boundMeshes], false)'));
-    expect(bridge, contains("bureauVideoInteraction = 'mirror-click-v78'"));
-    expect(bridge, contains("bureauVideoPlayback = 'paused-awaiting-mirror-click-v78'"));
-    expect(bridge, contains("bureauVideoPlayback = 'playing-loop-v78'"));
-    expect(bridge, contains('video.autoplay = false'));
+    expect(bridge, contains("bureauVideoInteraction = 'book-page-click-v79'"));
+    expect(bridge, contains("attemptPlay('book-page-click')"));
+    expect(bridge, contains("bureauVideoPlayback = 'playing-loop-v79'"));
+    expect(bridge, contains("attemptPlay('laboratory-autoplay')"));
+    expect(bridge, contains('video.autoplay = true'));
     expect(bridge, contains('texture.needsUpdate = true'));
     expect(bridge, contains('polygonOffset: true'));
     expect(bridge, contains("window.addEventListener('pointerup', onPointerUp, {passive: true, capture: true})"));
     expect(medallion, contains('window.__castleBureauVideoPrime?.()'));
-    expect(overlay, contains("castle_bureau_video_bridge.js?v=78"));
+    expect(overlay, contains("castle_bureau_video_bridge.js?v=79"));
     expect(overlay, isNot(contains('castle_bureau_video_refresh_v70.js')));
     expect(overlay, contains("castle_visual_regression_v55.js?v=70"));
 
-    final mutedBeforeSrc = bridge.indexOf('video.muted = true;');
-    final srcAssignment = bridge.indexOf('video.src = VIDEO_URL;');
-    expect(mutedBeforeSrc, greaterThanOrEqualTo(0));
-    expect(srcAssignment, greaterThan(mutedBeforeSrc));
+    final mutedBeforeSource = bridge.indexOf('video.muted = true;');
+    final sourceAssignment = bridge.indexOf('video.src = src;');
+    expect(mutedBeforeSource, greaterThanOrEqualTo(0));
+    expect(sourceAssignment, greaterThan(mutedBeforeSource));
   });
 }
