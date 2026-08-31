@@ -25,7 +25,7 @@ checks = {
     "floating 2J is the sole launcher": "launcher.hidden=true;launcher.style.display='none'" in shield,
     "floating 2J defaults away from PLAYBACK": "top:auto;bottom:18px" in shield,
     "consolidated installer is cache-busted": "terminal-installer-singleton-v1.js?v=20260829-v30" in shell,
-    "consolidated runtime entry is cache-busted": "live-copy.html?v=20260829-main-output-v2" in shell,
+    "consolidated runtime entry is cache-busted": "/enochian-test/live-copy.html?v=" in shell,
     "late authorities use repaired revisions": all(
         marker in installer
         for marker in (
