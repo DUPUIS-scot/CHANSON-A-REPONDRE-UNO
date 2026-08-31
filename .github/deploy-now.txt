@@ -1,4 +1,4 @@
-deploy-request: 2026-08-31T19:06+01:00
+deploy-request: 2026-08-31T19:24+01:00
 source: chat-direct
-scope: laboratory VideoBookPage + mirror video repair
-reason: replace corrupt bureau_screen_loop.mp4 with clean Safari-safe ENOCHIAN H.264 loop and deploy v81 bindings
+scope: LUBIAK boot authority repair
+reason: remove stale master fetch interception, restore canonical promoted LUBIAK_master_optimized.glb cache-busted deployment path, deploy browser-boot-v5
