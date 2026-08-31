@@ -1,4 +1,4 @@
-deploy-request: 2026-08-31T19:24+01:00
+deploy-request: 2026-08-31T19:35+01:00
 source: chat-direct
-scope: LUBIAK boot authority repair
-reason: remove stale master fetch interception, restore canonical promoted LUBIAK_master_optimized.glb cache-busted deployment path, deploy browser-boot-v5
+scope: ENOCHIAN private 3D SIGNAL source colours
+reason: LINE IN and looper terrain render green; MIDI overlay renders red; preserve shared mixed analyser and private input routing
