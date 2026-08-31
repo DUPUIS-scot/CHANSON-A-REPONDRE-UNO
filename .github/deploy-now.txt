@@ -1,5 +1,5 @@
-deploy-request: 2026-08-31T14:52:20+01:00
+deploy-request: 2026-08-31T14:40:00Z
 source: chat
 workflow: WEB — Deploy Live Site
-scope: current main including PLAY Jester, terminal-repair-v4, and LUBIAK non-blocking startup
-reason: deploy after synchronizing terminal authority test with current runtime
+scope: complete LUBIAK asset integrity and runtime recovery repair
+reason: deploy validated panorama, Freak Street GLB, local Draco, timeouts, confirmed first frame, cinematic exit, and WebGL recovery
