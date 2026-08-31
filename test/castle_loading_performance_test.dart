@@ -152,8 +152,8 @@ void main() {
     expect(jesterGatekeeper, contains("setDecoderConfig({type:isIOS?'js':'wasm'})"));
     expect(jesterGatekeeper, contains('setWorkerLimit(isMobile?1:2)'));
     expect(jesterGatekeeper, contains('www.gstatic.com/draco/versioned/decoders/1.5.7/'));
+    expect(jesterGatekeeper, contains("castleJesterError='shared-draco-unavailable'"));
     expect(jesterGatekeeper, isNot(contains('unpkg.com')));
-    expect(jesterGatekeeper, contains("castleJesterDraco=isIOS?'shared-js-worker-1'"));
 
     // The navigation overlay is now an orchestration wrapper; interaction
     // ownership lives in the core module it imports.
