@@ -1076,7 +1076,7 @@ async function installEnvironment() {
   const decoder = await getMeshoptDecoder();
   const candidates = [
     // Stable mobile-safe master. Palace geometry must be corrected in the GLB export itself.
-    { url: '/assets/assets/models/LUBIAK_master_optimized.glb?v=20260831-stable-rollback-v1', label: 'LOADING LUBIAK MASTER', finish: 'ENTER LUBIAK', timeoutMs: 26000 },
+    { url: '/assets/assets/models/textured-glb-comparison/LUBIAK_master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED.glb?v=20260831-four-element-restored-v1', label: 'LOADING LUBIAK MASTER', finish: 'ENTER LUBIAK', timeoutMs: 26000 },
   ];
 
   for (const candidate of candidates) {
