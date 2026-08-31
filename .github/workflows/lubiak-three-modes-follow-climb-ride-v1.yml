@@ -25,25 +25,26 @@ jobs:
         run: node scripts/patch-lubiak-follow-climb-ride-controls-v1.mjs
       - name: Apply Terminal 2MIX-style RIDE flight tray
         run: node scripts/patch-lubiak-ride-2mix-tray-v1.mjs
-      - name: Repair single-master runtime and verticalDock order
+      - name: Repair exact single-master runtime and verticalDock order
         run: node scripts/repair-lubiak-single-master-runtime-v1.mjs
       - name: Validate runtime
+        shell: bash
         run: |
+          set -euo pipefail
           node --check web/lubiak/lubiak.js
           grep -q "queueMicrotask(() => refreshLubiakModeButtons())" web/lubiak/lubiak.js
-          grep -q "LUBIAK_master_optimized.glb?v=20260831-single-master-v1" web/lubiak/lubiak.js
-          if grep -q "/assets/assets/models/LUBIAK.glb" web/lubiak/lubiak.js; then
-            echo "Legacy LUBIAK fallback model still referenced" >&2
-            exit 1
-          fi
+          grep -q "textured-glb-comparison/LUBIAK_master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED.glb" web/lubiak/lubiak.js
+          ! grep -q "/assets/assets/models/LUBIAK.glb" web/lubiak/lubiak.js
+          ! grep -q "/assets/assets/models/LUBIAK_master_optimized.glb" web/lubiak/lubiak.js
+          ! grep -q "LUBIAK_master_optimized_4_ELEMENT_PBR.glb" web/lubiak/lubiak.js
       - name: Trigger live deployment
         run: |
           cat > .github/deploy-now.txt <<'EOF'
-          deploy-request: 2026-08-31T17:08:00+01:00
+          deploy-request: 2026-08-31T18:20:00+01:00
           source: chat
           workflow: WEB — Deploy Live Site
-          scope: LUBIAK single PBR master + verticalDock boot repair
-          reason: load only the validated web-optimized PBR LUBIAK environment and remove the verticalDock temporal-dead-zone boot crash
+          scope: LUBIAK exact WEB_OPTIMIZED master + controls
+          reason: preserve FOLLOW/AERIAL/RIDE while keeping one direct environment wire only: LUBIAK_master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED.glb
           EOF
       - name: Commit repair
         run: |
@@ -51,6 +52,6 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add web/lubiak/lubiak.js .github/deploy-now.txt
           git diff --cached --quiet && exit 0
-          git commit -m 'Fix LUBIAK single-master boot runtime'
+          git commit -m 'Keep LUBIAK controls on exact WEB_OPTIMIZED master'
           git pull --rebase origin main
           git push
