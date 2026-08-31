@@ -1,6 +1,4 @@
-deploy-request: 2026-08-31T20:34+01:00
+deploy-request: 2026-08-31T20:40+01:00
 source: chat-direct
-scope: castle interior textured live promotion
-source-model: assets/models/textured-glb-comparison/castle_interior_textured.glb
-canonical-live-model: assets/models/castle_interior.glb
-verification: source and canonical already share blob ce8a711f77d238a36ffd0a3945997372880a1240; deploy requested to publish current canonical asset
+scope: ENOCHIAN TERMINAL private 4-line looper
+reason: deploy non-blocking private I/O unlock fix; prevent repeated bridge observers/intervals from freezing terminal after password unlock; preserve 4-line looper mount in private LINE IN
