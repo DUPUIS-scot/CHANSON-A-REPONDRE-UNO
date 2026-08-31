@@ -1,5 +1,5 @@
-deploy-request: 2026-08-31T14:45:00+01:00
+deploy-request: 2026-08-31T14:52:20+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-scope: current main including PLAY Jester visible fallback and terminal CI repair
-reason: deploy PLAY Jester after making terminal live-copy cache-bust validation accept the current same-origin runtime entry
+scope: current main including PLAY Jester, terminal-repair-v4, and LUBIAK non-blocking startup
+reason: deploy after synchronizing terminal authority test with current runtime
