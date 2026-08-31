@@ -1,4 +1,4 @@
-deploy-request: 2026-08-31T19:42+01:00
+deploy-request: 2026-08-31T19:58+01:00
 source: chat-direct
 scope: LUBIAK authoritative PBR web optimized master
-reason: redeploy exact assets/models/textured-glb-comparison/LUBIAK_master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED.glb as canonical live LUBIAK_master_optimized.glb with byte-for-byte verification
+reason: rerun production deploy after updating stale Castle laboratory v82 regression expectations; promote exact assets/models/textured-glb-comparison/LUBIAK_master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED.glb as canonical live LUBIAK_master_optimized.glb with byte-for-byte verification
