@@ -1,8 +1,6 @@
-deploy-request: 2026-08-31T19:40:00Z
-source: ChatGPT Work live PBR repair
-scope: LUBIAK authored PBR render
-source-model: assets/models/textured-glb-comparison/LUBIAK_master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED.glb
-canonical-live-model: assets/assets/models/LUBIAK_master_optimized.glb
-runtime-commit: 05ec6b6345da3ff8d239c4ccc81f63e1ba6710a9
-repair: remove coal/orange emissive material replacement, disable valley surface replacement, preserve embedded PBR maps, neutralize scene lighting and exposure
-verification: deployment cp and cmp byte-for-byte plus runtime cache refresh
+deploy-request: 2026-08-31T20:34+01:00
+source: chat-direct
+scope: castle interior textured live promotion
+source-model: assets/models/textured-glb-comparison/castle_interior_textured.glb
+canonical-live-model: assets/models/castle_interior.glb
+verification: source and canonical already share blob ce8a711f77d238a36ffd0a3945997372880a1240; deploy requested to publish current canonical asset
