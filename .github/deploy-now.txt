@@ -1,5 +1,5 @@
-deploy-request: 2026-08-31T14:55:00Z
+deploy-request: 2026-08-31T16:06:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-scope: LUBIAK actual browser boot recovery
-reason: show Kathmandu visual immediately, shorten cinematic hard exit, preserve visible fallback while 3D master initializes, and reveal canvas only when runtime reports ready
+scope: current main including PLAY Jester visible fallback v4
+reason: deploy current main after terminal authority regression was updated to the current terminal-repair-v4 runtime contract
