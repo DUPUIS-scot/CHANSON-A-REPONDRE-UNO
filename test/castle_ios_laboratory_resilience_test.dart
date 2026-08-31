@@ -82,25 +82,24 @@ void main() {
     expect(resetView, contains("laboratory-entry-v70"));
     expect(resetView, contains("reset-button-v70"));
 
-    expect(bridge, contains(r'const SCREEN_NAME = /^VideoScreen_(Left|Right)$/i'));
-    expect(bridge, contains("bureauVideoContract = 'VideoScreen_Left|VideoScreen_Right'"));
-    expect(bridge, contains("../assets/videos/0830(1).mp4"));
-    expect(bridge, contains('window.__castleBureauVideoPrime = primeFromGesture'));
-    expect(bridge, contains('raycaster.intersectObjects([...boundMeshes], false)'));
-    expect(bridge, contains("bureauVideoInteraction = 'mirror-click-v80'"));
-    expect(bridge, contains("attemptPlay('mirror-click')"));
-    expect(bridge, contains("bureauVideoPlayback = 'playing-loop-v80'"));
-    expect(bridge, contains("attemptPlay('laboratory-autoplay')"));
+    expect(bridge, contains(r'const BOOK_NAME = /^VideoBookPage_(Left|Right)$/i'));
+    expect(bridge, contains(r'const LEGACY_MIRROR_NAME = /^VideoScreen_(Left|Right)$/i'));
+    expect(bridge, contains("bureauVideoContract = 'VideoBookPage_Left|VideoBookPage_Right|mirror-surface'"));
+    expect(bridge, contains("../assets/assets/videos/bureau_screen_loop.mp4"));
+    expect(bridge, contains('window.__castleBureauVideoPrime'));
+    expect(bridge, contains('raycaster.intersectObjects([...interactiveMeshes],false)'));
+    expect(bridge, contains("attemptPlay('surface-click')"));
+    expect(bridge, contains('looksLikeMirrorSurface'));
     expect(bridge, contains('video.autoplay = true'));
     expect(bridge, contains('texture.needsUpdate = true'));
-    expect(bridge, contains('polygonOffset: true'));
-    expect(bridge, contains("window.addEventListener('pointerup', onPointerUp, {passive: true, capture: true})"));
+    expect(bridge, contains('polygonOffset:true'));
+    expect(bridge, contains("window.addEventListener('pointerup', event =>"));
     expect(medallion, contains('window.__castleBureauVideoPrime?.()'));
-    expect(overlay, contains("castle_bureau_video_bridge.js?v=80"));
+    expect(overlay, contains("castle_bureau_video_bridge.js?v=81"));
     expect(overlay, isNot(contains('castle_bureau_video_refresh_v70.js')));
     expect(overlay, contains("castle_visual_regression_v55.js?v=70"));
 
-    final mutedBeforeSource = bridge.indexOf('video.muted = true;');
+    final mutedBeforeSource = bridge.indexOf('muted:true');
     final sourceAssignment = bridge.indexOf('video.src = VIDEO_URL;');
     expect(mutedBeforeSource, greaterThanOrEqualTo(0));
     expect(sourceAssignment, greaterThan(mutedBeforeSource));
