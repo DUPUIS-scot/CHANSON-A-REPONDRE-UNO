@@ -1,0 +1,206 @@
+name: Repair LUBIAK runtime assets
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/repair-lubiak-assets-now.txt'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  repair-assets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install image validator
+        run: python -m pip install --disable-pip-version-check pillow
+      - name: Vendor pinned Three r160 Draco runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p web/vendor/draco
+          curl --fail --location --retry 4 --retry-all-errors \
+            https://raw.githubusercontent.com/mrdoob/three.js/r160/examples/jsm/loaders/DRACOLoader.js \
+            --output web/vendor/draco/DRACOLoader.js
+          base=https://www.gstatic.com/draco/versioned/decoders/1.5.7
+          for file in draco_decoder.js draco_wasm_wrapper.js draco_decoder.wasm; do
+            curl --fail --location --retry 4 --retry-all-errors "$base/$file" --output "web/vendor/draco/$file"
+          done
+          grep -q "class DRACOLoader" web/vendor/draco/DRACOLoader.js
+          test -s web/vendor/draco/draco_decoder.js
+          test -s web/vendor/draco/draco_wasm_wrapper.js
+          test -s web/vendor/draco/draco_decoder.wasm
+      - name: Generate valid Kathmandu night panorama
+        shell: bash
+        run: |
+          python - <<'PY'
+          from PIL import Image, ImageDraw, ImageFilter
+          from math import sin, pi
+          from pathlib import Path
+          w, h = 2048, 1024
+          im = Image.new('RGB', (w, h))
+          px = im.load()
+          for y in range(h):
+              t = y / (h - 1)
+              r = int(5 + 25 * t)
+              g = int(7 + 14 * t)
+              b = int(18 + 10 * t)
+              for x in range(w):
+                  glow = max(0.0, 1.0 - abs(x - w * .52) / (w * .52))
+                  px[x, y] = (min(255, r + int(8 * glow * t)), min(255, g + int(5 * glow * t)), b)
+          d = ImageDraw.Draw(im)
+          for layer, base, amp, color in [
+              (0, 520, 78, (13, 14, 24)),
+              (1, 610, 58, (19, 18, 25)),
+              (2, 690, 38, (28, 23, 25)),
+          ]:
+              pts = []
+              for x in range(w + 1):
+                  a = 2 * pi * x / w
+                  y = base + amp * (sin(a * (2 + layer) + layer) * .55 + sin(a * (5 + layer) + .8) * .25)
+                  pts.append((x, int(y)))
+              pts += [(w, h), (0, h)]
+              d.polygon(pts, fill=color)
+          rng = __import__('random').Random(2001)
+          x = 0
+          while x < w:
+              bw = rng.randint(28, 74)
+              bh = rng.randint(80, 250)
+              top = h - bh
+              tone = rng.choice([(35,24,25),(42,27,26),(48,31,27),(30,25,29)])
+              d.rectangle((x, top, min(w, x + bw), h), fill=tone)
+              if rng.random() < .32:
+                  d.polygon([(x, top), (x + bw//2, top-rng.randint(20,65)), (x+bw, top)], fill=(31,20,22))
+              for wy in range(top + 18, h - 18, 25):
+                  for wx in range(x + 10, x + bw - 7, 18):
+                      if rng.random() < .36:
+                          d.rectangle((wx, wy, wx+4, wy+6), fill=rng.choice([(255,129,49),(255,188,92),(206,71,35)]))
+              x += bw + rng.randint(3, 12)
+          stars = Image.new('RGBA', (w,h), (0,0,0,0))
+          sd = ImageDraw.Draw(stars)
+          for _ in range(260):
+              x = rng.randrange(w); y = rng.randrange(30, 500); a = rng.randrange(45, 150)
+              sd.point((x,y), fill=(210,225,255,a))
+          im = Image.alpha_composite(im.convert('RGBA'), stars.filter(ImageFilter.GaussianBlur(.25))).convert('RGB')
+          out = Path('web/lubiak/assets/lubiak-kathmandu-360.jpg')
+          out.parent.mkdir(parents=True, exist_ok=True)
+          im.save(out, 'JPEG', quality=88, optimize=True, progressive=True)
+          with Image.open(out) as check:
+              check.verify()
+          with Image.open(out) as check:
+              if check.size != (w,h) or check.format != 'JPEG':
+                  raise SystemExit('panorama validation failed')
+          print(f'Panorama ready: {out.stat().st_size} bytes, {w}x{h}')
+          PY
+      - name: Generate valid lightweight Freak Street extension
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, struct
+          from pathlib import Path
+          blob = bytearray()
+          views, accessors = [], []
+          def align():
+              while len(blob) % 4: blob.append(0)
+          def add(data, target, component, count, kind, minimum=None, maximum=None):
+              align(); off=len(blob); blob.extend(data)
+              vi=len(views); views.append({'buffer':0,'byteOffset':off,'byteLength':len(data),'target':target})
+              ac={'bufferView':vi,'componentType':component,'count':count,'type':kind}
+              if minimum is not None: ac['min']=minimum
+              if maximum is not None: ac['max']=maximum
+              ai=len(accessors); accessors.append(ac); return ai
+          cube_pos=[]; cube_norm=[]; cube_idx=[]
+          faces=[
+              ((1,0,0),[(1,-1,-1),(1,1,-1),(1,1,1),(1,-1,1)]),
+              ((-1,0,0),[(-1,-1,1),(-1,1,1),(-1,1,-1),(-1,-1,-1)]),
+              ((0,1,0),[(-1,1,-1),(-1,1,1),(1,1,1),(1,1,-1)]),
+              ((0,-1,0),[(-1,-1,1),(-1,-1,-1),(1,-1,-1),(1,-1,1)]),
+              ((0,0,1),[(1,-1,1),(1,1,1),(-1,1,1),(-1,-1,1)]),
+              ((0,0,-1),[(-1,-1,-1),(-1,1,-1),(1,1,-1),(1,-1,-1)]),
+          ]
+          for normal, verts in faces:
+              base=len(cube_pos); cube_pos += verts; cube_norm += [normal]*4
+              cube_idx += [base,base+1,base+2,base,base+2,base+3]
+          packf=lambda vals: struct.pack('<'+'f'*len(vals),*vals)
+          packu=lambda vals: struct.pack('<'+'H'*len(vals),*vals)
+          flat=lambda seq:[v for row in seq for v in row]
+          cp=add(packf(flat(cube_pos)),34962,5126,len(cube_pos),'VEC3',[-1,-1,-1],[1,1,1])
+          cn=add(packf(flat(cube_norm)),34962,5126,len(cube_norm),'VEC3')
+          ci=add(packu(cube_idx),34963,5123,len(cube_idx),'SCALAR')
+          road_pos=[(-5,0,-30),(5,0,-30),(5,0,30),(-5,0,30)]
+          road_norm=[(0,1,0)]*4
+          rp=add(packf(flat(road_pos)),34962,5126,4,'VEC3',[-5,0,-30],[5,0,30])
+          rn=add(packf(flat(road_norm)),34962,5126,4,'VEC3')
+          ri=add(packu([0,1,2,0,2,3]),34963,5123,6,'SCALAR')
+          nodes=[{'name':'Freak Street 2 road','mesh':1}]
+          for side in (-1,1):
+              for i,z in enumerate(range(-25,26,10)):
+                  height=3.0+(i%3)*1.1
+                  nodes.append({'name':f'Freak Street 2 building {side} {i}','mesh':0,
+                                'translation':[side*(8.0+(i%2)*1.3),height,z],
+                                'scale':[2.7+(i%2)*.7,height,4.0]})
+          doc={'asset':{'version':'2.0','generator':'DUPUIS LUBIAK repair'},
+               'scene':0,'scenes':[{'nodes':list(range(len(nodes)))}],'nodes':nodes,
+               'meshes':[
+                 {'name':'Freak Street building','primitives':[{'attributes':{'POSITION':cp,'NORMAL':cn},'indices':ci,'material':0}]},
+                 {'name':'Freak Street road','primitives':[{'attributes':{'POSITION':rp,'NORMAL':rn},'indices':ri,'material':1}]}
+               ],
+               'materials':[
+                 {'name':'Kathmandu brick','pbrMetallicRoughness':{'baseColorFactor':[.31,.12,.07,1],'roughnessFactor':.9,'metallicFactor':0}},
+                 {'name':'Freak Street charcoal','pbrMetallicRoughness':{'baseColorFactor':[.025,.012,.009,1],'roughnessFactor':.96,'metallicFactor':0},
+                  'emissiveFactor':[.42,.045,.008]}
+               ],
+               'accessors':accessors,'bufferViews':views,'buffers':[{'byteLength':len(blob)}]}
+          raw=json.dumps(doc,separators=(',',':')).encode()
+          raw += b' ' * ((4-len(raw)%4)%4)
+          align(); binary=bytes(blob); binary += b'\0' * ((4-len(binary)%4)%4)
+          total=12+8+len(raw)+8+len(binary)
+          out=struct.pack('<4sII',b'glTF',2,total)+struct.pack('<II',len(raw),0x4E4F534A)+raw+struct.pack('<II',len(binary),0x004E4942)+binary
+          path=Path('assets/models/lubiak_freak_street_2_ultralight.glb')
+          path.write_bytes(out)
+          magic,version,declared=struct.unpack('<4sII',out[:12])
+          if magic!=b'glTF' or version!=2 or declared!=len(out):
+              raise SystemExit('Freak Street GLB validation failed')
+          print(f'Freak Street extension ready: {len(out)} bytes')
+          PY
+      - name: Validate repaired assets
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, struct
+          from pathlib import Path
+          from PIL import Image
+          jpg=Path('web/lubiak/assets/lubiak-kathmandu-360.jpg')
+          with Image.open(jpg) as im:
+              im.load()
+              assert im.format=='JPEG' and im.size==(2048,1024)
+          glb=Path('assets/models/lubiak_freak_street_2_ultralight.glb').read_bytes()
+          magic,version,total=struct.unpack('<4sII',glb[:12])
+          assert magic==b'glTF' and version==2 and total==len(glb)
+          n,t=struct.unpack('<II',glb[12:20])
+          doc=json.loads(glb[20:20+n].decode().rstrip(' \0'))
+          assert len(doc.get('meshes',[]))>=2 and len(doc.get('nodes',[]))>=10
+          for p in ['web/vendor/draco/DRACOLoader.js','web/vendor/draco/draco_decoder.js',
+                    'web/vendor/draco/draco_wasm_wrapper.js','web/vendor/draco/draco_decoder.wasm']:
+              assert Path(p).stat().st_size>0
+          print('LUBIAK asset integrity validation passed')
+          PY
+      - name: Commit repaired assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add web/lubiak/assets/lubiak-kathmandu-360.jpg \
+            assets/models/lubiak_freak_street_2_ultralight.glb web/vendor/draco
+          git diff --cached --quiet && exit 0
+          git commit -m 'Repair LUBIAK panorama, street extension, and Draco runtime'
+          git push
