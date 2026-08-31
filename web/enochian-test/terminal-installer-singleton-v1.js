@@ -20,6 +20,7 @@
     loadScript('data-enoch-line-in-windows-input','/enochian-test/line-in-windows-input-authority-v1.js?v=20260829-v2',()=>retryInstall(window.installEnochianLineInWindowsInputAuthorityV1,frame));
     loadScript('data-enoch-line-in-live-waveform','/enochian-test/line-in-live-waveform-authority-v1.js?v=20260829-v2',()=>retryInstall(window.installEnochianLineInLiveWaveformAuthorityV1,frame));
     loadScript('data-enoch-private-io-access','/enochian-test/private-io-access-v1.js?v=20260829-v1',()=>retryInstall(window.installEnochianPrivateIoAccessV1,frame));
+    loadScript('data-enoch-private-line-in-float','/enochian-test/private-line-in-float-v1.js?v=20260831-v1',()=>retryInstall(window.installEnochianPrivateLineInFloatV1,frame));
     loadScript('data-enoch-audio-note-transcription','/enochian-test/wav-note-transcription-v1.js?v=20260829-v2',()=>window.installEnochianWavNoteTranscriptionV1?(window.installEnochianWavNoteTranscriptionV1(frame),true):false);
     loadScript('data-enoch-sculpt-audio-v6','/enochian-test/sculpt-audio-mod.js?v=20260829-v6',()=>window.installEnochianSculptAudioMod?(window.installEnochianSculptAudioMod(frame),true):false);
     loadScript('data-enoch-geometry-mod-bridge','/enochian-test/analyser-geometry-mod-bridge-v1.js?v=20260829-v1',()=>window.installEnochianAnalyserGeometryModBridgeV1?(window.installEnochianAnalyserGeometryModBridgeV1(frame),true):false);
