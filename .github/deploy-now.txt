@@ -1,4 +1,4 @@
-deploy-request: 2026-08-31T19:35+01:00
+deploy-request: 2026-08-31T19:39+01:00
 source: chat-direct
-scope: ENOCHIAN private 3D SIGNAL source colours
-reason: LINE IN and looper terrain render green; MIDI overlay renders red; preserve shared mixed analyser and private input routing
+scope: laboratory independent book and mirror videos v82
+reason: VideoBookPage_Left/Right keep ENOCHIAN book loop; VideoScreen_Left/Right use assets/videos/0830(1).mp4 independently
