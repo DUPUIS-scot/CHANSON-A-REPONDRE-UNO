@@ -1,9 +1,9 @@
-deploy-request: 2026-08-31T20:15:00Z
-source: ChatGPT Work iPhone palace diagnosis
-scope: LUBIAK full-detail palace geometry
-runtime-commit: fb3c6ba535b8e26f0e9d35a9a6eeabe345986869
-primary-model: assets/models/LUBIAK.glb
-primary-blob-sha: 19e99405b8c679e66e1e4323a4e7cb35fe40d12b
-fallback-model: assets/models/LUBIAK_master_optimized.glb
-preserve: neutral authored-material renderer and mobile fallback
-reason: optimized four-element binary contains flat palace blocks that textures cannot reconstruct
+deploy-request: 2026-08-31T20:25:00Z
+source: ChatGPT Work explicit restoration
+scope: exact optimized four-element LUBIAK model
+runtime-commit: d6fbe89a517c6572e085f16842152c2159a92ec4
+model: assets/models/textured-glb-comparison/LUBIAK_master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED.glb
+blob-sha: b07ea626a2ff0698c1e54e7ee1b375f9d62ee7b9
+expected-bytes: 3027336
+remove: legacy LUBIAK.glb primary, palace donor material substitution and experimental full-detail render
+preserve: stable Freak Street entrance, mobile controls and neutral authored-material renderer
