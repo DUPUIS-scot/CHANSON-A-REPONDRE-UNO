@@ -1,4 +1,5 @@
-deploy-request: 2026-08-30
+deploy-request: 2026-08-31T09:34:00+01:00
 source: chat
-scope: LUBIAK FOLLOW AERIAL RIDE controls + 2MIX flight tray
-reason: preserve close third-person FOLLOW, wall/mesh UP-DOWN climb, RIDE altitude UP-DOWN, and add the Terminal 2MIX visual/text tray while riding DA NOBLE Y2K
+workflow: WEB — Deploy Live Site
+scope: PLAY Jester optimized rigged GLB
+reason: deploy Work-fixed play_jester_rigged.glb (2,535,868 bytes) preserving skinned mesh, armature, material, embedded texture, and current PLAY dealer/card runtime
