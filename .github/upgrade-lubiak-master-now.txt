@@ -1,6 +1,9 @@
-upgrade-request: 2026-08-30T03:47:00+01:00
-source: chat
+upgrade-request: 2026-08-31T20:20:00Z
+source: ChatGPT Work screenshot diagnosis
 target: assets/models/LUBIAK_master_optimized.glb
 texture-set: palace+freak-street+circus-exterior+circus-interior
 status: rebuild-then-auto-publish
-reason: bake uploaded Freak Street albedo+normal+roughness+height into LUBIAK master and force cache-busted Pages deployment
+preserve: correct Freak Street entrance
+repair: bake palace albedo, normal, roughness and height maps into palace material slots
+remove: flat orange placeholder materials, metallic palace reflection and repeated runtime window donor texture
+deploy-workflow: canonical baked-PBR master only
