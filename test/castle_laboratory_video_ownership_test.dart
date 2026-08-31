@@ -15,7 +15,7 @@ void main() {
     expect(bridge, contains("expectedBooks:['VideoBookPage_Left','VideoBookPage_Right']"));
     expect(bridge, contains('looksLikeMirrorSurface'));
     expect(bridge, contains('LEGACY_MIRROR_NAME'));
-    expect(bridge, contains('book-and-mirror-ready-${VERSION}'));
+    expect(bridge, contains(r'book-and-mirror-ready-${VERSION}'));
     expect(bridge, contains('side:THREE.DoubleSide'));
     expect(bridge, contains('texture.flipY = false'));
     expect(bridge, contains("attemptPlay('surface-click')"));
