@@ -1,8 +1,9 @@
-deploy-request: 2026-08-31T20:08:00Z
-source: ChatGPT Work live choreography repair
-scope: PLAY Jester card trajectory, scale, depth, and theatrical body gesture
-repair-commits: a6ba289b67031ea7cd2c656f2c5d91df41139b2b, 05bb2ed7cddd56fde08cd264ab8f671ae27ebc18
-model: assets/models/play_jester_rigged.glb
-runtime: web/puppet_dealer.js?v=play-jester-deal-choreography-20260831-v7
-verification: centred deal path, inward receive path, 0.92 card scale, root transform reset, explicit animation and texture states
-reason: correct right-side card drift and add readable Jester interaction while preserving working textures
+deploy-request: 2026-08-31T20:15:00Z
+source: ChatGPT Work iPhone palace diagnosis
+scope: LUBIAK full-detail palace geometry
+runtime-commit: fb3c6ba535b8e26f0e9d35a9a6eeabe345986869
+primary-model: assets/models/LUBIAK.glb
+primary-blob-sha: 19e99405b8c679e66e1e4323a4e7cb35fe40d12b
+fallback-model: assets/models/LUBIAK_master_optimized.glb
+preserve: neutral authored-material renderer and mobile fallback
+reason: optimized four-element binary contains flat palace blocks that textures cannot reconstruct
