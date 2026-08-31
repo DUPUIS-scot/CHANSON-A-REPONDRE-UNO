@@ -20,21 +20,45 @@ jobs:
           node-version: '22'
       - name: Install glTF Transform CLI
         run: npm install --global @gltf-transform/cli@4
-      - name: Optimize Megapole and LUBIAK textured candidates
+      - name: Optimize Megapole, LUBIAK, and dragon web assets
         shell: bash
         run: |
           set -euo pipefail
           DIR='assets/models/textured-glb-comparison'
           gltf-transform optimize "$DIR/MEGAPOLE_PBR_TERRAIN_UPGRADED.glb" "$DIR/MEGAPOLE_PBR_TERRAIN_UPGRADED_WEB_OPTIMIZED.glb" --compress draco --texture-compress webp
           gltf-transform optimize "$DIR/LUBIAK_master_optimized_4_ELEMENT_PBR.glb" "$DIR/LUBIAK_master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED.glb" --compress draco --texture-compress webp
-          ls -lh "$DIR"/*WEB_OPTIMIZED.glb
+
+          DRAGON='assets/models/lubiak_dragon_guardian_web.glb'
+          DRAGON_TMP="$RUNNER_TEMP/lubiak_dragon_guardian_web.glb"
+          before="$(stat -c%s "$DRAGON")"
+          gltf-transform optimize "$DRAGON" "$DRAGON_TMP" --compress draco --texture-compress webp
+          python3 - "$DRAGON" "$DRAGON_TMP" <<'PY'
+          import json, struct, sys
+          def metadata(path):
+              data = open(path, 'rb').read()
+              magic, version, declared = struct.unpack('<4sII', data[:12])
+              if magic != b'glTF' or version != 2 or declared != len(data):
+                  raise SystemExit(f'invalid GLB: {path}')
+              json_len, json_type = struct.unpack('<II', data[12:20])
+              doc = json.loads(data[20:20 + json_len].decode('utf-8').rstrip(' \0'))
+              return len(doc.get('skins', [])), [a.get('name') for a in doc.get('animations', [])]
+          source = metadata(sys.argv[1])
+          optimized = metadata(sys.argv[2])
+          if source != optimized or 'guardian_45s' not in optimized[1]:
+              raise SystemExit(f'dragon rig/animation contract changed: {source} -> {optimized}')
+          PY
+          after="$(stat -c%s "$DRAGON_TMP")"
+          test "$after" -lt "$before"
+          mv "$DRAGON_TMP" "$DRAGON"
+          echo "Dragon compressed: $before -> $after bytes"
+          ls -lh "$DIR"/*WEB_OPTIMIZED.glb "$DRAGON"
       - name: Commit optimized GLBs
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add assets/models/textured-glb-comparison/*WEB_OPTIMIZED.glb
+          git add assets/models/textured-glb-comparison/*WEB_OPTIMIZED.glb assets/models/lubiak_dragon_guardian_web.glb
           if git diff --cached --quiet; then
             echo 'No optimized changes to commit.'
             exit 0
