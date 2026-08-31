@@ -177,19 +177,19 @@ jobs:
         run: |
           flutter build web --release --no-pub --no-wasm-dry-run --base-href "/" --dart-define=SKIP_AUTH_FOR_DEVELOPMENT=false --dart-define=SUPABASE_URL="$SUPABASE_URL" --dart-define=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY" --dart-define=AI_BACKEND_URL="$AI_BACKEND_URL" --dart-define=TURNSTILE_SITE_KEY="$TURNSTILE_SITE_KEY" --dart-define=APP_BUILD_SHA="${{ github.sha }}"
 
-      - name: Promote canonical LUBIAK and geometry-safe Megapole GLBs
+      - name: Promote exact four-element LUBIAK and geometry-safe Megapole GLBs
         shell: bash
         run: |
           set -euo pipefail
           models="build/web/assets/assets/models"
           safe="assets/models/textured-glb-comparison"
-          test -s "assets/models/LUBIAK_master_optimized.glb"
+          test -s "$safe/LUBIAK_master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED.glb"
           test -s "$safe/MEGAPOLE_PBR_TERRAIN_UPGRADED_WEB_OPTIMIZED.glb"
-          cp "assets/models/LUBIAK_master_optimized.glb" "$models/LUBIAK_master_optimized.glb"
+          cp "$safe/LUBIAK_master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED.glb" "$models/LUBIAK_master_optimized.glb"
           cp "$safe/MEGAPOLE_PBR_TERRAIN_UPGRADED_WEB_OPTIMIZED.glb" "$models/SILMARI_LLION_MEGAPOLE_LUBIAK.glb"
-          cmp -s "assets/models/LUBIAK_master_optimized.glb" "$models/LUBIAK_master_optimized.glb"
+          cmp -s "$safe/LUBIAK_master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED.glb" "$models/LUBIAK_master_optimized.glb"
           cmp -s "$safe/MEGAPOLE_PBR_TERRAIN_UPGRADED_WEB_OPTIMIZED.glb" "$models/SILMARI_LLION_MEGAPOLE_LUBIAK.glb"
-          echo "Promoted canonical baked-PBR LUBIAK and validated Megapole without runtime material rewriting"
+          echo "Promoted exact four-element PBR WEB OPTIMIZED LUBIAK and validated Megapole"
 
       - name: Refresh LUBIAK textured runtime cache
         shell: bash
@@ -203,8 +203,8 @@ jobs:
           js_path = Path('build/web/lubiak/lubiak.js')
           html_path = Path('build/web/lubiak/index.html')
           js = js_path.read_text()
-          js, n = re.subn(r"(LUBIAK_master_optimized\.glb\?v=)[^'\"\s]+", rf"\g<1>{token}", js)
-          if n < 1: raise RuntimeError('LUBIAK master cache token not found')
+          js, n = re.subn(r"(LUBIAK_master_optimized(?:_4_ELEMENT_PBR_WEB_OPTIMIZED)?\.glb\?v=)[^'\"\s]+", rf"\g<1>{token}", js)
+          if n < 1: raise RuntimeError('LUBIAK optimized model cache token not found')
           js_path.write_text(js)
           html = html_path.read_text()
           html, n = re.subn(r"(lubiak\.js\?v=)[^'\"\s]+", rf"\g<1>{token}", html)
