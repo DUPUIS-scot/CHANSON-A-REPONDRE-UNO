@@ -1,4 +1,4 @@
-deploy-request: 2026-08-31T18:35+01:00
+deploy-request: 2026-08-31T18:40+01:00
 source: chat-direct
-scope: ENOCHIAN TERMINAL private LINE IN + MIDI to 3D SIGNAL
-reason: deploy 8892551556ddc0089b0f6cf53d628316150bc7a2 with live post-FX private input spectrum and MIDI modulation feeding the 3D signal analyzer
+scope: laboratory VideoBookPage + mirror video repair
+reason: bind ENOCHIAN JJ DUPUIS video to VideoBookPage_Left, VideoBookPage_Right and Blender mirror surfaces; deploy newly textured laboratory runtime
