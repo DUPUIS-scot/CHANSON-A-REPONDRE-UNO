@@ -1,4 +1,4 @@
-deploy-request: 2026-08-31T19:39+01:00
+deploy-request: 2026-08-31T19:42+01:00
 source: chat-direct
-scope: laboratory independent book and mirror videos v82
-reason: VideoBookPage_Left/Right keep ENOCHIAN book loop; VideoScreen_Left/Right use assets/videos/0830(1).mp4 independently
+scope: LUBIAK authoritative PBR web optimized master
+reason: redeploy exact assets/models/textured-glb-comparison/LUBIAK_master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED.glb as canonical live LUBIAK_master_optimized.glb with byte-for-byte verification
