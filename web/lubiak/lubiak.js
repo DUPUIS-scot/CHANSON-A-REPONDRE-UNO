@@ -1186,8 +1186,7 @@ async function installEnvironment() {
   setStatus('STARTING 3D ENGINE', 4);
   const decoder = await getMeshoptDecoder();
   const candidates = [
-    { url: '/assets/assets/models/LUBIAK_master_optimized.glb?v=20260831-integrity-v1', label: 'LOADING LUBIAK MASTER', finish: 'ENTER LUBIAK', timeoutMs: 26000 },
-    { url: '/assets/assets/models/LUBIAK.glb?v=20260831-integrity-v1', label: 'LOADING LUBIAK FALLBACK', finish: 'ENTER LUBIAK · RECOVERY MODEL', timeoutMs: 18000 },
+    { url: '/assets/assets/models/LUBIAK_master_optimized.glb?v=20260831-single-master-v1', label: 'LOADING LUBIAK MASTER', finish: 'ENTER LUBIAK', timeoutMs: 26000 },
   ];
 
   for (const candidate of candidates) {
@@ -1327,7 +1326,7 @@ rideToggle.addEventListener('click', () => {
   refreshLubiakModeButtons();
 });
 
-refreshLubiakModeButtons();
+queueMicrotask(() => refreshLubiakModeButtons());
 
 let verticalTrigger = 0;
 let climbAttached = false;

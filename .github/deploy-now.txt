@@ -1,5 +1,5 @@
-deploy-request: 2026-08-31T16:30:00+01:00
+deploy-request: 2026-08-31T17:08:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-scope: LUBIAK runtime exception and module-loading repair
-reason: expose exact browser boot exceptions, preflight Three GLTF Draco module chain, preserve visual recovery, and refresh runtime cache
+scope: LUBIAK single PBR master + verticalDock boot repair
+reason: load only the validated web-optimized PBR LUBIAK environment and remove the verticalDock temporal-dead-zone boot crash
