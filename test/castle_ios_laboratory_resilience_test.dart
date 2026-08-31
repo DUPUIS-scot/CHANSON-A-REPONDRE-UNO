@@ -83,24 +83,25 @@ void main() {
     expect(resetView, contains("reset-button-v70"));
 
     expect(bridge, contains(r'const BOOK_NAME = /^VideoBookPage_(Left|Right)$/i'));
-    expect(bridge, contains(r'const LEGACY_MIRROR_NAME = /^VideoScreen_(Left|Right)$/i'));
-    expect(bridge, contains("bureauVideoContract = 'VideoBookPage_Left|VideoBookPage_Right|mirror-surface'"));
+    expect(bridge, contains(r'const MIRROR_NAME = /^VideoScreen_(Left|Right)$/i'));
+    expect(bridge, contains("bureauVideoContract = 'VideoBookPage_Left|VideoBookPage_Right=>bureau_screen_loop.mp4;VideoScreen_Left|VideoScreen_Right=>0830(1).mp4'"));
     expect(bridge, contains("../assets/assets/videos/bureau_screen_loop.mp4"));
+    expect(bridge, contains("../assets/assets/videos/0830(1).mp4"));
     expect(bridge, contains('window.__castleBureauVideoPrime'));
     expect(bridge, contains('raycaster.intersectObjects([...interactiveMeshes],false)'));
-    expect(bridge, contains("attemptPlay('surface-click')"));
-    expect(bridge, contains('looksLikeMirrorSurface'));
+    expect(bridge, contains("playAll('surface-click')"));
+    expect(bridge, contains('MIRROR_NAME.test(name)'));
     expect(bridge, contains('autoplay:true'));
-    expect(bridge, contains('texture.needsUpdate = true'));
+    expect(bridge, contains('texture.needsUpdate=true'));
     expect(bridge, contains('polygonOffset:true'));
-    expect(bridge, contains("window.addEventListener('pointerup', event =>"));
+    expect(bridge, contains("window.addEventListener('pointerup',event=>"));
     expect(medallion, contains('window.__castleBureauVideoPrime?.()'));
-    expect(overlay, contains("castle_bureau_video_bridge.js?v=81"));
+    expect(overlay, contains("castle_bureau_video_bridge.js?v=82"));
     expect(overlay, isNot(contains('castle_bureau_video_refresh_v70.js')));
     expect(overlay, contains("castle_visual_regression_v55.js?v=70"));
 
     final mutedBeforeSource = bridge.indexOf('muted:true');
-    final sourceAssignment = bridge.indexOf('video.src = VIDEO_URL;');
+    final sourceAssignment = bridge.indexOf('video.src = url;');
     expect(mutedBeforeSource, greaterThanOrEqualTo(0));
     expect(sourceAssignment, greaterThan(mutedBeforeSource));
   });
