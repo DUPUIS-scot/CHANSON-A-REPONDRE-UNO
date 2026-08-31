@@ -1,13 +1,13 @@
 (()=>{
 'use strict';
-const VERSION='v1';
+const VERSION='v2';
 function install(frame){
   try{
     const live=frame?.contentDocument,deck=live?.getElementById('deck'),d=deck?.contentDocument;
     if(!d)return false;
-    if(d.documentElement.dataset.twoMixLauncherHitRepair===VERSION)return true;
     const toggle=d.getElementById('twoMixToggle');
     if(!toggle)return false;
+    if(toggle.dataset.launcherHitRepair===VERSION)return true;
     d.getElementById('two-mix-launcher-hit-repair-style')?.remove();
     const style=d.createElement('style');
     style.id='two-mix-launcher-hit-repair-style';
@@ -20,6 +20,18 @@ function install(frame){
     toggle.style.pointerEvents='auto';
     toggle.style.touchAction='manipulation';
     toggle.setAttribute('aria-label',toggle.getAttribute('aria-pressed')==='true'?'Disable 2MIX':'Enable 2MIX');
+    let before=false,armed=false;
+    const on=()=>toggle.getAttribute('aria-pressed')==='true'||toggle.classList.contains('active');
+    toggle.addEventListener('pointerdown',()=>{before=on();armed=true},{capture:true,passive:true});
+    toggle.addEventListener('pointerup',()=>{
+      if(!armed)return;armed=false;
+      setTimeout(()=>{
+        if(on()!==before)return;
+        try{toggle.click()}catch(_){}
+      },0);
+    },{capture:true,passive:true});
+    toggle.addEventListener('click',()=>setTimeout(()=>{const active=on();toggle.setAttribute('aria-label',active?'Disable 2MIX':'Enable 2MIX');d.documentElement.dataset.twoMixActivation=active?'on':'off'},0));
+    toggle.dataset.launcherHitRepair=VERSION;
     d.documentElement.dataset.twoMixLauncherHitRepair=VERSION;
     return true;
   }catch(_){return false}
