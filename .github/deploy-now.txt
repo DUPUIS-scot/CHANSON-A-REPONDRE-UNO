@@ -1,5 +1,5 @@
-deploy-request: 2026-08-31T09:34:00+01:00
+deploy-request: 2026-08-31T09:39:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-scope: PLAY Jester optimized rigged GLB
-reason: deploy Work-fixed play_jester_rigged.glb (2,535,868 bytes) preserving skinned mesh, armature, material, embedded texture, and current PLAY dealer/card runtime
+scope: PLAY Jester optimized rigged GLB + Castle regression repair
+reason: deploy Work-fixed play_jester_rigged.glb after updating stale Castle loader and gatekeeper test contracts to the current shared Draco and visible-mesh hit-test runtime
