@@ -1,5 +1,5 @@
-deploy-request: 2026-08-31T14:03:00+01:00
+deploy-request: 2026-08-31T14:20:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-scope: PLAY Jester visible static fallback v4
-reason: deploy PLAY Jester v4 after removing final obsolete Enochian UI-repairs boot installer assertion while preserving current analyser controls authority
+scope: current main including PLAY Jester and Enochian runtime
+reason: deploy after replacing obsolete hard-coded Enochian live-copy version assertion with current runtime contract verification
