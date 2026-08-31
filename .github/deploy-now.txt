@@ -1,5 +1,5 @@
-deploy-request: 2026-08-31T11:43:00+01:00
+deploy-request: 2026-08-31T10:50:30Z
 source: chat
-workflow: WEB — Deploy Live Site
-scope: PLAY Jester Work-fixed GLB cache refresh
-reason: force fresh puppet_dealer.js and play_jester_rigged.glb URLs after the Work-fixed binary replacement while keeping rest-pose validation and card flow unchanged
+scope: LUBIAK Draco loader recovery
+commit: 40822cb074a01c6826002d065d3b77cdfa030c1a
+reason: deploy KHR_draco_mesh_compression support for promoted LUBIAK master
