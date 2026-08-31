@@ -1,76 +1,67 @@
-name: LUBIAK 360 Kathmandu background
+name: LUBIAK asset integrity
 
 on:
   push:
+    branches: [main]
     paths:
       - '.github/workflows/lubiak-360-background.yml'
       - 'web/lubiak/assets/lubiak-kathmandu-360.jpg'
+      - 'assets/models/lubiak_freak_street_2_ultralight.glb'
+      - 'web/vendor/draco/**'
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  install-background:
+  validate-assets:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          fetch-depth: 0
-      - name: Wire equirectangular Kathmandu panorama into LUBIAK
+          python-version: '3.12'
+      - name: Install image validator
+        run: python -m pip install --disable-pip-version-check pillow
+      - name: Validate panorama, Freak Street GLB, and pinned Draco
+        shell: bash
         run: |
-          python3 - <<'PY'
+          python - <<'PY'
+          import json, struct
           from pathlib import Path
-          p = Path('web/lubiak/lubiak.js')
-          s = p.read_text()
-          old = """const scene = new THREE.Scene();
-const exteriorBackground = new THREE.Color(0x000000);
-const exteriorFogColor = new THREE.Color(0x050303);
-scene.background = exteriorBackground.clone();
-scene.fog = new THREE.FogExp2(exteriorFogColor, 0.0024);"""
-          new = """const scene = new THREE.Scene();
-const exteriorBackground = new THREE.Color(0x000000); // fallback only
-const exteriorFogColor = new THREE.Color(0x050303);
-let exteriorBackgroundTexture = null;
-scene.background = exteriorBackground.clone();
-scene.fog = new THREE.FogExp2(exteriorFogColor, 0.0024);
+          from PIL import Image
 
-// LUBIAK_KATHMANDU_360_BACKGROUND_V1
-// Equirectangular panorama replaces the former black exterior background and remains camera-centred at infinity.
-new THREE.TextureLoader().load(
-  'assets/lubiak-kathmandu-360.jpg?v=20260830-kathmandu-360-v1',
-  (texture) => {
-    texture.colorSpace = THREE.SRGBColorSpace;
-    texture.mapping = THREE.EquirectangularReflectionMapping;
-    texture.needsUpdate = true;
-    exteriorBackgroundTexture = texture;
-    if (typeof worldMode === 'undefined' || worldMode === 'exterior') scene.background = texture;
-  },
-  undefined,
-  (error) => console.warn('LUBIAK Kathmandu 360 background failed; black fallback retained.', error),
-);"""
-          if old not in s:
-              raise SystemExit('Expected LUBIAK scene background bootstrap not found')
-          s = s.replace(old, new, 1)
-          old_exit = "scene.background = exteriorBackground.clone();\n  scene.fog = new THREE.FogExp2(exteriorFogColor, 0.0024);"
-          new_exit = "scene.background = exteriorBackgroundTexture || exteriorBackground.clone();\n  scene.fog = new THREE.FogExp2(exteriorFogColor, 0.0024);"
-          if old_exit not in s:
-              raise SystemExit('Expected circus exterior-return background assignment not found')
-          s = s.replace(old_exit, new_exit, 1)
-          p.write_text(s)
+          panorama = Path('web/lubiak/assets/lubiak-kathmandu-360.jpg')
+          with Image.open(panorama) as image:
+              image.load()
+              if image.format != 'JPEG':
+                  raise SystemExit('LUBIAK panorama is not a decodable JPEG')
+              width, height = image.size
+              if width < 2048 or height < 1024 or width != height * 2:
+                  raise SystemExit(f'LUBIAK panorama is not 2:1 equirectangular: {image.size}')
+
+          street_path = Path('assets/models/lubiak_freak_street_2_ultralight.glb')
+          street = street_path.read_bytes()
+          if len(street) < 20:
+              raise SystemExit('Freak Street GLB is empty')
+          magic, version, declared = struct.unpack('<4sII', street[:12])
+          if magic != b'glTF' or version != 2 or declared != len(street):
+              raise SystemExit(f'Freak Street GLB length mismatch: declared={declared}, actual={len(street)}')
+          json_length, json_type = struct.unpack('<II', street[12:20])
+          document = json.loads(street[20:20 + json_length].decode('utf-8').rstrip(' \0'))
+          if len(document.get('meshes', [])) < 2 or len(document.get('nodes', [])) < 10:
+              raise SystemExit('Freak Street GLB scene contract is incomplete')
+
+          required = {
+              'web/vendor/draco/DRACOLoader.js': 10000,
+              'web/vendor/draco/draco_decoder.js': 500000,
+              'web/vendor/draco/draco_wasm_wrapper.js': 40000,
+              'web/vendor/draco/draco_decoder.wasm': 200000,
+          }
+          for name, minimum in required.items():
+              size = Path(name).stat().st_size
+              if size < minimum:
+                  raise SystemExit(f'Pinned Draco asset is incomplete: {name} ({size} bytes)')
+
+          print(f'LUBIAK integrity passed: panorama={width}x{height}, street={len(street)} bytes')
           PY
-      - name: Mark deployment
-        run: |
-          cat > .github/deploy-now.txt <<'EOF'
-          deploy-request: 2026-08-30T07:30:00+01:00
-          source: chat
-          scope: LUBIAK Kathmandu 360 panorama
-          reason: replace black exterior background with supplied equirectangular Kathmandu night panorama
-          EOF
-      - name: Commit background wiring
-        run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add web/lubiak/lubiak.js .github/deploy-now.txt
-          git diff --cached --quiet && exit 0
-          git commit -m 'Wire Kathmandu 360 panorama into LUBIAK background'
-          git push
