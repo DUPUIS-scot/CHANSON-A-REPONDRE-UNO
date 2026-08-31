@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 
 
 root = Path(__file__).resolve().parents[1]
@@ -13,6 +14,13 @@ viewport = (terminal / "target-viewport.js").read_text(encoding="utf-8")
 shield = (terminal / "double-jecker-turntable-shield-v1.js").read_text(encoding="utf-8")
 installer = (terminal / "terminal-installer-singleton-v1.js").read_text(encoding="utf-8")
 
+# The terminal shell may use either an absolute or relative same-origin iframe URL.
+# Validate the actual cache-busted live-copy entry instead of requiring a leading slash.
+live_copy_cache_busted = re.search(
+    r'src=["\'](?:/)?enochian-test/live-copy\.html\?v=[^"\']+["\']',
+    shell,
+) is not None
+
 checks = {
     "master PLAY is not capture-intercepted": "stopImmediatePropagation();pauseStems();state.mainHeld=false" not in transport,
     "master PLAY retains native audio activation": "Main PLAY always belongs to the master deck" in transport,
@@ -25,7 +33,7 @@ checks = {
     "floating 2J is the sole launcher": "launcher.hidden=true;launcher.style.display='none'" in shield,
     "floating 2J defaults away from PLAYBACK": "top:auto;bottom:18px" in shield,
     "consolidated installer is cache-busted": "terminal-installer-singleton-v1.js?v=20260829-v30" in shell,
-    "consolidated runtime entry is cache-busted": "/enochian-test/live-copy.html?v=" in shell,
+    "consolidated runtime entry is cache-busted": live_copy_cache_busted,
     "late authorities use repaired revisions": all(
         marker in installer
         for marker in (
