@@ -600,93 +600,6 @@ function makeFallbackDistrict() {
   finishLoad('ENTER LUBIAK · SAFE MODE');
 }
 
-// LUBIAK_PALACE_PBR_SLOT_REPAIR_V1
-// Freak Street is already correct. Repair only palace descendants whose exported
-// material slot has no authored texture and presents as a flat salmon/orange block.
-function repairPalacePbrSlots(root) {
-  root.updateMatrixWorld(true);
-  const palaceTerms = /palace|temple|citadel|kumari[ _-]?ghar|kumari|durbar/i;
-  const palaceMeshes = [];
-  root.traverse((object) => {
-    if (!object.isMesh) return;
-    const lineage = [];
-    let cursor = object;
-    while (cursor && cursor !== root) {
-      lineage.push(cursor.name || '');
-      cursor = cursor.parent;
-    }
-    const materials = Array.isArray(object.material) ? object.material : [object.material];
-    const semantic = [lineage.join(' '), ...materials.map((m) => m?.name || '')].join(' ');
-    if (palaceTerms.test(semantic)) palaceMeshes.push({ object, materials });
-  });
-
-  if (!palaceMeshes.length) {
-    console.warn('LUBIAK palace material repair skipped: no labelled palace branch.');
-    return;
-  }
-
-  const texturedDonors = [];
-  for (const entry of palaceMeshes) {
-    const center = new THREE.Box3().setFromObject(entry.object).getCenter(new THREE.Vector3());
-    for (const material of entry.materials) {
-      if (material?.map) texturedDonors.push({ material, center });
-    }
-  }
-
-  let repairedSlots = 0;
-  let reflectionSlots = 0;
-  for (const entry of palaceMeshes) {
-    const center = new THREE.Box3().setFromObject(entry.object).getCenter(new THREE.Vector3());
-    const repaired = entry.materials.map((material) => {
-      if (!material) return material;
-
-      // Palace architecture is stone/plaster/wood, never polished metal.
-      if ('metalness' in material && material.metalness > 0.08) {
-        material.metalness = 0.04;
-        reflectionSlots += 1;
-      }
-      if ('roughness' in material && material.roughness < 0.62) {
-        material.roughness = 0.72;
-        reflectionSlots += 1;
-      }
-
-      if (material.map || !material.color || !texturedDonors.length) {
-        material.needsUpdate = true;
-        return material;
-      }
-      const hsl = {};
-      material.color.getHSL(hsl);
-      const flatOrangePlaceholder = hsl.h < 0.12 && hsl.s > 0.22 && hsl.l > 0.30 && hsl.l < 0.86;
-      if (!flatOrangePlaceholder) {
-        material.needsUpdate = true;
-        return material;
-      }
-
-      let donor = texturedDonors[0];
-      let donorDistance = center.distanceToSquared(donor.center);
-      for (let i = 1; i < texturedDonors.length; i += 1) {
-        const distance = center.distanceToSquared(texturedDonors[i].center);
-        if (distance < donorDistance) {
-          donor = texturedDonors[i];
-          donorDistance = distance;
-        }
-      }
-      const replacement = donor.material.clone();
-      replacement.name = `LUBIAK_PALACE_REPAIRED_${material.name || 'SLOT'}`;
-      if ('metalness' in replacement) replacement.metalness = 0.04;
-      if ('roughness' in replacement) replacement.roughness = Math.max(0.72, replacement.roughness || 0);
-      replacement.side = THREE.DoubleSide;
-      replacement.transparent = false;
-      replacement.opacity = 1;
-      replacement.needsUpdate = true;
-      repairedSlots += 1;
-      return replacement;
-    });
-    entry.object.material = Array.isArray(entry.object.material) ? repaired : repaired[0];
-  }
-  console.info('LUBIAK palace PBR slots repaired', { palaceMeshes: palaceMeshes.length, texturedDonors: texturedDonors.length, repairedSlots, reflectionSlots });
-}
-
 function frameLoadedEnvironment(root) {
   root.updateMatrixWorld(true);
   const box = new THREE.Box3().setFromObject(root);
@@ -721,7 +634,6 @@ function frameLoadedEnvironment(root) {
   // LUBIAK_AUTHORED_PBR_MATERIALS_V1
   // The promoted PBR WEB OPTIMIZED master is display-authoritative.
   // Keep all embedded baseColor, normal, roughness, metalness and emissive textures unchanged.
-  repairPalacePbrSlots(root);
 
   root.traverse((object) => {
     if (!object.isMesh) return;
