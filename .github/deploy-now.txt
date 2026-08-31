@@ -1,5 +1,5 @@
-deploy-request: 2026-08-31T14:40:00Z
+deploy-request: 2026-08-31T14:55:00Z
 source: chat
 workflow: WEB — Deploy Live Site
-scope: complete LUBIAK asset integrity and runtime recovery repair
-reason: deploy validated panorama, Freak Street GLB, local Draco, timeouts, confirmed first frame, cinematic exit, and WebGL recovery
+scope: LUBIAK actual browser boot recovery
+reason: show Kathmandu visual immediately, shorten cinematic hard exit, preserve visible fallback while 3D master initializes, and reveal canvas only when runtime reports ready
