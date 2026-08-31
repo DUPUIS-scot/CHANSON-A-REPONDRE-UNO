@@ -16,7 +16,10 @@
     html, body { margin: 0; width: 100%; min-height: 100%; background: #090604; }
     body { background: radial-gradient(circle at 18% 28%, rgba(122, 42, 10, .38), transparent 32%), linear-gradient(180deg, #140805 0%, #090403 48%, #030201 100%); }
     #shared-stage-background { position: fixed; inset: 0; background-image: url('assets/assets/images/shared_stage_background_user.jpg'); background-size: cover; background-position: center center; background-repeat: no-repeat; pointer-events: none; z-index: 0; }
-    flutter-view, flt-glass-pane { position: relative; z-index: 1; width: 100%; min-height: 100dvh; background: transparent !important; }
+    flutter-view { position: relative; z-index: 1; width: 100%; min-height: 100dvh; background: transparent !important; }
+    /* Flutter's glass pane must be a sized block. Making it inline collapses
+       its layout box to 0×0 and makes Expanded descendants fail on /play. */
+    flt-glass-pane { display: block !important; position: relative; z-index: 1; width: 100%; height: 100dvh; min-height: 100dvh; background: transparent !important; }
     flt-platform-view, flt-platform-view-slot, .dealer-3d-container { visibility: visible !important; opacity: 1 !important; z-index: 20 !important; }
     .dealer-3d-container { position: relative !important; display: block !important; overflow: hidden !important; contain: layout paint !important; background: transparent !important; }
     canvas[data-transcription-jester-canvas="true"] { z-index: 21 !important; }
