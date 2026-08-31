@@ -1,8 +1,8 @@
-deploy-request: 2026-08-31T19:32:00Z
-source: ChatGPT Work repair-and-deploy
-scope: PLAY Jester dealer bridge
-repair-commit: 5d7fe8f55bc36fb5c32121bad83b70e2479b4f21
-model: assets/models/play_jester_rigged.glb
-runtime: web/puppet_dealer.js?v=play-jester-visible-static-20260831-v5
-verification: dealer container resolves by element id and reaches dealerStatus ready
-reason: fix Flutter two-argument puppetDealerCreate call and deploy the repaired Play route
+deploy-request: 2026-08-31T19:40:00Z
+source: ChatGPT Work live PBR repair
+scope: LUBIAK authored PBR render
+source-model: assets/models/textured-glb-comparison/LUBIAK_master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED.glb
+canonical-live-model: assets/assets/models/LUBIAK_master_optimized.glb
+runtime-commit: 05ec6b6345da3ff8d239c4ccc81f63e1ba6710a9
+repair: remove coal/orange emissive material replacement, disable valley surface replacement, preserve embedded PBR maps, neutralize scene lighting and exposure
+verification: deployment cp and cmp byte-for-byte plus runtime cache refresh
