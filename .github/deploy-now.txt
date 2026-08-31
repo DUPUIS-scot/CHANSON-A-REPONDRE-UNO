@@ -1,5 +1,4 @@
-deploy-request: 2026-08-31T17:15:00+01:00
+deploy-request: 2026-08-31
 source: chat
-workflow: WEB — Deploy Live Site
-scope: exact LUBIAK WEB_OPTIMIZED PBR display
-reason: display only assets/models/textured-glb-comparison/LUBIAK_master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED.glb in LUBIAK and deploy
+scope: LUBIAK djinn FOLLOW and RIDE unfreeze
+reason: decouple oversized broom presentation geometry from hard navigation collision and use compact ride collision capsule
