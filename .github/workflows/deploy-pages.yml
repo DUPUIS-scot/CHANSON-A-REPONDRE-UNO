@@ -53,6 +53,8 @@ jobs:
       - name: Verify LUBIAK runtime integrity
         shell: bash
         run: |
+          node --check web/lubiak/lubiak.js
+          node --check web/lubiak/freak-street-2-addon.js
           python3 - <<'PY'
           import json, struct
           from pathlib import Path
