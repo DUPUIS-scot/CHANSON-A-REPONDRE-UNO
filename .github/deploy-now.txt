@@ -1,5 +1,5 @@
-deploy-request: 2026-08-31T13:11:30+01:00
+deploy-request: 2026-08-31T13:40:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-scope: PLAY Jester hardened GLB loader v3
-reason: explicitly attach DRACOLoader to PLAY Jester GLTFLoader, preserve imported skin/bind pose untouched, frame torso from visible geometry bounds, expose load progress/errors, and force fresh runtime/model cache keys
+scope: PLAY Jester visible static fallback v4
+reason: force a visible PLAY Jester by rendering cloned bind-geometry as ordinary meshes, bypassing problematic skin deformation/invisibility while preserving card deal/receive flow and Draco loading
