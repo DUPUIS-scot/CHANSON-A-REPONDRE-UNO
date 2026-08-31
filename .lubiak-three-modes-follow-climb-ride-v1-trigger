@@ -1,2 +1,2 @@
-trigger: 2026-08-30T20:24+01:00
-scope: FOLLOW close third-person, AERIAL, RIDE, shared UP/DOWN controls, Terminal 2MIX flight tray
+trigger: 2026-08-31T17:09:00+01:00
+scope: single PBR LUBIAK environment only + verticalDock initialization repair
