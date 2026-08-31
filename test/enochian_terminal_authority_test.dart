@@ -39,7 +39,7 @@ void main() {
         contains("d.documentElement.dataset.authoritativeRuntime='v6'"));
 
     expect(terminal,
-        contains('live-copy.html?v=20260831-terminal-repair-v4'));
+        contains('live-copy.html?v=20260831-terminal-repair-v5'));
     expect(terminal,
         contains('authoritative-runtime.js?v=20260825-runtime-api-v2'));
     expect(terminal,
