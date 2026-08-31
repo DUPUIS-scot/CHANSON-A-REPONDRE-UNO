@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from '../vendor/GLTFLoader.js';
 
-const FREAK_STREET_2_URL = '/assets/assets/models/lubiak_freak_street_2_ultralight.glb?v=20260830-freak-street-2-v1';
+const FREAK_STREET_2_URL = '/assets/assets/models/lubiak_freak_street_2_ultralight.glb?v=20260831-integrity-v1';
 let installing = false;
 let installed = false;
 
