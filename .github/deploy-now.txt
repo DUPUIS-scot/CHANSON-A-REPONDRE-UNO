@@ -1,4 +1,4 @@
-deploy-request: 2026-08-31T18:55+01:00
+deploy-request: 2026-08-31T18:58+01:00
 source: chat-direct
 scope: laboratory VideoBookPage + mirror video repair
-reason: update stale Enochian v4 token and old VideoScreen regression expectations, then publish v81 laboratory video bindings
+reason: fix final stale v81 autoplay regression expectation and publish laboratory video bindings
