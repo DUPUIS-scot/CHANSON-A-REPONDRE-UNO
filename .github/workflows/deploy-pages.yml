@@ -55,20 +55,13 @@ jobs:
         run: |
           set -euo pipefail
           python3 scripts/repair_enochian_stems.py
+          python3 scripts/check_terminal_runtime_consolidation.py
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
-
-      - name: Cache Dart packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.pub-cache
-          key: ${{ runner.os }}-dart-pub-${{ hashFiles('pubspec.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-dart-pub-
 
       - name: Install dependencies
         run: flutter pub get
@@ -100,7 +93,7 @@ jobs:
           AI_BACKEND_URL: ${{ secrets.AI_BACKEND_URL || vars.AI_BACKEND_URL }}
           TURNSTILE_SITE_KEY: 0x4AAAAAAERKLvJuMsQpWZhI
         run: |
-          flutter build web --release --no-pub --base-href "/" --dart-define=SKIP_AUTH_FOR_DEVELOPMENT=false --dart-define=SUPABASE_URL="$SUPABASE_URL" --dart-define=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY" --dart-define=AI_BACKEND_URL="$AI_BACKEND_URL" --dart-define=TURNSTILE_SITE_KEY="$TURNSTILE_SITE_KEY" --dart-define=APP_BUILD_SHA="${{ github.sha }}"
+          flutter build web --release --no-pub --no-wasm-dry-run --base-href "/" --dart-define=SKIP_AUTH_FOR_DEVELOPMENT=false --dart-define=SUPABASE_URL="$SUPABASE_URL" --dart-define=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY" --dart-define=AI_BACKEND_URL="$AI_BACKEND_URL" --dart-define=TURNSTILE_SITE_KEY="$TURNSTILE_SITE_KEY" --dart-define=APP_BUILD_SHA="${{ github.sha }}"
 
       - name: Promote geometry-safe textured GLBs
         shell: bash
@@ -137,11 +130,13 @@ jobs:
           html_path.write_text(html)
           PY
 
+      - name: Install Python build dependencies
+        run: python3 -m pip install --user --disable-pip-version-check pillow
+
       - name: Upgrade Castle and Laboratory materials only
         shell: bash
         run: |
           set -euo pipefail
-          python3 -m pip install --user --disable-pip-version-check pillow
           models="build/web/assets/assets/models"
           PYTHONPATH=scripts python3 - <<'PY'
           from upgrade_castle_exterior_glb import upgrade as ext
@@ -189,7 +184,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 -m pip install --user --disable-pip-version-check pillow
           mkdir -p build/web/assets/share-previews
           python3 scripts/generate_uno_texture_previews.py
           cp build/web/index.html build/web/404.html
