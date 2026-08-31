@@ -25,15 +25,25 @@ jobs:
         run: node scripts/patch-lubiak-follow-climb-ride-controls-v1.mjs
       - name: Apply Terminal 2MIX-style RIDE flight tray
         run: node scripts/patch-lubiak-ride-2mix-tray-v1.mjs
+      - name: Repair single-master runtime and verticalDock order
+        run: node scripts/repair-lubiak-single-master-runtime-v1.mjs
       - name: Validate runtime
-        run: node --check web/lubiak/lubiak.js
+        run: |
+          node --check web/lubiak/lubiak.js
+          grep -q "queueMicrotask(() => refreshLubiakModeButtons())" web/lubiak/lubiak.js
+          grep -q "LUBIAK_master_optimized.glb?v=20260831-single-master-v1" web/lubiak/lubiak.js
+          if grep -q "/assets/assets/models/LUBIAK.glb" web/lubiak/lubiak.js; then
+            echo "Legacy LUBIAK fallback model still referenced" >&2
+            exit 1
+          fi
       - name: Trigger live deployment
         run: |
           cat > .github/deploy-now.txt <<'EOF'
-          deploy-request: 2026-08-30
+          deploy-request: 2026-08-31T17:08:00+01:00
           source: chat
-          scope: LUBIAK FOLLOW AERIAL RIDE controls + 2MIX flight tray
-          reason: preserve close third-person FOLLOW, wall/mesh UP-DOWN climb, RIDE altitude UP-DOWN, and add the Terminal 2MIX visual/text tray while riding DA NOBLE Y2K
+          workflow: WEB — Deploy Live Site
+          scope: LUBIAK single PBR master + verticalDock boot repair
+          reason: load only the validated web-optimized PBR LUBIAK environment and remove the verticalDock temporal-dead-zone boot crash
           EOF
       - name: Commit repair
         run: |
@@ -41,6 +51,6 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add web/lubiak/lubiak.js .github/deploy-now.txt
           git diff --cached --quiet && exit 0
-          git commit -m 'Add LUBIAK ride 2MIX flight tray'
+          git commit -m 'Fix LUBIAK single-master boot runtime'
           git pull --rebase origin main
           git push
