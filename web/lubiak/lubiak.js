@@ -1160,8 +1160,11 @@ async function installEnvironment() {
         throw new Error('GLB scene has invalid or empty bounds');
       }
       exteriorRoot = root;
-      await Promise.all([installDragon(decoder), installPlayer(decoder)]);
+      // Reveal the environment immediately. Optional characters must never hold
+      // the public LUBIAK route on its loading state, especially during slow
+      // Draco decoding on iOS.
       finishLoad(candidate.finish);
+      void Promise.allSettled([installDragon(decoder), installPlayer(decoder)]);
       return;
     } catch (error) {
       console.error(`${candidate.label} failed.`, error);
@@ -1169,7 +1172,8 @@ async function installEnvironment() {
   }
 
   makeFallbackDistrict();
-  await Promise.all([installDragon(decoder), installPlayer(decoder)]);
+  // Safe mode is already interactive; load optional characters opportunistically.
+  void Promise.allSettled([installDragon(decoder), installPlayer(decoder)]);
 }
 
 // LUBIAK_RIDE_2MIX_TRAY_V1
