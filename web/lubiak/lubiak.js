@@ -96,7 +96,7 @@ try {
   renderer.setSize(innerWidth, innerHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.55;
+  renderer.toneMappingExposure = 1.0;
   host.appendChild(renderer.domElement);
 } catch (error) {
   console.error('LUBIAK WebGL bootstrap failed.', error);
@@ -127,19 +127,20 @@ renderer.domElement.addEventListener('webglcontextrestored', () => {
   showStatus('3D GRAPHICS RESTORED', 1200);
 }, false);
 
-const ambient = new THREE.AmbientLight(0xffead7, 1.15);
-const hemi = new THREE.HemisphereLight(0x9bb8e8, 0x6b321b, 2.35);
-const moon = new THREE.DirectionalLight(0xbfd6ff, 2.15);
+// Neutral presentation lighting preserves the authored PBR textures and material values.
+const ambient = new THREE.AmbientLight(0xffffff, 0.82);
+const hemi = new THREE.HemisphereLight(0xdde8ff, 0x4b4b52, 1.15);
+const moon = new THREE.DirectionalLight(0xf2f6ff, 1.55);
 moon.position.set(-24, 48, 30);
-const moonFill = new THREE.DirectionalLight(0x7795c9, 1.05);
+const moonFill = new THREE.DirectionalLight(0xbac8df, 0.55);
 moonFill.position.set(30, 22, -34);
-const circus = new THREE.PointLight(0xffb06a, 155, 210, 1.25);
+const circus = new THREE.PointLight(0xffc79a, 18, 210, 1.6);
 circus.position.set(0, 14, 0);
-const streetFillA = new THREE.PointLight(0xff8a45, 78, 135, 1.35);
+const streetFillA = new THREE.PointLight(0xffd1ad, 10, 135, 1.7);
 streetFillA.position.set(-18, 9, 30);
-const streetFillB = new THREE.PointLight(0xffd09a, 66, 125, 1.35);
+const streetFillB = new THREE.PointLight(0xdce7ff, 9, 125, 1.7);
 streetFillB.position.set(18, 8, -28);
-const dragonLight = new THREE.PointLight(0xff5a24, 92, 95, 1.4);
+const dragonLight = new THREE.PointLight(0xffb28a, 12, 95, 1.7);
 scene.add(ambient, hemi, moon, moonFill, circus, streetFillA, streetFillB, dragonLight);
 
 // LUBIAK_WORLD_CONTRACT_V2
@@ -161,63 +162,11 @@ function enforceLubiakWorldContract(){
 
 let worldContractScanned=false;
 function repairLubiakStaticWorld(){
-  if(worldContractScanned || !exteriorRoot) return;
+  // Preserve the selected master's authored geometry and every embedded PBR material.
+  // Runtime scene traversal must never replace materials or rescale model branches.
+  if (worldContractScanned || !exteriorRoot) return;
   exteriorRoot.updateMatrixWorld(true);
-  const worldBox=new THREE.Box3().setFromObject(exteriorRoot);
-  const worldSize=worldBox.getSize(new THREE.Vector3());
-  const coal=new THREE.MeshStandardMaterial({name:'LUBIAK_TERRAIN_COAL_V2',color:0x070302,emissive:0xd92705,emissiveIntensity:1.85,roughness:0.96,metalness:0,side:THREE.DoubleSide});
-  const reject=/wall|roof|building|facade|door|window|dragon|djinn|broom|seat|chair|stage/i;
-  const groundName=/ground|terrain|road|street|floor|plaza|square|pavement|asphalt|concrete/i;
-  const circusName=/circus|big[ _-]?top|bigtop|tent|marquee/i;
-  const circusRoots=[];
-  exteriorRoot.traverse(o=>{
-    if(o===exteriorRoot) return;
-    if(circusName.test(o.name||'')) circusRoots.push(o);
-    if(!o.isMesh || reject.test(o.name||'')) return;
-    const b=new THREE.Box3().setFromObject(o); if(b.isEmpty()) return;
-    const s=b.getSize(new THREE.Vector3());
-    const broad=(s.x*s.z>Math.max(30,worldSize.x*worldSize.z*0.018)) || s.x>worldSize.x*0.38 || s.z>worldSize.z*0.38;
-    const flat=s.y<Math.max(1.5,worldSize.y*0.045);
-    const low=b.min.y<=worldBox.min.y+Math.max(5,worldSize.y*0.14);
-    if(broad && flat && low){
-      const mats=Array.isArray(o.material)?o.material:[o.material];
-      const pale=mats.some(m=>m?.color && Math.max(m.color.r,m.color.g,m.color.b)>0.48);
-      if(groundName.test(o.name||'') || pale || o.userData?.lubiakEmberGround){
-        o.material=Array.isArray(o.material)?o.material.map(()=>coal):coal;
-        o.userData.lubiakEmberGround=true;
-      }
-    }
-  });
-  // LUBIAK_PALACE_MONUMENTAL_SCALE_V1
-  // Palace must dominate Freak Street: broaden it modestly and raise it to 2.6x authored height, while keeping its base on terrain Y=0.
-  const palaceName=/palace|place|temple|citadel|kumari[ _-]?ghar/i;
-  const palaceCandidates=[];
-  exteriorRoot.traverse(o=>{
-    if(o!==exteriorRoot && palaceName.test(o.name||'')) palaceCandidates.push(o);
-  });
-  const palaceRoots=palaceCandidates.filter(o=>!palaceCandidates.some(p=>p!==o && p.getObjectById?.(o.parent?.id)));
-  palaceRoots.forEach(o=>{
-    if(o.userData?.lubiakPalaceMonumental) return;
-    const before=new THREE.Box3().setFromObject(o);
-    if(before.isEmpty()) return;
-    o.scale.x*=1.35;
-    o.scale.y*=2.60;
-    o.scale.z*=1.35;
-    o.updateMatrixWorld(true);
-    const after=new THREE.Box3().setFromObject(o);
-    o.position.y += (0-after.min.y);
-    o.userData.lubiakPalaceMonumental=true;
-  });
-  exteriorRoot.updateMatrixWorld(true);
-
-  // Seat the outermost circus assembly on the same Y=0 terrain datum; never float or bury it.
-  const roots=circusRoots.filter(o=>!circusRoots.some(p=>p!==o && o.parent && (p===o.parent || p.getObjectById?.(o.parent.id))));
-  roots.forEach(o=>{
-    const b=new THREE.Box3().setFromObject(o);
-    if(!b.isEmpty()) o.position.y += (0-b.min.y);
-  });
-  exteriorRoot.updateMatrixWorld(true);
-  worldContractScanned=true;
+  worldContractScanned = true;
 }
 
 // In aerial mode the dragon remains a triple-click Megapole gateway. Walk mode keeps the existing authored handler.
@@ -569,7 +518,7 @@ function exitCircus() {
   setExteriorVisibility(true);
   scene.background = exteriorBackgroundTexture || exteriorBackground.clone();
   scene.fog = new THREE.FogExp2(exteriorFogColor, 0.0024);
-  renderer.toneMappingExposure = 1.55;
+  renderer.toneMappingExposure = 1.0;
   if (playerReady) {
     playerRoot.position.copy(exteriorReturn.position);
     playerBaseY = playerRoot.position.y;
@@ -682,71 +631,9 @@ function frameLoadedEnvironment(root) {
   root.position.y = PLAZA_Y - authoredPlazaY;
   root.updateMatrixWorld(true);
 
-  // LUBIAK_EMBEDDED_EMBER_GROUND_V1
-  // Re-skin only the broad, low, neutral/untextured ground surfaces already authored
-  // inside LUBIAK_master_optimized.glb. Geometry remains untouched so collision,
-  // ground gravity and the circus/plaza datum keep using the original mesh.
-  const emberGroundMaterial = new THREE.MeshStandardMaterial({
-    name: 'Charbons_Ardents_Runtime',
-    color: new THREE.Color(0x050201),
-    emissive: new THREE.Color(0xff1301),
-    emissiveIntensity: 3.8,
-    metalness: 0.0,
-    roughness: 0.94,
-    side: THREE.DoubleSide,
-    transparent: false,
-    opacity: 1,
-    depthTest: true,
-    depthWrite: true,
-  });
-  emberGroundMaterial.toneMapped = true;
-
-  const emberRejectTerms = /circus|big[ _-]?top|tent|marquee|stage|seat|chair|roof|wall|building|facade|door|window|dragon|player|djinn|broom|prop/i;
-  const emberGroundTerms = /ground|terrain|road|street|floor|plaza|square|pavement|asphalt|concrete|grey|gray/i;
-  const materialIsNeutral = (material) => {
-    if (!material || material.map) return false;
-    const color = material.color;
-    if (!color) return true;
-    const hsl = {};
-    color.getHSL(hsl);
-    const emissivePower = material.emissive ? Math.max(material.emissive.r, material.emissive.g, material.emissive.b) * (material.emissiveIntensity || 1) : 0;
-    return hsl.s < 0.16 && hsl.l > 0.05 && hsl.l < 0.82 && emissivePower < 0.2;
-  };
-
-  let emberGroundCount = 0;
-  root.traverse((object) => {
-    if (!object.isMesh) return;
-    const lineage = [];
-    let cursor = object;
-    while (cursor && cursor !== root) { lineage.push(cursor.name || ''); cursor = cursor.parent; }
-    const semanticName = lineage.join(' ');
-    if (emberRejectTerms.test(semanticName)) return;
-
-    const meshBox = new THREE.Box3().setFromObject(object);
-    if (meshBox.isEmpty()) return;
-    const meshSize = meshBox.getSize(new THREE.Vector3());
-    const footprint = meshSize.x * meshSize.z;
-    const broadEnough = footprint >= Math.max(18, size.x * size.z * 0.012)
-      || meshSize.x >= Math.max(8, size.x * 0.24)
-      || meshSize.z >= Math.max(12, size.z * 0.24);
-    const lowEnough = meshBox.min.y <= PLAZA_Y + 0.55
-      && meshBox.max.y <= PLAZA_Y + Math.max(1.25, size.y * 0.045)
-      && meshSize.y <= Math.max(1.4, size.y * 0.05);
-    if (!broadEnough || !lowEnough) return;
-
-    const materials = Array.isArray(object.material) ? object.material : [object.material];
-    const namedGround = emberGroundTerms.test(semanticName) || materials.some((m) => emberGroundTerms.test(m?.name || ''));
-    const neutralGround = materials.length > 0 && materials.every(materialIsNeutral);
-    if (!namedGround && !neutralGround) return;
-
-    object.material = Array.isArray(object.material)
-      ? object.material.map(() => emberGroundMaterial)
-      : emberGroundMaterial;
-    object.userData.lubiakEmberGround = true;
-    emberGroundCount += 1;
-  });
-  console.info('LUBIAK embedded ember/coal material applied', { emberGroundCount });
-  applyValleyToBlackBackdrop(root);
+  // LUBIAK_AUTHORED_PBR_MATERIALS_V1
+  // The promoted PBR WEB OPTIMIZED master is display-authoritative.
+  // Keep all embedded baseColor, normal, roughness, metalness and emissive textures unchanged.
 
   root.traverse((object) => {
     if (!object.isMesh) return;
