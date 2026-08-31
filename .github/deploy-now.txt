@@ -1,5 +1,5 @@
-deploy-request: 2026-08-31T10:50:30Z
+deploy-request: 2026-08-31T13:11:30+01:00
 source: chat
-scope: LUBIAK Draco loader recovery
-commit: 40822cb074a01c6826002d065d3b77cdfa030c1a
-reason: deploy KHR_draco_mesh_compression support for promoted LUBIAK master
+workflow: WEB — Deploy Live Site
+scope: PLAY Jester hardened GLB loader v3
+reason: explicitly attach DRACOLoader to PLAY Jester GLTFLoader, preserve imported skin/bind pose untouched, frame torso from visible geometry bounds, expose load progress/errors, and force fresh runtime/model cache keys
