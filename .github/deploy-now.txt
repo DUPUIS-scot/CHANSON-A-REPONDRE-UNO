@@ -1,5 +1,5 @@
-deploy-request: 2026-08-31T09:39:00+01:00
+deploy-request: 2026-08-31T10:05:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-scope: PLAY Jester optimized rigged GLB + Castle regression repair
-reason: deploy Work-fixed play_jester_rigged.glb after updating stale Castle loader and gatekeeper test contracts to the current shared Draco and visible-mesh hit-test runtime
+scope: Laboratory mirror video
+reason: deploy 0830(1).mp4 to VideoScreen_Left and VideoScreen_Right with muted autoplay and continuous looping on Laboratory entry
