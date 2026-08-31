@@ -1,5 +1,5 @@
-deploy-request: 2026-08-31T14:20:00+01:00
+deploy-request: 2026-08-31T14:25:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-scope: current main including PLAY Jester and Enochian runtime
-reason: deploy after replacing obsolete hard-coded Enochian live-copy version assertion with current runtime contract verification
+scope: current main including PLAY Jester, LUBIAK, and Enochian runtime
+reason: deploy after fixing stale Enochian cache-version validator
