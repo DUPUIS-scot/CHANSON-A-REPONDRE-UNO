@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from '../vendor/GLTFLoader.js';
-import { DRACOLoader } from 'https://threejs.org/examples/jsm/loaders/DRACOLoader.js';
+import { DRACOLoader } from '../vendor/draco/DRACOLoader.js';
 
 const host = document.querySelector('#stage');
 const bar = document.querySelector('#bar');
@@ -11,7 +11,7 @@ const bandcamp = document.querySelector('#bandcamp');
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
   || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const dracoLoader = new DRACOLoader();
-dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
+dracoLoader.setDecoderPath('../vendor/draco/');
 dracoLoader.setDecoderConfig({ type: isIOS ? 'js' : 'wasm' });
 dracoLoader.setWorkerLimit(isIOS ? 1 : 2);
 dracoLoader.preload();
@@ -26,7 +26,7 @@ scene.fog = new THREE.FogExp2(exteriorFogColor, 0.0024);
 // LUBIAK_KATHMANDU_360_BACKGROUND_V2
 // The supplied equirectangular Kathmandu night panorama is the exterior world background.
 new THREE.TextureLoader().load(
-  'assets/lubiak-kathmandu-360.jpg?v=20260830-kathmandu-360-v2',
+  'assets/lubiak-kathmandu-360.jpg?v=20260831-integrity-v1',
   (texture) => {
     texture.colorSpace = THREE.SRGBColorSpace;
     texture.mapping = THREE.EquirectangularReflectionMapping;
@@ -89,6 +89,7 @@ const PLAYER_GATE_MAX_GAP = 650;
 const PLAYER_GATE_MAX_TRAVEL = 72;
 
 let renderer;
+let webglContextLost = false;
 try {
   renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 1.6));
@@ -102,6 +103,29 @@ try {
   status.textContent = '3D UNAVAILABLE';
   throw error;
 }
+
+renderer.domElement.addEventListener('webglcontextlost', (event) => {
+  event.preventDefault();
+  webglContextLost = true;
+  setStatus('3D PAUSED · RESTORING GRAPHICS', 100);
+}, false);
+renderer.domElement.addEventListener('webglcontextrestored', () => {
+  webglContextLost = false;
+  renderer.resetState();
+  scene.traverse((object) => {
+    if (!object.isMesh) return;
+    const materials = Array.isArray(object.material) ? object.material : [object.material];
+    for (const material of materials) {
+      if (!material) continue;
+      material.needsUpdate = true;
+      for (const key of ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'emissiveMap']) {
+        if (material[key]) material[key].needsUpdate = true;
+      }
+    }
+  });
+  renderer.render(scene, camera);
+  showStatus('3D GRAPHICS RESTORED', 1200);
+}, false);
 
 const ambient = new THREE.AmbientLight(0xffead7, 1.15);
 const hemi = new THREE.HemisphereLight(0x9bb8e8, 0x6b321b, 2.35);
@@ -339,20 +363,38 @@ async function getMeshoptDecoder() {
   }
 }
 
-function loadGlb(url, decoder, label, reportProgress = true) {
+function loadGlb(url, decoder, label, reportProgress = true, timeoutMs = 45000) {
   return new Promise((resolve, reject) => {
     const loader = new GLTFLoader();
-    // The promoted LUBIAK master requires KHR_draco_mesh_compression. Without
-    // this decoder GLTFLoader rejects every environment candidate before the
-    // first frame, leaving the page on its loading screen.
+    let settled = false;
+    const finish = (callback, value) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      callback(value);
+    };
+    const timeout = setTimeout(() => {
+      finish(reject, new Error(`${label} timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+    // The promoted LUBIAK master requires KHR_draco_mesh_compression. The
+    // decoder is pinned locally to the same Three.js r160 runtime.
     loader.setDRACOLoader(dracoLoader);
     if (decoder) loader.setMeshoptDecoder(decoder);
-    loader.load(url, resolve, (xhr) => {
-      if (reportProgress && xhr.total) {
+    loader.load(url, (gltf) => finish(resolve, gltf), (xhr) => {
+      if (reportProgress && xhr.total && !settled) {
         const local = Math.min(99, (xhr.loaded / xhr.total) * 100);
         setStatus(label, local);
       }
-    }, reject);
+    }, (error) => finish(reject, error));
+  });
+}
+
+function renderConfirmedFrame() {
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => {
+      if (!webglContextLost) renderer.render(scene, camera);
+      requestAnimationFrame(resolve);
+    });
   });
 }
 
@@ -819,7 +861,7 @@ function prepareDragon(root) {
 
 async function installDragon(decoder) {
   try {
-    const gltf = await loadGlb('/assets/assets/models/lubiak_dragon_guardian_web.glb?v=20260830-blackout-recovery-v1', decoder, 'SUMMONING DRAGON GUARDIAN', false);
+    const gltf = await loadGlb('/assets/assets/models/lubiak_dragon_guardian_web.glb?v=20260831-draco-webp-v1', decoder, 'SUMMONING DRAGON GUARDIAN', false);
     dragonRoot = gltf.scene;
     prepareDragon(dragonRoot);
     scene.add(dragonRoot);
@@ -1144,14 +1186,14 @@ async function installEnvironment() {
   setStatus('STARTING 3D ENGINE', 4);
   const decoder = await getMeshoptDecoder();
   const candidates = [
-    { url: '/assets/assets/models/LUBIAK_master_optimized.glb?v=20260830-blackout-recovery-v1', label: 'LOADING LUBIAK MASTER', finish: 'ENTER LUBIAK' },
-    { url: '/assets/assets/models/LUBIAK.glb?v=20260830-blackout-recovery-v1', label: 'LOADING LUBIAK FALLBACK', finish: 'ENTER LUBIAK · RECOVERY MODEL' },
+    { url: '/assets/assets/models/LUBIAK_master_optimized.glb?v=20260831-integrity-v1', label: 'LOADING LUBIAK MASTER', finish: 'ENTER LUBIAK', timeoutMs: 26000 },
+    { url: '/assets/assets/models/LUBIAK.glb?v=20260831-integrity-v1', label: 'LOADING LUBIAK FALLBACK', finish: 'ENTER LUBIAK · RECOVERY MODEL', timeoutMs: 18000 },
   ];
 
   for (const candidate of candidates) {
     try {
       setStatus(candidate.label, 8);
-      const gltf = await loadGlb(candidate.url, decoder, candidate.label);
+      const gltf = await loadGlb(candidate.url, decoder, candidate.label, true, candidate.timeoutMs);
       const root = gltf.scene;
       root.name = 'LUBIAK_ENVIRONMENT';
       scene.add(root);
@@ -1160,11 +1202,12 @@ async function installEnvironment() {
         throw new Error('GLB scene has invalid or empty bounds');
       }
       exteriorRoot = root;
-      // Reveal the environment immediately. Optional characters must never hold
-      // the public LUBIAK route on its loading state, especially during slow
-      // Draco decoding on iOS.
+      // Confirm two animation frames before optional network/decode work begins.
+      await renderConfirmedFrame();
       finishLoad(candidate.finish);
-      void Promise.allSettled([installDragon(decoder), installPlayer(decoder)]);
+      setTimeout(() => {
+        void Promise.allSettled([installDragon(decoder), installPlayer(decoder)]);
+      }, 350);
       return;
     } catch (error) {
       console.error(`${candidate.label} failed.`, error);
@@ -1172,8 +1215,10 @@ async function installEnvironment() {
   }
 
   makeFallbackDistrict();
-  // Safe mode is already interactive; load optional characters opportunistically.
-  void Promise.allSettled([installDragon(decoder), installPlayer(decoder)]);
+  await renderConfirmedFrame();
+  setTimeout(() => {
+    void Promise.allSettled([installDragon(decoder), installPlayer(decoder)]);
+  }, 350);
 }
 
 // LUBIAK_RIDE_2MIX_TRAY_V1
@@ -2001,6 +2046,7 @@ function updateFallbackCamera(dt) {
 const clock = new THREE.Clock();
 function animate() {
   requestAnimationFrame(animate);
+  if (webglContextLost) return;
   const dt = Math.min(clock.getDelta(), 0.04);
   if (dragonMixer && worldMode === 'exterior') dragonMixer.update(dt);
   updateDragonPatrol(dt);
