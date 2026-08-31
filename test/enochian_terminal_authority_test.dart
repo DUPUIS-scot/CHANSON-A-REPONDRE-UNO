@@ -84,7 +84,9 @@ void main() {
     expect(jesterTransport, contains('data-jester-pause'));
     expect(jesterOutput, contains('MASTER JESTER'));
 
-    expect(terminal, contains('installEnochianUiRepairsV1'));
+    // The current terminal boot owns only the active analyser/stem/control
+    // authorities. The legacy UI-repairs script may remain loaded for
+    // compatibility, but it is no longer a boot-time installer authority.
     expect(terminal, contains('installEnochianAnalyserControlsContainedV1'));
     expect(playbackOwner, contains("playbackTransportAuthority='v1'"));
     expect(playbackOwner, contains('repeat(9,minmax(0,1fr))'));
