@@ -90,7 +90,7 @@ void main() {
     expect(bridge, contains('raycaster.intersectObjects([...interactiveMeshes],false)'));
     expect(bridge, contains("attemptPlay('surface-click')"));
     expect(bridge, contains('looksLikeMirrorSurface'));
-    expect(bridge, contains('video.autoplay = true'));
+    expect(bridge, contains('autoplay:true'));
     expect(bridge, contains('texture.needsUpdate = true'));
     expect(bridge, contains('polygonOffset:true'));
     expect(bridge, contains("window.addEventListener('pointerup', event =>"));
