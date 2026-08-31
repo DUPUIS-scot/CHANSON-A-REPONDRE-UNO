@@ -1,4 +1,9 @@
-deploy-request: 2026-08-31T20:03+01:00
-source: chat-direct
-scope: ENOCHIAN private 4x LINE IN looper
-reason: restore four-line looper inside password-protected LINE IN panel; align private I/O authorization key and live panel mount; preserve LINE IN green and MIDI red 3D SIGNAL routing
+deploy-request: 2026-08-31T19:15:00Z
+source: ChatGPT Work repair-and-deploy
+scope: LUBIAK exact PBR master plus latest main
+source-model: assets/models/textured-glb-comparison/LUBIAK_master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED.glb
+canonical-live-model: assets/assets/models/LUBIAK_master_optimized.glb
+expected-bytes: 3027336
+expected-blob-sha: b07ea626a2ff0698c1e54e7ee1b375f9d62ee7b9
+verification: workflow test -s, cp, and cmp byte-for-byte
+reason: replace cancelled superseded run with one authoritative deployment from latest main
