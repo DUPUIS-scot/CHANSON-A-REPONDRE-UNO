@@ -1,4 +1,4 @@
-deploy-request: 2026-08-31
-source: chat
+deploy-request: 2026-08-31T18:18+01:00
+source: chat-direct
 scope: LUBIAK djinn FOLLOW and RIDE unfreeze
-reason: decouple oversized broom presentation geometry from hard navigation collision and use compact ride collision capsule
+reason: deploy validated ee49f461 collision repair; FOLLOW uses djinn-body collision and RIDE uses compact rider capsule instead of full broom GLB bounds
