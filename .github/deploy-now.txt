@@ -1,5 +1,5 @@
-deploy-request: 2026-08-31T16:12:00+01:00
+deploy-request: 2026-08-31T16:30:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-scope: LUBIAK direct web-optimized PBR browser boot
-reason: boot LUBIAK directly from LUBIAK_master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED.glb with existing recovery fallbacks
+scope: LUBIAK runtime exception and module-loading repair
+reason: expose exact browser boot exceptions, preflight Three GLTF Draco module chain, preserve visual recovery, and refresh runtime cache
