@@ -1,5 +1,5 @@
-deploy-request: 2026-08-31T13:40:00+01:00
+deploy-request: 2026-08-31T13:49:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
 scope: PLAY Jester visible static fallback v4
-reason: force a visible PLAY Jester by rendering cloned bind-geometry as ordinary meshes, bypassing problematic skin deformation/invisibility while preserving card deal/receive flow and Draco loading
+reason: deploy visible PLAY Jester v4 after updating stale Enochian terminal live-copy regression expectation to current 20260831 no-large-turntable runtime
