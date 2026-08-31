@@ -1,5 +1,5 @@
-deploy-request: 2026-08-31T10:05:00+01:00
+deploy-request: 2026-08-31T11:43:00+01:00
 source: chat
 workflow: WEB — Deploy Live Site
-scope: Laboratory mirror video
-reason: deploy 0830(1).mp4 to VideoScreen_Left and VideoScreen_Right with muted autoplay and continuous looping on Laboratory entry
+scope: PLAY Jester Work-fixed GLB cache refresh
+reason: force fresh puppet_dealer.js and play_jester_rigged.glb URLs after the Work-fixed binary replacement while keeping rest-pose validation and card flow unchanged
