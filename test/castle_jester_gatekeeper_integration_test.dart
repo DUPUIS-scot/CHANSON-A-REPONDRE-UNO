@@ -39,7 +39,8 @@ void main() {
       contains("'shared-loader-clean-v75':'shared-loader-switch-failed-v75'"),
     );
     expect(controller, contains("dataset.castleJesterState='looping'"));
-    expect(controller, contains('onEnterRequested?.()'));
+    expect(controller, contains("dataset.castleJesterState='entering'"));
+    expect(overlay, contains('requestEntrance()'));
 
     expect(
       overlay,
@@ -56,10 +57,10 @@ void main() {
     expect(overlay, contains('function findPortalAnchor(castleRoot)'));
     expect(overlay, contains("castleJesterPortalAnchor=anchor.label"));
     expect(overlay, contains("castleJesterPlacement='named-portal-back-to-gate-v72'"));
-    expect(controller, contains("this.hitProxy.name='castle-jester-full-rig-hit-proxy'"));
-    expect(controller, contains("castleJesterHitArea='full-rig-bounds-v61'"));
-    expect(controller, contains('intersectObject(this.root,true)'));
+    expect(controller, contains("castleJesterHitArea='visible-mesh-only-v80'"));
+    expect(controller, contains('intersectObjects(this.hitMeshes,false)'));
     expect(controller, contains('click(event,knownHit=false)'));
+    expect(controller, contains('this.hitMeshes.push(object)'));
     expect(
       controller,
       isNot(contains('this.root.rotation.y=BASE_ROTATION+.42*present')),
