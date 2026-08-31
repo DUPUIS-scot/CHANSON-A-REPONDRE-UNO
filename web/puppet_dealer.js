@@ -3,7 +3,7 @@ import { GLTFLoader } from './vendor/GLTFLoader.js';
 import { DRACOLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/DRACOLoader.js';
 
 const dealers=new Map();
-const MODEL_REVISION='play-jester-visible-static-20260831-v4';
+const MODEL_REVISION='play-jester-visible-static-20260831-v5';
 const MODEL_URL=new URL(`assets/assets/models/play_jester_rigged.glb?rev=${MODEL_REVISION}`,document.baseURI).href;
 const DRACO_PATH='https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/';
 const clamp01=v=>Math.max(0,Math.min(1,v));
@@ -46,7 +46,7 @@ class JesterDealer{
   setQuality(v){this.quality=['low','medium','high'].includes(v)?v:'medium';this.resize()}
   dispose(){this.disposed=true;this.pause();this.resizeObserver?.disconnect();this.intersectionObserver?.disconnect();document.removeEventListener('visibilitychange',this.onVisibilityChange);disposeObject(this.model);disposeObject(this.card);this.renderer.dispose();this.renderer.domElement.remove();this.status.remove()}
 }
-window.puppetDealerCreate=async(id,container,quality='medium')=>{if(!id||!container)return false;dealers.get(id)?.dispose();const d=new JesterDealer(container,quality);dealers.set(id,d);return true};
+window.puppetDealerCreate=async(id,containerOrQuality,quality='medium')=>{const suppliedContainer=containerOrQuality&&typeof containerOrQuality==='object'&&containerOrQuality.nodeType===1?containerOrQuality:null;const container=suppliedContainer||document.getElementById(id);if(!suppliedContainer&&typeof containerOrQuality==='string')quality=containerOrQuality;if(!id||!container){console.error('PLAY Jester container not found',{id});return false}dealers.get(id)?.dispose();const d=new JesterDealer(container,quality);dealers.set(id,d);return true};
 window.puppetDealerDeal=(id,verso,recto)=>dealers.get(id)?.startDeal(verso,recto,false)??false;
 window.puppetDealerReceive=(id,card)=>dealers.get(id)?.startDeal(card,card,true)??false;
 window.puppetDealerSetQuality=(id,q)=>dealers.get(id)?.setQuality(q);
