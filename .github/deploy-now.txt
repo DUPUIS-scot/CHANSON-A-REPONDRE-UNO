@@ -1,4 +1,4 @@
-deploy-request: 2026-08-31T18:40+01:00
+deploy-request: 2026-08-31T18:49+01:00
 source: chat-direct
 scope: laboratory VideoBookPage + mirror video repair
-reason: bind ENOCHIAN JJ DUPUIS video to VideoBookPage_Left, VideoBookPage_Right and Blender mirror surfaces; deploy newly textured laboratory runtime
+reason: rerun deployment after fixing Dart regression-test interpolation; publish v81 laboratory ENOCHIAN video bindings
