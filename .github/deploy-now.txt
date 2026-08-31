@@ -1,8 +1,8 @@
-deploy-request: 2026-08-31T19:44:00Z
-source: ChatGPT Work live repair
-scope: PLAY Jester platform-view mount race
-repair-commits: 41823b344145a54775a52e42dad84148f5f437e4, 9bb841d1b3a1f58f544a81ebf89aada0a0db80ec
-model: assets/models/play_jester_rigged.glb
-runtime: web/puppet_dealer.js?v=play-jester-visible-static-20260831-v6
-verification: wait up to 120 animation frames for Flutter host then require dealerStatus ready
-reason: live v5 verified cards but platform-view host mounted one frame after bridge invocation
+deploy-request: 2026-08-31T20:05:00Z
+source: ChatGPT Work palace-only PBR repair
+scope: LUBIAK palace section only
+runtime-commit: a650a1fb12f372cd41b9774dcb78f0b9260a8690
+preserve: Freak Street entrance and all correctly textured authored materials
+repair: replace only flat orange untextured palace slots with nearest authored palace PBR texture; cap palace metalness and increase roughness
+source-model: assets/models/textured-glb-comparison/LUBIAK_master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED.glb
+canonical-live-model: assets/assets/models/LUBIAK_master_optimized.glb
