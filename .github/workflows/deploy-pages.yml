@@ -177,19 +177,19 @@ jobs:
         run: |
           flutter build web --release --no-pub --no-wasm-dry-run --base-href "/" --dart-define=SKIP_AUTH_FOR_DEVELOPMENT=false --dart-define=SUPABASE_URL="$SUPABASE_URL" --dart-define=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY" --dart-define=AI_BACKEND_URL="$AI_BACKEND_URL" --dart-define=TURNSTILE_SITE_KEY="$TURNSTILE_SITE_KEY" --dart-define=APP_BUILD_SHA="${{ github.sha }}"
 
-      - name: Promote geometry-safe textured GLBs
+      - name: Promote canonical LUBIAK and geometry-safe Megapole GLBs
         shell: bash
         run: |
           set -euo pipefail
           models="build/web/assets/assets/models"
           safe="assets/models/textured-glb-comparison"
-          test -s "$safe/LUBIAK_master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED.glb"
+          test -s "assets/models/LUBIAK_master_optimized.glb"
           test -s "$safe/MEGAPOLE_PBR_TERRAIN_UPGRADED_WEB_OPTIMIZED.glb"
-          cp "$safe/LUBIAK_master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED.glb" "$models/LUBIAK_master_optimized.glb"
+          cp "assets/models/LUBIAK_master_optimized.glb" "$models/LUBIAK_master_optimized.glb"
           cp "$safe/MEGAPOLE_PBR_TERRAIN_UPGRADED_WEB_OPTIMIZED.glb" "$models/SILMARI_LLION_MEGAPOLE_LUBIAK.glb"
-          cmp -s "$safe/LUBIAK_master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED.glb" "$models/LUBIAK_master_optimized.glb"
+          cmp -s "assets/models/LUBIAK_master_optimized.glb" "$models/LUBIAK_master_optimized.glb"
           cmp -s "$safe/MEGAPOLE_PBR_TERRAIN_UPGRADED_WEB_OPTIMIZED.glb" "$models/SILMARI_LLION_MEGAPOLE_LUBIAK.glb"
-          echo "Promoted validated web-optimized textured GLBs without runtime geometry rewriting"
+          echo "Promoted canonical baked-PBR LUBIAK and validated Megapole without runtime material rewriting"
 
       - name: Refresh LUBIAK textured runtime cache
         shell: bash
