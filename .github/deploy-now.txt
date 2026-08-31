@@ -1,9 +1,8 @@
-deploy-request: 2026-08-31T20:25:00Z
-source: ChatGPT Work explicit restoration
-scope: exact optimized four-element LUBIAK model
-runtime-commit: d6fbe89a517c6572e085f16842152c2159a92ec4
+deploy-request: 2026-08-31T20:35:00Z
+source: GitHub Actions run 33435732025 repair
+scope: exact optimized four-element LUBIAK restoration
+workflow-fix-commit: 57a05829b90ade04986cd9a5e6ce516f13227677
 model: assets/models/textured-glb-comparison/LUBIAK_master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED.glb
 blob-sha: b07ea626a2ff0698c1e54e7ee1b375f9d62ee7b9
 expected-bytes: 3027336
-remove: legacy LUBIAK.glb primary, palace donor material substitution and experimental full-detail render
-preserve: stable Freak Street entrance, mobile controls and neutral authored-material renderer
+repair: cache refresh accepts exact four-element filename and promotion byte-verifies exact source
