@@ -291,7 +291,7 @@ jobs:
           test -s build/web/assets/assets/models/SILMARI_LLION_MEGAPOLE_LUBIAK.glb
           cmp -s assets/models/textured-glb-comparison/LUBIAK_master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED.glb build/web/assets/assets/models/LUBIAK_master_optimized.glb
           cmp -s assets/models/textured-glb-comparison/MEGAPOLE_PBR_TERRAIN_UPGRADED_WEB_OPTIMIZED.glb build/web/assets/assets/models/SILMARI_LLION_MEGAPOLE_LUBIAK.glb
-          grep -q "LUBIAK_master_optimized.glb?v=safe-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" build/web/lubiak/lubiak.js
+          grep -q "LUBIAK_master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED.glb?v=safe-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" build/web/lubiak/lubiak.js
           grep -q "lubiak.js?v=safe-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" build/web/lubiak/index.html
           node --check build/web/megapole/megapole-pbr-v8.js
 
