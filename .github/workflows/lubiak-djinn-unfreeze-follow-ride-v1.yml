@@ -1,0 +1,42 @@
+name: LUBIAK djinn unfreeze FOLLOW RIDE v1
+
+on:
+  push:
+    paths:
+      - '.lubiak-djinn-unfreeze-follow-ride-v1-trigger'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Apply FOLLOW RIDE unfreeze repair
+        run: node scripts/patch-lubiak-djinn-unfreeze-follow-ride-v1.mjs
+      - name: Validate LUBIAK runtime
+        run: node --check web/lubiak/lubiak.js
+      - name: Trigger live deployment
+        run: |
+          cat > .github/deploy-now.txt <<'EOF'
+          deploy-request: 2026-08-31
+          source: chat
+          scope: LUBIAK djinn FOLLOW and RIDE unfreeze
+          reason: decouple oversized broom presentation geometry from hard navigation collision and use compact ride collision capsule
+          EOF
+      - name: Commit repair
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add web/lubiak/lubiak.js .github/deploy-now.txt
+          git diff --cached --quiet && exit 0
+          git commit -m 'Unfreeze LUBIAK djinn follow and ride movement'
+          git pull --rebase origin main
+          git push
