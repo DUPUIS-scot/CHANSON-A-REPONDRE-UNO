@@ -1,4 +1,4 @@
-deploy-request: 2026-08-31T18:18+01:00
+deploy-request: 2026-08-31T18:35+01:00
 source: chat-direct
-scope: LUBIAK djinn FOLLOW and RIDE unfreeze
-reason: deploy validated ee49f461 collision repair; FOLLOW uses djinn-body collision and RIDE uses compact rider capsule instead of full broom GLB bounds
+scope: ENOCHIAN TERMINAL private LINE IN + MIDI to 3D SIGNAL
+reason: deploy 8892551556ddc0089b0f6cf53d628316150bc7a2 with live post-FX private input spectrum and MIDI modulation feeding the 3D signal analyzer
