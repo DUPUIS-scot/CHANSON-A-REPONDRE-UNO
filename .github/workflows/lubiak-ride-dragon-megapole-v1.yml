@@ -1,0 +1,42 @@
+name: LUBIAK ride dragon Megapole v1
+
+on:
+  push:
+    paths:
+      - '.lubiak-ride-dragon-megapole-v1-trigger'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Apply ride dragon cinematic gateway
+        run: node scripts/patch-lubiak-ride-dragon-megapole-v1.mjs
+      - name: Validate LUBIAK runtime
+        run: node --check web/lubiak/lubiak.js
+      - name: Trigger live deployment
+        run: |
+          cat > .github/deploy-now.txt <<'EOF'
+          deploy-request: 2026-08-31
+          source: chat
+          scope: LUBIAK RIDE dragon collision cinematic Megapole gateway
+          reason: broom-flight collision with dragon plays cinematic then enters Megapole
+          EOF
+      - name: Commit repair
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add web/lubiak/lubiak.js .github/deploy-now.txt
+          git diff --cached --quiet && exit 0
+          git commit -m 'Enter Megapole when LUBIAK rider hits dragon'
+          git pull --rebase origin main
+          git push
