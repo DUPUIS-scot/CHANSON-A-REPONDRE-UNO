@@ -1,4 +1,8 @@
-deploy-request: 2026-08-31T20:40+01:00
-source: chat-direct
-scope: ENOCHIAN TERMINAL private 4-line looper
-reason: deploy non-blocking private I/O unlock fix; prevent repeated bridge observers/intervals from freezing terminal after password unlock; preserve 4-line looper mount in private LINE IN
+deploy-request: 2026-08-31T19:44:00Z
+source: ChatGPT Work live repair
+scope: PLAY Jester platform-view mount race
+repair-commits: 41823b344145a54775a52e42dad84148f5f437e4, 9bb841d1b3a1f58f544a81ebf89aada0a0db80ec
+model: assets/models/play_jester_rigged.glb
+runtime: web/puppet_dealer.js?v=play-jester-visible-static-20260831-v6
+verification: wait up to 120 animation frames for Flutter host then require dealerStatus ready
+reason: live v5 verified cards but platform-view host mounted one frame after bridge invocation
