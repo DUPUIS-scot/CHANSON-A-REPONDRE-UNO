@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from '../vendor/GLTFLoader.js';
+import { DRACOLoader } from 'https://threejs.org/examples/jsm/loaders/DRACOLoader.js';
 
 const host = document.querySelector('#stage');
 const bar = document.querySelector('#bar');
@@ -7,6 +8,13 @@ const status = document.querySelector('#status');
 const progress = document.querySelector('#progress');
 const circusYoutube = document.querySelector('#circus-youtube');
 const bandcamp = document.querySelector('#bandcamp');
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+  || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const dracoLoader = new DRACOLoader();
+dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
+dracoLoader.setDecoderConfig({ type: isIOS ? 'js' : 'wasm' });
+dracoLoader.setWorkerLimit(isIOS ? 1 : 2);
+dracoLoader.preload();
 
 const scene = new THREE.Scene();
 const exteriorBackground = new THREE.Color(0x000000);
@@ -334,6 +342,10 @@ async function getMeshoptDecoder() {
 function loadGlb(url, decoder, label, reportProgress = true) {
   return new Promise((resolve, reject) => {
     const loader = new GLTFLoader();
+    // The promoted LUBIAK master requires KHR_draco_mesh_compression. Without
+    // this decoder GLTFLoader rejects every environment candidate before the
+    // first frame, leaving the page on its loading screen.
+    loader.setDRACOLoader(dracoLoader);
     if (decoder) loader.setMeshoptDecoder(decoder);
     loader.load(url, resolve, (xhr) => {
       if (reportProgress && xhr.total) {
