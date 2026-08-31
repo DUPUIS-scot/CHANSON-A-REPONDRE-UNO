@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from './vendor/GLTFLoader.js';
 
 const dealers = new Map();
-const MODEL_REVISION = 'play-jester-rigged-remesh-rest-bind-20260830-v1';
+const MODEL_REVISION = 'play-jester-work-fixed-20260831-v2';
 const MODEL_URL = new URL(`assets/assets/models/play_jester_rigged.glb?rev=${MODEL_REVISION}`, document.baseURI).href;
 const MODEL_FACING_Y = Math.PI * 1.5;
 const DEAL_DURATION = 4200;
