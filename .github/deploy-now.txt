@@ -1,8 +1,8 @@
-deploy-request: 2026-08-31T20:05:00Z
-source: ChatGPT Work palace-only PBR repair
-scope: LUBIAK palace section only
-runtime-commit: a650a1fb12f372cd41b9774dcb78f0b9260a8690
-preserve: Freak Street entrance and all correctly textured authored materials
-repair: replace only flat orange untextured palace slots with nearest authored palace PBR texture; cap palace metalness and increase roughness
-source-model: assets/models/textured-glb-comparison/LUBIAK_master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED.glb
-canonical-live-model: assets/assets/models/LUBIAK_master_optimized.glb
+deploy-request: 2026-08-31T20:08:00Z
+source: ChatGPT Work live choreography repair
+scope: PLAY Jester card trajectory, scale, depth, and theatrical body gesture
+repair-commits: a6ba289b67031ea7cd2c656f2c5d91df41139b2b, 05bb2ed7cddd56fde08cd264ab8f671ae27ebc18
+model: assets/models/play_jester_rigged.glb
+runtime: web/puppet_dealer.js?v=play-jester-deal-choreography-20260831-v7
+verification: centred deal path, inward receive path, 0.92 card scale, root transform reset, explicit animation and texture states
+reason: correct right-side card drift and add readable Jester interaction while preserving working textures
