@@ -50,6 +50,86 @@ jobs:
           test -d web/enochian-test
           test -d scripts
 
+      - name: Verify LUBIAK runtime integrity
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json, struct
+          from pathlib import Path
+
+          def jpeg_size(path):
+              data = Path(path).read_bytes()
+              if data[:2] != b'\xff\xd8':
+                  raise SystemExit('LUBIAK panorama lacks JPEG SOI')
+              i = 2
+              while i + 4 <= len(data):
+                  if data[i] != 0xff:
+                      i += 1
+                      continue
+                  while i < len(data) and data[i] == 0xff:
+                      i += 1
+                  marker = data[i]
+                  i += 1
+                  if marker in (0xd8, 0xd9) or 0xd0 <= marker <= 0xd7:
+                      continue
+                  if i + 2 > len(data):
+                      break
+                  length = struct.unpack('>H', data[i:i+2])[0]
+                  if length < 2 or i + length > len(data):
+                      raise SystemExit('LUBIAK panorama has a truncated JPEG segment')
+                  if marker in (0xc0,0xc1,0xc2,0xc3,0xc5,0xc6,0xc7,0xc9,0xca,0xcb,0xcd,0xce,0xcf):
+                      h, w = struct.unpack('>HH', data[i+3:i+7])
+                      return w, h
+                  i += length
+              raise SystemExit('LUBIAK panorama has no JPEG frame header')
+
+          def glb_document(path):
+              data = Path(path).read_bytes()
+              magic, version, declared = struct.unpack('<4sII', data[:12])
+              if magic != b'glTF' or version != 2 or declared != len(data):
+                  raise SystemExit(f'invalid GLB length contract: {path}')
+              n, t = struct.unpack('<II', data[12:20])
+              return data, json.loads(data[20:20+n].decode().rstrip(' \0'))
+
+          width, height = jpeg_size('web/lubiak/assets/lubiak-kathmandu-360.jpg')
+          if (width, height) != (2048, 1024):
+              raise SystemExit(f'invalid LUBIAK panorama dimensions: {(width,height)}')
+
+          street, street_doc = glb_document('assets/models/lubiak_freak_street_2_ultralight.glb')
+          if len(street_doc.get('meshes', [])) < 2 or len(street_doc.get('nodes', [])) < 10:
+              raise SystemExit('Freak Street extension contract incomplete')
+
+          dragon, dragon_doc = glb_document('assets/models/lubiak_dragon_guardian_web.glb')
+          if len(dragon) >= 4_000_000 or len(dragon_doc.get('skins', [])) != 1:
+              raise SystemExit('Dragon compression/rig contract failed')
+          if 'guardian_45s' not in [a.get('name') for a in dragon_doc.get('animations', [])]:
+              raise SystemExit('Dragon animation contract failed')
+          if 'KHR_draco_mesh_compression' not in dragon_doc.get('extensionsRequired', []):
+              raise SystemExit('Dragon Draco compression missing')
+
+          required = {
+              'web/vendor/draco/DRACOLoader.js': 10000,
+              'web/vendor/draco/draco_decoder.js': 500000,
+              'web/vendor/draco/draco_wasm_wrapper.js': 40000,
+              'web/vendor/draco/draco_decoder.wasm': 200000,
+          }
+          for name, minimum in required.items():
+              if Path(name).stat().st_size < minimum:
+                  raise SystemExit(f'pinned Draco asset incomplete: {name}')
+
+          runtime = Path('web/lubiak/lubiak.js').read_text()
+          for contract in [
+              "../vendor/draco/DRACOLoader.js",
+              "timed out after",
+              "renderConfirmedFrame",
+              "webglcontextlost",
+              "webglcontextrestored",
+          ]:
+              if contract not in runtime:
+                  raise SystemExit(f'LUBIAK runtime contract missing: {contract}')
+          print(f'LUBIAK verified: panorama={width}x{height}, street={len(street)}, dragon={len(dragon)}')
+          PY
+
       - name: Verify Enochian source runtime
         shell: bash
         run: |
