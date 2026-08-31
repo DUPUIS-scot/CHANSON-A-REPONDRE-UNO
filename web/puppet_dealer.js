@@ -3,8 +3,9 @@ import { GLTFLoader } from './vendor/GLTFLoader.js';
 import { DRACOLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/DRACOLoader.js';
 
 const dealers=new Map();
-const MODEL_REVISION='play-jester-deal-choreography-20260831-v7';
+const MODEL_REVISION='play-jester-face-user-20260831-v8';
 const MODEL_URL=new URL(`assets/assets/models/play_jester_rigged.glb?rev=${MODEL_REVISION}`,document.baseURI).href;
+const MODEL_FACING_Y=Math.PI;
 const DRACO_PATH='https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/';
 const clamp01=v=>Math.max(0,Math.min(1,v));
 const smooth=v=>{const t=clamp01(v);return t*t*(3-2*t)};
@@ -17,9 +18,9 @@ function loadTexture(url){return new Promise((resolve,reject)=>new THREE.Texture
 class JesterDealer{
   constructor(host,quality='medium'){
     this.host=host;this.quality=quality;this.disposed=false;this.visible=true;this.frame=0;this.animation=null;this.model=null;
-    host.dataset.dealerStatus='loading';host.dataset.modelRevision=MODEL_REVISION;host.dataset.poseMode='static-visual-fallback';
+    host.dataset.dealerStatus='loading';host.dataset.modelRevision=MODEL_REVISION;host.dataset.poseMode='static-visual-fallback';host.dataset.modelFacingAngle=String(MODEL_FACING_Y);
     this.status=document.createElement('div');this.status.style.cssText='position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:22;color:#f0c56b;background:rgba(5,3,2,.22);font:600 14px Georgia,serif;pointer-events:none;opacity:0';host.appendChild(this.status);
-    this.scene=new THREE.Scene();this.root=new THREE.Group();this.scene.add(this.root);
+    this.scene=new THREE.Scene();this.root=new THREE.Group();this.root.rotation.y=MODEL_FACING_Y;this.scene.add(this.root);
     this.camera=new THREE.PerspectiveCamera(32,1,.05,100);
     this.renderer=new THREE.WebGLRenderer({alpha:true,antialias:true,powerPreference:'high-performance'});this.renderer.setClearColor(0,0);this.renderer.outputColorSpace=THREE.SRGBColorSpace;this.renderer.toneMapping=THREE.ACESFilmicToneMapping;this.renderer.toneMappingExposure=1.1;this.renderer.domElement.dataset.renderer='three.js-gltf';this.renderer.domElement.style.cssText='position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none';host.insertBefore(this.renderer.domElement,this.status);
     this.scene.add(new THREE.HemisphereLight(0xffe4bd,0x17101b,2.4));const key=new THREE.DirectionalLight(0xffbf79,4);key.position.set(-4,6,7);this.scene.add(key);const fill=new THREE.DirectionalLight(0xc9ddff,2.2);fill.position.set(5,2,5);this.scene.add(fill);
@@ -40,7 +41,7 @@ class JesterDealer{
   resize(){const w=Math.max(this.host.clientWidth,1),h=Math.max(this.host.clientHeight,1);this.renderer.setPixelRatio(Math.min(devicePixelRatio||1,this.quality==='high'?1.6:this.quality==='low'?.8:1.2));this.renderer.setSize(w,h,false);if(this.model)this.frameModel();else{this.camera.aspect=w/h;this.camera.position.set(0,.2,6);this.camera.lookAt(0,.2,0);this.camera.updateProjectionMatrix()}}
   async updateCardTextures(recto,verso){this.host.dataset.cardTexture='loading';try{const [a,b]=await Promise.all([loadTexture(recto),loadTexture(verso||recto)]);const front=new THREE.MeshStandardMaterial({map:a,roughness:.5});const back=new THREE.MeshStandardMaterial({map:b,roughness:.54});const e=this.card.userData.edgeMaterial;this.card.material=[e,e,e,e,front,back];this.host.dataset.cardTexture='ready'}catch(error){this.host.dataset.cardTexture='failed';console.error('PLAY card texture failed',error)}}
   startDeal(verso,recto,receive=false){if(this.animation||!this.model)return false;this.updateCardTextures(recto||verso,verso);this.animation={started:performance.now(),duration:receive?2300:3600,receive};this.host.dataset.dealerAnimation=receive?'receive':'deal';this.card.scale.setScalar(.92);this.card.visible=true;return true}
-  update(){if(!this.animation)return;const t=clamp01((performance.now()-this.animation.started)/this.animation.duration);const p=smooth(t),gesture=Math.sin(Math.PI*p);this.root.rotation.y=(this.animation.receive?-.16:.14)*gesture;this.root.rotation.z=(this.animation.receive?.035:-.025)*gesture;this.root.position.set((this.animation.receive?-.12:.1)*gesture,.08*gesture,0);if(this.animation.receive){const arc=Math.sin(Math.PI*p);this.card.position.set(.05-1.2*p,-2.05+1.55*p+.32*arc,2.45-.35*p);this.card.rotation.set(-.08,-.3*p,.12-.2*p)}else{const flip=smooth((t-.28)/.34);const arc=Math.sin(Math.PI*p);this.card.position.set(-1.15+1.15*p,-.5-1.55*p+.28*arc,2.1+.35*p);this.card.rotation.set(-.08,Math.PI*(1-flip),-.12*(1-p))}if(t>=1){this.animation=null;this.card.visible=false;this.root.position.set(0,0,0);this.root.rotation.set(0,0,0);this.host.dataset.dealerAnimation='idle'}}
+  update(){if(!this.animation)return;const t=clamp01((performance.now()-this.animation.started)/this.animation.duration);const p=smooth(t),gesture=Math.sin(Math.PI*p);this.root.rotation.y=MODEL_FACING_Y+(this.animation.receive?-.16:.14)*gesture;this.root.rotation.z=(this.animation.receive?.035:-.025)*gesture;this.root.position.set((this.animation.receive?-.12:.1)*gesture,.08*gesture,0);if(this.animation.receive){const arc=Math.sin(Math.PI*p);this.card.position.set(.05-1.2*p,-2.05+1.55*p+.32*arc,2.45-.35*p);this.card.rotation.set(-.08,-.3*p,.12-.2*p)}else{const flip=smooth((t-.28)/.34);const arc=Math.sin(Math.PI*p);this.card.position.set(-1.15+1.15*p,-.5-1.55*p+.28*arc,2.1+.35*p);this.card.rotation.set(-.08,Math.PI*(1-flip),-.12*(1-p))}if(t>=1){this.animation=null;this.card.visible=false;this.root.position.set(0,0,0);this.root.rotation.set(0,MODEL_FACING_Y,0);this.host.dataset.dealerAnimation='idle'}}
   render=()=>{if(this.disposed||!this.visible||document.hidden)return;this.update();this.renderer.render(this.scene,this.camera);this.frame=requestAnimationFrame(this.render)};
   resume(){if(!this.disposed&&this.visible&&!this.frame&&!document.hidden)this.frame=requestAnimationFrame(this.render)} pause(){if(this.frame)cancelAnimationFrame(this.frame);this.frame=0} onVisibilityChange=()=>document.hidden?this.pause():this.resume();
   setQuality(v){this.quality=['low','medium','high'].includes(v)?v:'medium';this.resize()}
