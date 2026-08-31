@@ -1075,7 +1075,10 @@ async function installEnvironment() {
   setStatus('STARTING 3D ENGINE', 4);
   const decoder = await getMeshoptDecoder();
   const candidates = [
-    { url: '/assets/assets/models/LUBIAK_master_optimized.glb?v=20260831-single-master-v1', label: 'LOADING LUBIAK MASTER', finish: 'ENTER LUBIAK', timeoutMs: 26000 },
+    // Full-detail source retains the authored palace geometry missing from the optimized four-element export.
+    { url: '/assets/assets/models/LUBIAK.glb?v=20260831-full-palace-v1', label: 'LOADING FULL PALACE', finish: 'ENTER LUBIAK', timeoutMs: 45000 },
+    // Mobile-safe fallback keeps the working Freak Street entrance available if the full model cannot load.
+    { url: '/assets/assets/models/LUBIAK_master_optimized.glb?v=20260831-palace-fallback-v1', label: 'LOADING MOBILE FALLBACK', finish: 'ENTER LUBIAK · SAFE MODE', timeoutMs: 26000 },
   ];
 
   for (const candidate of candidates) {
