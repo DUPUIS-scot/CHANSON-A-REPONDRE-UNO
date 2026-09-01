@@ -51,7 +51,8 @@ let dragonGuardianQuaternion = new THREE.Quaternion();
 let dragonPatrolPhase = 0;
 let dragonPatrolBlend = 0;
 let exteriorRoot = null;
-let fallbackRoot = null;
+// LUBIAK_NO_FALLBACK_ROOT_V1 — procedural fallbackRoot is forbidden in live.
+const fallbackRoot = null;
 let circusInterior = null;
 let circusSetRoot = null;
 let circusSetPromise = null;
@@ -553,55 +554,9 @@ function updateCircusTransition() {
 }
 
 function makeFallbackDistrict() {
-  // Never construct safe-mode geometry after a valid authored environment exists.
-  if (exteriorRoot) return;
-  if (scene.getObjectByName('LUBIAK_FALLBACK_DISTRICT')) return;
-  const group = new THREE.Group();
-  group.name = 'LUBIAK_FALLBACK_DISTRICT';
-  const wall = new THREE.MeshStandardMaterial({ color: 0x70412f, roughness: 0.88 });
-  const dark = new THREE.MeshStandardMaterial({ color: 0x261513, roughness: 0.94 });
-  const brick = new THREE.MeshStandardMaterial({ color: 0x934c30, roughness: 0.88 });
-  const canvas = new THREE.MeshStandardMaterial({ color: 0xe6d5b6, roughness: 0.82 });
-  const orange = new THREE.MeshStandardMaterial({ color: 0xcf622d, roughness: 0.78 });
-
-  const road = new THREE.Mesh(new THREE.PlaneGeometry(18, 112), dark);
-  road.rotation.x = -Math.PI / 2;
-  road.position.set(0, 0, 15);
-  group.add(road);
-
-  for (const side of [-1, 1]) {
-    for (let i = 0; i < 9; i += 1) {
-      const h = 7 + (i % 3) * 2.1;
-      const box = new THREE.Mesh(new THREE.BoxGeometry(10, h, 9), i % 2 ? brick : wall);
-      box.position.set(side * 10.5, h / 2, 51 - i * 10.5);
-      group.add(box);
-    }
-  }
-
-  const square = new THREE.Mesh(new THREE.PlaneGeometry(54, 46), dark);
-  square.rotation.x = -Math.PI / 2;
-  square.position.set(0, 0.015, -25);
-  group.add(square);
-
-  const tent = new THREE.Group();
-  const tentBody = new THREE.Mesh(new THREE.CylinderGeometry(10, 13, 8.5, 32, 1, true), canvas);
-  tentBody.position.y = 4.25;
-  tent.add(tentBody);
-  const roof = new THREE.Mesh(new THREE.ConeGeometry(13.2, 14, 32), orange);
-  roof.position.y = 15;
-  tent.add(roof);
-  tent.position.set(12, 0, -20);
-  group.add(tent);
-
-  scene.add(group);
-  fallbackRoot = group;
-  camera.position.set(0, 3.2, 64);
-  environmentSize = new THREE.Vector3(76, 30, 130);
-  circus.position.set(12, 12, -20);
-  circusGate.set(12, 2, -8.5);
-  movementBounds = new THREE.Box3(new THREE.Vector3(-38, 0, -58), new THREE.Vector3(38, 18, 72));
-  makeCircusInterior();
-  finishLoad('ENTER LUBIAK · SAFE MODE');
+  // Intentionally void. Never construct or expose procedural replacement geometry live.
+  console.error('LUBIAK authored master unavailable; fallbackRoot is disabled.');
+  finishLoad('LUBIAK MASTER UNAVAILABLE');
 }
 
 function frameLoadedEnvironment(root) {
@@ -1095,20 +1050,6 @@ async function installEnvironment() {
         throw new Error('GLB scene has invalid or empty bounds');
       }
       exteriorRoot = root;
-      // LUBIAK_FALLBACK_EXCLUSIVE_V1 — the procedural safe-mode district may
-      // exist only when every authored master candidate has failed. If a stale
-      // fallback was created by an earlier/overlapping bootstrap, remove it now
-      // so it cannot render, collide, or participate in terrain raycasts.
-      if (fallbackRoot) {
-        fallbackRoot.removeFromParent();
-        fallbackRoot.traverse((object) => {
-          if (!object.isMesh) return;
-          object.geometry?.dispose?.();
-          const materials = Array.isArray(object.material) ? object.material : [object.material];
-          for (const material of materials) material?.dispose?.();
-        });
-        fallbackRoot = null;
-      }
       // Confirm two animation frames before optional network/decode work begins.
       await renderConfirmedFrame();
       finishLoad(candidate.finish);
@@ -1121,7 +1062,8 @@ async function installEnvironment() {
     }
   }
 
-  makeFallbackDistrict();
+  console.error('LUBIAK master failed; live fallbackRoot is void.');
+  finishLoad('LUBIAK MASTER UNAVAILABLE');
   await renderConfirmedFrame();
   setTimeout(() => {
     void Promise.allSettled([installDragon(decoder), installPlayer(decoder)]);
@@ -2043,5 +1985,6 @@ addEventListener('resize', () => {
 
 installEnvironment().catch((error) => {
   console.error('LUBIAK bootstrap failed unexpectedly.', error);
-  makeFallbackDistrict();
+  console.error('LUBIAK bootstrap failed; live fallbackRoot is void.');
+  finishLoad('LUBIAK MASTER UNAVAILABLE');
 });
