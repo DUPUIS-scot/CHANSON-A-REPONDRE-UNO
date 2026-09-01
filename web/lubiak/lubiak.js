@@ -611,53 +611,10 @@ function frameLoadedEnvironment(root) {
 
   environmentSize = size.clone();
 
-  // LUBIAK_CIRCUS_GROUND_ZERO_V2
-  // Resolve a stable circus branch from labelled descendants, then lift that
-  // compact branch as one rigid object to the same plaza datum used everywhere.
-  const circusTerms = /circus|big[ _-]?top|bigtop|tent|marquee|foetus|fetus/i;
-  const circusRoots = [];
-  const maxFootprintX = size.x * 0.48;
-  const maxFootprintZ = size.z * 0.48;
-  root.traverse((object) => {
-    if (object === root || !circusTerms.test(object.name || '')) return;
-    let candidate = object;
-    let parent = object.parent;
-    while (parent && parent !== root) {
-      const parentBox = new THREE.Box3().setFromObject(parent);
-      const parentSize = parentBox.getSize(new THREE.Vector3());
-      if (parentSize.x > maxFootprintX || parentSize.z > maxFootprintZ) break;
-      candidate = parent;
-      parent = parent.parent;
-    }
-    if (!circusRoots.includes(candidate)) circusRoots.push(candidate);
-  });
-  if (circusRoots.length) {
-    const uniqueRoots = circusRoots.filter((candidate, index, arr) =>
-      !arr.some((other, otherIndex) => otherIndex !== index && candidate.parent && other === candidate.parent)
-    );
-    const circusBox = new THREE.Box3();
-    for (const object of uniqueRoots) circusBox.expandByObject(object);
-    if (!circusBox.isEmpty()) {
-      // The circus is a rigid authored hierarchy, but its base belongs on the
-      // shared ground datum. Allow correction in either direction so a raised
-      // terrain/plaza pass cannot leave the tent floating above Freak Street.
-      const groundOffset = PLAZA_Y - circusBox.min.y + 0.04;
-      if (Math.abs(groundOffset) > 0.03) {
-        for (const object of uniqueRoots) object.position.y += groundOffset;
-        root.updateMatrixWorld(true);
-        console.info('LUBIAK circus aligned to ground datum', { groundOffset, roots: uniqueRoots.map(o => o.name) });
-      }
-    }
-  }
-
-  const eyeHeight = Math.max(1.7, Math.min(size.y * 0.12, 5));
-  const distance = Math.max(maxDim * 0.72, size.z * 0.72, 18);
-  camera.position.set(0, eyeHeight, distance);
-  camera.near = Math.max(0.02, maxDim / 50000);
-  camera.far = Math.max(500, maxDim * 8);
-  camera.updateProjectionMatrix();
-  yaw = 0;
-  pitch = -0.035;
+  // LUBIAK_AUTHORED_CIRCUS_RELATIVE_PLACEMENT_V1
+  // Keep the circus, palace, Kathmandu buildings, rocks and layered terrain in the
+  // exact relative transforms authored in the master GLB. Do not lift or separate
+  // the circus branch from its surrounding palace/plaza geometry at runtime.
 
   movementBounds = new THREE.Box3(
     new THREE.Vector3(-size.x * 0.7, 0, -size.z * 0.7),
