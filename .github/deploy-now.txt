@@ -1,11 +1,8 @@
-deploy-request: 2026-09-01T13:00+01:00
+deploy-request: 2026-09-01T13:08+01:00
 source: chat-direct
-scope: RULES machine live asset repair
-runtime: web/rules_machine/index.html + pubspec.yaml + test/rules_screen_test.dart
-revision: rules-machine-live-20260901-v2
-layout-desktop: side-by-side machine + rules
-layout-ios: vertical two-viewport machine-first rules-second
-model-source: assets/models/textured-glb-comparison/segmented_machine_optimized.glb
-model-live-url: /assets/assets/models/textured-glb-comparison/segmented_machine_optimized.glb
-repair: bundle textured-glb-comparison in Flutter assets, correct live URL, stabilize responsive regression tests
+scope: PLAY Jester rigged dealer pose and hand-socket card staging
+runtime: web/puppet_dealer.js + web/index.html
+revision: play-jester-rigged-dealer-20260901-v14
+behavior: render imported skinned rig, lower shoulders and elbows into dealer pose, keep torso-up framing, anchor dealt card to real hand region, remove chest-crossing world-space card path
+fallback: retain static mesh only if valid skinned rig/hand is unavailable
 note: deploy corrected current main state
