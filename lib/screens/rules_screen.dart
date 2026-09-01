@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../data/card_categories.dart';
 import '../theme/app_design_tokens.dart';
 import '../widgets/home_navigation_button.dart';
+import '../widgets/rules_machine_view.dart';
 import '../widgets/utility_page_background.dart';
 
 class RulesScreen extends StatelessWidget {
@@ -40,67 +42,189 @@ class RulesScreen extends StatelessWidget {
         ],
       ),
       body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxWidth: AppBreakpoints.readingContent,
-            ),
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final iosTwoViewport = defaultTargetPlatform == TargetPlatform.iOS &&
+                constraints.maxWidth <= 900;
+            if (iosTwoViewport) {
+              return _IosRulesPager(categories: categories);
+            }
+
+            return Row(
+              key: const ValueKey('rules-desktop-side-by-side'),
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const _SectionHeading(number: '1', title: 'HOW TO PLAY'),
-                const SizedBox(height: 18),
-                const _HowToPlaySteps(),
-                const SizedBox(height: 36),
-                const _SectionHeading(number: '2', title: 'CARD CATEGORIES'),
-                const SizedBox(height: 18),
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final columns = constraints.maxWidth >= 560 ? 2 : 1;
-                    const gap = 12.0;
-                    final tileWidth =
-                        (constraints.maxWidth - gap * (columns - 1)) / columns;
-                    return Wrap(
-                      spacing: gap,
-                      runSpacing: gap,
-                      children: [
-                        for (final category in categories)
-                          SizedBox(
-                            width: tileWidth,
-                            child: _CategoryTile(
-                              category: category,
-                              description:
-                                  _categoryDescriptions[category.id] ?? '',
-                            ),
-                          ),
-                      ],
-                    );
-                  },
+                const Expanded(
+                  flex: 11,
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(14, 12, 7, 14),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.all(Radius.circular(18)),
+                      child: RulesMachineView(),
+                    ),
+                  ),
                 ),
-                const SizedBox(height: 36),
-                const _SectionHeading(
-                  number: '3',
-                  title: 'BASIC CARD INTERACTION',
-                ),
-                const SizedBox(height: 18),
-                const _InteractionRow(
-                  icon: Icons.touch_app_rounded,
-                  action: 'Click / tap',
-                  result: 'Interact with the card',
-                ),
-                const SizedBox(height: 12),
-                const _InteractionRow(
-                  icon: Icons.fullscreen_rounded,
-                  action: 'Long-click / long-press',
-                  result: 'View the card fullscreen',
+                Expanded(
+                  flex: 10,
+                  child: _RulesBody(categories: categories),
                 ),
               ],
-            ),
-          ),
+            );
+          },
         ),
       ),
     );
   }
+}
+
+class _IosRulesPager extends StatefulWidget {
+  const _IosRulesPager({required this.categories});
+
+  final List<CardCategoryDefinition> categories;
+
+  @override
+  State<_IosRulesPager> createState() => _IosRulesPagerState();
+}
+
+class _IosRulesPagerState extends State<_IosRulesPager> {
+  late final PageController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = PageController();
+  }
+
+  Future<void> _showRules() async {
+    if (!_controller.hasClients) return;
+    await _controller.animateToPage(
+      1,
+      duration: const Duration(milliseconds: 420),
+      curve: Curves.easeInOutCubic,
+    );
+  }
+
+  Future<void> _showMachine() async {
+    if (!_controller.hasClients) return;
+    await _controller.animateToPage(
+      0,
+      duration: const Duration(milliseconds: 420),
+      curve: Curves.easeInOutCubic,
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => PageView(
+        key: const ValueKey('rules-ios-two-viewport'),
+        controller: _controller,
+        scrollDirection: Axis.vertical,
+        physics: const PageScrollPhysics(),
+        children: [
+          RulesMachineView(onSwipeUp: _showRules),
+          NotificationListener<OverscrollNotification>(
+            onNotification: (notification) {
+              if (notification.overscroll < -8) _showMachine();
+              return false;
+            },
+            child: _RulesBody(
+              categories: widget.categories,
+              compact: true,
+              topAction: TextButton.icon(
+                key: const ValueKey('rules-ios-back-to-machine'),
+                onPressed: _showMachine,
+                icon: const Icon(Icons.keyboard_arrow_up_rounded),
+                label: const Text('MACHINE'),
+              ),
+            ),
+          ),
+        ],
+      );
+}
+
+class _RulesBody extends StatelessWidget {
+  const _RulesBody({
+    required this.categories,
+    this.compact = false,
+    this.topAction,
+  });
+
+  final List<CardCategoryDefinition> categories;
+  final bool compact;
+  final Widget? topAction;
+
+  @override
+  Widget build(BuildContext context) => Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: AppBreakpoints.readingContent),
+          child: ListView(
+            key: ValueKey(compact ? 'rules-content-ios' : 'rules-content-desktop'),
+            padding: EdgeInsets.fromLTRB(
+              compact ? 16 : 20,
+              compact ? 12 : 24,
+              compact ? 16 : 20,
+              40,
+            ),
+            children: [
+              if (topAction != null) ...[
+                Align(alignment: Alignment.centerLeft, child: topAction!),
+                const SizedBox(height: 4),
+              ],
+              const _SectionHeading(number: '1', title: 'HOW TO PLAY'),
+              const SizedBox(height: 18),
+              const _HowToPlaySteps(),
+              const SizedBox(height: 36),
+              const _SectionHeading(number: '2', title: 'CARD CATEGORIES'),
+              const SizedBox(height: 18),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final columns = !compact && constraints.maxWidth >= 560 ? 2 : 1;
+                  const gap = 12.0;
+                  final tileWidth =
+                      (constraints.maxWidth - gap * (columns - 1)) / columns;
+                  return Wrap(
+                    spacing: gap,
+                    runSpacing: gap,
+                    children: [
+                      for (final category in categories)
+                        SizedBox(
+                          width: tileWidth,
+                          child: _CategoryTile(
+                            category: category,
+                            description:
+                                RulesScreen._categoryDescriptions[category.id] ?? '',
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
+              const SizedBox(height: 36),
+              const _SectionHeading(
+                number: '3',
+                title: 'BASIC CARD INTERACTION',
+              ),
+              const SizedBox(height: 18),
+              const _InteractionRow(
+                icon: Icons.touch_app_rounded,
+                action: 'Click / tap',
+                result: 'Interact with the card',
+              ),
+              const SizedBox(height: 12),
+              const _InteractionRow(
+                icon: Icons.fullscreen_rounded,
+                action: 'Long-click / long-press',
+                result: 'View the card fullscreen',
+              ),
+            ],
+          ),
+        ),
+      );
 }
 
 class _SectionHeading extends StatelessWidget {
@@ -156,13 +280,13 @@ class _HowToPlaySteps extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(
-    children: [
-      for (var index = 0; index < steps.length; index++) ...[
-        _StepRow(number: index + 1, text: steps[index]),
-        if (index != steps.length - 1) const SizedBox(height: 14),
-      ],
-    ],
-  );
+        children: [
+          for (var index = 0; index < steps.length; index++) ...[
+            _StepRow(number: index + 1, text: steps[index]),
+            if (index != steps.length - 1) const SizedBox(height: 14),
+          ],
+        ],
+      );
 }
 
 class _StepRow extends StatelessWidget {
@@ -173,27 +297,27 @@ class _StepRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Row(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      SizedBox(
-        width: 34,
-        child: Text(
-          number.toString().padLeft(2, '0'),
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: Theme.of(context).colorScheme.primary,
-            fontWeight: FontWeight.w800,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 34,
+            child: Text(
+              number.toString().padLeft(2, '0'),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.w800,
+                  ),
+            ),
           ),
-        ),
-      ),
-      const SizedBox(width: 10),
-      Expanded(
-        child: Text(
-          text,
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(height: 1.35),
-        ),
-      ),
-    ],
-  );
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(height: 1.35),
+            ),
+          ),
+        ],
+      );
 }
 
 class _CategoryTile extends StatelessWidget {
@@ -224,20 +348,21 @@ class _CategoryTile extends StatelessWidget {
                   Text(
                     category.label,
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.5,
-                    ),
+                          color: Theme.of(context).colorScheme.onSurface,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5,
+                        ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     description,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.78),
-                      height: 1.25,
-                    ),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withValues(alpha: 0.78),
+                          height: 1.25,
+                        ),
                   ),
                 ],
               ),
@@ -262,31 +387,33 @@ class _InteractionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Row(
-    children: [
-      Icon(icon, size: 22, color: Theme.of(context).colorScheme.primary),
-      const SizedBox(width: 12),
-      Expanded(
-        child: Wrap(
-          spacing: 8,
-          runSpacing: 2,
-          children: [
-            Text(
-              action,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w700),
+        children: [
+          Icon(icon, size: 22, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 2,
+              children: [
+                Text(
+                  action,
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyLarge
+                      ?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                Text(
+                  '→  $result',
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.8),
+                      ),
+                ),
+              ],
             ),
-            Text(
-              '→  $result',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.8),
-              ),
-            ),
-          ],
-        ),
-      ),
-    ],
-  );
+          ),
+        ],
+      );
 }
