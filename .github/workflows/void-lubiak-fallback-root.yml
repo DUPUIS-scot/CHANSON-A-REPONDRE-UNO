@@ -1,0 +1,59 @@
+name: Void LUBIAK fallbackRoot
+
+on:
+  push:
+    paths:
+      - '.github/workflows/void-lubiak-fallback-root.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  void-fallback:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Remove fallbackRoot from live LUBIAK runtime
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const path = 'web/lubiak/lubiak.js';
+          let s = fs.readFileSync(path, 'utf8');
+
+          s = s.replace("let fallbackRoot = null;", "// LUBIAK_NO_FALLBACK_ROOT_V1 — procedural fallbackRoot is forbidden in live.\nconst fallbackRoot = null;");
+          s = s.replace(/\nfunction makeFallbackDistrict\(\) \{[\s\S]*?\n\}\n\nfunction frameLoadedEnvironment/, `\nfunction makeFallbackDistrict() {\n  // Intentionally void. Never construct or expose procedural replacement geometry live.\n  console.error('LUBIAK authored master unavailable; fallbackRoot is disabled.');\n  finishLoad('LUBIAK MASTER UNAVAILABLE');\n}\n\nfunction frameLoadedEnvironment`);
+
+          // Remove stale cleanup that assigns to the now-constant null sentinel.
+          s = s.replace(/\n      \/\/ LUBIAK_FALLBACK_EXCLUSIVE_V1[\s\S]*?\n      \/\/ Confirm two animation frames before optional network\/decode work begins\./,
+            '\n      // Confirm two animation frames before optional network/decode work begins.');
+
+          // Master failure must fail visibly, never substitute geometry.
+          s = s.replace("  makeFallbackDistrict();\n  await renderConfirmedFrame();", "  console.error('LUBIAK master failed; live fallbackRoot is void.');\n  finishLoad('LUBIAK MASTER UNAVAILABLE');\n  await renderConfirmedFrame();");
+          s = s.replace("  makeFallbackDistrict();\n});", "  console.error('LUBIAK bootstrap failed; live fallbackRoot is void.');\n  finishLoad('LUBIAK MASTER UNAVAILABLE');\n});");
+
+          fs.writeFileSync(path, s);
+          NODE
+      - name: Verify fallbackRoot cannot go live
+        run: |
+          grep -q 'LUBIAK_NO_FALLBACK_ROOT_V1' web/lubiak/lubiak.js
+          grep -q 'const fallbackRoot = null;' web/lubiak/lubiak.js
+          ! grep -q "group.name = 'LUBIAK_FALLBACK_DISTRICT'" web/lubiak/lubiak.js
+          ! grep -q 'fallbackRoot = group' web/lubiak/lubiak.js
+          node --check web/lubiak/lubiak.js
+      - name: Commit live runtime lock
+        run: |
+          if git diff --quiet -- web/lubiak/lubiak.js; then
+            echo 'No change required.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add web/lubiak/lubiak.js
+          git commit -m 'fix(lubiak): void fallbackRoot from live runtime'
+          git push
