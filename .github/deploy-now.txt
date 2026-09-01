@@ -1,8 +1,9 @@
-deploy-request: 2026-09-01T09:50+01:00
+deploy-request: 2026-09-01T11:35+01:00
 source: chat-direct
-scope: authoritative textured castle interior
-model: assets/models/textured-glb-comparison/castle_interior_textured.glb
-canonical: assets/models/castle_interior.glb
-blob-sha: ce8a711f77d238a36ffd0a3945997372880a1240
-expected-bytes: 9443688
-repair: preserve exact textured castle interior during web deploy; no rebake/recolour pass
+scope: PLAY jester orientation
+runtime: web/puppet_dealer.js
+revision: play-jester-face-user-20260901-v12
+rotation-y: 3*Math.PI/2
+rotation-degrees: 270
+cache-key: play-jester-face-user-20260901-v12
+repair: publish the requested additional 180-degree turn from the prior 90-degree heading
