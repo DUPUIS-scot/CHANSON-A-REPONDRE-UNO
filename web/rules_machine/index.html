@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Rules Machine — CHANSON À RÉPONDRE UNO</title>
+<style>
+*{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#080706;color:#fff4d2;font-family:system-ui,-apple-system,Segoe UI,sans-serif}body{touch-action:none;user-select:none}#stage{position:fixed;inset:0}canvas{display:block;width:100%;height:100%;cursor:grab}canvas.dragging{cursor:grabbing}#loading{position:fixed;inset:0;display:grid;place-items:center;background:radial-gradient(circle at 50% 44%,#2d2017 0,#110c08 42%,#080706 76%);z-index:5;transition:opacity .35s;pointer-events:none}#loading.hidden{opacity:0}.load-card{text-align:center;letter-spacing:.08em;font-weight:800}.load-card small{display:block;margin-top:8px;color:#cba977;font-size:11px;font-weight:600}.hud{position:fixed;left:50%;bottom:max(14px,env(safe-area-inset-bottom));transform:translateX(-50%);width:min(620px,calc(100% - 24px));padding:10px 12px;border:1px solid rgba(231,178,85,.62);border-radius:14px;background:rgba(21,13,8,.82);backdrop-filter:blur(10px);z-index:4;box-shadow:0 12px 28px rgba(0,0,0,.35)}.hud-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:7px}.title{font-size:11px;font-weight:900;letter-spacing:.13em;color:#ffc928}.status{font-size:10px;color:#d6c29a;white-space:nowrap}.row{display:flex;align-items:center;gap:9px}.label{font-size:10px;font-weight:800;letter-spacing:.08em;white-space:nowrap}input[type=range]{width:100%;accent-color:#ffc928}.pct{font-variant-numeric:tabular-nums;font-size:10px;min-width:34px;text-align:right;color:#ffc928}button{border:1px solid rgba(255,201,40,.52);background:#22160e;color:#fff4d2;border-radius:9px;padding:6px 9px;font:700 10px system-ui;cursor:pointer}.hint{position:fixed;top:max(10px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);font-size:10px;letter-spacing:.06em;color:rgba(255,244,210,.72);background:rgba(8,7,6,.55);padding:5px 9px;border-radius:99px;pointer-events:none;z-index:3}@media(max-width:650px){.hud{bottom:max(8px,env(safe-area-inset-bottom));padding:8px 9px}.hud-top{margin-bottom:5px}.title{font-size:10px}.hint{font-size:9px}}
+</style>
+<script type="importmap">{"imports":{"three":"../vendor/three.module.js"}}</script>
+</head>
+<body>
+<div id="stage" aria-label="Interactive segmented Rules machine"></div>
+<div id="loading"><div class="load-card">RULES MACHINE<small>LOADING 1.84 MB OPTIMIZED GLB</small></div></div>
+<div class="hint">DRAG TO ROTATE · WHEEL / PINCH TO ZOOM</div>
+<div class="hud" aria-label="Machine controls">
+  <div class="hud-top"><div class="title">MECHANICAL LOOP + EXPLODED VIEW</div><div class="status" id="status">LOADING</div></div>
+  <div class="row"><button id="reset" type="button">RESET</button><span class="label">EXPLODE</span><input id="explode" type="range" min="0" max="1000" value="0" step="1" aria-label="Exploded view"><span class="pct" id="pct">0%</span></div>
+</div>
+<script type="module">
+import * as THREE from 'three';
+import {GLTFLoader} from '../vendor/GLTFLoader.js';
+import {MeshoptDecoder} from '../vendor/meshopt_decoder.module.js';
+
+const stage=document.querySelector('#stage'),loading=document.querySelector('#loading'),status=document.querySelector('#status'),explode=document.querySelector('#explode'),pct=document.querySelector('#pct'),reset=document.querySelector('#reset');
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x080706);
+const camera=new THREE.PerspectiveCamera(35,1,.01,1000);
+const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;stage.append(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xffe5b8,0x15100c,1.5));const key=new THREE.DirectionalLight(0xffcf83,2.5);key.position.set(4,7,5);scene.add(key);const rim=new THREE.DirectionalLight(0x8bb9ff,1.8);rim.position.set(-5,3,-5);scene.add(rim);
+const root=new THREE.Group();scene.add(root);const clock=new THREE.Clock();let mixer=null,mechanical=null,exploded=null,explodeDuration=1,ready=false;let yaw=.2,pitch=.08,distance=4,targetDistance=4;const target=new THREE.Vector3();
+const loader=new GLTFLoader();loader.setMeshoptDecoder(MeshoptDecoder);
+loader.load('/assets/models/segmented_machine_optimized.glb',g=>{
+  root.add(g.scene);g.scene.traverse(o=>{if(o.isMesh){o.frustumCulled=true;const mats=Array.isArray(o.material)?o.material:[o.material];for(const m of mats){if(m){m.needsUpdate=true;}}}});
+  const box=new THREE.Box3().setFromObject(g.scene),size=box.getSize(new THREE.Vector3()),center=box.getCenter(new THREE.Vector3());g.scene.position.sub(center);const maxDim=Math.max(size.x,size.y,size.z,0.01);distance=targetDistance=maxDim/(2*Math.tan(THREE.MathUtils.degToRad(camera.fov*.5)))*1.18;camera.near=Math.max(distance/500,.001);camera.far=distance*50;camera.updateProjectionMatrix();
+  mixer=new THREE.AnimationMixer(g.scene);const clips=g.animations||[];const mechanicalClip=clips.find(c=>/mechanical/i.test(c.name))||clips[0];const explodedClip=clips.find(c=>/explod|disloc/i.test(c.name))||clips[1];
+  if(mechanicalClip){mechanical=mixer.clipAction(mechanicalClip);mechanical.setLoop(THREE.LoopRepeat,Infinity);mechanical.play();}
+  if(explodedClip){exploded=mixer.clipAction(explodedClip);explodeDuration=Math.max(explodedClip.duration,.001);exploded.setLoop(THREE.LoopOnce,1);exploded.clampWhenFinished=true;exploded.play();exploded.paused=true;exploded.time=0;}
+  status.textContent=clips.map(c=>c.name).join(' · ')||'READY';ready=true;loading.classList.add('hidden');setTimeout(()=>loading.remove(),450);
+},undefined,e=>{console.error(e);status.textContent='MODEL LOAD ERROR';loading.querySelector('small').textContent='MODEL COULD NOT BE LOADED';});
+
+explode.addEventListener('input',()=>{if(!exploded||!mixer)return;const t=Number(explode.value)/1000;exploded.paused=true;exploded.time=t*explodeDuration;mixer.update(0);pct.textContent=`${Math.round(t*100)}%`;});
+reset.addEventListener('click',()=>{explode.value='0';pct.textContent='0%';if(exploded&&mixer){exploded.time=0;exploded.paused=true;mixer.update(0);}yaw=.2;pitch=.08;targetDistance=distance;});
+
+let drag=false,px=0,py=0,sx=0,sy=0,swipeSent=false,pinchStart=0,pinchDistance=0;
+function down(ev){if(!ready)return;drag=true;px=sx=ev.clientX;py=sy=ev.clientY;swipeSent=false;renderer.domElement.classList.add('dragging');try{renderer.domElement.setPointerCapture(ev.pointerId)}catch{}}
+function move(ev){if(!drag)return;const totalX=ev.clientX-sx,totalY=ev.clientY-sy;if(!swipeSent&&Math.abs(totalY)>82&&Math.abs(totalY)>Math.abs(totalX)*1.5){window.parent.postMessage(totalY<0?'rules-machine-swipe-up':'rules-machine-swipe-down','*');swipeSent=true;drag=false;renderer.domElement.classList.remove('dragging');return}const dx=ev.clientX-px,dy=ev.clientY-py;px=ev.clientX;py=ev.clientY;yaw+=dx*.008;pitch=THREE.MathUtils.clamp(pitch+dy*.005,-.75,.75)}
+function end(ev){drag=false;renderer.domElement.classList.remove('dragging');try{if(renderer.domElement.hasPointerCapture(ev.pointerId))renderer.domElement.releasePointerCapture(ev.pointerId)}catch{}}
+renderer.domElement.addEventListener('pointerdown',down);renderer.domElement.addEventListener('pointermove',move);renderer.domElement.addEventListener('pointerup',end);renderer.domElement.addEventListener('pointercancel',end);renderer.domElement.addEventListener('wheel',e=>{e.preventDefault();targetDistance*=Math.exp(e.deltaY*.001);targetDistance=THREE.MathUtils.clamp(targetDistance,distance*.42,distance*2.4)},{passive:false});
+renderer.domElement.addEventListener('touchstart',e=>{if(e.touches.length===2){pinchStart=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);pinchDistance=targetDistance}},{passive:true});renderer.domElement.addEventListener('touchmove',e=>{if(e.touches.length===2&&pinchStart>0){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);targetDistance=THREE.MathUtils.clamp(pinchDistance*(pinchStart/Math.max(d,1)),distance*.42,distance*2.4)}},{passive:true});
+function resize(){const w=Math.max(innerWidth,1),h=Math.max(innerHeight,1);camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h,false)}addEventListener('resize',resize);resize();
+function frame(){requestAnimationFrame(frame);const dt=Math.min(clock.getDelta(),.05);if(mixer)mixer.update(dt);root.rotation.y=yaw;root.rotation.x=pitch;const r=targetDistance;camera.position.set(0,0,r);camera.lookAt(target);renderer.render(scene,camera)}frame();
+</script>
+</body>
+</html>
