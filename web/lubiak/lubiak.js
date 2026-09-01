@@ -616,6 +616,17 @@ function frameLoadedEnvironment(root) {
   // exact relative transforms authored in the master GLB. Do not lift or separate
   // the circus branch from its surrounding palace/plaza geometry at runtime.
 
+  // LUBIAK_EXTERIOR_CAMERA_RESTORE_V1
+  // Preserve the authored scene composition, but still frame the exterior world.
+  const eyeHeight = Math.max(1.7, Math.min(size.y * 0.12, 5));
+  const distance = Math.max(maxDim * 0.72, size.z * 0.72, 18);
+  camera.position.set(0, eyeHeight, distance);
+  camera.near = Math.max(0.02, maxDim / 50000);
+  camera.far = Math.max(500, maxDim * 8);
+  camera.updateProjectionMatrix();
+  yaw = 0;
+  pitch = -0.035;
+
   movementBounds = new THREE.Box3(
     new THREE.Vector3(-size.x * 0.7, 0, -size.z * 0.7),
     new THREE.Vector3(size.x * 0.7, Math.max(18, size.y * 1.15), size.z * 0.9),
