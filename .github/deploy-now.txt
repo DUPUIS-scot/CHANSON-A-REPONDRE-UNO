@@ -1,8 +1,8 @@
-deploy-request: 2026-09-01T21:34+01:00
+deploy-request: 2026-09-01T22:10+01:00
 source: chat-direct
-scope: LUBIAK restore palace and circus
+scope: LUBIAK query-only asset isolation diagnostics
 runtime: web/lubiak/lubiak.js
-repair-commit: 6caebbedc5682d87d45e0524dfa0ae336d699089
-behavior: explicitly restore both rear Tripo landmark nodes; preserve Freak Street, road, camera, player, dragon and environment transforms
+repair-commit: af800791bb0e81db877ccb269a8766b74922dea5
+behavior: add noDragon, noPlayer, noBroom and noCircus URL switches; normal live scene unchanged; palace and circus remain restored
 fallbackRoot: remains disabled
-note: orange cuboids require separate component-level repair and are not these landmark nodes
+note: identify the separate asset carrying orange cubes without deleting geometry
