@@ -203,7 +203,7 @@ jobs:
           js_path = Path('build/web/lubiak/lubiak.js')
           html_path = Path('build/web/lubiak/index.html')
           js = js_path.read_text()
-          js, n = re.subn(r"(LUBIAK_master_optimized(?:_4_ELEMENT_PBR_WEB_OPTIMIZED)?\.glb\?v=)[^'\"\s]+", rf"\g<1>{token}", js)
+          js, n = re.subn(r"((?:LUBIAK_master_optimized(?:_4_ELEMENT_PBR_WEB_OPTIMIZED)?|LUBIAK_palace_pbr_repaired_final)\.glb\?v=)[^'\"\s]+", rf"\g<1>{token}", js)
           if n < 1: raise RuntimeError('LUBIAK optimized model cache token not found')
           js_path.write_text(js)
           html = html_path.read_text()
