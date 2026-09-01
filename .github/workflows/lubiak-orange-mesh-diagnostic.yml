@@ -1,0 +1,65 @@
+name: LUBIAK Orange Mesh Diagnostic
+
+on:
+  push:
+    paths:
+      - '.github/workflows/lubiak-orange-mesh-diagnostic.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Inspect GLB node and material structure
+        run: |
+          python3 - <<'PY'
+          import json, struct, pathlib
+          candidates = [
+            pathlib.Path('assets/models/LUBIAK_palace_pbr_repaired_final.glb'),
+            pathlib.Path('assets/models/LUBIAK_master_optimized.glb'),
+          ]
+          lines=[]
+          for p in candidates:
+            if not p.exists():
+              lines.append(f'MISSING {p}')
+              continue
+            data=p.read_bytes()
+            magic,version,total=struct.unpack_from('<4sII',data,0)
+            off=12; doc=None
+            while off < len(data):
+              ln,typ=struct.unpack_from('<II',data,off); off+=8
+              chunk=data[off:off+ln]; off+=ln
+              if typ==0x4E4F534A:
+                doc=json.loads(chunk.rstrip(b'\x00 ').decode('utf-8'))
+                break
+            if not doc:
+              lines.append(f'NO JSON {p}'); continue
+            lines.append(f'FILE {p} bytes={len(data)} nodes={len(doc.get("nodes",[]))} meshes={len(doc.get("meshes",[]))} materials={len(doc.get("materials",[]))}')
+            mats=doc.get('materials',[])
+            for i,m in enumerate(mats):
+              pb=m.get('pbrMetallicRoughness',{})
+              lines.append(f'MATERIAL {i} name={m.get("name","")} baseColor={pb.get("baseColorFactor")} baseColorTexture={pb.get("baseColorTexture")}')
+            meshes=doc.get('meshes',[])
+            for ni,n in enumerate(doc.get('nodes',[])):
+              if 'mesh' not in n: continue
+              mi=n['mesh']; mesh=meshes[mi]
+              prims=mesh.get('primitives',[])
+              matids=sorted({pr.get('material',-1) for pr in prims})
+              lines.append(f'NODE {ni} name={n.get("name","")} mesh={mi}:{mesh.get("name","")} translation={n.get("translation")} rotation={n.get("rotation")} scale={n.get("scale")} primitives={len(prims)} materials={matids}')
+          pathlib.Path('lubiak-orange-mesh-diagnostic.txt').write_text('\n'.join(lines)+'\n')
+          print('\n'.join(lines))
+          PY
+      - name: Commit diagnostic report
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add lubiak-orange-mesh-diagnostic.txt
+          git commit -m 'debug(lubiak): record GLB node material map' || exit 0
+          git push
