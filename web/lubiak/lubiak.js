@@ -560,25 +560,22 @@ function makeFallbackDistrict() {
 }
 
 function frameLoadedEnvironment(root) {
-  // LUBIAK_ORANGE_BLOCKS_V2
-  // The live screenshot confirms the flat orange boxes are baked into the large
-  // Freak-Street Tripo branch rather than the cobbled base. Keep the authored
-  // palace/circus branches untouched and suppress only opaque textureless child
-  // meshes under that branch. The branch itself remains visible.
-  const freakStreetBranch = root.getObjectByName('tripo_node_170df8a4-1c24-4cc7-8401-75018ddce4ca');
-  if (freakStreetBranch) {
-    freakStreetBranch.traverse((object) => {
-      if (!object.isMesh) return;
-      const materials = Array.isArray(object.material) ? object.material : [object.material];
-      const textureless = materials.length > 0 && materials.every((m) => m && !m.map && !m.normalMap && !m.emissiveMap);
-      const c = materials[0]?.color;
-      const orangeLike = c && c.r > 0.45 && c.r > c.g * 1.25 && c.g > c.b * 1.15;
-      if (textureless && orangeLike) {
-        object.visible = false;
-        object.userData.lubiakHiddenOrangeBlock = true;
-        console.info('LUBIAK hidden orange block mesh', object.name || '(unnamed)');
-      }
-    });
+  // LUBIAK_REMOVE_TWO_REAR_CITY_STRUCTURES_V1
+  // These two separately authored Tripo city structures were added beneath the
+  // palace/circus area and are the source of the visible orange rectangular mass.
+  // Keep the front Freak Street branch and the authored cobbled road untouched.
+  for (const nodeName of [
+    'tripo_node_d1a12a81-cf69-467d-b065-ca7dbc44effe',
+    'tripo_node_0bd29e1e-1604-4fbb-8d8a-6ffaff6811bd',
+  ]) {
+    const cityStructure = root.getObjectByName(nodeName);
+    if (!cityStructure) {
+      console.warn('LUBIAK rear city structure not found', nodeName);
+      continue;
+    }
+    cityStructure.visible = false;
+    cityStructure.userData.lubiakExcludedRearCityStructure = true;
+    console.info('LUBIAK removed rear city structure', nodeName);
   }
   root.updateMatrixWorld(true);
   const box = new THREE.Box3().setFromObject(root);
@@ -1032,12 +1029,7 @@ async function installEnvironment() {
       const gltf = await loadGlb(candidate.url, decoder, candidate.label, true, candidate.timeoutMs);
       const root = gltf.scene;
       root.name = 'LUBIAK_ENVIRONMENT';
-      // LUBIAK_REMOVE_COBBLED_BASE_V1 — suppress the unwanted orange/stepped under-mesh only.
-      const cobbledBase = root.getObjectByName('Unified cobbled district base');
-      if (cobbledBase) {
-        cobbledBase.visible = false;
-        cobbledBase.userData.lubiakExcludedFromWorld = true;
-      }
+      // The authored cobbled road remains enabled; it was confirmed not to be the orange geometry.
       scene.add(root);
       if (!frameLoadedEnvironment(root)) {
         scene.remove(root);
