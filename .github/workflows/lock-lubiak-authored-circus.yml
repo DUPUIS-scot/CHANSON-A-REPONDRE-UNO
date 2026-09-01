@@ -1,0 +1,52 @@
+name: Lock LUBIAK authored circus placement
+
+on:
+  push:
+    paths:
+      - '.github/workflows/lock-lubiak-authored-circus.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Preserve authored circus placement
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const path = 'web/lubiak/lubiak.js';
+          let s = fs.readFileSync(path, 'utf8');
+          const start = s.indexOf('  // LUBIAK_CIRCUS_GROUND_ZERO_V2');
+          const endAnchor = '\n  movementBounds = new THREE.Box3';
+          const end = s.indexOf(endAnchor, start);
+          if (start < 0 || end < 0) throw new Error('Circus ground-zero block not found');
+          const replacement = `  // LUBIAK_AUTHORED_CIRCUS_RELATIVE_PLACEMENT_V1\n  // Keep the circus, palace, Kathmandu buildings, rocks and layered terrain in the\n  // exact relative transforms authored in the master GLB. Do not lift or separate\n  // the circus branch from its surrounding palace/plaza geometry at runtime.\n`;
+          s = s.slice(0, start) + replacement + s.slice(end);
+          fs.writeFileSync(path, s);
+          NODE
+      - name: Verify runtime contract
+        run: |
+          grep -q 'LUBIAK_AUTHORED_CIRCUS_RELATIVE_PLACEMENT_V1' web/lubiak/lubiak.js
+          ! grep -q 'LUBIAK_CIRCUS_GROUND_ZERO_V2' web/lubiak/lubiak.js
+          ! grep -q 'circus aligned to ground datum' web/lubiak/lubiak.js
+          node --check web/lubiak/lubiak.js
+      - name: Commit repair
+        run: |
+          if git diff --quiet -- web/lubiak/lubiak.js; then
+            echo 'No change required.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add web/lubiak/lubiak.js
+          git commit -m 'fix(lubiak): preserve authored circus palace composition'
+          git push
