@@ -1,7 +1,8 @@
-deploy-request: 2026-09-01T12:50+01:00
+deploy-request: 2026-09-01T12:53+01:00
 source: chat-direct
-scope: PLAY Jester dealer pose and card staging
+scope: PLAY Jester dealer pose and card staging + Rules regression repair
 runtime: web/puppet_dealer.js + web/index.html
 revision: play-jester-dealer-pose-20260901-v13
 behavior: keep visible torso-up jester, lower arms into dealer pose, stage one card from hand position through flip/present path, keep lower body cropped
+ci-repair: rules_screen_test uses the actual Scrollable descendant and restores iOS platform override before invariant verification
 note: deploy corrected current main state
