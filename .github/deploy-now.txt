@@ -1,10 +1,7 @@
-deploy-request: 2026-09-01T12:48+01:00
+deploy-request: 2026-09-01T12:50+01:00
 source: chat-direct
-scope: RULES machine responsive layout
-runtime: lib/screens/rules_screen.dart + web/rules_machine/index.html
-revision: rules-machine-live-20260901-v2
-layout-desktop: side-by-side machine + rules
-layout-ios: vertical two-viewport machine-first rules-second
-model-path: assets/models/textured-glb-comparison/segmented_machine_optimized.glb
-test-repair: align rules regression with responsive machine-first behavior
+scope: PLAY Jester dealer pose and card staging
+runtime: web/puppet_dealer.js + web/index.html
+revision: play-jester-dealer-pose-20260901-v13
+behavior: keep visible torso-up jester, lower arms into dealer pose, stage one card from hand position through flip/present path, keep lower body cropped
 note: deploy corrected current main state
