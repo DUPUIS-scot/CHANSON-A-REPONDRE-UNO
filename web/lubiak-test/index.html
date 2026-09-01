@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>LUBIAK — Circus Clear Test</title>
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#050303;color:#fff;font-family:system-ui,sans-serif}#stage{position:fixed;inset:0}#hud{position:fixed;left:14px;top:14px;z-index:2;background:#000a;padding:10px 12px;border:1px solid #ffffff33;border-radius:10px;font-size:12px;line-height:1.4;max-width:360px}#hud b{letter-spacing:.08em}button{margin-top:8px;padding:7px 10px;border:1px solid #ffffff66;background:#111;color:#fff;border-radius:8px}canvas{display:block}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+</head>
+<body>
+<div id="stage"></div>
+<div id="hud"><b>LUBIAK · CIRCUS CLEAR TEST</b><br>Test branch only — main/live unchanged.<br><span id="status">Loading master…</span><br><button id="toggle" disabled>Show original overlap</button></div>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const host=document.querySelector('#stage');
+const status=document.querySelector('#status');
+const toggle=document.querySelector('#toggle');
+const scene=new THREE.Scene(); scene.background=new THREE.Color(0x050303);
+const camera=new THREE.PerspectiveCamera(52,innerWidth/innerHeight,.03,500); camera.position.set(34,24,34);
+const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'}); renderer.setPixelRatio(Math.min(devicePixelRatio,1.6)); renderer.setSize(innerWidth,innerHeight); renderer.outputColorSpace=THREE.SRGBColorSpace; renderer.toneMapping=THREE.ACESFilmicToneMapping; host.appendChild(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xffffff,0x332211,2.1)); const sun=new THREE.DirectionalLight(0xffe8d2,3.2); sun.position.set(20,40,30); scene.add(sun);
+const controls=new OrbitControls(camera,renderer.domElement); controls.target.set(0,5,-17); controls.enableDamping=true;
+
+const URL='https://raw.githack.com/DUPUIS-scot/CHANSON-A-REPONDRE-UNO/main/assets/models/textured-glb-comparison/LUBIAK_palace_pbr_repaired_final.glb';
+let target=null, originalIndex=null, repairedIndex=null;
+function buildCircusClear(mesh){
+  mesh.updateWorldMatrix(true,false);
+  const g=mesh.geometry; if(!g.index||!g.attributes.position) return 0;
+  originalIndex=g.index.array.slice(); repairedIndex=originalIndex.slice();
+  const p=g.attributes.position; const a=new THREE.Vector3(),b=new THREE.Vector3(),c=new THREE.Vector3(),cent=new THREE.Vector3(); let removed=0;
+  for(let i=0;i<repairedIndex.length;i+=3){
+    a.fromBufferAttribute(p,repairedIndex[i]).applyMatrix4(mesh.matrixWorld);
+    b.fromBufferAttribute(p,repairedIndex[i+1]).applyMatrix4(mesh.matrixWorld);
+    c.fromBufferAttribute(p,repairedIndex[i+2]).applyMatrix4(mesh.matrixWorld);
+    cent.copy(a).add(b).add(c).multiplyScalar(1/3);
+    if(cent.x>-12&&cent.x<12&&cent.z>-33&&cent.z<-3&&cent.y<12.5){ repairedIndex[i+1]=repairedIndex[i]; repairedIndex[i+2]=repairedIndex[i]; removed++; }
+  }
+  g.setIndex(new THREE.BufferAttribute(repairedIndex,g.index.itemSize)); g.index.needsUpdate=true; g.computeBoundingSphere(); return removed;
+}
+new GLTFLoader().load(URL,(gltf)=>{
+  scene.add(gltf.scene); gltf.scene.updateMatrixWorld(true);
+  target=gltf.scene.getObjectByName('tripo_node_d1a12a81-cf69-467d-b065-ca7dbc44effe')||gltf.scene.getObjectByName('tripo_mesh_d1a12a81-cf69-467d-b065-ca7dbc44effe');
+  const mesh=target?.isMesh?target:target?.getObjectByProperty('isMesh',true);
+  if(!mesh){status.textContent='Palace mesh not found.';return;}
+  target=mesh; const removed=buildCircusClear(mesh); status.textContent=`Repair active · ${removed.toLocaleString()} palace triangles cleared from circus plaza.`; toggle.disabled=false;
+  const box=new THREE.Box3().setFromObject(gltf.scene), size=box.getSize(new THREE.Vector3()), center=box.getCenter(new THREE.Vector3()); controls.target.copy(new THREE.Vector3(0,5,-17)); camera.position.set(center.x+size.x*.55,Math.max(20,size.y*.9),-17+size.z*.42); controls.update();
+},undefined,(e)=>{console.error(e);status.textContent='GLB failed to load.'});
+let repaired=true; toggle.onclick=()=>{if(!target||!originalIndex)return; const arr=repaired?originalIndex:repairedIndex; target.geometry.setIndex(new THREE.BufferAttribute(arr.slice(),1)); target.geometry.index.needsUpdate=true; repaired=!repaired; toggle.textContent=repaired?'Show original overlap':'Show repaired clear'; status.textContent=repaired?'Repair active · circus plaza overlap cleared.':'Original palace overlap visible.';};
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+renderer.setAnimationLoop(()=>{controls.update();renderer.render(scene,camera)});
+</script>
+</body>
+</html>
