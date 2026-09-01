@@ -1,0 +1,61 @@
+name: Fix LUBIAK fallback root
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-lubiak-fallback-root.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Make fallback root mutually exclusive with master
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const path = 'web/lubiak/lubiak.js';
+          let s = fs.readFileSync(path, 'utf8');
+
+          const oldVisibility = `function setExteriorVisibility(visible) {\n  if (exteriorRoot) exteriorRoot.visible = visible;\n  if (fallbackRoot) fallbackRoot.visible = visible;`;
+          const newVisibility = `function setExteriorVisibility(visible) {\n  if (exteriorRoot) exteriorRoot.visible = visible;\n  // Fallback is mutually exclusive with the authored master. Never reveal it\n  // merely because the exterior world becomes visible again.\n  if (fallbackRoot) fallbackRoot.visible = visible && !exteriorRoot;`;
+          if (!s.includes(oldVisibility)) throw new Error('setExteriorVisibility anchor not found');
+          s = s.replace(oldVisibility, newVisibility);
+
+          const oldSuccess = `      exteriorRoot = root;\n      // Confirm two animation frames before optional network/decode work begins.`;
+          const newSuccess = `      exteriorRoot = root;\n      // LUBIAK_FALLBACK_EXCLUSIVE_V1 — the procedural safe-mode district may\n      // exist only when every authored master candidate has failed. If a stale\n      // fallback was created by an earlier/overlapping bootstrap, remove it now\n      // so it cannot render, collide, or participate in terrain raycasts.\n      if (fallbackRoot) {\n        fallbackRoot.removeFromParent();\n        fallbackRoot.traverse((object) => {\n          if (!object.isMesh) return;\n          object.geometry?.dispose?.();\n          const materials = Array.isArray(object.material) ? object.material : [object.material];\n          for (const material of materials) material?.dispose?.();\n        });\n        fallbackRoot = null;\n      }\n      // Confirm two animation frames before optional network/decode work begins.`;
+          if (!s.includes(oldSuccess)) throw new Error('environment success anchor not found');
+          s = s.replace(oldSuccess, newSuccess);
+
+          const oldFallback = `function makeFallbackDistrict() {\n  if (scene.getObjectByName('LUBIAK_FALLBACK_DISTRICT')) return;`;
+          const newFallback = `function makeFallbackDistrict() {\n  // Never construct safe-mode geometry after a valid authored environment exists.\n  if (exteriorRoot) return;\n  if (scene.getObjectByName('LUBIAK_FALLBACK_DISTRICT')) return;`;
+          if (!s.includes(oldFallback)) throw new Error('fallback constructor anchor not found');
+          s = s.replace(oldFallback, newFallback);
+
+          fs.writeFileSync(path, s);
+          NODE
+      - name: Verify fallback exclusivity
+        run: |
+          grep -q 'LUBIAK_FALLBACK_EXCLUSIVE_V1' web/lubiak/lubiak.js
+          grep -q 'if (exteriorRoot) return;' web/lubiak/lubiak.js
+          node --check web/lubiak/lubiak.js
+      - name: Commit repair
+        run: |
+          if git diff --quiet -- web/lubiak/lubiak.js; then
+            echo 'No change required.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add web/lubiak/lubiak.js
+          git commit -m 'fix(lubiak): remove fallback root when master succeeds'
+          git push
