@@ -50,7 +50,7 @@ class _RulesMachineViewState extends State<RulesMachineView> {
         ..style.width = '100%'
         ..style.height = '100%'
         ..style.display = 'block'
-        ..style.backgroundColor = '#080706';
+        ..style.backgroundColor = 'transparent';
       _iframe = iframe;
       _syncPointerOwnership();
       return iframe;
