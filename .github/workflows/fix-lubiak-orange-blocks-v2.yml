@@ -1,0 +1,45 @@
+name: Fix LUBIAK orange blocks v2
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-lubiak-orange-blocks-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Remove orange block branch while preserving authored environment
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const path='web/lubiak/lubiak.js';
+          let s=fs.readFileSync(path,'utf8');
+          const anchor=`function frameLoadedEnvironment(root) {\n  root.updateMatrixWorld(true);`;
+          if(!s.includes(anchor)) throw new Error('frameLoadedEnvironment anchor missing');
+          const patch=`function frameLoadedEnvironment(root) {\n  // LUBIAK_ORANGE_BLOCKS_V2\n  // The live screenshot confirms the flat orange boxes are baked into the large\n  // Freak-Street Tripo branch rather than the cobbled base. Keep the authored\n  // palace/circus branches untouched and suppress only opaque textureless child\n  // meshes under that branch. The branch itself remains visible.\n  const freakStreetBranch = root.getObjectByName('tripo_node_170df8a4-1c24-4cc7-8401-75018ddce4ca');\n  if (freakStreetBranch) {\n    freakStreetBranch.traverse((object) => {\n      if (!object.isMesh) return;\n      const materials = Array.isArray(object.material) ? object.material : [object.material];\n      const textureless = materials.length > 0 && materials.every((m) => m && !m.map && !m.normalMap && !m.emissiveMap);\n      const c = materials[0]?.color;\n      const orangeLike = c && c.r > 0.45 && c.r > c.g * 1.25 && c.g > c.b * 1.15;\n      if (textureless && orangeLike) {\n        object.visible = false;\n        object.userData.lubiakHiddenOrangeBlock = true;\n        console.info('LUBIAK hidden orange block mesh', object.name || '(unnamed)');\n      }\n    });\n  }\n  root.updateMatrixWorld(true);`;
+          s=s.replace(anchor,patch);
+          fs.writeFileSync(path,s);
+          NODE
+      - name: Verify runtime
+        run: |
+          grep -q 'LUBIAK_ORANGE_BLOCKS_V2' web/lubiak/lubiak.js
+          grep -q 'lubiakHiddenOrangeBlock' web/lubiak/lubiak.js
+          node --check web/lubiak/lubiak.js
+      - name: Commit repair
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add web/lubiak/lubiak.js
+          git commit -m 'fix(lubiak): suppress orange block meshes only' || exit 0
+          git push
