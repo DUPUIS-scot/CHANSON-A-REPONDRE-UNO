@@ -19,23 +19,25 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Preserve authored circus placement
+      - name: Preserve authored circus placement and restore exterior camera
         run: |
           node <<'NODE'
           const fs = require('fs');
           const path = 'web/lubiak/lubiak.js';
           let s = fs.readFileSync(path, 'utf8');
-          const start = s.indexOf('  // LUBIAK_CIRCUS_GROUND_ZERO_V2');
-          const endAnchor = '\n  movementBounds = new THREE.Box3';
-          const end = s.indexOf(endAnchor, start);
-          if (start < 0 || end < 0) throw new Error('Circus ground-zero block not found');
-          const replacement = `  // LUBIAK_AUTHORED_CIRCUS_RELATIVE_PLACEMENT_V1\n  // Keep the circus, palace, Kathmandu buildings, rocks and layered terrain in the\n  // exact relative transforms authored in the master GLB. Do not lift or separate\n  // the circus branch from its surrounding palace/plaza geometry at runtime.\n`;
-          s = s.slice(0, start) + replacement + s.slice(end);
+          const marker = `  // LUBIAK_AUTHORED_CIRCUS_RELATIVE_PLACEMENT_V1\n  // Keep the circus, palace, Kathmandu buildings, rocks and layered terrain in the\n  // exact relative transforms authored in the master GLB. Do not lift or separate\n  // the circus branch from its surrounding palace/plaza geometry at runtime.\n`;
+          if (!s.includes(marker)) throw new Error('Authored circus placement marker missing');
+          if (!s.includes('LUBIAK_EXTERIOR_CAMERA_RESTORE_V1')) {
+            const cameraBlock = `${marker}\n  // LUBIAK_EXTERIOR_CAMERA_RESTORE_V1\n  // Preserve the authored scene composition, but still frame the exterior world.\n  const eyeHeight = Math.max(1.7, Math.min(size.y * 0.12, 5));\n  const distance = Math.max(maxDim * 0.72, size.z * 0.72, 18);\n  camera.position.set(0, eyeHeight, distance);\n  camera.near = Math.max(0.02, maxDim / 50000);\n  camera.far = Math.max(500, maxDim * 8);\n  camera.updateProjectionMatrix();\n  yaw = 0;\n  pitch = -0.035;\n`;
+            s = s.replace(marker, cameraBlock);
+          }
           fs.writeFileSync(path, s);
           NODE
       - name: Verify runtime contract
         run: |
           grep -q 'LUBIAK_AUTHORED_CIRCUS_RELATIVE_PLACEMENT_V1' web/lubiak/lubiak.js
+          grep -q 'LUBIAK_EXTERIOR_CAMERA_RESTORE_V1' web/lubiak/lubiak.js
+          grep -q 'camera.position.set(0, eyeHeight, distance);' web/lubiak/lubiak.js
           ! grep -q 'LUBIAK_CIRCUS_GROUND_ZERO_V2' web/lubiak/lubiak.js
           ! grep -q 'circus aligned to ground datum' web/lubiak/lubiak.js
           node --check web/lubiak/lubiak.js
@@ -48,5 +50,5 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add web/lubiak/lubiak.js
-          git commit -m 'fix(lubiak): preserve authored circus palace composition'
+          git commit -m 'fix(lubiak): restore exterior camera framing'
           git push
