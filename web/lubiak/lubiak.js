@@ -560,6 +560,26 @@ function makeFallbackDistrict() {
 }
 
 function frameLoadedEnvironment(root) {
+  // LUBIAK_ORANGE_BLOCKS_V2
+  // The live screenshot confirms the flat orange boxes are baked into the large
+  // Freak-Street Tripo branch rather than the cobbled base. Keep the authored
+  // palace/circus branches untouched and suppress only opaque textureless child
+  // meshes under that branch. The branch itself remains visible.
+  const freakStreetBranch = root.getObjectByName('tripo_node_170df8a4-1c24-4cc7-8401-75018ddce4ca');
+  if (freakStreetBranch) {
+    freakStreetBranch.traverse((object) => {
+      if (!object.isMesh) return;
+      const materials = Array.isArray(object.material) ? object.material : [object.material];
+      const textureless = materials.length > 0 && materials.every((m) => m && !m.map && !m.normalMap && !m.emissiveMap);
+      const c = materials[0]?.color;
+      const orangeLike = c && c.r > 0.45 && c.r > c.g * 1.25 && c.g > c.b * 1.15;
+      if (textureless && orangeLike) {
+        object.visible = false;
+        object.userData.lubiakHiddenOrangeBlock = true;
+        console.info('LUBIAK hidden orange block mesh', object.name || '(unnamed)');
+      }
+    });
+  }
   root.updateMatrixWorld(true);
   const box = new THREE.Box3().setFromObject(root);
   if (box.isEmpty()) return false;
