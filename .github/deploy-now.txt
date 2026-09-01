@@ -1,9 +1,8 @@
-deploy-request: 2026-09-01T13:14+01:00
+deploy-request: 2026-09-01T15:29+01:00
 source: chat-direct
-scope: PLAY Jester rigged dealer pose and Rules mobile overflow repair
-runtime: web/puppet_dealer.js + web/index.html + lib/screens/rules_screen.dart
-revision: play-jester-rigged-dealer-20260901-v14
-behavior: render imported skinned rig, lower shoulders and elbows into dealer pose, keep torso-up framing, anchor dealt card to real hand region, remove chest-crossing world-space card path
-rules-repair: make section headings responsive below 220px content width so /rules no longer RenderFlex-overflows on 390px mobile tests
-fallback: retain static mesh only if valid skinned rig/hand is unavailable
+scope: LUBIAK authored circus/palace composition
+runtime: web/lubiak/lubiak.js
+revision: lubiak-authored-circus-relative-placement-v1
+behavior: preserve the master GLB's exact relative placement of the circus, palace, Kathmandu buildings, rocks, plaza and layered terrain; do not independently lift or realign the circus branch at runtime
+fallbackRoot: remains disabled
 note: deploy corrected current main state
