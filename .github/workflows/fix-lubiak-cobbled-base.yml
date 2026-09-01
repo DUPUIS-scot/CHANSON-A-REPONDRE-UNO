@@ -1,0 +1,52 @@
+name: Fix LUBIAK cobbled base
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-lubiak-cobbled-base.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Hide unwanted cobbled district base node
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('web/lubiak/lubiak.js')
+          s = p.read_text()
+          old = "      root.name = 'LUBIAK_ENVIRONMENT';\n      scene.add(root);"
+          new = "      root.name = 'LUBIAK_ENVIRONMENT';\n      // LUBIAK_REMOVE_COBBLED_BASE_V1 — suppress the unwanted orange/stepped under-mesh only.\n      const cobbledBase = root.getObjectByName('Unified cobbled district base');\n      if (cobbledBase) {\n        cobbledBase.visible = false;\n        cobbledBase.userData.lubiakExcludedFromWorld = true;\n      }\n      scene.add(root);"
+          if 'LUBIAK_REMOVE_COBBLED_BASE_V1' not in s:
+              if old not in s:
+                  raise SystemExit('installEnvironment anchor not found')
+              s = s.replace(old, new, 1)
+          p.write_text(s)
+          PY
+      - name: Verify runtime
+        run: |
+          grep -q 'LUBIAK_REMOVE_COBBLED_BASE_V1' web/lubiak/lubiak.js
+          grep -q "getObjectByName('Unified cobbled district base')" web/lubiak/lubiak.js
+          grep -q 'cobbledBase.visible = false' web/lubiak/lubiak.js
+          node --check web/lubiak/lubiak.js
+      - name: Commit repair
+        run: |
+          if git diff --quiet -- web/lubiak/lubiak.js; then
+            echo 'No change required.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add web/lubiak/lubiak.js
+          git commit -m 'fix(lubiak): hide unwanted cobbled base mesh'
+          git push
