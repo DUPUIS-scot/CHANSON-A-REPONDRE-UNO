@@ -560,22 +560,18 @@ function makeFallbackDistrict() {
 }
 
 function frameLoadedEnvironment(root) {
-  // LUBIAK_REMOVE_TWO_REAR_CITY_STRUCTURES_V1
-  // These two separately authored Tripo city structures were added beneath the
-  // palace/circus area and are the source of the visible orange rectangular mass.
-  // Keep the front Freak Street branch and the authored cobbled road untouched.
+  // LUBIAK_PALACE_CIRCUS_RESTORED_V1
+  // Keep both rear authored landmarks visible. Orange cuboid removal must never
+  // target these complete Tripo nodes.
   for (const nodeName of [
     'tripo_node_d1a12a81-cf69-467d-b065-ca7dbc44effe',
     'tripo_node_0bd29e1e-1604-4fbb-8d8a-6ffaff6811bd',
   ]) {
-    const cityStructure = root.getObjectByName(nodeName);
-    if (!cityStructure) {
-      console.warn('LUBIAK rear city structure not found', nodeName);
-      continue;
+    const landmark = root.getObjectByName(nodeName);
+    if (landmark) {
+      landmark.visible = true;
+      landmark.userData.lubiakProtectedLandmark = true;
     }
-    cityStructure.visible = false;
-    cityStructure.userData.lubiakExcludedRearCityStructure = true;
-    console.info('LUBIAK removed rear city structure', nodeName);
   }
   root.updateMatrixWorld(true);
   const box = new THREE.Box3().setFromObject(root);
