@@ -1,9 +1,9 @@
-deploy-request: 2026-09-01T11:35+01:00
+deploy-request: 2026-09-01T12:19+01:00
 source: chat-direct
-scope: PLAY jester orientation
-runtime: web/puppet_dealer.js
-revision: play-jester-face-user-20260901-v12
-rotation-y: 3*Math.PI/2
-rotation-degrees: 270
-cache-key: play-jester-face-user-20260901-v12
-repair: publish the requested additional 180-degree turn from the prior 90-degree heading
+scope: RULES machine responsive layout
+runtime: lib/screens/rules_screen.dart + web/rules_machine/index.html
+revision: rules-machine-live-20260901-v1
+layout-desktop: side-by-side machine + rules
+layout-ios: vertical two-viewport machine-first rules-second
+model-path: assets/models/segmented_machine_optimized.glb
+note: deploy current main state
