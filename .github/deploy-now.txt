@@ -1,8 +1,8 @@
-deploy-request: 2026-09-01T19:39+01:00
+deploy-request: 2026-09-01T19:52+01:00
 source: chat-direct
-scope: LUBIAK remove unwanted cobbled district base mesh
+scope: LUBIAK suppress orange untextured block meshes
 runtime: web/lubiak/lubiak.js
-repair-commit: 8b956068510067eb5b9befed2d36f4a7fc08d568
-behavior: hide only the GLB node named Unified cobbled district base before framing/rendering; preserve Freak Street, palace, circus, authored terrain transforms, camera framing, player and dragon
+repair-commit: 228f777e222978027c303ad14c0488ff15b77493
+behavior: suppress only textureless orange-like meshes under the Freak Street Tripo branch; preserve textured Freak Street, palace, circus, road, camera framing, player and dragon
 fallbackRoot: remains disabled
 note: deploy current main state without reverting concurrent work
