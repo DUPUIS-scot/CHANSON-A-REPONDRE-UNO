@@ -21,7 +21,13 @@ void main() {
     expect(find.text('Each player starts with 5 cards.'), findsOneWidget);
     expect(find.byTooltip('Return to Home'), findsOneWidget);
 
-    final rulesScroll = find.byKey(const ValueKey('rules-content-desktop'));
+    final rulesList = find.byKey(const ValueKey('rules-content-desktop'));
+    final rulesScroll = find.descendant(
+      of: rulesList,
+      matching: find.byType(Scrollable),
+    );
+    expect(rulesScroll, findsOneWidget);
+
     await tester.scrollUntilVisible(
       find.text('CARD CATEGORIES'),
       220,
@@ -69,25 +75,28 @@ void main() {
   testWidgets('rules uses machine first and documentation second on iOS', (
     tester,
   ) async {
-    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
-    addTearDown(() => debugDefaultTargetPlatformOverride = null);
     await tester.binding.setSurfaceSize(const Size(390, 800));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
-    await tester.pumpWidget(const MaterialApp(home: RulesScreen()));
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    try {
+      await tester.pumpWidget(const MaterialApp(home: RulesScreen()));
 
-    expect(find.byKey(const ValueKey('rules-ios-two-viewport')), findsOneWidget);
-    expect(find.byKey(const ValueKey('rules-content-ios')), findsNothing);
+      expect(find.byKey(const ValueKey('rules-ios-two-viewport')), findsOneWidget);
+      expect(find.byKey(const ValueKey('rules-content-ios')), findsNothing);
 
-    await tester.drag(
-      find.byKey(const ValueKey('rules-ios-two-viewport')),
-      const Offset(0, -700),
-    );
-    await tester.pumpAndSettle();
+      await tester.drag(
+        find.byKey(const ValueKey('rules-ios-two-viewport')),
+        const Offset(0, -700),
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.byKey(const ValueKey('rules-content-ios')), findsOneWidget);
-    expect(find.text('HOW TO PLAY'), findsOneWidget);
-    expect(find.byKey(const ValueKey('rules-ios-back-to-machine')), findsOneWidget);
-    expect(tester.takeException(), isNull);
+      expect(find.byKey(const ValueKey('rules-content-ios')), findsOneWidget);
+      expect(find.text('HOW TO PLAY'), findsOneWidget);
+      expect(find.byKey(const ValueKey('rules-ios-back-to-machine')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+    }
   });
 }
