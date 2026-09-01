@@ -1,8 +1,8 @@
-deploy-request: 2026-09-01T22:10+01:00
+deploy-request: 2026-09-01T21:30:00Z
 source: chat-direct
-scope: LUBIAK query-only asset isolation diagnostics
-runtime: web/lubiak/lubiak.js
-repair-commit: af800791bb0e81db877ccb269a8766b74922dea5
-behavior: add noDragon, noPlayer, noBroom and noCircus URL switches; normal live scene unchanged; palace and circus remain restored
-fallbackRoot: remains disabled
-note: identify the separate asset carrying orange cubes without deleting geometry
+scope: LUBIAK remove generated district-panel mesh from live
+runtime: web/lubiak/index.html
+repair-commit: 5e22551b60f7873500a6cdb28e8af22a64ce64d5
+behavior: stop loading freak-street-2-addon.js and its twelve untextured box buildings
+preserve: authored master road, textured environment, palace, circus, player, dragon, broom, camera and transforms
+asset-policy: keep the generated GLB in repository but do not load it live
