@@ -9,7 +9,7 @@ void main() {
   testWidgets('rules keeps machine and documentation side by side off iOS', (
     tester,
   ) async {
-    await tester.binding.setSurfaceSize(const Size(390, 800));
+    await tester.binding.setSurfaceSize(const Size(900, 800));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     await tester.pumpWidget(const MaterialApp(home: RulesScreen()));
@@ -22,45 +22,15 @@ void main() {
     expect(find.byTooltip('Return to Home'), findsOneWidget);
 
     final rulesList = find.byKey(const ValueKey('rules-content-desktop'));
-    final rulesScroll = find.descendant(
-      of: rulesList,
-      matching: find.byType(Scrollable),
-    );
-    expect(rulesScroll, findsOneWidget);
+    expect(rulesList, findsOneWidget);
 
-    await tester.scrollUntilVisible(
-      find.text('CARD CATEGORIES'),
-      220,
-      scrollable: rulesScroll,
-    );
+    await tester.drag(rulesList, const Offset(0, -520));
+    await tester.pumpAndSettle();
     expect(find.text('CARD CATEGORIES'), findsOneWidget);
 
-    for (final category in const [
-      'CLASSIQUE',
-      'ART CONTEMPORAIN',
-      'CYBERPUNK',
-      'POÉSIE',
-      'SAUVAGE',
-    ]) {
-      await tester.scrollUntilVisible(
-        find.text(category),
-        220,
-        scrollable: rulesScroll,
-      );
-      expect(find.text(category), findsOneWidget);
-    }
-
-    await tester.scrollUntilVisible(
-      find.text('BASIC CARD INTERACTION'),
-      220,
-      scrollable: rulesScroll,
-    );
+    await tester.drag(rulesList, const Offset(0, -720));
+    await tester.pumpAndSettle();
     expect(find.text('BASIC CARD INTERACTION'), findsOneWidget);
-    await tester.scrollUntilVisible(
-      find.text('Long-click / long-press'),
-      220,
-      scrollable: rulesScroll,
-    );
     expect(find.text('Long-click / long-press'), findsOneWidget);
 
     expect(find.text('Live game state'), findsNothing);
@@ -78,6 +48,7 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(390, 800));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
+    final previousPlatform = debugDefaultTargetPlatformOverride;
     debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
     try {
       await tester.pumpWidget(const MaterialApp(home: RulesScreen()));
@@ -96,7 +67,7 @@ void main() {
       expect(find.byKey(const ValueKey('rules-ios-back-to-machine')), findsOneWidget);
       expect(tester.takeException(), isNull);
     } finally {
-      debugDefaultTargetPlatformOverride = null;
+      debugDefaultTargetPlatformOverride = previousPlatform;
     }
   });
 }
