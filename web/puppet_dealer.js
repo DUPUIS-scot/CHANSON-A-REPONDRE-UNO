@@ -3,10 +3,10 @@ import { GLTFLoader } from './vendor/GLTFLoader.js';
 import { DRACOLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/DRACOLoader.js';
 
 const dealers=new Map();
-const MODEL_REVISION='play-jester-face-user-20260901-v11';
+const MODEL_REVISION='play-jester-face-user-20260901-v12';
 const MODEL_URL=new URL(`assets/assets/models/play_jester_rigged.glb?rev=${MODEL_REVISION}`,document.baseURI).href;
-// PLAY jester requested heading: 90 degrees around Y.
-const MODEL_FACING_Y=Math.PI/2;
+// PLAY jester: another 180 degrees from the previous 90-degree heading = 270 degrees around Y.
+const MODEL_FACING_Y=3*Math.PI/2;
 const DRACO_PATH='https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/';
 const clamp01=v=>Math.max(0,Math.min(1,v));
 const smooth=v=>{const t=clamp01(v);return t*t*(3-2*t)};
