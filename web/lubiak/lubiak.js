@@ -1012,6 +1012,12 @@ async function installEnvironment() {
       const gltf = await loadGlb(candidate.url, decoder, candidate.label, true, candidate.timeoutMs);
       const root = gltf.scene;
       root.name = 'LUBIAK_ENVIRONMENT';
+      // LUBIAK_REMOVE_COBBLED_BASE_V1 — suppress the unwanted orange/stepped under-mesh only.
+      const cobbledBase = root.getObjectByName('Unified cobbled district base');
+      if (cobbledBase) {
+        cobbledBase.visible = false;
+        cobbledBase.userData.lubiakExcludedFromWorld = true;
+      }
       scene.add(root);
       if (!frameLoadedEnvironment(root)) {
         scene.remove(root);
