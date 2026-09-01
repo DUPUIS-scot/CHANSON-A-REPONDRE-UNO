@@ -3,7 +3,7 @@ import { GLTFLoader } from './vendor/GLTFLoader.js';
 import { DRACOLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/DRACOLoader.js';
 
 const dealers = new Map();
-const MODEL_REVISION = 'play-jester-rigged-dealer-20260901-v14';
+const MODEL_REVISION = 'play-jester-natural-dealer-20260901-v15';
 const MODEL_URL = new URL(
   `assets/assets/models/play_jester_rigged.glb?rev=${MODEL_REVISION}`,
   document.baseURI,
@@ -66,12 +66,12 @@ function normalizedName(name) {
 
 function dealerLocalPose(name) {
   const n = normalizedName(name);
-  if (n.includes('lupperarm')) return { rx: -0.08, ry: 0.10, rz: -0.92 };
-  if (n.includes('rupperarm')) return { rx: -0.08, ry: -0.10, rz: 0.92 };
-  if (n.includes('lforearm')) return { rx: -0.40, ry: -0.08, rz: -0.58 };
-  if (n.includes('rforearm')) return { rx: -0.40, ry: 0.08, rz: 0.58 };
-  if (n.includes('lhand')) return { rx: 0.08, ry: -0.22, rz: -0.10 };
-  if (n.includes('rhand')) return { rx: 0.08, ry: 0.22, rz: 0.10 };
+  if (n.includes('lupperarm')) return { rx: 0.12, ry: 0.06, rz: -0.38 };
+  if (n.includes('rupperarm')) return { rx: 0.12, ry: -0.06, rz: 0.38 };
+  if (n.includes('lforearm')) return { rx: 0.34, ry: 0.04, rz: 0.72 };
+  if (n.includes('rforearm')) return { rx: 0.34, ry: -0.04, rz: -0.72 };
+  if (n.includes('lhand')) return { rx: -0.06, ry: -0.10, rz: 0.08 };
+  if (n.includes('rhand')) return { rx: -0.06, ry: 0.10, rz: -0.08 };
   return null;
 }
 
@@ -128,7 +128,7 @@ class JesterDealer {
 
     host.dataset.dealerStatus = 'loading';
     host.dataset.modelRevision = MODEL_REVISION;
-    host.dataset.poseMode = 'rigged-dealer-pose';
+    host.dataset.poseMode = 'rigged-natural-dealer-pose';
     host.dataset.modelFacingAngle = String(MODEL_FACING_Y);
 
     this.status = document.createElement('div');
@@ -265,8 +265,6 @@ class JesterDealer {
           return;
         }
 
-        // Prefer the actual imported skinned model. This preserves the GLB bind matrices
-        // and makes shoulder/elbow/hand bone rotations deform the visible body.
         if (skinnedCount > 0 && this.handBone) {
           this.model = source;
           this.root.add(source);
@@ -274,7 +272,6 @@ class JesterDealer {
           this.host.dataset.skinnedMeshCount = String(skinnedCount);
           this.host.dataset.handSocket = this.handBone.name || 'hand';
         } else {
-          // Emergency visibility fallback only. Never use this path when the rig is valid.
           const fallback = cloneStaticVisual(source);
           this.model = fallback.visual;
           this.handBone = null;
@@ -418,8 +415,6 @@ class JesterDealer {
       this.card.position.y += Math.sin(Math.PI * progress) * 0.18;
       this.card.rotation.set(-0.03, -0.18 * progress, 0.04 * (1 - progress));
     } else {
-      // Keep the card physically tied to the real hand region. It no longer crosses
-      // the chest/face on desktop and remains consistent across aspect ratios.
       const present = hand.clone();
       present.x += hand.x < 0 ? -0.28 : 0.28;
       present.y += 0.12;
