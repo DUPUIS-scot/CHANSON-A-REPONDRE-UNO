@@ -1,8 +1,9 @@
-deploy-request: 2026-09-01T13:08+01:00
+deploy-request: 2026-09-01T13:14+01:00
 source: chat-direct
-scope: PLAY Jester rigged dealer pose and hand-socket card staging
-runtime: web/puppet_dealer.js + web/index.html
+scope: PLAY Jester rigged dealer pose and Rules mobile overflow repair
+runtime: web/puppet_dealer.js + web/index.html + lib/screens/rules_screen.dart
 revision: play-jester-rigged-dealer-20260901-v14
 behavior: render imported skinned rig, lower shoulders and elbows into dealer pose, keep torso-up framing, anchor dealt card to real hand region, remove chest-crossing world-space card path
+rules-repair: make section headings responsive below 220px content width so /rules no longer RenderFlex-overflows on 390px mobile tests
 fallback: retain static mesh only if valid skinned rig/hand is unavailable
 note: deploy corrected current main state
