@@ -1,9 +1,10 @@
-deploy-request: 2026-09-01T12:19+01:00
+deploy-request: 2026-09-01T12:48+01:00
 source: chat-direct
 scope: RULES machine responsive layout
 runtime: lib/screens/rules_screen.dart + web/rules_machine/index.html
-revision: rules-machine-live-20260901-v1
+revision: rules-machine-live-20260901-v2
 layout-desktop: side-by-side machine + rules
 layout-ios: vertical two-viewport machine-first rules-second
-model-path: assets/models/segmented_machine_optimized.glb
-note: deploy current main state
+model-path: assets/models/textured-glb-comparison/segmented_machine_optimized.glb
+test-repair: align rules regression with responsive machine-first behavior
+note: deploy corrected current main state
