@@ -8,6 +8,17 @@ const status = document.querySelector('#status');
 const progress = document.querySelector('#progress');
 const circusYoutube = document.querySelector('#circus-youtube');
 const bandcamp = document.querySelector('#bandcamp');
+
+// LUBIAK_ASSET_ISOLATION_DIAGNOSTICS_V1
+// Query-only switches leave the normal live scene unchanged while allowing each
+// asynchronously loaded model to be excluded independently.
+const assetDebugParams = new URLSearchParams(window.location.search);
+const assetDebugSkip = {
+  dragon: assetDebugParams.get('noDragon') === '1',
+  player: assetDebugParams.get('noPlayer') === '1',
+  broom: assetDebugParams.get('noBroom') === '1',
+  circus: assetDebugParams.get('noCircus') === '1',
+};
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
   || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const dracoLoader = new DRACOLoader();
@@ -316,6 +327,15 @@ async function getMeshoptDecoder() {
 }
 
 function loadGlb(url, decoder, label, reportProgress = true, timeoutMs = 45000) {
+  const debugBlocked =
+    (assetDebugSkip.dragon && /lubiak_dragon_guardian_web\.glb/i.test(url))
+    || (assetDebugSkip.player && /lubiak_djinn_player_ultralight\.glb/i.test(url))
+    || (assetDebugSkip.broom && /lubiak_da_noble_y2k_broom_ultralight\.glb/i.test(url))
+    || (assetDebugSkip.circus && /lubiak_scene11_web_ultralight\.glb/i.test(url));
+  if (debugBlocked) {
+    console.info('LUBIAK diagnostic skipped asset', url);
+    return Promise.reject(new Error(`Diagnostic asset isolation: ${url}`));
+  }
   return new Promise((resolve, reject) => {
     const loader = new GLTFLoader();
     let settled = false;
