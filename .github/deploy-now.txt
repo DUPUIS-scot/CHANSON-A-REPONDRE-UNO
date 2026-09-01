@@ -1,8 +1,9 @@
-deploy-request: 2026-09-01T15:29+01:00
+deploy-request: 2026-09-01T15:49+01:00
 source: chat-direct
-scope: LUBIAK authored circus/palace composition
+scope: LUBIAK exterior camera framing regression repair
 runtime: web/lubiak/lubiak.js
-revision: lubiak-authored-circus-relative-placement-v1
-behavior: preserve the master GLB's exact relative placement of the circus, palace, Kathmandu buildings, rocks, plaza and layered terrain; do not independently lift or realign the circus branch at runtime
+revision: lubiak-restore-exterior-camera-framing-v1
+behavior: preserve approved authored circus/palace composition while restoring exterior camera position, near/far planes, yaw and pitch so LUBIAK opens to the exterior world instead of appearing trapped inside the circus
 fallbackRoot: remains disabled
+source-commit: ffc9281cfd020b6ac4b8425d374357c84e2f6ed1
 note: deploy corrected current main state
