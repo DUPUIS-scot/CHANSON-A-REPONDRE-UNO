@@ -204,7 +204,9 @@ function finishLoad(label = 'ENTER LUBIAK') {
 
 function setExteriorVisibility(visible) {
   if (exteriorRoot) exteriorRoot.visible = visible;
-  if (fallbackRoot) fallbackRoot.visible = visible;
+  // Fallback is mutually exclusive with the authored master. Never reveal it
+  // merely because the exterior world becomes visible again.
+  if (fallbackRoot) fallbackRoot.visible = visible && !exteriorRoot;
   if (dragonRoot) dragonRoot.visible = visible;
   if (playerRoot) playerRoot.visible = visible;
   moon.visible = visible;
@@ -551,6 +553,8 @@ function updateCircusTransition() {
 }
 
 function makeFallbackDistrict() {
+  // Never construct safe-mode geometry after a valid authored environment exists.
+  if (exteriorRoot) return;
   if (scene.getObjectByName('LUBIAK_FALLBACK_DISTRICT')) return;
   const group = new THREE.Group();
   group.name = 'LUBIAK_FALLBACK_DISTRICT';
@@ -1091,6 +1095,20 @@ async function installEnvironment() {
         throw new Error('GLB scene has invalid or empty bounds');
       }
       exteriorRoot = root;
+      // LUBIAK_FALLBACK_EXCLUSIVE_V1 — the procedural safe-mode district may
+      // exist only when every authored master candidate has failed. If a stale
+      // fallback was created by an earlier/overlapping bootstrap, remove it now
+      // so it cannot render, collide, or participate in terrain raycasts.
+      if (fallbackRoot) {
+        fallbackRoot.removeFromParent();
+        fallbackRoot.traverse((object) => {
+          if (!object.isMesh) return;
+          object.geometry?.dispose?.();
+          const materials = Array.isArray(object.material) ? object.material : [object.material];
+          for (const material of materials) material?.dispose?.();
+        });
+        fallbackRoot = null;
+      }
       // Confirm two animation frames before optional network/decode work begins.
       await renderConfirmedFrame();
       finishLoad(candidate.finish);
