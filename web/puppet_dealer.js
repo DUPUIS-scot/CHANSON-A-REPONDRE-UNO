@@ -3,12 +3,11 @@ import { GLTFLoader } from './vendor/GLTFLoader.js';
 import { DRACOLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/DRACOLoader.js';
 
 const dealers=new Map();
-const MODEL_REVISION='play-jester-face-user-20260901-v9';
+const MODEL_REVISION='play-jester-face-user-20260901-v10';
 const MODEL_URL=new URL(`assets/assets/models/play_jester_rigged.glb?rev=${MODEL_REVISION}`,document.baseURI).href;
-// The current GLB's baked bind geometry is already reversed relative to the
-// previous asset. Keep the PLAY root at its native heading so the face looks
-// toward the +Z camera instead of applying the old extra 180-degree flip.
-const MODEL_FACING_Y=0;
+// PLAY camera sits on +Z looking toward the origin. Rotate the imported jester
+// 180 degrees around Y so the character's front faces the user/camera.
+const MODEL_FACING_Y=Math.PI;
 const DRACO_PATH='https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/';
 const clamp01=v=>Math.max(0,Math.min(1,v));
 const smooth=v=>{const t=clamp01(v);return t*t*(3-2*t)};
