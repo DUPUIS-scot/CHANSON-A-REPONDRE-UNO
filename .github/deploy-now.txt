@@ -1,8 +1,8 @@
-deploy-request: 2026-09-01T00:05:00Z
-source: GitHub Actions run 33436470451 repair
-scope: exact optimized four-element LUBIAK restoration
-verifier-fix-commit: 5222ed6d197c26bc256aff3a38767976ce111f0b
-model: assets/models/textured-glb-comparison/LUBIAK_master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED.glb
-blob-sha: b07ea626a2ff0698c1e54e7ee1b375f9d62ee7b9
-expected-bytes: 3027336
-repair: final deployable-output assertion now verifies exact four-element cache-bound filename
+deploy-request: 2026-09-01T09:50+01:00
+source: chat-direct
+scope: authoritative textured castle interior
+model: assets/models/textured-glb-comparison/castle_interior_textured.glb
+canonical: assets/models/castle_interior.glb
+blob-sha: ce8a711f77d238a36ffd0a3945997372880a1240
+expected-bytes: 9443688
+repair: preserve exact textured castle interior during web deploy; no rebake/recolour pass
