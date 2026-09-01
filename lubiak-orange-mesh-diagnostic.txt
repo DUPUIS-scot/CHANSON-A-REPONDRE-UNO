@@ -1,0 +1,17 @@
+MISSING assets/models/LUBIAK_palace_pbr_repaired_final.glb
+FILE assets/models/LUBIAK_master_optimized.glb bytes=3027336 nodes=8 meshes=8 materials=7
+MATERIAL 0 name=Rain-darkened Kathmandu stone baseColor=None baseColorTexture={'index': 0, 'extensions': {'KHR_texture_transform': {'offset': [0, -2], 'scale': [3, 3]}}}
+MATERIAL 1 name=tripo_material_170df8a4-1c24-4cc7-8401-75018ddce4ca baseColor=None baseColorTexture={'index': 3}
+MATERIAL 2 name=tripo_material_d1a12a81-cf69-467d-b065-ca7dbc44effe baseColor=None baseColorTexture={'index': 6}
+MATERIAL 3 name=tripo_material_0bd29e1e-1604-4fbb-8d8a-6ffaff6811bd baseColor=None baseColorTexture={'index': 9}
+MATERIAL 4 name=PaletteMaterial001 baseColor=None baseColorTexture={'index': 12}
+MATERIAL 5 name=PaletteMaterial002 baseColor=None baseColorTexture={'index': 12}
+MATERIAL 6 name=PaletteMaterial003 baseColor=None baseColorTexture={'index': 12}
+NODE 0 name=Festival bunting mesh=0:BuntingMesh translation=None rotation=None scale=None primitives=1 materials=[4]
+NODE 1 name=Unified cobbled district base mesh=1:Cube translation=[0, -0.1599999964237213, 4] rotation=None scale=None primitives=1 materials=[0]
+NODE 2 name=Freak Street lettering mesh=2:Text translation=[0, 4.920000076293945, 57.279998779296875] rotation=[0.70710688829422, 0, 0, 0.7071066498756409] scale=None primitives=1 materials=[5]
+NODE 3 name=Warm festival lantern mesh=3:Sphere translation=[-7.5, 4, 48] rotation=None scale=[1, 1.350000023841858, 1] primitives=1 materials=[6]
+NODE 4 name=tripo_node_170df8a4-1c24-4cc7-8401-75018ddce4ca mesh=5:tripo_mesh_170df8a4-1c24-4cc7-8401-75018ddce4ca translation=[0, 12.114883422851562, 34] rotation=None scale=[72, 72, 72] primitives=1 materials=[1]
+NODE 5 name=tripo_node_d1a12a81-cf69-467d-b065-ca7dbc44effe mesh=6:tripo_mesh_d1a12a81-cf69-467d-b065-ca7dbc44effe translation=[0, 8.415078163146973, -18] rotation=None scale=[54, 54, 54] primitives=1 materials=[2]
+NODE 6 name=tripo_node_0bd29e1e-1604-4fbb-8d8a-6ffaff6811bd mesh=7:tripo_mesh_0bd29e1e-1604-4fbb-8d8a-6ffaff6811bd translation=[0, 6.216799736022949, -17] rotation=None scale=[25, 25, 25] primitives=1 materials=[3]
+NODE 7 name= mesh=4:Cylinder translation=None rotation=None scale=None primitives=1 materials=[4]
