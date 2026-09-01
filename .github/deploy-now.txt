@@ -1,8 +1,8 @@
-deploy-request: 2026-08-31T20:35:00Z
-source: GitHub Actions run 33435732025 repair
+deploy-request: 2026-09-01T00:05:00Z
+source: GitHub Actions run 33436470451 repair
 scope: exact optimized four-element LUBIAK restoration
-workflow-fix-commit: 57a05829b90ade04986cd9a5e6ce516f13227677
+verifier-fix-commit: 5222ed6d197c26bc256aff3a38767976ce111f0b
 model: assets/models/textured-glb-comparison/LUBIAK_master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED.glb
 blob-sha: b07ea626a2ff0698c1e54e7ee1b375f9d62ee7b9
 expected-bytes: 3027336
-repair: cache refresh accepts exact four-element filename and promotion byte-verifies exact source
+repair: final deployable-output assertion now verifies exact four-element cache-bound filename
