@@ -1,9 +1,7 @@
-deploy-request: 2026-09-01T15:49+01:00
+deploy-request: 2026-09-01T19:31+01:00
 source: chat-direct
-scope: LUBIAK exterior camera framing regression repair
-runtime: web/lubiak/lubiak.js
-revision: lubiak-restore-exterior-camera-framing-v1
-behavior: preserve approved authored circus/palace composition while restoring exterior camera position, near/far planes, yaw and pitch so LUBIAK opens to the exterior world instead of appearing trapped inside the circus
-fallbackRoot: remains disabled
-source-commit: ffc9281cfd020b6ac4b8425d374357c84e2f6ed1
-note: deploy corrected current main state
+scope: current main including natural PLAY Jester dealer pose
+runtime: web/puppet_dealer.js + web/index.html
+revision: play-jester-natural-dealer-20260901-v15
+behavior: keep torso/head/camera/crop stable; reduce shoulder collapse; bend elbows forward; keep forearms and hands visible above the cards; preserve hand-socket card staging
+note: deploy corrected current main state without reverting concurrent LUBIAK work
