@@ -1,4 +1,4 @@
-deploy-request: 2026-09-02T18:59:00+01:00
+deploy-request: 2026-09-02T19:04:00+01:00
 source: Codex
-scope: deploy clean Play jester in untouched exported rest pose; remove forced hand and finger rotations
-commit: 52448536d4ef485668e782a98630a2a70c1c3bae
+scope: deploy safe root-only Play jester idle animation (breath, sway, lean; no hand or finger bones)
+commit: fcc9e2378b3f98bdd7c5153874c726fa742029a2
