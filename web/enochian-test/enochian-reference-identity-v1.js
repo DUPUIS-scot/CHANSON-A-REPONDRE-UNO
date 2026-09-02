@@ -3,7 +3,8 @@
 const VERSION='20260827-reference-identity-v1';
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function inner(host){try{const live=host?.contentDocument,deck=live?.getElementById('deck');return{d:deck?.contentDocument,w:deck?.contentWindow}}catch(_){return{}}}
-function addStyle(d){
+ function addStyle(d){
+  if(!d?.head)return false;
  if(d.getElementById('enochReferenceIdentityV1Style'))return;
  const s=d.createElement('style');s.id='enochReferenceIdentityV1Style';s.textContent=`
  :root{--eno-bg-deep:#020609;--eno-bg:#020E15;--eno-panel:#08161F;--eno-panel-raised:#0B1C25;--eno-cyan-dark:#032844;--eno-cyan:#0E6FA0;--eno-cyan-bright:#30A6CF;--eno-cyan-hot:#94E1F0;--eno-gold-dark:#50422E;--eno-gold:#74674B;--eno-gold-bright:#A5926C;--eno-gold-hot:#C4A45B;--eno-text:#A8B5B5;--eno-text-muted:#65757A;--shell-line:#74674B!important;--shell-soft:rgba(116,103,75,.54)!important;--shell-cyan:#30A6CF!important;--shell-cyan-soft:rgba(48,166,207,.18)!important;--shell-amber:#A5926C!important;--shell-dim:#65757A!important}
@@ -30,7 +31,7 @@ function addStyle(d){
  .analyser-3d{opacity:.20!important;filter:blur(.10px) saturate(.85)!important}.analyser-3d.enoch-reference-underlay{opacity:.12!important}
  .enoch-reference-mesh{position:absolute!important;inset:0!important;z-index:4!important;width:100%!important;height:100%!important;pointer-events:none!important;mix-blend-mode:screen;filter:drop-shadow(0 0 2px rgba(57,200,245,.44)) drop-shadow(0 0 8px rgba(48,166,207,.12))}
  .enoch-reference-rim{position:absolute;left:8px;right:8px;bottom:5px;height:46px;z-index:5;pointer-events:none;opacity:.74;mix-blend-mode:screen;background:linear-gradient(180deg,transparent 0 20%,rgba(57,200,245,.045) 75%,transparent 100%)}
- `;d.head.appendChild(s)
+  `;d.head.appendChild(s);return true
 }
 function installMesh(d,w){
  const wave=d.querySelector('.wave'),source=wave?.querySelector('.analyser-3d');if(!wave||!source||!w?.__enochAnalyser3D)return false;
@@ -50,6 +51,7 @@ function installMesh(d,w){
  };
  raf=w.requestAnimationFrame(paint);w.addEventListener('pagehide',()=>{if(raf)w.cancelAnimationFrame(raf)},{once:true});return true
 }
-function install(host){const {d,w}=inner(host);if(!d||!w)return false;addStyle(d);d.documentElement.dataset.enochReferenceIdentity=VERSION;installMesh(d,w);return true}
+ function install(host){const {d,w}=inner(host);if(!d||!w||!d.documentElement||!addStyle(d))return false;d.documentElement.dataset.enochReferenceIdentity=VERSION;installMesh(d,w);return true}
 window.installEnochianReferenceIdentityV1=host=>{let n=0,t=setInterval(()=>{if(install(host)&&inner(host).w?.__enochAnalyser3D||++n>240)clearInterval(t)},50);return true};
 })();
+
