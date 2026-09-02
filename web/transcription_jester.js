@@ -4,7 +4,7 @@ import { GLTFLoader } from './vendor/GLTFLoader.js';
 const AUTO_SCENE_ID = 'transcription-jester-route-auto';
 const MODEL_FACING_Y = -Math.PI / 2;
 const JESTER_MODEL = new URL(
-  'assets/assets/models/transcription_jester_rigged.glb',
+  'assets/assets/models/textured-glb-comparison/transcription_jester_rigged.glb',
   document.baseURI,
 ).href;
 
@@ -106,7 +106,7 @@ class TranscriptionJester {
     this.presentationDuration = 1.15;
     this.baseCardPosition = null;
     this.host.dataset.transcriptionJester = 'loading';
-    this.host.dataset.sourceModel = 'assets/models/transcription_jester_rigged.glb';
+    this.host.dataset.sourceModel = 'assets/models/textured-glb-comparison/transcription_jester_rigged.glb';
     this.host.dataset.framing = 'reference-card-presentation-cross-platform';
     if (this.selectedCardId) this.host.dataset.selectedCardId = this.selectedCardId;
 
@@ -198,7 +198,7 @@ class TranscriptionJester {
       this.fitCamera();
       this.attachSelectedCard();
       this.host.dataset.transcriptionJester = 'ready';
-      this.host.dataset.modelAsset = 'assets/models/transcription_jester_rigged.glb';
+      this.host.dataset.modelAsset = 'assets/models/textured-glb-comparison/transcription_jester_rigged.glb';
       this.host.dataset.modelFacingAngle = String(MODEL_FACING_Y);
       this.host.dataset.modelAnimations = String(gltf.animations?.length || 0);
       this.host.dataset.modelAnimationNames = (gltf.animations || []).map((clip) => clip.name).join('|');
