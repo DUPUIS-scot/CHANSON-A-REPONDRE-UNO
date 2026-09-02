@@ -31,7 +31,8 @@ const scene = new THREE.Scene();
 const exteriorBackground = new THREE.Color(0x000000);
 const exteriorFogColor = new THREE.Color(0x050303);
 let exteriorBackgroundTexture = null;
-scene.background = exteriorBackgroundTexture || exteriorBackground.clone();
+// Keep the Kathmandu JPG supplied by #stage visible behind the transparent exterior canvas.
+scene.background = null;
 scene.fog = new THREE.FogExp2(exteriorFogColor, 0.0024);
 
 // LUBIAK_KATHMANDU_360_BACKGROUND_V2
@@ -43,7 +44,8 @@ new THREE.TextureLoader().load(
     texture.mapping = THREE.EquirectangularReflectionMapping;
     texture.needsUpdate = true;
     exteriorBackgroundTexture = texture;
-    if (worldMode === 'exterior') scene.background = texture;
+    // The CSS Kathmandu background stays visible; use the panorama only for material reflections.
+    if (worldMode === 'exterior') scene.environment = texture;
   },
   undefined,
   (error) => console.warn('LUBIAK Kathmandu 360 background failed; black fallback retained.', error),
@@ -103,7 +105,8 @@ const PLAYER_GATE_MAX_TRAVEL = 72;
 let renderer;
 let webglContextLost = false;
 try {
-  renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+  renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'high-performance' });
+  renderer.setClearColor(0x000000, 0);
   renderer.setPixelRatio(Math.min(devicePixelRatio, 1.6));
   renderer.setSize(innerWidth, innerHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -547,7 +550,8 @@ function exitCircus() {
   if (circusInterior) circusInterior.visible = false;
   setCircusMediaVisible(false);
   setExteriorVisibility(true);
-  scene.background = exteriorBackgroundTexture || exteriorBackground.clone();
+  // Keep the Kathmandu JPG supplied by #stage visible behind the transparent exterior canvas.
+scene.background = null;
   scene.fog = new THREE.FogExp2(exteriorFogColor, 0.0024);
   renderer.toneMappingExposure = 1.0;
   if (playerReady) {
