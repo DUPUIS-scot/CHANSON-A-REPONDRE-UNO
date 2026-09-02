@@ -1,8 +1,8 @@
-deploy-request: 2026-09-01T21:30:00Z
+deploy-request: 2026-09-02T08:45:00Z
 source: chat-direct
-scope: LUBIAK remove generated district-panel mesh from live
-runtime: web/lubiak/index.html
-repair-commit: 5e22551b60f7873500a6cdb28e8af22a64ce64d5
-behavior: stop loading freak-street-2-addon.js and its twelve untextured box buildings
-preserve: authored master road, textured environment, palace, circus, player, dragon, broom, camera and transforms
-asset-policy: keep the generated GLB in repository but do not load it live
+scope: LUBIAK djinn and broom repair, circus transition, vertical viewer, Kathmandu exterior background
+runtime: web/lubiak/lubiak.js; web/lubiak/index.html
+repair-commit: 2366d646ce7861f88b0fad045c01a3fe38a390d8
+behavior: restore the missing surface probe, reset flight state on circus entry, use a 9:16 circus viewer, and keep the Kathmandu JPG visible behind the exterior 3D scene
+preserve: Megapole route, authored environment, circus scene, player, dragon, broom, camera and transforms
+asset-policy: retain existing Kathmandu JPG and authored assets
