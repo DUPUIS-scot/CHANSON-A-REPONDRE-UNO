@@ -119,6 +119,7 @@ class JesterDealer {
     this.visible = true;
     this.frame = 0;
     this.animation = null;
+    this.pendingAnimation = null;
     this.model = null;
     this.handBone = null;
     this.handSocket = null;
@@ -284,6 +285,7 @@ class JesterDealer {
         this.frameModel();
         this.host.dataset.dealerStatus = 'ready';
         this.clearError();
+        this.flushPendingAnimation();
         this.resume();
       },
       (event) => {
@@ -296,6 +298,8 @@ class JesterDealer {
       (error) => {
         draco.dispose();
         this.host.dataset.dealerStatus = 'failed';
+        this.host.dataset.dealerAnimation = 'failed';
+        this.pendingAnimation = null;
         this.host.dataset.modelError = String(error?.message || error);
         this.showError('3D jester failed to load.');
         console.error('PLAY Jester load failed', error);
@@ -390,7 +394,13 @@ class JesterDealer {
   }
 
   startDeal(verso, recto, receive = false) {
-    if (this.animation || !this.model) return false;
+    if (this.disposed || this.animation) return false;
+    if (!this.model) {
+      if (this.pendingAnimation) return false;
+      this.pendingAnimation = { verso, recto, receive };
+      this.host.dataset.dealerAnimation = receive ? 'receive-queued' : 'deal-queued';
+      return true;
+    }
     this.updateCardTextures(recto || verso, verso);
     this.animation = {
       started: performance.now(),
@@ -401,6 +411,13 @@ class JesterDealer {
     this.card.scale.setScalar(0.78);
     this.card.visible = true;
     return true;
+  }
+
+  flushPendingAnimation() {
+    if (!this.pendingAnimation || !this.model || this.animation || this.disposed) return;
+    const { verso, recto, receive } = this.pendingAnimation;
+    this.pendingAnimation = null;
+    this.startDeal(verso, recto, receive);
   }
 
   update() {
@@ -460,6 +477,7 @@ class JesterDealer {
 
   dispose() {
     this.disposed = true;
+    this.pendingAnimation = null;
     this.pause();
     this.resizeObserver?.disconnect();
     this.intersectionObserver?.disconnect();
@@ -500,6 +518,18 @@ window.puppetDealerDeal = (id, verso, recto) =>
 window.puppetDealerReceive = (id, card) =>
   dealers.get(id)?.startDeal(card, card, true) ?? false;
 window.puppetDealerSetQuality = (id, quality) => dealers.get(id)?.setQuality(quality);
+window.puppetDealerAnimationState = (id) => {
+  const dealer = dealers.get(id);
+  if (!dealer) return 'unavailable';
+  return (
+    dealer.host.dataset.dealerAnimation ||
+    (dealer.host.dataset.dealerStatus === 'failed'
+      ? 'failed'
+      : dealer.model
+        ? 'idle'
+        : 'loading')
+  );
+};
 window.puppetDealerDestroy = (id) => {
   dealers.get(id)?.dispose();
   dealers.delete(id);
