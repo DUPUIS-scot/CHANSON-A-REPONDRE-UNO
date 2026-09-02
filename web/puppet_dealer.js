@@ -394,7 +394,7 @@ class JesterDealer {
   }
 
   startDeal(verso, recto, receive = false) {
-    if (this.disposed || this.animation) return false;
+    if (this.disposed || this.animation || this.host.dataset.dealerStatus === 'failed') return false;
     if (!this.model) {
       if (this.pendingAnimation) return false;
       this.pendingAnimation = { verso, recto, receive };
