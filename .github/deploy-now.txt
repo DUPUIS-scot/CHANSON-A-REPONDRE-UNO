@@ -1,4 +1,4 @@
-deploy-request: 2026-09-02T21:08:00+01:00
+deploy-request: 2026-09-02T21:15:00+01:00
 source: Codex
-scope: publish clean Enochian terminal runtime after live console verification
-commit: 802d2ed239e18641049d8d30ec81f48100371998
+scope: publish Enochian iframe initialization guards
+commit: 65d5e9344bd0dc01e5f6c4925898c1553402c81b
