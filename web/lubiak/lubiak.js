@@ -38,7 +38,7 @@ scene.fog = new THREE.FogExp2(exteriorFogColor, 0.0024);
 // LUBIAK_KATHMANDU_360_BACKGROUND_V2
 // The supplied equirectangular Kathmandu night panorama is the exterior world background.
 new THREE.TextureLoader().load(
-  'assets/lubiak-kathmandu-360.jpg?v=20260831-integrity-v1',
+  'assets/ChatGPT%20Image%20Aug%2030%2C%202026%2C%2001_48_08%20AM.png',
   (texture) => {
     texture.colorSpace = THREE.SRGBColorSpace;
     texture.mapping = THREE.EquirectangularReflectionMapping;
@@ -512,6 +512,9 @@ function enterCircus() {
     scene.background = new THREE.Color(0x160b08);
     scene.fog = new THREE.FogExp2(0x1e0d09, 0.012);
     renderer.toneMappingExposure = 1.45;
+    // Aerial observation is exterior-only: enter the circus through the stable
+    // follow camera so the player and interior spawn remain in the same frame.
+    if (cameraMode === 'aerial') setCameraMode('follow');
     // The circus is a pedestrian interior. Clear any partial broom mount or
     // flight state before placing the djinn at the interior entrance.
     if (playerReady) {
