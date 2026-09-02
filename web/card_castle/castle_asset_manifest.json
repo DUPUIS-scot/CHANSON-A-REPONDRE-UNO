@@ -7,7 +7,7 @@
     "preferShellWhenAvailable": true
   },
   "interior": {
-    "model": "../assets/assets/models/castle_interior_jester_camera_aligned.glb",
+    "model": "../assets/assets/models/textured-glb-comparison/castle_interior_textured.glb",
     "preload": "idle-or-entrance"
   },
   "textures": {
