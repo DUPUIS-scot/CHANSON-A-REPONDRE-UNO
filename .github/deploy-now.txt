@@ -1,4 +1,4 @@
-deploy-request: 2026-09-02T20:23:00+01:00
+deploy-request: 2026-09-02T21:00:00+01:00
 source: Codex
-scope: restore clean Play jester web model before Arrogant_Defiant_Idle; preserve untouched hand and finger rest pose
-commit: d224546fe358b5ff87608d5087bd26f6ee17e3d5
+scope: publish Enochian MIDI controller status-target repair
+commit: e449f34bef402d3c41918d750cb63a450ba72004
