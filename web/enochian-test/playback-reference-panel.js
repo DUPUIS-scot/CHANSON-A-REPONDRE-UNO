@@ -8,7 +8,7 @@
   function install(frame){
     const ctx=resolve(frame);if(!ctx)return false;
     const {d,w}=ctx;
-    if(d.documentElement.dataset.playbackReferencePanel==='v3')return true;
+    if(!d.documentElement)return false;if(d.documentElement.dataset.playbackReferencePanel==='v3')return true;
     const audio=d.getElementById('audio'),name=d.getElementById('name'),nativeWave=d.getElementById('trackWave');
     const prev=d.getElementById('prev'),play=d.getElementById('play'),next=d.getElementById('next'),track=d.getElementById('track');
     const pitch=d.getElementById('pitch'),loopToggle=d.getElementById('loopToggle'),loopIn=d.getElementById('loopIn'),loopOut=d.getElementById('loopOut'),loopReset=d.getElementById('loopReset');
@@ -81,3 +81,4 @@
   function boot(frame){let n=0,t=setInterval(()=>{if(install(frame)||++n>240)clearInterval(t)},50);return install(frame)}
   window.installEnochianPlaybackReference=boot;
 })();
+
