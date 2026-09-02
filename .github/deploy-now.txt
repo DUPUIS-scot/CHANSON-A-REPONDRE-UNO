@@ -1,4 +1,1 @@
-deploy-request: 2026-09-02T09:52:00+01:00
-source: Codex
-scope: queue PLAY jester animations until the 3D dealer model is ready; fail fast on model load error; refresh runtime cache
-commit: dba6a30d9d7032aa66162348a29c2a307fde678c
+Repair Megapole Djinn spawn, follow clearance, and Lubiak controller parity · 2026-09-02T10:09:31.665Z
