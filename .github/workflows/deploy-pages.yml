@@ -185,12 +185,12 @@ jobs:
           safe="assets/models/textured-glb-comparison"
           test -s "$safe/LUBIAK_master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED.glb"
           test -s "$safe/LUBIAK_palace_pbr_repaired_final.glb"
-          test -s "$safe/MEGAPOLE_PBR_TERRAIN_UPGRADED_WEB_OPTIMIZED.glb"
+          test -s "$safe/SILMARI_LLION_MEGAPOLE_LUBIAK_LIVE.glb"
           cp "$safe/LUBIAK_master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED.glb" "$models/LUBIAK_master_optimized.glb"
           cp "$safe/LUBIAK_palace_pbr_repaired_final.glb" "$models/LUBIAK_palace_pbr_repaired_final.glb"
-          cp "$safe/MEGAPOLE_PBR_TERRAIN_UPGRADED_WEB_OPTIMIZED.glb" "$models/SILMARI_LLION_MEGAPOLE_LUBIAK.glb"
+          cp "$safe/SILMARI_LLION_MEGAPOLE_LUBIAK_LIVE.glb" "$models/SILMARI_LLION_MEGAPOLE_LUBIAK_LIVE.glb"
           cmp -s "$safe/LUBIAK_master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED.glb" "$models/LUBIAK_master_optimized.glb"
-          cmp -s "$safe/MEGAPOLE_PBR_TERRAIN_UPGRADED_WEB_OPTIMIZED.glb" "$models/SILMARI_LLION_MEGAPOLE_LUBIAK.glb"
+          cmp -s "$safe/SILMARI_LLION_MEGAPOLE_LUBIAK_LIVE.glb" "$models/SILMARI_LLION_MEGAPOLE_LUBIAK_LIVE.glb"
           echo "Promoted exact four-element PBR WEB OPTIMIZED LUBIAK and validated Megapole"
 
       - name: Refresh LUBIAK textured runtime cache
@@ -291,9 +291,9 @@ jobs:
           test -s build/web/assets/assets/models/laboratory_interior.glb
           test -s build/web/assets/assets/models/LUBIAK_master_optimized.glb
           test -s build/web/assets/assets/models/LUBIAK_palace_pbr_repaired_final.glb
-          test -s build/web/assets/assets/models/SILMARI_LLION_MEGAPOLE_LUBIAK.glb
+          test -s build/web/assets/assets/models/SILMARI_LLION_MEGAPOLE_LUBIAK_LIVE.glb
           cmp -s assets/models/textured-glb-comparison/LUBIAK_master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED.glb build/web/assets/assets/models/LUBIAK_master_optimized.glb
-          cmp -s assets/models/textured-glb-comparison/MEGAPOLE_PBR_TERRAIN_UPGRADED_WEB_OPTIMIZED.glb build/web/assets/assets/models/SILMARI_LLION_MEGAPOLE_LUBIAK.glb
+          cmp -s assets/models/textured-glb-comparison/SILMARI_LLION_MEGAPOLE_LUBIAK_LIVE.glb build/web/assets/assets/models/SILMARI_LLION_MEGAPOLE_LUBIAK_LIVE.glb
           grep -Eq "LUBIAK_(master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED|palace_pbr_repaired_final)\.glb\?v=safe-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" build/web/lubiak/lubiak.js
           grep -q "lubiak.js?v=safe-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" build/web/lubiak/index.html
           node --check build/web/megapole/megapole-pbr-v8.js
