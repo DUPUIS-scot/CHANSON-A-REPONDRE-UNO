@@ -1,1 +1,4 @@
-Deploy ENOCHIAN 3D signal source authority and automatic next-track playback · 2026-09-02T11:13:00+01:00
+deploy-request: 2026-09-02T10:22:00+01:00
+source: Codex
+scope: activate continuous live jester motion in PLAY via GLB clips or procedural rig idle fallback
+commit: d2e918a4d972fba62d5ebce795253a08f36a16e1
