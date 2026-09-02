@@ -21,6 +21,9 @@ external bool _receiveCard(String id, String imageUrl);
 @JS('puppetDealerSetQuality')
 external void _setDealerQuality(String id, String quality);
 
+@JS('puppetDealerAnimationState')
+external String _dealerAnimationState(String id);
+
 @JS('puppetDealerDestroy')
 external void _destroyDealer(String id);
 
@@ -93,16 +96,28 @@ class _PuppetDealerSceneState extends State<PuppetDealerScene> {
     if (!_dealCard(_elementId, _assetUrl(versoPath), _assetUrl(rectoPath))) {
       return;
     }
-    // Keep the table locked until the 4.2-second Three.js deal completes.
-    await Future<void>.delayed(const Duration(milliseconds: 4300));
+    await _waitForAnimation(receive: false);
   }
 
   Future<void> _animateReceive(String imagePath) async {
     if (!_receiveCard(_elementId, _assetUrl(imagePath))) {
       return;
     }
-    // Keep the table locked until the 2.6-second Three.js receive completes.
-    await Future<void>.delayed(const Duration(milliseconds: 2700));
+    await _waitForAnimation(receive: true);
+  }
+
+  Future<void> _waitForAnimation({required bool receive}) async {
+    final activeState = receive ? 'receive' : 'deal';
+    final deadline = DateTime.now().add(const Duration(seconds: 12));
+    var started = false;
+
+    while (mounted && DateTime.now().isBefore(deadline)) {
+      final state = _dealerAnimationState(_elementId);
+      if (state == 'failed' || state == 'unavailable') return;
+      if (state == activeState) started = true;
+      if (started && state == 'idle') return;
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    }
   }
 
   @override
