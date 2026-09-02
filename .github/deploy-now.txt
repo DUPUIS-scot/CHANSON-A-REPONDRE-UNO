@@ -1,4 +1,4 @@
-deploy-request: 2026-09-02T10:22:00+01:00
-source: Codex
-scope: activate continuous live jester motion in PLAY via GLB clips or procedural rig idle fallback
-commit: d2e918a4d972fba62d5ebce795253a08f36a16e1
+deploy-request: 2026-09-02T11:35:00+01:00
+source: ChatGPT
+scope: certify and deploy CHANSON A REPONDRE UNO baseline 3.7.7.3.2
+commit: d675cf3aceb99271b293146277d854173968b186
