@@ -1,4 +1,4 @@
-deploy-request: 2026-09-02T18:16:00+01:00
+deploy-request: 2026-09-02T18:53:00+01:00
 source: Codex
-scope: preserve textured Play jester held-card meshes by using card-safe whole-model idle motion
-commit: d620415bd5ddbe7c9ff432c9c8ef03e37addcc60
+scope: deploy compressed clean 41-bone Play jester model (3.69 MB web GLB)
+commit: 45f9184f17adad3ea9ac3ad3cbfaa7d22873d858
