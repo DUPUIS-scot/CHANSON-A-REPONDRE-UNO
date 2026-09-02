@@ -1,4 +1,4 @@
-deploy-request: 2026-09-02T12:04:00+01:00
-source: ChatGPT
-scope: deploy all current LUBIAK and MEGAPOLE UI, camera, ride, aerial velocity, mouse control changes
-commit: 1c7e90feae5d500e89fb4b3440349491b2433a25
+deploy-request: 2026-09-02T18:02:00+01:00
+source: Codex
+scope: promote play_jester_play_ultra.glb as the textured rigged live PLAY jester
+commit: f5b346bb42b18417ff9e57791486b83cecd09b28
