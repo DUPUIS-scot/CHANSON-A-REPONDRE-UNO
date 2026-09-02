@@ -741,7 +741,7 @@ function prepareDragon(root) {
 
 async function installDragon(decoder) {
   try {
-    const gltf = await loadGlb('/assets/assets/models/lubiak_dragon_guardian_web.glb?v=20260831-draco-webp-v1', decoder, 'SUMMONING DRAGON GUARDIAN', false);
+    const gltf = await loadGlb('/assets/assets/models/textured-glb-comparison/lubiak_dragon_guardian_web.glb?v=20260831-draco-webp-v1', decoder, 'SUMMONING DRAGON GUARDIAN', false);
     dragonRoot = gltf.scene;
     prepareDragon(dragonRoot);
     scene.add(dragonRoot);
@@ -1047,10 +1047,10 @@ function preparePlayer(root) {
 
 async function installPlayer(decoder) {
   try {
-    const gltf = await loadGlb('/assets/assets/models/lubiak_djinn_player_ultralight.glb?v=20260830-blackout-recovery-v1', decoder, 'CALLING DJINN', false);
+    const gltf = await loadGlb('/assets/assets/models/textured-glb-comparison/lubiak_djinn_player_ultralight.glb?v=20260830-blackout-recovery-v1', decoder, 'CALLING DJINN', false);
     preparePlayer(gltf.scene);
     try {
-      const broomGltf = await loadGlb('/assets/assets/models/lubiak_da_noble_y2k_broom_ultralight.glb?v=20260830-blackout-recovery-v1', decoder, 'PREPARING DA NOBLE Y2K', false);
+      const broomGltf = await loadGlb('/assets/assets/models/textured-glb-comparison/lubiak_da_noble_y2k_broom_ultralight.glb?v=20260830-blackout-recovery-v1', decoder, 'PREPARING DA NOBLE Y2K', false);
       broomRoot = broomGltf.scene;
       attachBroomToShoulder();
       restoreStandingWalkPose();
