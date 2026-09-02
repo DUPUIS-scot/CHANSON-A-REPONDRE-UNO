@@ -18,3 +18,4 @@
  window.installEnochianTargetViewport=frame=>{let n=0,t=setInterval(()=>{try{const w=frame.contentDocument,deck=w&&w.getElementById('deck'),d=deck&&deck.contentDocument;if(install(d))clearInterval(t)}catch(_){}if(++n>200)clearInterval(t)},50)};
  window.syncEnochianTargetViewport=frame=>{try{const live=frame.contentDocument,deck=live&&live.getElementById('deck'),d=deck&&deck.contentDocument;return install(d)}catch(_){return false}};
 })();
+(()=>{if(document.getElementById('enoch-signal-source-autonext-loader'))return;const s=document.createElement('script');s.id='enoch-signal-source-autonext-loader';s.src='/enochian-test/signal-source-autonext-loader-v1.js?v=20260902-v1';document.head.appendChild(s)})();
