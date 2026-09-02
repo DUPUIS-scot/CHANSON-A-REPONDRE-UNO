@@ -1,4 +1,4 @@
-deploy-request: 2026-09-02T11:35:00+01:00
+deploy-request: 2026-09-02T12:04:00+01:00
 source: ChatGPT
-scope: certify and deploy CHANSON A REPONDRE UNO baseline 3.7.7.3.2
-commit: d675cf3aceb99271b293146277d854173968b186
+scope: deploy all current LUBIAK and MEGAPOLE UI, camera, ride, aerial velocity, mouse control changes
+commit: 1c7e90feae5d500e89fb4b3440349491b2433a25
