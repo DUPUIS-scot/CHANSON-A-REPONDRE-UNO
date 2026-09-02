@@ -1,1 +1,4 @@
-Megapole Djinn controls and looping rugby-heart animation deployment · 2026-09-02T09:49:32.123Z
+deploy-request: 2026-09-02T09:48:00+01:00
+source: Codex
+scope: queue PLAY jester animations until the 3D dealer model is ready; bust cached runtime
+commit: 212fbdce5e41b22ec38bc15f4703e5c5ea6ec64a
