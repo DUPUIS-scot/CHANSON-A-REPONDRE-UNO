@@ -1,4 +1,4 @@
-deploy-request: 2026-09-02T18:02:00+01:00
+deploy-request: 2026-09-02T18:16:00+01:00
 source: Codex
-scope: promote play_jester_play_ultra.glb as the textured rigged live PLAY jester
-commit: f5b346bb42b18417ff9e57791486b83cecd09b28
+scope: preserve textured Play jester held-card meshes by using card-safe whole-model idle motion
+commit: d620415bd5ddbe7c9ff432c9c8ef03e37addcc60
