@@ -1,8 +1,8 @@
-deploy-request: 2026-09-02T08:45:00Z
+deploy-request: 2026-09-02T08:56:00Z
 source: chat-direct
-scope: LUBIAK djinn and broom repair, circus transition, vertical viewer, Kathmandu exterior background
+scope: LUBIAK supplied Kathmandu background and aerial-compatible circus entry
 runtime: web/lubiak/lubiak.js; web/lubiak/index.html
-repair-commit: 2366d646ce7861f88b0fad045c01a3fe38a390d8
-behavior: restore the missing surface probe, reset flight state on circus entry, use a 9:16 circus viewer, and keep the Kathmandu JPG visible behind the exterior 3D scene
+repair-commit: b5c120448fba43382f1c2142bdcfddbdbb43acf1
+behavior: use the supplied Kathmandu image as the exterior background and return aerial observation to the stable follow camera before the circus interior transition
 preserve: Megapole route, authored environment, circus scene, player, dragon, broom, camera and transforms
-asset-policy: retain existing Kathmandu JPG and authored assets
+asset-policy: retain supplied image as web/lubiak/assets/ChatGPT Image Aug 30, 2026, 01_48_08 AM.png
