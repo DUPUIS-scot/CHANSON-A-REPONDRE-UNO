@@ -399,9 +399,15 @@ class JesterDealer {
     }
     const phase = now / 1000;
     if (this.idleOrigin && this.model) {
-      this.model.position.y = this.idleOrigin.y + Math.sin(phase * 1.7) * 0.035;
-      this.model.rotation.x = this.idleOrigin.rx + Math.sin(phase * 1.2) * 0.018;
-      this.model.rotation.z = this.idleOrigin.rz + Math.sin(phase * 1.5) * 0.014;
+      // Animate the complete imported model only. Never pose its hand or
+      // finger bones here: the exported rig keeps the held cards intact.
+      const breath = Math.sin(phase * 1.45);
+      const sway = Math.sin(phase * 0.78 + 0.35);
+      const lean = Math.sin(phase * 0.92 - 0.2);
+      this.model.position.y = this.idleOrigin.y + breath * 0.045;
+      this.model.rotation.x = this.idleOrigin.rx + breath * 0.016;
+      this.model.rotation.y = Math.sin(phase * 0.56) * 0.022;
+      this.model.rotation.z = this.idleOrigin.rz + sway * 0.024 + lean * 0.008;
     }
   }
 
