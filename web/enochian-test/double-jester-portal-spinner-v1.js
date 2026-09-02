@@ -1,7 +1,7 @@
 (()=>{
   'use strict';
   const VERSION='v4',STORE='doubleJesterPortalSpinnerSizeV1',RATE=.82;
-  const MODEL_URL='/assets/assets/models/laboratory_portal_mirror.glb?v=20260828-v1';
+  const MODEL_URL='/assets/assets/models/textured-glb-comparison/laboratory_portal_mirror.glb?v=20260828-v1';
 
   async function mountMirror(shield,panel,inner){
     const platter=shield.querySelector('.djs-platter');
