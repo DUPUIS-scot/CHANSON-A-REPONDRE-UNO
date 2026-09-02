@@ -389,7 +389,9 @@ class JesterDealer {
       rx: this.model.rotation.x,
       rz: this.model.rotation.z,
     };
-    this.host.dataset.liveMotion = this.idleBones.length ? 'procedural-rig-idle' : 'procedural-root-idle';
+    // The held cards are skinned to the hand bones in this asset. Keep their
+    // geometry intact by animating the complete jester instead of its bones.
+    this.host.dataset.liveMotion = 'procedural-root-idle';
   }
 
   updateLiveMotion(now) {
@@ -400,17 +402,6 @@ class JesterDealer {
       return;
     }
     const phase = now / 1000;
-    if (this.idleBones.length) {
-      for (const bone of this.idleBones) {
-        const base = bone.rotation;
-        const sway = Math.sin(phase * 1.65 + bone.name.length) * 0.055;
-        bone.object.rotation.set(base.x, base.y, base.z);
-        if (/head|neck/.test(bone.name)) bone.object.rotation.y += sway * 0.7;
-        else if (/upperarm|forearm|hand/.test(bone.name)) bone.object.rotation.z += sway;
-        else bone.object.rotation.x += sway * 0.35;
-      }
-      return;
-    }
     if (this.idleOrigin && this.model) {
       this.model.position.y = this.idleOrigin.y + Math.sin(phase * 1.7) * 0.035;
       this.model.rotation.x = this.idleOrigin.rx + Math.sin(phase * 1.2) * 0.018;
