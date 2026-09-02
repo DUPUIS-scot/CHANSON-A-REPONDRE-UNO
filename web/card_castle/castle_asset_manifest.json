@@ -1,13 +1,13 @@
 {
   "version": 1,
   "exterior": {
-    "fallback": "../assets/assets/models/castle_exterior.glb",
+    "fallback": "../assets/assets/models/textured-glb-comparison/castle_exterior.glb",
     "shell": "../assets/assets/models/search_castle_shell.glb",
     "details": "../assets/assets/models/search_castle_details.glb",
     "preferShellWhenAvailable": true
   },
   "interior": {
-    "model": "../assets/assets/models/castle_interior_jester_camera_aligned.glb",
+    "model": "../assets/assets/models/textured-glb-comparison/castle_interior_textured.glb",
     "preload": "idle-or-entrance"
   },
   "textures": {

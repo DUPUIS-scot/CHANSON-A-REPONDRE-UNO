@@ -10,7 +10,7 @@ if (!window.__castleInteriorDracoBridgeInstalled) {
   const transition = document.getElementById('castle-entrance-transition');
   const resetButton = document.getElementById('castle-reset');
   const interiorUrl = new URL(
-    '../assets/assets/models/castle_interior_jester_camera_aligned.glb',
+    '../assets/assets/models/textured-glb-comparison/castle_interior_textured.glb',
     document.baseURI,
   ).href;
   const decoderPath =

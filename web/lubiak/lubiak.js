@@ -468,7 +468,7 @@ async function installCircusSet() {
       showStatus('LOADING CIRCUS STAGE', 0);
       const decoder = await getMeshoptDecoder();
       const gltf = await loadGlb(
-        '/assets/assets/models/lubiak_scene11_web_ultralight.glb?v=20260830-blackout-recovery-v1',
+        '/assets/assets/models/textured-glb-comparison/lubiak_scene11_textured.glb?v=20260830-blackout-recovery-v1',
         decoder,
         'LOADING CIRCUS STAGE',
         true,
@@ -1069,7 +1069,7 @@ async function installEnvironment() {
   const decoder = await getMeshoptDecoder();
   const candidates = [
     // Stable mobile-safe master. Palace geometry must be corrected in the GLB export itself.
-    { url: '/assets/assets/models/LUBIAK_palace_pbr_repaired_final.glb?v=safe-33492995942-1', label: 'LOADING LUBIAK MASTER', finish: 'ENTER LUBIAK', timeoutMs: 26000 },
+    { url: '/assets/assets/models/textured-glb-comparison/LUBIAK_palace_pbr_repaired_final.glb?v=safe-33492995942-1', label: 'LOADING LUBIAK MASTER', finish: 'ENTER LUBIAK', timeoutMs: 26000 },
   ];
 
   for (const candidate of candidates) {

@@ -40,6 +40,7 @@ jobs:
           node --check web/card_castle/castle_ios_laboratory_resilience_v62.js
 
       - name: Inspect source laboratory video
+        timeout-minutes: 2
         shell: bash
         run: |
           set -euo pipefail
@@ -47,7 +48,8 @@ jobs:
             sudo apt-get update
             sudo apt-get install -y ffmpeg
           fi
-          ffprobe -v error -select_streams v:0 \
+          timeout --foreground 45s ffprobe -v error -analyzeduration 10M -probesize 10M \
+            -select_streams v:0 \
             -show_entries stream=codec_name,profile,pix_fmt,width,height,r_frame_rate \
             -of default=nw=1 assets/videos/bureau_screen_loop.mp4
 

@@ -459,7 +459,7 @@ async function verifySearchCastle(client, url) {
     result.rendererInstanceId !== rendererInstanceId ||
     result.castleMeshCount < 1 ||
     result.surfaceAnchorCount !== 84 ||
-    result.modelPath !== `${basePath}assets/assets/models/castle_exterior.glb` ||
+    result.modelPath !== `${basePath}assets/assets/models/textured-glb-comparison/castle_exterior.glb` ||
     result.sceneObjectCount < 40 ||
     result.bottomNavigation ||
     !result.fullscreen ||
