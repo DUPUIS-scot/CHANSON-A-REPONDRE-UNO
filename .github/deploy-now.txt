@@ -1,8 +1,8 @@
-deploy-request: 2026-09-02T08:56:00Z
+deploy-request: 2026-09-02T09:08:00Z
 source: chat-direct
-scope: LUBIAK supplied Kathmandu background and aerial-compatible circus entry
-runtime: web/lubiak/lubiak.js; web/lubiak/index.html
-repair-commit: b5c120448fba43382f1c2142bdcfddbdbb43acf1
-behavior: use the supplied Kathmandu image as the exterior background and return aerial observation to the stable follow camera before the circus interior transition
-preserve: Megapole route, authored environment, circus scene, player, dragon, broom, camera and transforms
-asset-policy: retain supplied image as web/lubiak/assets/ChatGPT Image Aug 30, 2026, 01_48_08 AM.png
+scope: final Megapole GLB embedded in LUBIAK
+runtime: web/lubiak/index.html; web/lubiak/lubiak.js; web/megapole/megapole.js; web/megapole/megapole-pbr-v8.js
+repair-commit: 80ccbce3c95f2b9f8dca0081361c07983f406537
+behavior: load SILMARI_LLION_MEGAPOLE_LUBIAK_LIVE.glb and present Megapole inside the existing /lubiak/ page without a route change
+preserve: Kathmandu background, djinn, broom, aerial circus entry, authored assets and all existing controls
+asset-policy: promote the final Megapole live GLB unchanged
