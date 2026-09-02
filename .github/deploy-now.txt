@@ -1,8 +1,4 @@
-deploy-request: 2026-09-02T09:08:00Z
-source: chat-direct
-scope: final Megapole GLB embedded in LUBIAK
-runtime: web/lubiak/index.html; web/lubiak/lubiak.js; web/megapole/megapole.js; web/megapole/megapole-pbr-v8.js
-repair-commit: 80ccbce3c95f2b9f8dca0081361c07983f406537
-behavior: load SILMARI_LLION_MEGAPOLE_LUBIAK_LIVE.glb and present Megapole inside the existing /lubiak/ page without a route change
-preserve: Kathmandu background, djinn, broom, aerial circus entry, authored assets and all existing controls
-asset-policy: promote the final Megapole live GLB unchanged
+deploy-request: 2026-09-02T09:45:00+01:00
+source: Codex
+scope: queue PLAY jester animations until the 3D dealer model is ready
+commit: 1f3cd2ec7095304f4af06530bb261066f8ca7ee0
