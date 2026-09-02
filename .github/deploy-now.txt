@@ -1,4 +1,4 @@
-deploy-request: 2026-09-02T19:45:00+01:00
+deploy-request: 2026-09-02T19:52:00+01:00
 source: Codex
-scope: publish merged comparison-folder wiring to the live site
-commit: 09e0b02738699936b553a3ae6a7f8da3429fc484
+scope: deploy merged comparison-folder wiring after portal integrity update
+commit: 2d6b0c6814e24103504ed28bd69918ca0fd8a065

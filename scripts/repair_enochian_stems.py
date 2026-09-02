@@ -66,7 +66,7 @@ for marker in [
     'const authority=inner.defaultView.__enochDoubleJesterAuthority||window.__enochDoubleJesterAuthority;',
     "const phase=authority?.phase||(panel.classList.contains('open')?'2jester-active':'2j-spinning');",
     "stateAuthority:'2JESTER runtime authority v11'",
-    "MODEL_URL='/assets/assets/models/laboratory_portal_mirror.glb?v=20260828-v1'",
+    "MODEL_URL='/assets/assets/models/textured-glb-comparison/laboratory_portal_mirror.glb?v=20260828-v1'",
 ]:
     if marker not in portal:
         raise SystemExit(f'2J mirror authority repair missing: {marker}')
