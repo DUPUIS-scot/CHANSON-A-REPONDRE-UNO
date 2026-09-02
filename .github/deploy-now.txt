@@ -1,4 +1,4 @@
-deploy-request: 2026-09-02T19:52:00+01:00
+deploy-request: 2026-09-02T20:18:00+01:00
 source: Codex
-scope: deploy merged comparison-folder wiring after portal integrity update
-commit: 2d6b0c6814e24103504ed28bd69918ca0fd8a065
+scope: deploy Play jester Arrogant_Defiant_Idle animation; head, torso and arms only; hands and fingers remain in rest pose
+commit: 4d2708bdb2894449c9ce299ba38d72d2203779e5
