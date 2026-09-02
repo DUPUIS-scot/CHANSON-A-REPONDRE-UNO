@@ -1,4 +1,4 @@
-deploy-request: 2026-09-02T19:04:00+01:00
+deploy-request: 2026-09-02T19:45:00+01:00
 source: Codex
-scope: deploy safe root-only Play jester idle animation (breath, sway, lean; no hand or finger bones)
-commit: fcc9e2378b3f98bdd7c5153874c726fa742029a2
+scope: publish merged comparison-folder wiring to the live site
+commit: 09e0b02738699936b553a3ae6a7f8da3429fc484
