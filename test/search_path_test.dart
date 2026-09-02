@@ -131,7 +131,7 @@ void main() {
 
       expect(castle, contains('id="back-to-categories"'));
       expect(castle, contains("emit('backToCategories')"));
-      expect(castle, contains('assets/assets/models/castle_exterior.glb'));
+      expect(castle, contains('assets/assets/models/textured-glb-comparison/castle_exterior.glb'));
       expect(castle, contains('deriveSurfaceAnchors(84)'));
       expect(
         fastLoader,

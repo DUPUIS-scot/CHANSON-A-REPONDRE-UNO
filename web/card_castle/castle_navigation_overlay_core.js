@@ -6,7 +6,7 @@ if (!window.__castleNavigationOverlayInstalled) {
 
   const MOVE_SLOP_PX = 5;
   const LABORATORY_URL = new URL(
-    '../assets/assets/models/laboratory_interior.glb',
+    '../assets/assets/models/textured-glb-comparison/laboratory_interior_book_videos.glb',
     document.baseURI,
   ).href;
   const LABORATORY_TARGET_SPAN = 50;

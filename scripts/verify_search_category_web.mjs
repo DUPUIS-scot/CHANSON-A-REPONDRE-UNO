@@ -350,7 +350,7 @@ async function main() {
       result.surfaceAnchorCount !== visibleCardCount ||
       result.directCardsStage !== 'post-jester-textures' ||
       result.directCardPreviewMode !== 'all-decks-rampart-textures-v42' ||
-      result.modelPath !== `${basePath}assets/assets/models/castle_exterior.glb` ||
+      result.modelPath !== `${basePath}assets/assets/models/textured-glb-comparison/castle_exterior.glb` ||
       result.framePath !== `${basePath}card_castle/card_castle_fast.html` ||
       !result.threeLoaded
     ) {
