@@ -206,12 +206,8 @@ class JesterDealer {
       if (name.includes('lhand') && !leftHand) leftHand = object;
       if (name.includes('rhand') && !rightHand) rightHand = object;
 
-      const pose = dealerLocalPose(object.name);
-      if (pose) {
-        object.rotation.x += pose.rx;
-        object.rotation.y += pose.ry;
-        object.rotation.z += pose.rz;
-      }
+      // Preserve the exported rest pose. The clean model already holds its
+      // cards correctly; rotating hand bones here deforms its fingers.
       if (object.isBone && /head|neck|upperarm|forearm|hand|spine|chest/.test(name)) {
         this.idleBones.push({ object, name, rotation: object.rotation.clone() });
       }
