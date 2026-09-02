@@ -121,6 +121,10 @@ class JesterDealer {
     this.animation = null;
     this.pendingAnimation = null;
     this.model = null;
+    this.mixer = null;
+    this.lastFrameTime = performance.now();
+    this.idleBones = [];
+    this.idleOrigin = null;
     this.handBone = null;
     this.handSocket = null;
     this.modelScale = 1;
@@ -208,6 +212,9 @@ class JesterDealer {
         object.rotation.y += pose.ry;
         object.rotation.z += pose.rz;
       }
+      if (object.isBone && /head|neck|upperarm|forearm|hand|spine|chest/.test(name)) {
+        this.idleBones.push({ object, name, rotation: object.rotation.clone() });
+      }
 
       if (!(object.isMesh || object.isSkinnedMesh)) return;
       if (/string|marionette|control[_ -]?line/i.test(object.name)) {
@@ -283,6 +290,7 @@ class JesterDealer {
         }
 
         this.frameModel();
+        this.startLiveMotion(gltf.animations || []);
         this.host.dataset.dealerStatus = 'ready';
         this.clearError();
         this.flushPendingAnimation();
@@ -366,6 +374,50 @@ class JesterDealer {
     }
   }
 
+  startLiveMotion(clips) {
+    this.lastFrameTime = performance.now();
+    this.host.dataset.animationClipCount = String(clips.length);
+    const clip = clips.find((candidate) => /idle|breath|wave|present/i.test(candidate.name)) || clips[0];
+    if (clip) {
+      this.mixer = new THREE.AnimationMixer(this.model);
+      this.mixer.clipAction(clip).reset().setLoop(THREE.LoopRepeat, Infinity).play();
+      this.host.dataset.liveMotion = `gltf:${clip.name || 'unnamed'}`;
+      return;
+    }
+    this.idleOrigin = {
+      y: this.model.position.y,
+      rx: this.model.rotation.x,
+      rz: this.model.rotation.z,
+    };
+    this.host.dataset.liveMotion = this.idleBones.length ? 'procedural-rig-idle' : 'procedural-root-idle';
+  }
+
+  updateLiveMotion(now) {
+    const delta = Math.min((now - this.lastFrameTime) / 1000, 0.1);
+    this.lastFrameTime = now;
+    if (this.mixer) {
+      this.mixer.update(delta);
+      return;
+    }
+    const phase = now / 1000;
+    if (this.idleBones.length) {
+      for (const bone of this.idleBones) {
+        const base = bone.rotation;
+        const sway = Math.sin(phase * 1.65 + bone.name.length) * 0.055;
+        bone.object.rotation.set(base.x, base.y, base.z);
+        if (/head|neck/.test(bone.name)) bone.object.rotation.y += sway * 0.7;
+        else if (/upperarm|forearm|hand/.test(bone.name)) bone.object.rotation.z += sway;
+        else bone.object.rotation.x += sway * 0.35;
+      }
+      return;
+    }
+    if (this.idleOrigin && this.model) {
+      this.model.position.y = this.idleOrigin.y + Math.sin(phase * 1.7) * 0.035;
+      this.model.rotation.x = this.idleOrigin.rx + Math.sin(phase * 1.2) * 0.018;
+      this.model.rotation.z = this.idleOrigin.rz + Math.sin(phase * 1.5) * 0.014;
+    }
+  }
+
   handPoint() {
     if (this.handSocket) {
       this.handSocket.updateWorldMatrix(true, false);
@@ -421,8 +473,10 @@ class JesterDealer {
   }
 
   update() {
+    const now = performance.now();
+    this.updateLiveMotion(now);
     if (!this.animation) return;
-    const t = clamp01((performance.now() - this.animation.started) / this.animation.duration);
+    const t = clamp01((now - this.animation.started) / this.animation.duration);
     const progress = smooth(t);
     const hand = this.handPoint();
 
@@ -479,6 +533,8 @@ class JesterDealer {
     this.disposed = true;
     this.pendingAnimation = null;
     this.pause();
+    this.mixer?.stopAllAction();
+    this.mixer = null;
     this.resizeObserver?.disconnect();
     this.intersectionObserver?.disconnect();
     document.removeEventListener('visibilitychange', this.onVisibilityChange);
