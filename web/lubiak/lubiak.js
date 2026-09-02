@@ -1683,6 +1683,37 @@ function applyGroundGravity(dt, clearance=0.045){
   playerRoot.quaternion.slerp(targetQ,1-Math.exp(-dt*14));
 }
 
+// Shared surface probe for the djinn's world and broom-flight ground clearance.
+function nearestSurface(point, preferredUp = WORLD_UP, maxDistance = 18) {
+  const roots = activeSurfaceRoots();
+  if (!roots.length) return null;
+
+  const up = preferredUp.clone().normalize();
+  const directions = [
+    up.clone().negate(), up.clone(),
+    new THREE.Vector3(1, 0, 0), new THREE.Vector3(-1, 0, 0),
+    new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, -1),
+  ];
+  let best = null;
+
+  for (const direction of directions) {
+    const origin = point.clone().addScaledVector(direction, -0.08);
+    surfaceRaycaster.set(origin, direction);
+    surfaceRaycaster.near = 0;
+    surfaceRaycaster.far = maxDistance;
+
+    for (const root of roots) {
+      for (const hit of surfaceRaycaster.intersectObject(root, true)) {
+        const normal = worldHitNormal(hit);
+        if (!normal) continue;
+        if (!best || hit.distance < best.hit.distance) best = { hit, normal };
+        break;
+      }
+    }
+  }
+  return best;
+}
+
 function combinedMoveInput() {
   const input = joystickVector.clone();
   if (keys.has('w') || keys.has('arrowup')) input.y += 1;
