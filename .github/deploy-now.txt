@@ -1,4 +1,4 @@
-deploy-request: 2026-09-02T20:18:00+01:00
+deploy-request: 2026-09-02T20:23:00+01:00
 source: Codex
-scope: deploy Play jester Arrogant_Defiant_Idle animation; head, torso and arms only; hands and fingers remain in rest pose
-commit: 4d2708bdb2894449c9ce299ba38d72d2203779e5
+scope: restore clean Play jester web model before Arrogant_Defiant_Idle; preserve untouched hand and finger rest pose
+commit: d224546fe358b5ff87608d5087bd26f6ee17e3d5
