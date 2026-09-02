@@ -1,4 +1,4 @@
-deploy-request: 2026-09-02T21:00:00+01:00
+deploy-request: 2026-09-02T21:08:00+01:00
 source: Codex
-scope: publish Enochian MIDI controller status-target repair
-commit: e449f34bef402d3c41918d750cb63a450ba72004
+scope: publish clean Enochian terminal runtime after live console verification
+commit: 802d2ed239e18641049d8d30ec81f48100371998
