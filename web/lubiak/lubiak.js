@@ -509,7 +509,15 @@ function enterCircus() {
     scene.background = new THREE.Color(0x160b08);
     scene.fog = new THREE.FogExp2(0x1e0d09, 0.012);
     renderer.toneMappingExposure = 1.45;
+    // The circus is a pedestrian interior. Clear any partial broom mount or
+    // flight state before placing the djinn at the interior entrance.
     if (playerReady) {
+      playerMode = 'walk';
+      mountTransition = 0;
+      playerVelocity.set(0, 0, 0);
+      restoreStandingWalkPose();
+      if (typeof refreshLubiakModeButtons === 'function') refreshLubiakModeButtons();
+      if (typeof refreshVerticalControls === 'function') refreshVerticalControls();
       playerRoot.position.set(0, 0, 14.5);
       playerBaseY = 0;
     } else {
