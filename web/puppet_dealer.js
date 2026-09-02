@@ -3,9 +3,9 @@ import { GLTFLoader } from './vendor/GLTFLoader.js';
 import { DRACOLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/DRACOLoader.js';
 
 const dealers = new Map();
-const MODEL_REVISION = 'play-jester-natural-dealer-20260901-v15';
+const MODEL_REVISION = 'play-jester-play-ultra-rigged-20260902-v1';
 const MODEL_URL = new URL(
-  `assets/assets/models/play_jester_rigged.glb?rev=${MODEL_REVISION}`,
+  `assets/assets/models/textured-glb-comparison/play_jester_play_ultra.glb?rev=${MODEL_REVISION}`,
   document.baseURI,
 ).href;
 const MODEL_FACING_Y = 3 * Math.PI / 2;
