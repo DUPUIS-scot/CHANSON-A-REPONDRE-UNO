@@ -1,5 +1,15 @@
 # Chanson à Répondre UNO releases
 
+## v3.7.7.3.2 — Approved / Certified
+
+- Certificate version: 3.7.7.3.2
+- Status: APPROVED
+- Status: CERTIFIED
+- Package version: 3.7.7+32
+- Certifies the current `main` baseline as the official CHANSON À RÉPONDRE UNO version 3.7.7.3.2.
+- This certification is a baseline promotion only: no runtime feature behavior is changed by the certification commit itself.
+- Deployment target: GitHub Pages via the repository's `WEB — Deploy Live Site` workflow.
+
 ## v3.7.7.3 — Approved / Certified
 
 - Certificate version: 3.7.7.3
