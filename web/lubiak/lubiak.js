@@ -193,8 +193,26 @@ renderer.domElement.addEventListener('pointerup',(event)=>{
   const ray=new THREE.Raycaster(); ray.setFromCamera(ndc,camera);
   if(!ray.intersectObject(dragonRoot,true).length) return;
   const now=performance.now(); aerialDragonClicks.push(now); while(aerialDragonClicks.length && now-aerialDragonClicks[0]>900) aerialDragonClicks.shift();
-  if(aerialDragonClicks.length>=3){ aerialDragonClicks.length=0; window.location.assign('/megapole/'); }
+  if(aerialDragonClicks.length>=3){ aerialDragonClicks.length=0; openMegapoleInsideLubiak(); }
 },true);
+
+function openMegapoleInsideLubiak() {
+  const portal = document.querySelector('#megapole-portal');
+  const frame = document.querySelector('#megapole-frame');
+  if (!portal || !frame) return;
+  if (!frame.getAttribute('src')) frame.setAttribute('src', '../megapole/');
+  portal.classList.add('is-open');
+  portal.setAttribute('aria-hidden', 'false');
+}
+function closeMegapoleInsideLubiak() {
+  const portal = document.querySelector('#megapole-portal');
+  const frame = document.querySelector('#megapole-frame');
+  if (!portal || !frame) return;
+  portal.classList.remove('is-open');
+  portal.setAttribute('aria-hidden', 'true');
+  frame.removeAttribute('src');
+}
+document.querySelector('#megapole-return')?.addEventListener('click', closeMegapoleInsideLubiak);
 
 function setStatus(label, pct) {
   status.textContent = label;
@@ -1333,7 +1351,7 @@ function handleDragonGatePointer(event) {
   if (b.t - a.t <= DRAGON_GATE_MAX_GAP && c.t - b.t <= DRAGON_GATE_MAX_GAP) {
     dragonGateClicks.length = 0;
     showStatus('ENTERING SILMARI’LLION MEGAPOLE', 0);
-    setTimeout(() => location.assign('../megapole/'), 140);
+    setTimeout(openMegapoleInsideLubiak, 140);
   }
   return true;
 }
