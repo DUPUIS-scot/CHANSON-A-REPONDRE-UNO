@@ -1,0 +1,11 @@
+import fs from 'node:fs';
+const path='web/lubiak/lubiak.js';
+let s=fs.readFileSync(path,'utf8');
+if(s.includes('LUBIAK_NAVIGATION_ACTIVE_V1')) process.exit(0);
+function rep(a,b,label){if(!s.includes(a)) throw new Error(`missing ${label}`); s=s.replace(a,b);}
+rep("function updateAerialCamera(dt) {\n  if (!playerReady || cameraMode !== 'aerial') return;", "// LUBIAK_NAVIGATION_ACTIVE_V1\n// Camera navigation remains authoritative even while optional djinn/broom assets are still loading.\nfunction updateAerialCamera(dt) {\n  if (cameraMode !== 'aerial') return;", 'aerial guard');
+rep("function updateFallbackCamera(dt) {\n  const speed = 9.5 * dt;\n  const forward = new THREE.Vector3(Math.sin(yaw), 0, -Math.cos(yaw));\n  const right = new THREE.Vector3(Math.cos(yaw), 0, Math.sin(yaw));\n  if (keys.has('w') || keys.has('arrowup')) camera.position.addScaledVector(forward, speed);\n  if (keys.has('s') || keys.has('arrowdown')) camera.position.addScaledVector(forward, -speed);\n  if (keys.has('a') || keys.has('arrowleft')) camera.position.addScaledVector(right, -speed);\n  if (keys.has('d') || keys.has('arrowright')) camera.position.addScaledVector(right, speed);", "function updateFallbackCamera(dt) {\n  const speed = 9.5 * dt;\n  const input = combinedMoveInput();\n  const forward = new THREE.Vector3(Math.sin(yaw), 0, -Math.cos(yaw));\n  const right = new THREE.Vector3(Math.cos(yaw), 0, Math.sin(yaw));\n  camera.position.addScaledVector(forward, input.y * speed);\n  camera.position.addScaledVector(right, input.x * speed);", 'fallback wheel input');
+rep("  } else {\n    updateFallbackCamera(dt);\n  }\n  updateCircusTransition();", "  } else {\n    // The MOVE wheel and camera modes must work independently of optional actor readiness.\n    if (cameraMode === 'aerial') updateAerialCamera(dt);\n    else updateFallbackCamera(dt);\n  }\n  updateCircusTransition();", 'animate fallback');
+rep("function setCameraMode(next) {\n  if (!playerReady || !['follow', 'aerial'].includes(next) || cameraMode === next) return;", "function setCameraMode(next) {\n  if (!['follow', 'aerial'].includes(next) || cameraMode === next) return;", 'mode guard');
+fs.writeFileSync(path,s);
+console.log('Patched LUBIAK navigation authority.');
