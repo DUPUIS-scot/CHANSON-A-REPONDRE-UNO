@@ -193,7 +193,7 @@ jobs:
           cmp -s "$safe/SILMARI_LLION_MEGAPOLE_LUBIAK_LIVE.glb" "$models/SILMARI_LLION_MEGAPOLE_LUBIAK_LIVE.glb"
           echo "Promoted exact four-element PBR WEB OPTIMIZED LUBIAK and validated Megapole"
 
-      - name: Refresh LUBIAK textured runtime cache
+      - name: Refresh LUBIAK modular runtime cache
         shell: bash
         run: |
           set -euo pipefail
@@ -205,8 +205,8 @@ jobs:
           js_path = Path('build/web/lubiak/lubiak.js')
           html_path = Path('build/web/lubiak/index.html')
           js = js_path.read_text()
-          js, n = re.subn(r"((?:LUBIAK_REASSEMBLED_MODULAR_WEB|LUBIAK_master_optimized(?:_4_ELEMENT_PBR_WEB_OPTIMIZED)?|LUBIAK_palace_pbr_repaired_final)\.glb\?v=)[^'\"\s]+", rf"\g<1>{token}", js)
-          if n < 1: raise RuntimeError('LUBIAK optimized model cache token not found')
+          js, n = re.subn(r"(lubiak-assets/(?:freak%20street|avenue|roof%20top|palace|circus|district|card%20room|dragon%20lair)\.glb\?v=)[^'\"\s]+", rf"\g<1>{token}", js)
+          if n != 8: raise RuntimeError(f'expected 8 LUBIAK module cache tokens, found {n}')
           js_path.write_text(js)
           html = html_path.read_text()
           html, n = re.subn(r"(lubiak\.js\?v=)[^'\"\s]+", rf"\g<1>{token}", html)
@@ -294,7 +294,7 @@ jobs:
           test -s build/web/assets/assets/models/SILMARI_LLION_MEGAPOLE_LUBIAK_LIVE.glb
           cmp -s assets/models/LUBIAK_master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED.glb build/web/assets/assets/models/LUBIAK_master_optimized.glb
           cmp -s assets/models/textured-glb-comparison/SILMARI_LLION_MEGAPOLE_LUBIAK_LIVE.glb build/web/assets/assets/models/SILMARI_LLION_MEGAPOLE_LUBIAK_LIVE.glb
-          grep -Eq "LUBIAK_(REASSEMBLED_MODULAR_WEB|master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED|palace_pbr_repaired_final)\.glb\?v=safe-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" build/web/lubiak/lubiak.js
+          test "$(grep -oE "lubiak-assets/(freak%20street|avenue|roof%20top|palace|circus|district|card%20room|dragon%20lair)\.glb\?v=safe-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" build/web/lubiak/lubiak.js | wc -l)" -eq 8
           grep -q "lubiak.js?v=safe-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" build/web/lubiak/index.html
           node --check build/web/megapole/megapole-pbr-v8.js
 
