@@ -28,6 +28,7 @@ jobs:
           set -euo pipefail
           node --check web/lubiak/lubiak.js
           grep -q 'textured-glb-comparison/LUBIAK_REASSEMBLED_MODULAR_WEB.glb' web/lubiak/lubiak.js
+          grep -q 'LUBIAK_REASSEMBLED_MODULAR_WEB.glb' web/lubiak/index.html
           ! grep -q '/assets/assets/models/LUBIAK.glb' web/lubiak/lubiak.js
           test -s assets/models/textured-glb-comparison/LUBIAK_REASSEMBLED_MODULAR_WEB.glb
       - name: Request deployment
@@ -43,7 +44,7 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add web/lubiak/lubiak.js .github/workflows/deploy-pages.yml .github/deploy-now.txt
+          git add web/lubiak/lubiak.js web/lubiak/index.html .github/workflows/deploy-pages.yml .github/deploy-now.txt
           git diff --cached --quiet && exit 0
           git commit -m 'Display LUBIAK modular comparison master'
           git pull --rebase origin main
