@@ -291,6 +291,55 @@ function endDirectLook(event){ if(event.pointerId===lookPointerId) lookPointerId
 renderer.domElement.addEventListener('pointerup',endDirectLook);
 renderer.domElement.addEventListener('pointercancel',endDirectLook);
 
+// LUBIAK_CAMERA_ORBIT_ZOOM_V1
+// Screen/mouse input changes camera orientation and optical zoom only. It never translates or rotates the authored 3D world.
+const orbitTouches=new Map();
+let orbitPinchDistance=0;
+function applyOpticalZoom(delta){
+  camera.fov=THREE.MathUtils.clamp(camera.fov+delta,30,78);
+  camera.updateProjectionMatrix();
+}
+function orbitTouchDistance(){
+  if(orbitTouches.size<2) return 0;
+  const [a,b]=[...orbitTouches.values()];
+  return Math.hypot(a.x-b.x,a.y-b.y);
+}
+renderer.domElement.addEventListener('pointerdown',(event)=>{
+  if(event.pointerType!=='touch'||lookBlockedTarget(event.target)) return;
+  orbitTouches.set(event.pointerId,{x:event.clientX,y:event.clientY});
+  if(orbitTouches.size>=2){
+    lookPointerId=null;
+    orbitPinchDistance=orbitTouchDistance();
+  }
+});
+renderer.domElement.addEventListener('pointermove',(event)=>{
+  if(event.pointerType!=='touch'||!orbitTouches.has(event.pointerId)) return;
+  orbitTouches.set(event.pointerId,{x:event.clientX,y:event.clientY});
+  if(orbitTouches.size>=2){
+    const next=orbitTouchDistance();
+    if(orbitPinchDistance>0&&next>0) applyOpticalZoom((orbitPinchDistance-next)*0.055);
+    orbitPinchDistance=next;
+    lookPointerId=null;
+    event.preventDefault();
+  }
+},{passive:false});
+function endOrbitTouch(event){
+  if(!orbitTouches.has(event.pointerId)) return;
+  orbitTouches.delete(event.pointerId);
+  orbitPinchDistance=orbitTouchDistance();
+  if(orbitTouches.size===1){
+    const [id,p]=orbitTouches.entries().next().value;
+    lookPointerId=id;lookLastX=p.x;lookLastY=p.y;lookTravel=0;
+  }
+}
+renderer.domElement.addEventListener('pointerup',endOrbitTouch);
+renderer.domElement.addEventListener('pointercancel',endOrbitTouch);
+renderer.domElement.addEventListener('wheel',(event)=>{
+  if(lookBlockedTarget(event.target)) return;
+  applyOpticalZoom(event.deltaY*0.025);
+  event.preventDefault();
+},{passive:false});
+
 renderer.domElement.addEventListener('webglcontextlost', (event) => {
   event.preventDefault();
   webglContextLost = true;
