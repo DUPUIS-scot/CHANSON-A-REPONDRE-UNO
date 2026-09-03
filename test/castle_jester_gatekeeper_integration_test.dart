@@ -19,15 +19,19 @@ void main() {
     expect(overlay, contains('castle_jester_rigged.glb'));
     expect(
       overlay,
-      contains("castleEntranceTrigger='castle-anywhere-single-click'"),
+      contains("castleEntranceTrigger='jester-exact-hit-pointerup-v84'"),
     );
-    expect(overlay, contains("castleJesterGesture='single-click-anywhere-v73'"));
+    expect(overlay, contains("castleJesterGesture='exact-jester-pointerup-v84'"));
     expect(
       overlay,
       contains("window.dispatchEvent(new CustomEvent('castleJesterEnter'))"),
     );
-    expect(overlay, contains('if(!down||down.pointerId!==event.pointerId||down.moved)return'));
-    expect(overlay, isNot(contains('||!down.jester||down.moved')));
+    expect(
+      overlay,
+      contains('down.moved||!down.jester||!exactHit(event)'),
+    );
+    expect(overlay, isNot(contains('single-click-anywhere-v73')));
+    expect(overlay, isNot(contains('castle-anywhere-single-click')));
     expect(castleSource, contains('function clearEntranceTransition()'));
     expect(castleSource, contains("classList.remove('entrance-video-active')"));
     expect(castleSource, contains("setAttribute('aria-hidden','true')"));
