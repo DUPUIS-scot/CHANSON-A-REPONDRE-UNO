@@ -15,6 +15,12 @@ contained = (base / 'analyser-controls-contained-v1.js').read_text(encoding='utf
 playback_owner = (base / 'playback-transport-authority-v1.js').read_text(encoding='utf-8')
 two_mix_owner = (base / 'two-mix-master-anchor-v1.js').read_text(encoding='utf-8')
 layout = (base / 'terminal-viewport-layout-contract-v1.js').read_text(encoding='utf-8')
+source_unified = (base / 'signal-source-unified-v2.js').read_text(encoding='utf-8')
+renderer_unified = (base / 'analyser-signal-unified-v1.js').read_text(encoding='utf-8')
+legacy_renderer = (base / 'analyser-signal-3d-v7.js').read_text(encoding='utf-8')
+midi_signal = (base / 'midi-signal-live-v1.js').read_text(encoding='utf-8')
+composite = (base / 'analyser-composite-signal.js').read_text(encoding='utf-8')
+live_health = (base / 'analyser-live-authority-v1.js').read_text(encoding='utf-8')
 
 for marker in ['window.__enochStemRuntimeApi=', 'stemMasterToggle', 'masterGate', 'RESET LOOP']:
     if marker not in runtime:
@@ -39,7 +45,6 @@ for marker in ["['mix','stem','jog']", 'setMode', 'applyStem', 'applyJog', 'cont
     if marker not in performance:
         raise SystemExit(f'2J MIX/STEM/JOG v6 contract missing: {marker}')
 
-# Full 2J -> 2JESTER authority contract.
 for marker in [
     "['v4','v5','v6'].includes(performance?.version)",
     "phase=open?'2jester-active':'2j-spinning'",
@@ -80,8 +85,49 @@ if 'data-terminal-floatable' not in layout or '#doubleDeckerSpecial' not in layo
 if "twoMixMasterLayout==='v10'" not in two_mix_owner:
     raise SystemExit('2MIX authority missing')
 
+# Unified 3D SIGNAL authority contract.
+for marker in [
+    "signalSourceUnified==='v3'",
+    "bus.emit('authoritative-frequency'",
+    "bus.emit('authoritative-signal'",
+    "__enochLineInLiveWaveform?.getStream?.()",
+    "w.__enochSignalSourceAuthority={version:'v3'",
+]:
+    if marker not in source_unified:
+        raise SystemExit(f'unified signal source contract missing: {marker}')
+for marker in [
+    "analyserSignalUnified==='v2'",
+    "type==='authoritative-frequency'",
+    "w.__enochAnalyser3D=api",
+    "filter=controlNorm('filter',.5)",
+    "feedback=controlNorm('fb',0)",
+    "wet=controlNorm('wet',0)",
+]:
+    if marker not in renderer_unified:
+        raise SystemExit(f'unified 3D renderer contract missing: {marker}')
+if "analyserSignal3d='retired-v9'" not in legacy_renderer:
+    raise SystemExit('legacy 3D renderer is not retired')
+if "bus.emit('frequency'" in midi_signal or "b.emit('frequency'" in midi_signal:
+    raise SystemExit('legacy MIDI still writes frequency frames directly')
+for marker in [
+    "new CustomEvent('enoch:midi-input'",
+    "new CustomEvent('enoch:midi-spectrum'",
+    "signalModOn()",
+    "version:'v7'",
+]:
+    if marker not in midi_signal:
+        raise SystemExit(f'MIDI source/mod separation missing: {marker}')
+for marker in ["stemLevel('bass')", "stemLevel('other')", "authoritative-signal", "source.toUpperCase()"]:
+    if marker not in composite:
+        raise SystemExit(f'composite source/stem contract missing: {marker}')
+for marker in ["20260903-unified-v7", "selected==='midi'||selected==='input'", "analyser-3d-unified"]:
+    if marker not in live_health:
+        raise SystemExit(f'unified health reporting missing: {marker}')
+
 required_files = [
     'authoritative-runtime.js', 'outer-analyser-panel.js', 'analyser-signal-3d-v7.js',
+    'analyser-signal-unified-v1.js', 'signal-source-unified-v2.js', 'analyser-composite-signal.js',
+    'analyser-live-authority-v1.js', 'midi-signal-live-v1.js',
     'analyser-data-bus.js', 'stem-four-channel-ui-v1.js', 'analyser-controls-contained-v1.js',
     'double-decker-main-stem-link-v1.js', 'double-jecker-radial-layout-v1.js',
     'double-jecker-runtime-repair-v1.js', 'double-jecker-performance-v2.js',
@@ -96,4 +142,4 @@ for name in required_files:
     if path.suffix == '.js':
         subprocess.run(['node', '--check', str(path)], check=True)
 
-print('Enochian runtime verified: explicit 2J spinning/2JESTER-active authority, no STEM polling writer, 2J MIX/STEM/JOG v6, laboratory mirror spinner, and existing STEMS/SIGNAL/PLAYBACK/2MIX contracts.')
+print('Enochian runtime verified: one source authority, one 3D renderer, MAIN/MIDI/INPUT arbitration, four stems, full EQ/FX shaping, SIGNAL MOD gated MIDI feedback, and existing 2J/2JESTER/PLAYBACK/2MIX contracts.')
