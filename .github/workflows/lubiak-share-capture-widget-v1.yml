@@ -1,0 +1,32 @@
+name: LUBIAK share capture widget
+on:
+  push:
+    paths: ['.github/run-lubiak-share-capture-widget-v1.txt']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: main}
+      - name: Add share capture widget
+        run: node scripts/patch-lubiak-share-capture-widget-v1.mjs
+      - name: Validate
+        run: |
+          node --check web/lubiak/lubiak.js
+          grep -q 'LUBIAK_SHARE_CAPTURE_WIDGET_V1' web/lubiak/lubiak.js
+          grep -q '__LUBIAK_SHARE_CAPTURE__' web/lubiak/lubiak.js
+          grep -q "navigator.share" web/lubiak/lubiak.js
+      - name: Commit and request deploy
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add web/lubiak/lubiak.js
+          if ! git diff --cached --quiet; then git commit -m 'Add LUBIAK screen capture share widget'; fi
+          printf 'deploy %s\n' "$(date -u +%FT%TZ)" > .github/deploy-now.txt
+          git add .github/deploy-now.txt
+          if ! git diff --cached --quiet; then git commit -m 'Deploy LUBIAK share capture widget'; fi
+          git pull --rebase origin main
+          git push
