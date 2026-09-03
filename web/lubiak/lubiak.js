@@ -358,7 +358,12 @@ function setExteriorVisibility(visible) {
 }
 
 function setCircusMediaVisible(visible) {
-  if (circusYoutube) circusYoutube.classList.toggle('is-visible', visible);
+  if (circusYoutube) {
+    circusYoutube.classList.toggle('is-visible', visible);
+    circusYoutube.setAttribute('aria-hidden', visible ? 'false' : 'true');
+    const iframe=circusYoutube.querySelector('iframe');
+    if(visible && iframe && !iframe.src && iframe.dataset.src) iframe.src=iframe.dataset.src;
+  }
   if (bandcamp) {
     bandcamp.style.opacity = visible ? '0' : '1';
     bandcamp.style.pointerEvents = visible ? 'none' : 'auto';
@@ -700,6 +705,8 @@ scene.background = null;
   showStatus('BACK TO FREAK STREET', 900);
 }
 
+// LUBIAK_CIRCUS_TRANSITION_RESTORE_V2
+// Exterior circus gate remains reachable by djinn position or free camera navigation.
 function updateCircusTransition() {
   if (circusTransitioning || performance.now() < transitionLockUntil) return;
   const p = playerReady ? playerRoot.position : camera.position;
