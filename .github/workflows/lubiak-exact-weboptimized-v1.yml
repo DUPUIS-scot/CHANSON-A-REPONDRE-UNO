@@ -27,25 +27,35 @@ jobs:
         run: |
           set -euo pipefail
           node --check web/lubiak/lubiak.js
-          grep -q 'LUBIAK_ORDERED_MODULAR_ENVIRONMENT_V1' web/lubiak/lubiak.js
-          ! grep -q 'LUBIAK_REASSEMBLED_MODULAR_WEB.glb' web/lubiak/lubiak.js
-          ! grep -q '/assets/assets/models/LUBIAK.glb' web/lubiak/lubiak.js
-          grep -q "freak%20street.glb?v=20260903-modular-v3" web/lubiak/lubiak.js
-          grep -q "avenue.glb?v=20260903-modular-v3" web/lubiak/lubiak.js
-          grep -q "roof%20top.glb?v=20260903-modular-v3" web/lubiak/lubiak.js
-          grep -q "palace.glb?v=20260903-modular-v3" web/lubiak/lubiak.js
-          grep -q "circus.glb?v=20260903-modular-v3" web/lubiak/lubiak.js
-          grep -q "district.glb?v=20260903-modular-v3" web/lubiak/lubiak.js
-          grep -q "card%20room.glb?v=20260903-modular-v3" web/lubiak/lubiak.js
-          grep -q "dragon%20lair.glb?v=20260903-modular-v3" web/lubiak/lubiak.js
-          test -s assets/models/textured-glb-comparison/lubiak-assets/freak\ street.glb
-          test -s assets/models/textured-glb-comparison/lubiak-assets/avenue.glb
-          test -s assets/models/textured-glb-comparison/lubiak-assets/roof\ top.glb
-          test -s assets/models/textured-glb-comparison/lubiak-assets/palace.glb
-          test -s assets/models/textured-glb-comparison/lubiak-assets/circus.glb
-          test -s assets/models/textured-glb-comparison/lubiak-assets/district.glb
-          test -s assets/models/textured-glb-comparison/lubiak-assets/card\ room.glb
-          test -s assets/models/textured-glb-comparison/lubiak-assets/dragon\ lair.glb
+          node <<'NODE'
+          const fs = require('fs');
+          const runtimePath = 'web/lubiak/lubiak.js';
+          const src = fs.readFileSync(runtimePath, 'utf8');
+          if (!src.includes('LUBIAK_ORDERED_MODULAR_ENVIRONMENT_V1')) throw new Error('ordered modular marker missing');
+          if (src.includes('LUBIAK_REASSEMBLED_MODULAR_WEB.glb')) throw new Error('combined modular master still referenced');
+          if (src.includes('/assets/assets/models/LUBIAK.glb')) throw new Error('legacy LUBIAK.glb still referenced');
+          const expected = [
+            ['freak%20street.glb?v=20260903-modular-v3', 'assets/models/textured-glb-comparison/lubiak-assets/freak street.glb'],
+            ['avenue.glb?v=20260903-modular-v3', 'assets/models/textured-glb-comparison/lubiak-assets/avenue.glb'],
+            ['roof%20top.glb?v=20260903-modular-v3', 'assets/models/textured-glb-comparison/lubiak-assets/roof top.glb'],
+            ['palace.glb?v=20260903-modular-v3', 'assets/models/textured-glb-comparison/lubiak-assets/palace.glb'],
+            ['circus.glb?v=20260903-modular-v3', 'assets/models/textured-glb-comparison/lubiak-assets/circus.glb'],
+            ['district.glb?v=20260903-modular-v3', 'assets/models/textured-glb-comparison/lubiak-assets/district.glb'],
+            ['card%20room.glb?v=20260903-modular-v3', 'assets/models/textured-glb-comparison/lubiak-assets/card room.glb'],
+            ['dragon%20lair.glb?v=20260903-modular-v3', 'assets/models/textured-glb-comparison/lubiak-assets/dragon lair.glb'],
+          ];
+          let lastIndex = -1;
+          for (const [url, path] of expected) {
+            const idx = src.indexOf(url);
+            if (idx < 0) throw new Error(`missing runtime module URL: ${url}`);
+            if (idx <= lastIndex) throw new Error(`module order violation at: ${url}`);
+            lastIndex = idx;
+            const stat = fs.statSync(path);
+            if (!stat.isFile() || stat.size <= 0) throw new Error(`missing or empty module asset: ${path}`);
+            console.log(`OK ${url} -> ${path} (${stat.size} bytes)`);
+          }
+          console.log('LUBIAK ordered modular contract verified');
+          NODE
       - name: Request deployment
         run: |
           cat > .github/deploy-now.txt <<'EOF'
