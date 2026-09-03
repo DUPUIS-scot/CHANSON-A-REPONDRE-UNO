@@ -1,0 +1,2 @@
+run: 2026-09-03T22:38:00+01:00
+scope: share URL only; preview exact current screen moment locally
