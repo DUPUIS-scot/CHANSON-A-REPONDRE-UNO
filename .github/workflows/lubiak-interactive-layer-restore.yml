@@ -1,0 +1,36 @@
+name: LUBIAK interactive layer restore
+on:
+  push:
+    branches: [main]
+    paths: ['.github/lubiak-interactive-restore-now.txt']
+permissions:
+  contents: write
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore interactive layer
+        run: node scripts/patch-lubiak-interactive-layer-restore.mjs
+      - name: Validate runtime
+        run: |
+          node --check web/lubiak/lubiak.js
+          grep -q 'LUBIAK_INTERACTIVE_LAYER_RESTORE_V1' web/lubiak/lubiak.js
+          grep -q "const joystickVector = new THREE.Vector2" web/lubiak/lubiak.js
+          grep -q "lubiak-sphere-control" web/lubiak/lubiak.js
+          grep -q "/assets/assets/models/lubiak_dragon_guardian_web.glb" web/lubiak/lubiak.js
+          grep -q "/assets/assets/models/lubiak_djinn_player_ultralight.glb" web/lubiak/lubiak.js
+          grep -q "/assets/assets/models/lubiak_da_noble_y2k_broom_ultralight.glb" web/lubiak/lubiak.js
+      - name: Commit and deploy
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add web/lubiak/lubiak.js
+          git commit -m 'Restore LUBIAK djinn broom dragon and navigation' || exit 0
+          git pull --rebase origin main
+          git push origin HEAD:main
+          printf 'deploy-request: %s\nscope: LUBIAK interactive layer restore\n' "$(date -u +%FT%TZ)" > .github/deploy-now.txt
+          git add .github/deploy-now.txt
+          git commit -m 'Deploy LUBIAK interactive layer restore'
+          git pull --rebase origin main
+          git push origin HEAD:main
