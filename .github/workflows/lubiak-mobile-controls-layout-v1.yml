@@ -1,0 +1,29 @@
+name: LUBIAK mobile controls layout v1
+on:
+  push:
+    paths: ['.github/run-lubiak-mobile-controls-layout-v1.txt']
+  workflow_dispatch:
+permissions: {contents: write}
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: main}
+      - run: node scripts/patch-lubiak-mobile-controls-layout-v1.mjs
+      - name: Validate
+        run: |
+          node --check web/lubiak/lubiak.js
+          grep -q 'LUBIAK_MOBILE_CONTROLS_LAYOUT_V1' web/lubiak/lubiak.js
+          grep -q '#help{display:none}' web/lubiak/index.html
+          grep -q 'bottom:max(178px' web/lubiak/lubiak.js
+      - name: Commit and request deploy
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add web/lubiak/lubiak.js web/lubiak/index.html
+          if ! git diff --cached --quiet; then git commit -m 'Clean up LUBIAK mobile navigation controls'; fi
+          printf 'deploy %s\n' "$(date -u +%FT%TZ)" > .github/deploy-now.txt
+          git add .github/deploy-now.txt
+          git commit -m 'Deploy LUBIAK mobile controls layout'
+          git push
