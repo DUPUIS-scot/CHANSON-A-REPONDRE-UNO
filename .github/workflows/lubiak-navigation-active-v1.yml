@@ -1,0 +1,35 @@
+name: LUBIAK navigation active v1
+on:
+  push:
+    paths:
+      - 'scripts/patch-lubiak-navigation-active-v1.mjs'
+      - '.github/workflows/lubiak-navigation-active-v1.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Repair navigation authority
+        run: node scripts/patch-lubiak-navigation-active-v1.mjs
+      - name: Validate runtime
+        run: |
+          node --check web/lubiak/lubiak.js
+          grep -q 'LUBIAK_NAVIGATION_ACTIVE_V1' web/lubiak/lubiak.js
+          grep -q "if (cameraMode === 'aerial') updateAerialCamera(dt)" web/lubiak/lubiak.js
+          grep -q 'const input = combinedMoveInput();' web/lubiak/lubiak.js
+      - name: Commit repair
+        run: |
+          if git diff --quiet -- web/lubiak/lubiak.js; then exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add web/lubiak/lubiak.js
+          git commit -m 'Activate LUBIAK navigation controls'
+          git push origin HEAD:main
