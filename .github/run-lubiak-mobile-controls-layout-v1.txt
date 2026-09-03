@@ -1,0 +1,2 @@
+run: 2026-09-03T21:24:00+01:00
+scope: iPhone-safe mode dock, MOVE wheel, UP/DOWN, help text
