@@ -20,24 +20,24 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Apply exact WEB_OPTIMIZED runtime path
+      - name: Apply modular LUBIAK runtime path
         run: node scripts/patch-lubiak-exact-weboptimized-v1.mjs
-      - name: Validate exact model contract
+      - name: Validate modular model contract
         shell: bash
         run: |
           set -euo pipefail
           node --check web/lubiak/lubiak.js
-          grep -q 'textured-glb-comparison/LUBIAK_master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED.glb' web/lubiak/lubiak.js
+          grep -q 'textured-glb-comparison/LUBIAK_REASSEMBLED_MODULAR_WEB.glb' web/lubiak/lubiak.js
           ! grep -q '/assets/assets/models/LUBIAK.glb' web/lubiak/lubiak.js
-          test -s assets/models/textured-glb-comparison/LUBIAK_master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED.glb
+          test -s assets/models/textured-glb-comparison/LUBIAK_REASSEMBLED_MODULAR_WEB.glb
       - name: Request deployment
         run: |
           cat > .github/deploy-now.txt <<'EOF'
-          deploy-request: 2026-08-31T17:05:00+01:00
+          deploy-request: 2026-09-03T11:00:00+01:00
           source: chat
           workflow: WEB — Deploy Live Site
-          scope: exact LUBIAK WEB_OPTIMIZED PBR display
-          reason: load only LUBIAK_master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED.glb directly in LUBIAK and deploy
+          scope: LUBIAK modular comparison master test
+          reason: load only LUBIAK_REASSEMBLED_MODULAR_WEB.glb directly in LUBIAK and deploy
           EOF
       - name: Commit repair
         run: |
@@ -45,6 +45,6 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add web/lubiak/lubiak.js .github/workflows/deploy-pages.yml .github/deploy-now.txt
           git diff --cached --quiet && exit 0
-          git commit -m 'Display exact LUBIAK WEB_OPTIMIZED PBR model'
+          git commit -m 'Display LUBIAK modular comparison master'
           git pull --rebase origin main
           git push origin HEAD:main
