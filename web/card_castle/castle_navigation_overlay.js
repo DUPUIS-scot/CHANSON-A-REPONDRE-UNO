@@ -1,6 +1,7 @@
 import './castle_shared_transition_loader_v64.js?v=74';
 import './castle_android_stability_v57.js?v=72';
 import './castle_ios_laboratory_resilience_v62.js?v=66';
+import './castle_reconstruction_patch_v83.js?v=83';
 import './castle_navigation_overlay_core.js?v=74';
 import './castle_laboratory_event_bridge_v69.js?v=69';
 import './castle_laboratory_medallion_button.js?v=66';
