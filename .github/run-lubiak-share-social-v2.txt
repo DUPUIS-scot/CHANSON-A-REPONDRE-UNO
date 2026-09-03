@@ -1,0 +1,2 @@
+run: 2026-09-03T20:42:00+01:00
+scope: clean social capture with UNO logo, LUBIAK title and URL
