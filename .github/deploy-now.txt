@@ -1,1 +1,2 @@
-deploy 2026-09-03T21:22:30Z
+deploy 2026-09-03T21:24:00Z
+scope LUBIAK Djinn broom visibility v3
