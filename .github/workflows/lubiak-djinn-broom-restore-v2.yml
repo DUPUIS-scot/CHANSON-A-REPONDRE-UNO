@@ -1,0 +1,52 @@
+name: LUBIAK Djinn broom restore v2
+on:
+  push:
+    paths:
+      - '.github/run-lubiak-djinn-broom-restore-v2.txt'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Validate actor GLBs
+        run: |
+          python3 - <<'PY'
+          import struct
+          from pathlib import Path
+          for p in [
+              Path('assets/models/lubiak_djinn_player_ultralight.glb'),
+              Path('assets/models/lubiak_da_noble_y2k_broom_ultralight.glb'),
+          ]:
+              data=p.read_bytes()
+              if len(data)<20: raise SystemExit(f'{p} too small')
+              magic,version,declared=struct.unpack('<4sII',data[:12])
+              if magic!=b'glTF' or version!=2 or declared!=len(data):
+                  raise SystemExit(f'invalid GLB: {p}')
+              print(p, len(data))
+          PY
+      - name: Restore actor runtime
+        run: node scripts/restore-lubiak-djinn-broom-v2.mjs
+      - name: Validate runtime
+        run: |
+          node --check web/lubiak/lubiak.js
+          grep -q 'LUBIAK_DJINN_BROOM_RESTORE_V2' web/lubiak/lubiak.js
+          grep -q 'lubiak_djinn_player_ultralight.glb' web/lubiak/lubiak.js
+          grep -q 'lubiak_da_noble_y2k_broom_ultralight.glb' web/lubiak/lubiak.js
+          grep -q "const actorReady=await installPlayer(decoder)" web/lubiak/lubiak.js
+      - name: Commit and request deploy
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add web/lubiak/lubiak.js
+          if ! git diff --cached --quiet; then
+            git commit -m 'Restore LUBIAK Djinn and broom actor authority'
+          fi
+          printf 'deploy %s\n' "$(date -u +%FT%TZ)" > .github/deploy-now.txt
+          git add .github/deploy-now.txt
+          git commit -m 'Deploy restored LUBIAK Djinn and broom'
+          git push
