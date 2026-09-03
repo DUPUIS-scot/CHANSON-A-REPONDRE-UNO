@@ -1,0 +1,48 @@
+name: LUBIAK input authority hotfix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.lubiak-input-hotfix-trigger'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Repair LUBIAK input authority
+        run: node scripts/hotfix-lubiak-input-authority.mjs
+      - name: Validate boot authority
+        run: |
+          node --check web/lubiak/lubiak.js
+          grep -q 'LUBIAK_INPUT_AUTHORITY_REPAIR_V1' web/lubiak/lubiak.js
+          grep -q 'const keys = new Set();' web/lubiak/lubiak.js
+          grep -q 'function setCameraMode(nextMode)' web/lubiak/lubiak.js
+      - name: Request deployment
+        run: |
+          cat > .github/deploy-now.txt <<'EOF'
+          deploy-request: 2026-09-03T13:15:00+01:00
+          source: chat-hotfix
+          workflow: WEB — Deploy Live Site
+          scope: LUBIAK boot input authority
+          reason: restore missing keys and setCameraMode authorities
+          EOF
+      - name: Commit and deploy
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add web/lubiak/lubiak.js .github/deploy-now.txt
+          git diff --cached --quiet && exit 0
+          git commit -m 'Fix LUBIAK keys boot error'
+          git pull --rebase origin main
+          git push origin HEAD:main
