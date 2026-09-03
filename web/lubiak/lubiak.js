@@ -100,7 +100,7 @@ const aerialSaved = { followYaw: 0, followPitch: -0.10, followDistance: 4.35 };
 // LUBIAK_INPUT_AUTHORITY_REPAIR_V1
 const keys = new Set();
 function setCameraMode(nextMode) {
-  if (!playerReady || !playerRoot || nextMode === cameraMode) return;
+  if (!['follow', 'aerial'].includes(nextMode) || nextMode === cameraMode) return;
   if (nextMode === 'aerial') {
     aerialSaved.followYaw = followYaw;
     aerialSaved.followPitch = followPitch;
@@ -1623,8 +1623,10 @@ function updateDragonPatrol(dt) {
   );
 }
 
+// LUBIAK_NAVIGATION_ACTIVE_V1
+// Camera navigation remains authoritative even while optional djinn/broom assets are still loading.
 function updateAerialCamera(dt) {
-  if (!playerReady || cameraMode !== 'aerial') return;
+  if (cameraMode !== 'aerial') return;
   const input = combinedMoveInput();
   const cp = Math.cos(aerialPitch);
   const forward = new THREE.Vector3(-Math.sin(aerialYaw) * cp, Math.sin(aerialPitch), -Math.cos(aerialYaw) * cp).normalize();
@@ -1649,12 +1651,11 @@ function updateAerialCamera(dt) {
 
 function updateFallbackCamera(dt) {
   const speed = 9.5 * dt;
+  const input = combinedMoveInput();
   const forward = new THREE.Vector3(Math.sin(yaw), 0, -Math.cos(yaw));
   const right = new THREE.Vector3(Math.cos(yaw), 0, Math.sin(yaw));
-  if (keys.has('w') || keys.has('arrowup')) camera.position.addScaledVector(forward, speed);
-  if (keys.has('s') || keys.has('arrowdown')) camera.position.addScaledVector(forward, -speed);
-  if (keys.has('a') || keys.has('arrowleft')) camera.position.addScaledVector(right, -speed);
-  if (keys.has('d') || keys.has('arrowright')) camera.position.addScaledVector(right, speed);
+  camera.position.addScaledVector(forward, input.y * speed);
+  camera.position.addScaledVector(right, input.x * speed);
   if (movementBounds) camera.position.clamp(movementBounds.min, movementBounds.max);
   camera.rotation.order = 'YXZ';
   camera.rotation.y = yaw;
@@ -1678,7 +1679,9 @@ function animate() {
       if (aerialReturnBlend > 0) aerialReturnBlend = Math.max(0, aerialReturnBlend - dt * 1.4);
     }
   } else {
-    updateFallbackCamera(dt);
+    // The MOVE wheel and camera modes must work independently of optional actor readiness.
+    if (cameraMode === 'aerial') updateAerialCamera(dt);
+    else updateFallbackCamera(dt);
   }
   updateCircusTransition();
   enforceLubiakWorldContract();
