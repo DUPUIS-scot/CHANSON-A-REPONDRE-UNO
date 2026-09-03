@@ -193,6 +193,71 @@ try {
   throw error;
 }
 
+// LUBIAK_SHARE_CAPTURE_WIDGET_V1
+// One-tap scene capture + native share sheet on iOS/Android/desktop, with PNG fallback.
+const shareCaptureButton=document.createElement('button');
+shareCaptureButton.id='lubiak-share-capture';
+shareCaptureButton.type='button';
+shareCaptureButton.textContent='SHARE';
+shareCaptureButton.setAttribute('aria-label','Capture and share LUBIAK screen');
+shareCaptureButton.style.cssText='position:fixed;right:max(86px,calc(env(safe-area-inset-right) + 86px));top:max(18px,env(safe-area-inset-top));z-index:120;border:1px solid #c47b3d88;background:#080504dd;color:#f0d7ad;padding:9px 12px;font:700 10px/1 ui-monospace;letter-spacing:.10em;cursor:pointer;touch-action:manipulation';
+document.body.appendChild(shareCaptureButton);
+
+function loadCaptureBackdrop(){
+  if(worldMode!=='exterior') return Promise.resolve(null);
+  return new Promise((resolve)=>{
+    const image=new Image();
+    image.onload=()=>resolve(image);
+    image.onerror=()=>resolve(null);
+    image.src='assets/ChatGPT%20Image%20Aug%2030%2C%202026%2C%2001_48_08%20AM.png';
+  });
+}
+function drawCover(ctx,image,w,h){
+  const scale=Math.max(w/image.naturalWidth,h/image.naturalHeight);
+  const dw=image.naturalWidth*scale, dh=image.naturalHeight*scale;
+  ctx.drawImage(image,(w-dw)/2,(h-dh)/2,dw,dh);
+}
+async function captureLubiakScreen(){
+  if(webglContextLost) throw new Error('graphics context unavailable');
+  const source=renderer.domElement;
+  const ratio=source.width/source.height || innerWidth/innerHeight || 1;
+  const maxEdge=2048;
+  let w=source.width||innerWidth, h=source.height||innerHeight;
+  if(Math.max(w,h)>maxEdge){const k=maxEdge/Math.max(w,h);w=Math.round(w*k);h=Math.round(h*k);}
+  if(!w||!h){w=1080;h=Math.max(1,Math.round(w/ratio));}
+  const out=document.createElement('canvas');out.width=w;out.height=h;
+  const ctx=out.getContext('2d',{alpha:false});
+  const backdrop=await loadCaptureBackdrop();
+  if(backdrop) drawCover(ctx,backdrop,w,h); else {ctx.fillStyle=worldMode==='circus'?'#160b08':'#050303';ctx.fillRect(0,0,w,h);}
+  renderer.render(scene,camera);
+  ctx.drawImage(source,0,0,w,h);
+  ctx.fillStyle='rgba(8,5,4,.72)';ctx.fillRect(0,h-34,w,34);
+  ctx.fillStyle='#f0d7ad';ctx.font=Math.max(12,Math.round(w/92))+'px ui-monospace, monospace';ctx.textBaseline='middle';
+  ctx.fillText('CHANSON À RÉPONDRE UNO · LUBIAK',14,h-17);
+  return await new Promise((resolve,reject)=>out.toBlob(blob=>blob?resolve(blob):reject(new Error('PNG capture failed')),'image/png',0.95));
+}
+async function shareLubiakCapture(){
+  if(shareCaptureButton.disabled) return;
+  const old=shareCaptureButton.textContent;shareCaptureButton.disabled=true;shareCaptureButton.textContent='CAPTURE…';
+  try{
+    showStatus('CAPTURING LUBIAK',500);
+    const blob=await captureLubiakScreen();
+    const stamp=new Date().toISOString().replace(/[:.]/g,'-');
+    const file=new File([blob],'LUBIAK-'+stamp+'.png',{type:'image/png'});
+    if(navigator.share && (!navigator.canShare || navigator.canShare({files:[file]}))){
+      await navigator.share({title:'LUBIAK — Chanson à Répondre UNO',text:'LUBIAK · Chanson à Répondre UNO · '+location.href,files:[file]});
+      showStatus('LUBIAK CAPTURE SHARED',900);
+    }else{
+      const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=file.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
+      showStatus('LUBIAK CAPTURE SAVED',900);
+    }
+  }catch(error){
+    if(error?.name!=='AbortError'){console.warn('LUBIAK share capture failed',error);showStatus('CAPTURE UNAVAILABLE',1100);}
+  }finally{shareCaptureButton.disabled=false;shareCaptureButton.textContent=old;}
+}
+shareCaptureButton.addEventListener('click',shareLubiakCapture);
+window.__LUBIAK_SHARE_CAPTURE__=shareLubiakCapture;
+
 // LUBIAK_DIRECT_LOOK_V1
 // Drag directly on the WebGL scene to look with mouse or touch. UI overlays keep their own pointer authority.
 let lookPointerId=null;
