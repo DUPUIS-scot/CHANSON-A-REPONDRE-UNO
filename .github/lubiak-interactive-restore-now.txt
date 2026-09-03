@@ -1,0 +1,3 @@
+restore-request: 2026-09-03T13:50:00+01:00
+scope: djinn broom dragon movement sphere navigation fx
+preserve: complete LUBIAK world loader and transforms
