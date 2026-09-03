@@ -1,0 +1,2 @@
+run: 2026-09-03T20:49:00+01:00
+flow: capture -> preview -> share image + page link
