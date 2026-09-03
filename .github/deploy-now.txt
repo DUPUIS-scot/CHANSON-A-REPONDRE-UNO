@@ -1,2 +1,2 @@
-deploy 2026-09-03T21:24:00Z
-scope LUBIAK Djinn broom visibility v3
+deploy 2026-09-03T21:40:00Z
+scope LUBIAK exact moment link sharing v4
