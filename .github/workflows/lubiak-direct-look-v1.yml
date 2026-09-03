@@ -1,0 +1,30 @@
+name: LUBIAK direct look v1
+on:
+  push:
+    paths:
+      - '.github/run-lubiak-direct-look-v1.txt'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Apply direct touch mouse look
+        run: node scripts/patch-lubiak-direct-look-v1.mjs
+      - name: Validate
+        run: |
+          node --check web/lubiak/lubiak.js
+          grep -q 'LUBIAK_DIRECT_LOOK_V1' web/lubiak/lubiak.js
+          grep -q "renderer.domElement.addEventListener('pointermove'" web/lubiak/lubiak.js
+      - name: Commit repair
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add web/lubiak/lubiak.js
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Enable LUBIAK direct touch and mouse look'
+          git push
