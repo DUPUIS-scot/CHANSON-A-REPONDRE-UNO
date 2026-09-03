@@ -1,0 +1,2 @@
+run: 2026-09-03T15:02:00+01:00
+scope: direct touch and mouse camera look
