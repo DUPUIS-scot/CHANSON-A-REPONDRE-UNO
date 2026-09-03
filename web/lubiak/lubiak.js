@@ -275,6 +275,48 @@ async function captureLubiakScreen(){
   drawCaptureBranding(ctx,logo,w,h);
   return await new Promise((resolve,reject)=>out.toBlob(blob=>blob?resolve(blob):reject(new Error('PNG capture failed')),'image/png',0.95));
 }
+// LUBIAK_SHARE_PREVIEW_LINK_V3
+// First capture a clean social card, then let the user preview it before opening the native share sheet.
+let sharePreviewObjectUrl=null;
+function closeLubiakSharePreview(){
+  document.querySelector('#lubiak-share-preview')?.remove();
+  if(sharePreviewObjectUrl){URL.revokeObjectURL(sharePreviewObjectUrl);sharePreviewObjectUrl=null;}
+}
+async function shareCaptureAndLink(file){
+  const data={title:'LUBIAK — Chanson à Répondre UNO',text:'Explore LUBIAK · Chanson à Répondre UNO',url:location.href,files:[file]};
+  if(navigator.share){
+    try{
+      if(!navigator.canShare || navigator.canShare({files:[file]})){await navigator.share(data);return true;}
+      await navigator.share({title:data.title,text:data.text,url:data.url});return true;
+    }catch(error){
+      if(error?.name==='AbortError') return false;
+      try{await navigator.share({title:data.title,text:data.text,url:data.url});return true;}catch(second){if(second?.name==='AbortError') return false;}
+    }
+  }
+  try{await navigator.clipboard?.writeText(location.href);showStatus('LUBIAK LINK COPIED',900);}catch{}
+  return false;
+}
+function openLubiakSharePreview(blob,file){
+  closeLubiakSharePreview();
+  sharePreviewObjectUrl=URL.createObjectURL(blob);
+  const overlay=document.createElement('div');
+  overlay.id='lubiak-share-preview';
+  overlay.style.cssText='position:fixed;inset:0;z-index:260;background:#050303e8;display:grid;place-items:center;padding:max(18px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) max(18px,env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left));backdrop-filter:blur(8px)';
+  const card=document.createElement('div');
+  card.style.cssText='width:min(92vw,720px);max-height:92vh;display:flex;flex-direction:column;gap:10px;padding:10px;background:#0b0706;border:1px solid #c47b3d88;box-shadow:0 18px 70px #000c';
+  const img=document.createElement('img');img.src=sharePreviewObjectUrl;img.alt='LUBIAK social capture preview';img.style.cssText='display:block;width:100%;max-height:72vh;object-fit:contain;background:#000';
+  const actions=document.createElement('div');actions.style.cssText='display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap';
+  const mk=(label)=>{const b=document.createElement('button');b.type='button';b.textContent=label;b.style.cssText='border:1px solid #c47b3d88;background:#130b08;color:#f0d7ad;padding:10px 14px;font:700 10px/1 ui-monospace;letter-spacing:.1em;touch-action:manipulation';return b;};
+  const cancel=mk('CLOSE');
+  const save=mk('SAVE PNG');
+  const share=mk('SHARE SOCIAL');
+  cancel.addEventListener('click',closeLubiakSharePreview);
+  save.addEventListener('click',()=>{const a=document.createElement('a');a.href=sharePreviewObjectUrl;a.download=file.name;document.body.appendChild(a);a.click();a.remove();});
+  share.addEventListener('click',async()=>{share.disabled=true;const old=share.textContent;share.textContent='SHARING…';const done=await shareCaptureAndLink(file);share.disabled=false;share.textContent=old;if(done){showStatus('LUBIAK SHARED',900);closeLubiakSharePreview();}});
+  actions.append(cancel,save,share);card.append(img,actions);overlay.appendChild(card);
+  overlay.addEventListener('pointerdown',e=>{if(e.target===overlay)closeLubiakSharePreview();});
+  document.body.appendChild(overlay);
+}
 async function shareLubiakCapture(){
   if(shareCaptureButton.disabled) return;
   const old=shareCaptureButton.textContent;shareCaptureButton.disabled=true;shareCaptureButton.textContent='CAPTURE…';
@@ -283,15 +325,10 @@ async function shareLubiakCapture(){
     const blob=await captureLubiakScreen();
     const stamp=new Date().toISOString().replace(/[:.]/g,'-');
     const file=new File([blob],'LUBIAK-'+stamp+'.png',{type:'image/png'});
-    if(navigator.share && (!navigator.canShare || navigator.canShare({files:[file]}))){
-      await navigator.share({title:'LUBIAK — Chanson à Répondre UNO',text:'LUBIAK · Chanson à Répondre UNO · '+location.href,files:[file]});
-      showStatus('LUBIAK CAPTURE SHARED',900);
-    }else{
-      const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=file.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
-      showStatus('LUBIAK CAPTURE SAVED',900);
-    }
+    openLubiakSharePreview(blob,file);
+    showStatus('LUBIAK CAPTURE READY',800);
   }catch(error){
-    if(error?.name!=='AbortError'){console.warn('LUBIAK share capture failed',error);showStatus('CAPTURE UNAVAILABLE',1100);}
+    console.warn('LUBIAK share capture failed',error);showStatus('CAPTURE UNAVAILABLE',1100);
   }finally{shareCaptureButton.disabled=false;shareCaptureButton.textContent=old;}
 }
 shareCaptureButton.addEventListener('click',shareLubiakCapture);
