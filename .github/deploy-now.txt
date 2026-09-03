@@ -1,5 +1,5 @@
-deploy-request: 2026-09-03T13:15:00+01:00
-source: chat-hotfix
+deploy-request: 2026-09-03T13:32:00+01:00
+source: chat-reconstruction
 workflow: WEB — Deploy Live Site
-scope: LUBIAK boot input authority
-reason: restore missing keys and setCameraMode authorities
+scope: Castle Interior + Laboratory reconstruction
+reason: publish textured castle interior with Jester and laboratory with four video meshes plus animated statue
