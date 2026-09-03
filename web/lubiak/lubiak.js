@@ -193,6 +193,39 @@ try {
   throw error;
 }
 
+// LUBIAK_DIRECT_LOOK_V1
+// Drag directly on the WebGL scene to look with mouse or touch. UI overlays keep their own pointer authority.
+let lookPointerId=null;
+let lookLastX=0;
+let lookLastY=0;
+let lookTravel=0;
+function lookBlockedTarget(target){
+  return !!target?.closest?.('#lubiak-sphere-control,#lubiak-vertical-dock,#lubiak-mode-dock,#megapole-portal,button,a,iframe,input,select,textarea,[role="button"]');
+}
+renderer.domElement.style.touchAction='none';
+renderer.domElement.addEventListener('pointerdown',(event)=>{
+  if(lookBlockedTarget(event.target) || event.button>0) return;
+  lookPointerId=event.pointerId; lookLastX=event.clientX; lookLastY=event.clientY; lookTravel=0;
+  renderer.domElement.setPointerCapture?.(event.pointerId);
+},{passive:true});
+renderer.domElement.addEventListener('pointermove',(event)=>{
+  if(event.pointerId!==lookPointerId) return;
+  const dx=event.clientX-lookLastX, dy=event.clientY-lookLastY; lookLastX=event.clientX; lookLastY=event.clientY; lookTravel+=Math.abs(dx)+Math.abs(dy);
+  const sx=0.0042, sy=0.0036;
+  if(cameraMode==='aerial'){
+    aerialYaw-=dx*sx;
+    aerialPitch=THREE.MathUtils.clamp(aerialPitch-dy*sy,-1.28,1.18);
+  }else{
+    followYaw-=dx*sx;
+    followPitch=THREE.MathUtils.clamp(followPitch-dy*sy,-0.92,0.58);
+    if(!playerReady){ yaw-=dx*sx; pitch=THREE.MathUtils.clamp(pitch-dy*sy,-1.15,1.15); }
+  }
+  if(lookTravel>3) event.preventDefault();
+},{passive:false});
+function endDirectLook(event){ if(event.pointerId===lookPointerId) lookPointerId=null; }
+renderer.domElement.addEventListener('pointerup',endDirectLook);
+renderer.domElement.addEventListener('pointercancel',endDirectLook);
+
 renderer.domElement.addEventListener('webglcontextlost', (event) => {
   event.preventDefault();
   webglContextLost = true;
