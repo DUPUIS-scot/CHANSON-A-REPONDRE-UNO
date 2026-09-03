@@ -30,14 +30,14 @@ jobs:
           grep -q 'LUBIAK_ORDERED_MODULAR_ENVIRONMENT_V1' web/lubiak/lubiak.js
           ! grep -q 'LUBIAK_REASSEMBLED_MODULAR_WEB.glb' web/lubiak/lubiak.js
           ! grep -q '/assets/assets/models/LUBIAK.glb' web/lubiak/lubiak.js
-          grep -q "file: 'freak%20street.glb'" web/lubiak/lubiak.js
-          grep -q "file: 'avenue.glb'" web/lubiak/lubiak.js
-          grep -q "file: 'roof%20top.glb'" web/lubiak/lubiak.js
-          grep -q "file: 'palace.glb'" web/lubiak/lubiak.js
-          grep -q "file: 'circus.glb'" web/lubiak/lubiak.js
-          grep -q "file: 'district.glb'" web/lubiak/lubiak.js
-          grep -q "file: 'card%20room.glb'" web/lubiak/lubiak.js
-          grep -q "file: 'dragon%20lair.glb'" web/lubiak/lubiak.js
+          grep -q "freak%20street.glb?v=20260903-modular-v3" web/lubiak/lubiak.js
+          grep -q "avenue.glb?v=20260903-modular-v3" web/lubiak/lubiak.js
+          grep -q "roof%20top.glb?v=20260903-modular-v3" web/lubiak/lubiak.js
+          grep -q "palace.glb?v=20260903-modular-v3" web/lubiak/lubiak.js
+          grep -q "circus.glb?v=20260903-modular-v3" web/lubiak/lubiak.js
+          grep -q "district.glb?v=20260903-modular-v3" web/lubiak/lubiak.js
+          grep -q "card%20room.glb?v=20260903-modular-v3" web/lubiak/lubiak.js
+          grep -q "dragon%20lair.glb?v=20260903-modular-v3" web/lubiak/lubiak.js
           test -s assets/models/textured-glb-comparison/lubiak-assets/freak\ street.glb
           test -s assets/models/textured-glb-comparison/lubiak-assets/avenue.glb
           test -s assets/models/textured-glb-comparison/lubiak-assets/roof\ top.glb
