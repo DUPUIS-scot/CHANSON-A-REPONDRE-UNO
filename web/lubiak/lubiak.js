@@ -87,6 +87,8 @@ let playerBaseY = 0;
 let followYaw = 0;
 let followPitch = -0.10;
 let followDistance = 4.35;
+// LUBIAK_FOLLOW_RIGHT_SHOULDER_V1
+const followShoulderOffset = 0.72;
 // LUBIAK_AERIAL_CAMERA_V1
 let cameraMode = 'follow';
 let aerialYaw = 0;
@@ -1805,7 +1807,8 @@ function updatePlayer(dt) {
         const diff = THREE.MathUtils.euclideanModulo(targetHeading - playerHeading + Math.PI, Math.PI * 2) - Math.PI;
         playerHeading += diff * Math.min(1, dt * 8.5);
         playerRoot.rotation.y = playerHeading;
-        playerVelocity.lerp(desired.multiplyScalar(5.0 * mag), Math.min(1, dt * 9));
+        // FOLLOW walk speed is always exactly half the current aerial navigation speed.
+        playerVelocity.lerp(desired.multiplyScalar((aerialSpeed * 0.5) * mag), Math.min(1, dt * 9));
       }
     } else {
       playerVelocity.multiplyScalar(Math.max(0, 1 - dt * 8));
@@ -1892,6 +1895,11 @@ function updatePlayer(dt) {
 function updateFollowCamera(dt) {
   if (!playerReady || !playerRoot) return;
   const target = playerRoot.position.clone().add(new THREE.Vector3(0, playerMode === 'flight' ? 1.40 : 1.18, 0));
+  // In FOLLOW/walk, bias the framing over the djinn's right shoulder.
+  if (playerMode === 'walk') {
+    const rightShoulder = new THREE.Vector3(Math.cos(playerHeading), 0, -Math.sin(playerHeading));
+    target.addScaledVector(rightShoulder, followShoulderOffset);
+  }
   const cp = Math.cos(followPitch);
   const desired = target.clone().add(new THREE.Vector3(
     -Math.sin(followYaw) * cp * followDistance,
