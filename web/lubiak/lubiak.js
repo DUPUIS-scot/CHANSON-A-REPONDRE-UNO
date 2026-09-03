@@ -1113,6 +1113,80 @@ let broomShoulderSocket = null;
 let broomRideStart = null;
 let broomRideCenterOffset = new THREE.Vector3();
 
+// LUBIAK_DJINN_BROOM_VISIBLE_V3
+// The playable actor is presentation-critical: force authored Djinn/broom branches visible,
+// verify their rendered world bounds, and recover from bad inherited transforms on mobile.
+function forceActorTreeVisible(root){
+  if(!root) return;
+  root.visible=true;
+  root.traverse((object)=>{
+    object.visible=true;
+    if(!object.isMesh) return;
+    object.frustumCulled=false;
+    object.renderOrder=Math.max(object.renderOrder||0,1);
+    const materials=Array.isArray(object.material)?object.material:[object.material];
+    for(const material of materials){
+      if(!material) continue;
+      material.visible=true;
+      if(Number.isFinite(material.opacity) && material.opacity<0.05){material.opacity=1;material.transparent=false;}
+      material.needsUpdate=true;
+    }
+  });
+  root.updateMatrixWorld(true);
+}
+
+function actorWorldBox(root){
+  if(!root) return null;
+  forceActorTreeVisible(root);
+  const box=new THREE.Box3().setFromObject(root);
+  return box.isEmpty()?null:box;
+}
+
+function recoverBroomCarryIfNeeded(){
+  if(!playerRoot||!broomRoot) return false;
+  forceActorTreeVisible(broomRoot);
+  playerRoot.updateMatrixWorld(true);
+  let box=actorWorldBox(broomRoot);
+  const playerWorld=playerRoot.getWorldPosition(new THREE.Vector3());
+  let invalid=!box;
+  if(box){
+    const size=box.getSize(new THREE.Vector3());
+    const center=box.getCenter(new THREE.Vector3());
+    const longest=Math.max(size.x,size.y,size.z);
+    invalid=!Number.isFinite(longest)||longest<0.8||longest>7.5||center.distanceTo(playerWorld)>5.5;
+  }
+  if(invalid){
+    // Bone transforms in some mobile/skinned runtimes can throw a separately loaded prop far away.
+    // Fall back to the Djinn root so the complete broom is always visibly carried.
+    playerRoot.attach(broomRoot);
+    broomShoulderSocket=null;
+    broomRoot.position.set(-0.62,1.22,0.10);
+    broomRoot.rotation.set(0.06,Math.PI*0.5,0.30);
+    broomRoot.updateMatrixWorld(true);
+    box=actorWorldBox(broomRoot);
+    if(box){
+      const size=box.getSize(new THREE.Vector3());
+      const longest=Math.max(size.x,size.y,size.z,0.001);
+      const k=3.34/longest;
+      if(Number.isFinite(k)&&k>0.02&&k<50) broomRoot.scale.multiplyScalar(k);
+    }
+    forceActorTreeVisible(broomRoot);
+  }
+  return true;
+}
+
+function revealDjinnAndBroom(){
+  if(!playerReady||!playerRoot||!playerVisual) return false;
+  playerRoot.visible=true;
+  forceActorTreeVisible(playerVisual);
+  if(broomRoot){forceActorTreeVisible(broomRoot);recoverBroomCarryIfNeeded();}
+  playerRoot.updateMatrixWorld(true);
+  if(cameraMode!=='follow') cameraMode='follow';
+  followDistance=Math.max(followDistance,5.15);
+  updateFollowCamera(1);
+  return true;
+}
+
 function attachBroomToShoulder() {
   if (!playerVisual || !broomRoot) return;
   const bones = playerBoneCache || cachePlayerBones();
@@ -1312,59 +1386,55 @@ function preparePlayer(root) {
   playerRoot.name = 'LUBIAK_DJINN_PLAYER_ROOT';
   playerVisual = root;
   root.name = 'LUBIAK_DJINN_PLAYER';
+  forceActorTreeVisible(root);
+  const initialBox = actorWorldBox(root);
+  if (!initialBox) throw new Error('Djinn GLB has empty bounds');
+  const initialSize = initialBox.getSize(new THREE.Vector3());
+  const factor = 1.72 / Math.max(initialSize.y, 0.001);
+  if(!Number.isFinite(factor)||factor<=0) throw new Error('Djinn GLB has invalid scale');
+  // Multiply instead of replacing the authored scene scale. This preserves skinned GLB root transforms.
+  root.scale.multiplyScalar(factor);
   root.updateMatrixWorld(true);
-  const box = new THREE.Box3().setFromObject(root);
-  if (box.isEmpty()) throw new Error('Djinn GLB has empty bounds');
-  const size = box.getSize(new THREE.Vector3());
-  const center = box.getCenter(new THREE.Vector3());
-  const scale = 1.72 / Math.max(size.y, 0.001);
-  root.scale.setScalar(scale);
-  root.position.set(-center.x * scale, -box.min.y * scale, -center.z * scale);
-  playerVisualGroundOffsetY = root.position.y;
-  root.traverse((object) => {
-    if (!object.isMesh) return;
-    object.frustumCulled = false;
-    object.userData.isLubiakPlayer = true;
-    const materials = Array.isArray(object.material) ? object.material : [object.material];
-    for (const material of materials) {
-      if (!material) continue;
-      material.side = THREE.DoubleSide;
-      material.needsUpdate = true;
-    }
+  let fittedBox=actorWorldBox(root);
+  if(!fittedBox) throw new Error('Djinn bounds lost after scaling');
+  const fittedCenter=fittedBox.getCenter(new THREE.Vector3());
+  root.position.x-=fittedCenter.x;
+  root.position.y-=fittedBox.min.y;
+  root.position.z-=fittedCenter.z;
+  root.updateMatrixWorld(true);
+  fittedBox=actorWorldBox(root);
+  playerVisualGroundOffsetY=root.position.y;
+  root.traverse((object)=>{
+    if(!object.isMesh) return;
+    object.userData.isLubiakPlayer=true;
+    const materials=Array.isArray(object.material)?object.material:[object.material];
+    for(const material of materials){if(material){material.side=THREE.DoubleSide;material.needsUpdate=true;}}
   });
   playerRoot.add(root);
-  const env = environmentSize || new THREE.Vector3(76, 30, 130);
-  // LUBIAK_SAFE_ENTRANCE_CAMERA_V2
-  // The authored GLB is centred around the origin. Its public/street entrance is on
-  // the +Z side (the same side from which frameLoadedEnvironment initially views it).
-  // Start OUTSIDE that edge and scan inward; never guess from an interior percentage.
-  // LUBIAK_FREAK_STREET_RIGHT_SPAWN_V1
-  // Begin beside the right-hand side of the Freak Street entrance/banner, not centred
-  // in front of the doorway. Positive X is screen-right from the +Z entrance camera.
-  const entranceAnchor = new THREE.Vector3(env.x * 0.16, 0.08, env.z * 0.60);
+  const env=environmentSize||new THREE.Vector3(76,30,130);
+  const entranceAnchor=new THREE.Vector3(env.x*0.16,0.08,env.z*0.60);
   playerRoot.position.copy(entranceAnchor);
-  playerBaseY = playerRoot.position.y;
-  playerHeading = Math.PI;
-  playerRoot.rotation.set(0, playerHeading, 0, 'YXZ');
+  playerBaseY=playerRoot.position.y;
+  playerHeading=Math.PI;
+  playerRoot.rotation.set(0,playerHeading,0,'YXZ');
   scene.add(playerRoot);
-  // Spawn is validated against the djinn body. The shoulder-carried broom may
-  // visually overhang the apron without pinning the player in place.
-  const safeEntrance = findSafeEntranceSpawn(entranceAnchor, false);
+  const safeEntrance=findSafeEntranceSpawn(entranceAnchor,false);
   playerRoot.position.copy(safeEntrance);
-  playerBaseY = playerRoot.position.y;
-  followYaw = 0;
-  followPitch = -0.08;
-  followDistance = 4.35;
+  playerBaseY=playerRoot.position.y;
+  followYaw=0;
+  followPitch=-0.08;
+  followDistance=5.15;
   cachePlayerBones();
-  playerReady = true;
-  // Place the camera immediately on the safe exterior side before the first player frame.
+  playerReady=true;
+  forceActorTreeVisible(playerRoot);
   updateFollowCamera(1);
+  console.info('LUBIAK Djinn visible bounds',fittedBox?fittedBox.getSize(new THREE.Vector3()).toArray():null,'spawn',playerRoot.position.toArray());
 }
 
 // LUBIAK_DJINN_BROOM_RESTORE_V2
 // Prioritise the playable actor before the dragon and retry transient mobile asset failures.
-const DJINN_URL='/assets/assets/models/lubiak_djinn_player_ultralight.glb?v=20260903-djinn-broom-restore-v2';
-const BROOM_URL='/assets/assets/models/lubiak_da_noble_y2k_broom_ultralight.glb?v=20260903-djinn-broom-restore-v2';
+const DJINN_URL='/assets/assets/models/lubiak_djinn_player_ultralight.glb?v=20260903-djinn-broom-visible-v3';
+const BROOM_URL='/assets/assets/models/lubiak_da_noble_y2k_broom_ultralight.glb?v=20260903-djinn-broom-visible-v3';
 
 function actorDelay(ms){return new Promise(resolve=>setTimeout(resolve,ms));}
 async function loadActorWithRetry(url,decoder,label,attempts=2){
@@ -1387,9 +1457,11 @@ async function restoreBroom(decoder){
   try{
     const broomGltf=await loadActorWithRetry(BROOM_URL,decoder,'PREPARING DA NOBLE Y2K',3);
     broomRoot=broomGltf.scene;
-    broomRoot.visible=true;
+    forceActorTreeVisible(broomRoot);
     attachBroomToShoulder();
     restoreStandingWalkPose();
+    recoverBroomCarryIfNeeded();
+    revealDjinnAndBroom();
     if(typeof refreshLubiakModeButtons==='function') refreshLubiakModeButtons();
     return true;
   }catch(error){
@@ -1409,6 +1481,9 @@ async function installPlayer(decoder) {
     preparePlayer(gltf.scene);
     if(playerRoot) playerRoot.visible=true;
     const broomReady=await restoreBroom(decoder);
+    revealDjinnAndBroom();
+    requestAnimationFrame(()=>{revealDjinnAndBroom();renderer.render(scene,camera);});
+    setTimeout(()=>revealDjinnAndBroom(),450);
     showStatus(broomReady?'DJINN + DA NOBLE Y2K READY':'DJINN PLAYER READY',950);
     return true;
   } catch (error) {
