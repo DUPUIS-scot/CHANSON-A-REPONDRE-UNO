@@ -1,0 +1,2 @@
+run: 2026-09-03T21:22:00+01:00
+scope: force Djinn + DA NOBLE Y2K visible and recover bad mobile transforms
