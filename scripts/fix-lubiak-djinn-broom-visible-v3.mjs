@@ -25,9 +25,5 @@ const playerNeedle="    const broomReady=await restoreBroom(decoder);\n    showS
 if(!s.includes(playerNeedle)) throw new Error('installPlayer completion anchor missing');
 s=s.replace(playerNeedle,"    const broomReady=await restoreBroom(decoder);\n    revealDjinnAndBroom();\n    requestAnimationFrame(()=>{revealDjinnAndBroom();renderer.render(scene,camera);});\n    setTimeout(()=>revealDjinnAndBroom(),450);\n    showStatus(broomReady?'DJINN + DA NOBLE Y2K READY':'DJINN PLAYER READY',950);");
 
-const visibilityNeedle="    if(playerRoot) playerRoot.visible=true;\n    if(!broomRoot) await restoreBroom(decoder);\n    return true;";
-if(!s.includes(visibilityNeedle)) throw new Error('existing player branch anchor missing');
-s=s.replace(visibilityNeedle,"    if(playerRoot) playerRoot.visible=true;\n    if(!broomRoot) await restoreBroom(decoder);\n    revealDjinnAndBroom();\n    return true;");
-
 fs.writeFileSync(path,s);
 console.log('Installed LUBIAK Djinn+broom hard visibility and transform recovery v3.');
