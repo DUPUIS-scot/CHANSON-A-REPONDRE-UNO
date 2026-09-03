@@ -1,4 +1,4 @@
-trigger: 2026-09-03T11:07:00+01:00
-scope: only LUBIAK_REASSEMBLED_MODULAR_WEB.glb
-run: 5
-clean: keep one direct LUBIAK modular environment wire
+trigger: 2026-09-03T12:31:00+01:00
+scope: terrain plus ordered lubiak-assets modules
+run: 6
+clean: Freak Street -> Avenue -> Roof Top -> Palace -> Circus -> District 0 -> Card Room -> Dragon Lair
