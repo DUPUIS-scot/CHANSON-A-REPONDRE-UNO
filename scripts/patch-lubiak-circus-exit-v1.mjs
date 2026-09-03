@@ -1,0 +1,10 @@
+import fs from 'node:fs';
+const p='web/lubiak/lubiak.js';let s=fs.readFileSync(p,'utf8');
+if(s.includes('LUBIAK_CIRCUS_EXIT_BUTTON_V1')) process.exit(0);
+const anchor='function enterCircus() {';
+if(!s.includes(anchor)) throw new Error('enterCircus anchor missing');
+const code=`// LUBIAK_CIRCUS_EXIT_BUTTON_V1\nconst circusExitButton=document.createElement('button');\ncircusExitButton.id='lubiak-circus-exit';\ncircusExitButton.type='button';\ncircusExitButton.textContent='EXIT CIRCUS';\ncircusExitButton.style.cssText='position:fixed;right:max(18px,env(safe-area-inset-right));top:max(66px,calc(env(safe-area-inset-top) + 66px));z-index:120;display:none;border:1px solid #f0d7ad99;background:#080504e8;color:#f0d7ad;padding:11px 14px;border-radius:3px;font:700 10px/1 ui-monospace;letter-spacing:.12em;cursor:pointer;touch-action:manipulation';\ndocument.body.appendChild(circusExitButton);\ncircusExitButton.addEventListener('click',(event)=>{event.stopPropagation();if(worldMode==='circus'){transitionLockUntil=0;exitCircus();}});\nfunction syncCircusExitButton(){circusExitButton.style.display=worldMode==='circus'?'block':'none';}\n\n`;
+s=s.replace(anchor,code+anchor);
+s=s.replace("    worldMode = 'circus';", "    worldMode = 'circus';\n    syncCircusExitButton();");
+s=s.replace("  worldMode = 'exterior';\n  transitionLockUntil", "  worldMode = 'exterior';\n  syncCircusExitButton();\n  transitionLockUntil");
+fs.writeFileSync(p,s);console.log('Added one-tap circus exit.');
