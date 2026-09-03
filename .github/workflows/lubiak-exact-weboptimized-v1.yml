@@ -20,25 +20,40 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Apply modular LUBIAK runtime path
+      - name: Apply ordered modular LUBIAK runtime
         run: node scripts/patch-lubiak-exact-weboptimized-v1.mjs
-      - name: Validate modular model contract
+      - name: Validate ordered modular model contract
         shell: bash
         run: |
           set -euo pipefail
           node --check web/lubiak/lubiak.js
-          grep -q 'textured-glb-comparison/LUBIAK_REASSEMBLED_MODULAR_WEB.glb' web/lubiak/lubiak.js
-          grep -q 'LUBIAK_REASSEMBLED_MODULAR_WEB.glb' web/lubiak/index.html
+          grep -q 'LUBIAK_ORDERED_MODULAR_ENVIRONMENT_V1' web/lubiak/lubiak.js
+          ! grep -q 'LUBIAK_REASSEMBLED_MODULAR_WEB.glb' web/lubiak/lubiak.js
           ! grep -q '/assets/assets/models/LUBIAK.glb' web/lubiak/lubiak.js
-          test -s assets/models/textured-glb-comparison/LUBIAK_REASSEMBLED_MODULAR_WEB.glb
+          grep -q "file: 'freak%20street.glb'" web/lubiak/lubiak.js
+          grep -q "file: 'avenue.glb'" web/lubiak/lubiak.js
+          grep -q "file: 'roof%20top.glb'" web/lubiak/lubiak.js
+          grep -q "file: 'palace.glb'" web/lubiak/lubiak.js
+          grep -q "file: 'circus.glb'" web/lubiak/lubiak.js
+          grep -q "file: 'district.glb'" web/lubiak/lubiak.js
+          grep -q "file: 'card%20room.glb'" web/lubiak/lubiak.js
+          grep -q "file: 'dragon%20lair.glb'" web/lubiak/lubiak.js
+          test -s assets/models/textured-glb-comparison/lubiak-assets/freak\ street.glb
+          test -s assets/models/textured-glb-comparison/lubiak-assets/avenue.glb
+          test -s assets/models/textured-glb-comparison/lubiak-assets/roof\ top.glb
+          test -s assets/models/textured-glb-comparison/lubiak-assets/palace.glb
+          test -s assets/models/textured-glb-comparison/lubiak-assets/circus.glb
+          test -s assets/models/textured-glb-comparison/lubiak-assets/district.glb
+          test -s assets/models/textured-glb-comparison/lubiak-assets/card\ room.glb
+          test -s assets/models/textured-glb-comparison/lubiak-assets/dragon\ lair.glb
       - name: Request deployment
         run: |
           cat > .github/deploy-now.txt <<'EOF'
-          deploy-request: 2026-09-03T11:00:00+01:00
+          deploy-request: 2026-09-03T12:31:00+01:00
           source: chat
           workflow: WEB — Deploy Live Site
-          scope: LUBIAK modular comparison master test
-          reason: load only LUBIAK_REASSEMBLED_MODULAR_WEB.glb directly in LUBIAK and deploy
+          scope: LUBIAK ordered modular environment
+          reason: persistent terrain plus Freak Street -> Avenue -> Roof Top -> Palace -> Circus -> District 0 -> Card Room -> Dragon Lair
           EOF
       - name: Commit repair
         run: |
@@ -46,6 +61,6 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add web/lubiak/lubiak.js web/lubiak/index.html .github/workflows/deploy-pages.yml .github/deploy-now.txt
           git diff --cached --quiet && exit 0
-          git commit -m 'Display LUBIAK modular comparison master'
+          git commit -m 'Deploy ordered modular LUBIAK environment'
           git pull --rebase origin main
           git push origin HEAD:main
