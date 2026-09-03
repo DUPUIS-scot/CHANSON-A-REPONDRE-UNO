@@ -1,0 +1,29 @@
+name: LUBIAK restore complete master
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/lubiak-restore-complete-master.trigger']
+permissions:
+  contents: write
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore complete LUBIAK loader
+        run: |
+          node scripts/hotfix-lubiak-restore-complete-master.mjs
+          node --check web/lubiak/lubiak.js
+          grep -q 'LUBIAK_COMPLETE_MASTER_RESTORE_V1' web/lubiak/lubiak.js
+          grep -q 'LUBIAK_REASSEMBLED_MODULAR_WEB.glb' web/lubiak/lubiak.js
+          test "$(grep -oE 'lubiak-assets/(freak%20street|avenue|roof%20top|palace|circus|district|card%20room|dragon%20lair)\.glb\?v=' web/lubiak/lubiak.js | wc -l)" -eq 8
+          test -s assets/models/textured-glb-comparison/LUBIAK_REASSEMBLED_MODULAR_WEB.glb
+      - name: Commit and deploy
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          printf 'deploy-request: 2026-09-03T13:33:00+01:00\nsource: complete-lubiak-restore\nreason: restore full world after modular loading regression\n' > .github/deploy-now.txt
+          git add web/lubiak/lubiak.js .github/deploy-now.txt
+          git commit -m 'Restore complete LUBIAK world loader'
+          git push
