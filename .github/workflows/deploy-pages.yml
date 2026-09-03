@@ -205,7 +205,7 @@ jobs:
           js_path = Path('build/web/lubiak/lubiak.js')
           html_path = Path('build/web/lubiak/index.html')
           js = js_path.read_text()
-          js, n = re.subn(r"((?:LUBIAK_master_optimized(?:_4_ELEMENT_PBR_WEB_OPTIMIZED)?|LUBIAK_palace_pbr_repaired_final)\.glb\?v=)[^'\"\s]+", rf"\g<1>{token}", js)
+          js, n = re.subn(r"((?:LUBIAK_REASSEMBLED_MODULAR_WEB|LUBIAK_master_optimized(?:_4_ELEMENT_PBR_WEB_OPTIMIZED)?|LUBIAK_palace_pbr_repaired_final)\.glb\?v=)[^'\"\s]+", rf"\g<1>{token}", js)
           if n < 1: raise RuntimeError('LUBIAK optimized model cache token not found')
           js_path.write_text(js)
           html = html_path.read_text()
@@ -294,7 +294,7 @@ jobs:
           test -s build/web/assets/assets/models/SILMARI_LLION_MEGAPOLE_LUBIAK_LIVE.glb
           cmp -s assets/models/LUBIAK_master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED.glb build/web/assets/assets/models/LUBIAK_master_optimized.glb
           cmp -s assets/models/textured-glb-comparison/SILMARI_LLION_MEGAPOLE_LUBIAK_LIVE.glb build/web/assets/assets/models/SILMARI_LLION_MEGAPOLE_LUBIAK_LIVE.glb
-          grep -Eq "LUBIAK_(master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED|palace_pbr_repaired_final)\.glb\?v=safe-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" build/web/lubiak/lubiak.js
+          grep -Eq "LUBIAK_(REASSEMBLED_MODULAR_WEB|master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED|palace_pbr_repaired_final)\.glb\?v=safe-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" build/web/lubiak/lubiak.js
           grep -q "lubiak.js?v=safe-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" build/web/lubiak/index.html
           node --check build/web/megapole/megapole-pbr-v8.js
 
