@@ -1,0 +1,10 @@
+import fs from 'node:fs';
+const path='web/lubiak/lubiak.js';
+let s=fs.readFileSync(path,'utf8');
+if(s.includes('LUBIAK_DIRECT_LOOK_V1')) process.exit(0);
+const anchor="renderer.domElement.addEventListener('webglcontextlost', (event) => {";
+if(!s.includes(anchor)) throw new Error('renderer input anchor missing');
+const code=`// LUBIAK_DIRECT_LOOK_V1\n// Drag directly on the WebGL scene to look with mouse or touch. UI overlays keep their own pointer authority.\nlet lookPointerId=null;\nlet lookLastX=0;\nlet lookLastY=0;\nlet lookTravel=0;\nfunction lookBlockedTarget(target){\n  return !!target?.closest?.('#lubiak-sphere-control,#lubiak-vertical-dock,#lubiak-mode-dock,#megapole-portal,button,a,iframe,input,select,textarea,[role="button"]');\n}\nrenderer.domElement.style.touchAction='none';\nrenderer.domElement.addEventListener('pointerdown',(event)=>{\n  if(lookBlockedTarget(event.target) || event.button>0) return;\n  lookPointerId=event.pointerId; lookLastX=event.clientX; lookLastY=event.clientY; lookTravel=0;\n  renderer.domElement.setPointerCapture?.(event.pointerId);\n},{passive:true});\nrenderer.domElement.addEventListener('pointermove',(event)=>{\n  if(event.pointerId!==lookPointerId) return;\n  const dx=event.clientX-lookLastX, dy=event.clientY-lookLastY; lookLastX=event.clientX; lookLastY=event.clientY; lookTravel+=Math.abs(dx)+Math.abs(dy);\n  const sx=0.0042, sy=0.0036;\n  if(cameraMode==='aerial'){\n    aerialYaw-=dx*sx;\n    aerialPitch=THREE.MathUtils.clamp(aerialPitch-dy*sy,-1.28,1.18);\n  }else{\n    followYaw-=dx*sx;\n    followPitch=THREE.MathUtils.clamp(followPitch-dy*sy,-0.92,0.58);\n    if(!playerReady){ yaw-=dx*sx; pitch=THREE.MathUtils.clamp(pitch-dy*sy,-1.15,1.15); }\n  }\n  if(lookTravel>3) event.preventDefault();\n},{passive:false});\nfunction endDirectLook(event){ if(event.pointerId===lookPointerId) lookPointerId=null; }\nrenderer.domElement.addEventListener('pointerup',endDirectLook);\nrenderer.domElement.addEventListener('pointercancel',endDirectLook);\n\n`;
+s=s.replace(anchor,code+anchor);
+fs.writeFileSync(path,s);
+console.log('Patched LUBIAK direct touch/mouse look.');
