@@ -1,0 +1,2 @@
+run: 2026-09-03T21:23:00+01:00
+scope: touch/mouse orientation + pinch/wheel optical zoom; no model displacement
