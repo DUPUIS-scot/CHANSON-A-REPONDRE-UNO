@@ -1,2 +1,1 @@
-deploy 2026-09-03T16:50:00+01:00
-scope: validated Enochian 3D SIGNAL single source authority, MAIN/MIDI/INPUT arbitration, four stems, full EQ/FX shaping, SIGNAL MOD gating, unified terrain and health reporting
+deploy 2026-09-03T20:22:58Z
