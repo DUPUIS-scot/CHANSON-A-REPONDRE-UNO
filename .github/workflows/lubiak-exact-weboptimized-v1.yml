@@ -35,14 +35,14 @@ jobs:
           if (src.includes('LUBIAK_REASSEMBLED_MODULAR_WEB.glb')) throw new Error('combined modular master still referenced');
           if (src.includes('/assets/assets/models/LUBIAK.glb')) throw new Error('legacy LUBIAK.glb still referenced');
           const expected = [
-            ['freak%20street.glb?v=20260903-modular-v3', 'assets/models/textured-glb-comparison/lubiak-assets/freak street.glb'],
-            ['avenue.glb?v=20260903-modular-v3', 'assets/models/textured-glb-comparison/lubiak-assets/avenue.glb'],
-            ['roof%20top.glb?v=20260903-modular-v3', 'assets/models/textured-glb-comparison/lubiak-assets/roof top.glb'],
-            ['palace.glb?v=20260903-modular-v3', 'assets/models/textured-glb-comparison/lubiak-assets/palace.glb'],
-            ['circus.glb?v=20260903-modular-v3', 'assets/models/textured-glb-comparison/lubiak-assets/circus.glb'],
-            ['district.glb?v=20260903-modular-v3', 'assets/models/textured-glb-comparison/lubiak-assets/district.glb'],
-            ['card%20room.glb?v=20260903-modular-v3', 'assets/models/textured-glb-comparison/lubiak-assets/card room.glb'],
-            ['dragon%20lair.glb?v=20260903-modular-v3', 'assets/models/textured-glb-comparison/lubiak-assets/dragon lair.glb'],
+            ['freak%20street.glb?v=20260903-modular-v2', 'assets/models/textured-glb-comparison/lubiak-assets/freak street.glb'],
+            ['avenue.glb?v=20260903-modular-v2', 'assets/models/textured-glb-comparison/lubiak-assets/avenue.glb'],
+            ['roof%20top.glb?v=20260903-modular-v2', 'assets/models/textured-glb-comparison/lubiak-assets/roof top.glb'],
+            ['palace.glb?v=20260903-modular-v2', 'assets/models/textured-glb-comparison/lubiak-assets/palace.glb'],
+            ['circus.glb?v=20260903-modular-v2', 'assets/models/textured-glb-comparison/lubiak-assets/circus.glb'],
+            ['district.glb?v=20260903-modular-v2', 'assets/models/textured-glb-comparison/lubiak-assets/district.glb'],
+            ['card%20room.glb?v=20260903-modular-v2', 'assets/models/textured-glb-comparison/lubiak-assets/card room.glb'],
+            ['dragon%20lair.glb?v=20260903-modular-v2', 'assets/models/textured-glb-comparison/lubiak-assets/dragon lair.glb'],
           ];
           let lastIndex = -1;
           for (const [url, path] of expected) {
