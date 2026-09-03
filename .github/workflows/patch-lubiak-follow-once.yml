@@ -1,0 +1,29 @@
+name: PATCH — LUBIAK Follow Camera Once
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.lubiak-follow-right-shoulder-trigger'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Apply follow contract
+        run: |
+          node scripts/patch-lubiak-follow-right-shoulder-speed-v1.mjs
+          node --check web/lubiak/lubiak.js
+          grep -q 'LUBIAK_FOLLOW_RIGHT_SHOULDER_V1' web/lubiak/lubiak.js
+          grep -q 'aerialSpeed \* 0.5' web/lubiak/lubiak.js
+      - name: Commit runtime and trigger live deploy
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          printf 'lubiak-follow-right-shoulder %s\n' "$(date -u +%Y%m%dT%H%M%SZ)" > .github/deploy-now.txt
+          git add web/lubiak/lubiak.js .github/deploy-now.txt
+          git commit -m 'Fix LUBIAK right-shoulder follow and walk speed'
+          git push origin HEAD:main
