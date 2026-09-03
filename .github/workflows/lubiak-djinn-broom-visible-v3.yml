@@ -1,0 +1,42 @@
+name: LUBIAK Djinn broom visible v3
+on:
+  push:
+    paths: ['.github/run-lubiak-djinn-broom-visible-v3.txt']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: main}
+      - name: Validate source actor assets
+        run: |
+          python3 - <<'PY'
+          import struct
+          from pathlib import Path
+          for p in [Path('assets/models/lubiak_djinn_player_ultralight.glb'),Path('assets/models/lubiak_da_noble_y2k_broom_ultralight.glb')]:
+            b=p.read_bytes(); magic,version,n=struct.unpack('<4sII',b[:12])
+            assert magic==b'glTF' and version==2 and n==len(b), p
+            print(p,len(b))
+          PY
+      - name: Apply actor visibility repair
+        run: node scripts/fix-lubiak-djinn-broom-visible-v3.mjs
+      - name: Validate runtime
+        run: |
+          node --check web/lubiak/lubiak.js
+          grep -q 'LUBIAK_DJINN_BROOM_VISIBLE_V3' web/lubiak/lubiak.js
+          grep -q 'revealDjinnAndBroom' web/lubiak/lubiak.js
+          grep -q 'recoverBroomCarryIfNeeded' web/lubiak/lubiak.js
+          grep -q 'djinn-broom-visible-v3' web/lubiak/lubiak.js
+      - name: Commit and request deploy
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add web/lubiak/lubiak.js
+          if ! git diff --cached --quiet; then git commit -m 'Force LUBIAK Djinn and broom visible'; fi
+          printf 'deploy %s\n' "$(date -u +%FT%TZ)" > .github/deploy-now.txt
+          git add .github/deploy-now.txt
+          git commit -m 'Deploy LUBIAK Djinn broom visibility repair'
+          git push
