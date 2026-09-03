@@ -1287,22 +1287,60 @@ function preparePlayer(root) {
   updateFollowCamera(1);
 }
 
-async function installPlayer(decoder) {
-  try {
-    const gltf = await loadGlb('/assets/assets/models/lubiak_djinn_player_ultralight.glb?v=20260830-blackout-recovery-v1', decoder, 'CALLING DJINN', false);
-    preparePlayer(gltf.scene);
-    try {
-      const broomGltf = await loadGlb('/assets/assets/models/lubiak_da_noble_y2k_broom_ultralight.glb?v=20260830-blackout-recovery-v1', decoder, 'PREPARING DA NOBLE Y2K', false);
-      broomRoot = broomGltf.scene;
-      attachBroomToShoulder();
-      restoreStandingWalkPose();
-    } catch (broomError) {
-      console.warn('DA NOBLE Y2K broom unavailable; player remains active without broom.', broomError);
+// LUBIAK_DJINN_BROOM_RESTORE_V2
+// Prioritise the playable actor before the dragon and retry transient mobile asset failures.
+const DJINN_URL='/assets/assets/models/lubiak_djinn_player_ultralight.glb?v=20260903-djinn-broom-restore-v2';
+const BROOM_URL='/assets/assets/models/lubiak_da_noble_y2k_broom_ultralight.glb?v=20260903-djinn-broom-restore-v2';
+
+function actorDelay(ms){return new Promise(resolve=>setTimeout(resolve,ms));}
+async function loadActorWithRetry(url,decoder,label,attempts=2){
+  let lastError=null;
+  for(let attempt=1;attempt<=attempts;attempt++){
+    try{
+      const sep=url.includes('?')?'&':'?';
+      return await loadGlb(url+sep+'attempt='+attempt,decoder,label,false,30000);
+    }catch(error){
+      lastError=error;
+      console.warn(label+' attempt '+attempt+' failed.',error);
+      if(attempt<attempts) await actorDelay(550);
     }
-    showStatus('DJINN PLAYER READY', 850);
+  }
+  throw lastError || new Error(label+' unavailable');
+}
+
+async function restoreBroom(decoder){
+  if(broomRoot) return true;
+  try{
+    const broomGltf=await loadActorWithRetry(BROOM_URL,decoder,'PREPARING DA NOBLE Y2K',3);
+    broomRoot=broomGltf.scene;
+    broomRoot.visible=true;
+    attachBroomToShoulder();
+    restoreStandingWalkPose();
+    if(typeof refreshLubiakModeButtons==='function') refreshLubiakModeButtons();
+    return true;
+  }catch(error){
+    console.warn('DA NOBLE Y2K broom unavailable after retries.',error);
+    return false;
+  }
+}
+
+async function installPlayer(decoder) {
+  if(playerReady && playerRoot){
+    playerRoot.visible=true;
+    if(!broomRoot) await restoreBroom(decoder);
+    return true;
+  }
+  try {
+    const gltf=await loadActorWithRetry(DJINN_URL,decoder,'CALLING DJINN',3);
+    preparePlayer(gltf.scene);
+    if(playerRoot) playerRoot.visible=true;
+    const broomReady=await restoreBroom(decoder);
+    showStatus(broomReady?'DJINN + DA NOBLE Y2K READY':'DJINN PLAYER READY',950);
+    return true;
   } catch (error) {
-    playerReady = false;
-    console.warn('Djinn player unavailable; original free-camera navigation remains active.', error);
+    playerReady=false;
+    console.warn('Djinn player unavailable after retries; free-camera navigation remains active.',error);
+    return false;
   }
 }
 
@@ -1334,8 +1372,10 @@ async function installEnvironment() {
     exteriorRoot=root;
     repairLubiakStaticWorld();
     await renderConfirmedFrame();
-    finishLoad('ENTER LUBIAK');
-    setTimeout(()=>{ void Promise.allSettled([installDragon(decoder),installPlayer(decoder)]); },350);
+    // Restore player authority before optional guardian loading, especially on iPhone.
+    const actorReady=await installPlayer(decoder);
+    finishLoad(actorReady?'DJINN PLAYER READY':'ENTER LUBIAK');
+    setTimeout(()=>{ void installDragon(decoder); },700);
   } catch(error) {
     console.error('Complete LUBIAK master failed.',error);
     finishLoad('LUBIAK MASTER UNAVAILABLE');
