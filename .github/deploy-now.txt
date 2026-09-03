@@ -1,1 +1,2 @@
-deploy 2026-09-03T14:57:54Z
+deploy 2026-09-03T16:01:00+01:00
+scope: castle exact-hit regression alignment + recent LUBIAK compact Bandcamp + castle lighting/UI changes
