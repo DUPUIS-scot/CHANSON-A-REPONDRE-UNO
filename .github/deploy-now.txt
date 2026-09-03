@@ -1,5 +1,5 @@
-deploy-request: 2026-09-03T12:40:00+01:00
+deploy-request: 2026-09-03T12:46:00+01:00
 source: chat-direct
 workflow: WEB — Deploy Live Site
 scope: LUBIAK ordered modular environment
-reason: deploy verified persistent terrain plus Freak Street -> Avenue -> Roof Top -> Palace -> Circus -> District 0 -> Card Room -> Dragon Lair
+reason: retry after fixing eight-module cache refresh contract
