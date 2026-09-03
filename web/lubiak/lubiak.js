@@ -1069,472 +1069,72 @@ async function installPlayer(decoder) {
 async function installEnvironment() {
   setStatus('STARTING 3D ENGINE', 4);
   const decoder = await getMeshoptDecoder();
-  const candidates = [
-    { url: '/assets/assets/models/textured-glb-comparison/LUBIAK_REASSEMBLED_MODULAR_WEB.glb?v=20260903-modular-v1', label: 'LOADING LUBIAK MODULAR MASTER', finish: 'ENTER LUBIAK', timeoutMs: 32000 },
+
+  // LUBIAK_ORDERED_MODULAR_ENVIRONMENT_V1
+  // Terrain is persistent and loaded independently by lubiak-terrain-addon.js.
+  // Environment modules are decoded one-by-one in the authored progression order.
+  const modules = [
+    { name: 'FREAK STREET', file: 'freak%20street.glb', position: [0, 12.114883422851562, 34], rotation: null, scale: [72, 72, 72] },
+    { name: 'AVENUE', file: 'avenue.glb', position: [11.479494094848633, 12.264254570007324, 49.055965423583984], rotation: [0, 0.4113151431083679, 0, 0.9114933013916016], scale: [71.86261749267578, 71.86260223388672, 71.86261749267578] },
+    { name: 'ROOF TOP', file: 'roof%20top.glb', position: [-9.29807186126709, 22.525930404663086, 33.840213775634766], rotation: [-0.12447847425937653, -0.14730167388916016, -0.028115851804614067, 0.9808245897293091], scale: [28.742916107177734, 28.7429141998291, 28.742918014526367] },
+    { name: 'PALACE', file: 'palace.glb', position: [0, 11.905579566955566, -18], rotation: null, scale: [77.90990447998047, 77.90990447998047, 77.90990447998047] },
+    { name: 'CIRCUS', file: 'circus.glb', position: [0, 7.115546226501465, -17], rotation: [0, -0.4972151815891266, 0, 0.8676272630691528], scale: [25.0000057220459, 25, 25.0000057220459] },
+    { name: 'DISTRICT 0', file: 'district.glb', position: [-24.26102638244629, 8.422406196594238, 29.6292724609375], rotation: [0.07996269315481186, -0.9552930593490601, 0.28146034479141235, 0.04244136065244675], scale: [9.534232139587402, 9.534231185913086, 9.53423023223877] },
+    { name: 'CARD ROOM', file: 'card%20room.glb', position: [5.9719696044921875, 6.680505275726318, 29.453205108642578], rotation: [0.0668065994977951, 0.7124782204627991, 0.07561159133911133, 0.6944023966789246], scale: [11.452020645141602, 11.452018737792969, 11.452022552490234] },
+    { name: 'DRAGON LAIR', file: 'dragon%20lair.glb', position: [-21.879623413085938, 4.855525016784668, -53.868255615234375], rotation: null, scale: [17.452329635620117, 17.452329635620117, 17.452329635620117] },
   ];
 
-  for (const candidate of candidates) {
+  const root = new THREE.Group();
+  root.name = 'LUBIAK_ENVIRONMENT';
+  scene.add(root);
+
+  let loaded = 0;
+  for (const module of modules) {
     try {
-      setStatus(candidate.label, 8);
-      const gltf = await loadGlb(candidate.url, decoder, candidate.label, true, candidate.timeoutMs);
-      const root = gltf.scene;
-      root.name = 'LUBIAK_ENVIRONMENT';
-      // The authored cobbled road remains enabled; it was confirmed not to be the orange geometry.
-      scene.add(root);
-      if (!frameLoadedEnvironment(root)) {
-        scene.remove(root);
-        throw new Error('GLB scene has invalid or empty bounds');
-      }
-      exteriorRoot = root;
-      // Confirm two animation frames before optional network/decode work begins.
-      await renderConfirmedFrame();
-      finishLoad(candidate.finish);
-      setTimeout(() => {
-        void Promise.allSettled([installDragon(decoder), installPlayer(decoder)]);
-      }, 350);
-      return;
+      const startPct = 8 + (loaded / modules.length) * 76;
+      setStatus(`LOADING ${module.name}`, startPct);
+      const gltf = await loadGlb(`/assets/assets/models/textured-glb-comparison/lubiak-assets/${module.file}?v=20260903-modular-v2`, decoder, `LOADING ${module.name}`, true, 32000);
+      const part = gltf.scene;
+      part.name = `LUBIAK_${module.name.replace(/\s+/g, '_')}`;
+      part.position.fromArray(module.position);
+      if (module.rotation) part.quaternion.fromArray(module.rotation);
+      part.scale.fromArray(module.scale);
+      root.add(part);
+      part.updateMatrixWorld(true);
+      loaded += 1;
+
+      // Make the entrance visible as soon as Freak Street is decoded, then progressively
+      // add the remaining authored zones without blocking the first rendered frame.
+      if (loaded === 1) await renderConfirmedFrame();
     } catch (error) {
-      console.error(`${candidate.label} failed.`, error);
+      console.error(`LUBIAK module failed: ${module.name}`, error);
+      showStatus(`${module.name} UNAVAILABLE · CONTINUING`, 850);
     }
   }
 
-  console.error('LUBIAK master failed; live fallbackRoot is void.');
-  finishLoad('LUBIAK MASTER UNAVAILABLE');
+  if (!root.children.length) {
+    scene.remove(root);
+    console.error('LUBIAK modular environment unavailable; no authored module loaded.');
+    finishLoad('LUBIAK ENVIRONMENT UNAVAILABLE');
+    return;
+  }
+
+  if (!frameLoadedEnvironment(root)) {
+    scene.remove(root);
+    console.error('LUBIAK modular environment has invalid or empty bounds.');
+    finishLoad('LUBIAK ENVIRONMENT UNAVAILABLE');
+    return;
+  }
+
+  exteriorRoot = root;
+  repairLubiakStaticWorld();
   await renderConfirmedFrame();
+  finishLoad('ENTER LUBIAK');
+
+  // Secondary actors remain deferred until the authored environment has rendered stably.
   setTimeout(() => {
     void Promise.allSettled([installDragon(decoder), installPlayer(decoder)]);
   }, 350);
-}
-
-// LUBIAK_RIDE_2MIX_TRAY_V1
-// Match the Enochian Terminal 2MIX live-context visual language while the djinn rides DA NOBLE Y2K.
-const rideSignalTray=document.createElement('div');
-rideSignalTray.id='lubiak-ride-signal-tray';
-rideSignalTray.setAttribute('role','status');
-rideSignalTray.setAttribute('aria-live','polite');
-rideSignalTray.innerHTML='<b>RIDE</b> <span class="ctx">DA NOBLE Y2K</span><span class="hint">MOVE STEER · ▲ UP CLIMB · ▼ DOWN DESCEND</span><span class="live">LUBIAK FLIGHT SIGNAL</span>';
-document.body.appendChild(rideSignalTray);
-const rideSignalStyle=document.createElement('style');
-rideSignalStyle.textContent=`
-#lubiak-ride-signal-tray{position:fixed;z-index:73;left:18px;bottom:max(70px,calc(env(safe-area-inset-bottom) + 70px));display:none;max-width:300px;padding:6px 8px;border:1px solid #63f5cf;border-radius:5px 5px 5px 1px;background:#03110ff2;color:#c9fff0;font:800 7px/1.35 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.05em;white-space:normal;pointer-events:none;box-shadow:0 4px 16px #000c,0 0 12px #19c98f55}
-#lubiak-ride-signal-tray.visible{display:block}#lubiak-ride-signal-tray b{color:#f0c97e;letter-spacing:.13em}#lubiak-ride-signal-tray .ctx{color:#dffcff}#lubiak-ride-signal-tray .live{display:block;margin-top:2px;color:#63f5cf;letter-spacing:.08em}#lubiak-ride-signal-tray .hint{display:block;margin-top:2px;color:#9de8dc}
-@media(max-width:720px){#lubiak-ride-signal-tray{left:10px;bottom:max(62px,calc(env(safe-area-inset-bottom) + 62px));max-width:220px;padding:5px 6px;font-size:6px}}
-`;
-document.head.appendChild(rideSignalStyle);
-function refreshRideSignalTray(){
-  const riding=playerMode==='mounting'||playerMode==='flight';
-  rideSignalTray.classList.toggle('visible',riding&&cameraMode!=='aerial');
-  if(riding){
-    const phase=playerMode==='mounting'?'MOUNTING':'FLIGHT';
-    const altitude=playerRoot?Math.max(0,playerRoot.position.y).toFixed(1):'0.0';
-    const speed=playerVelocity?playerVelocity.length().toFixed(1):'0.0';
-    rideSignalTray.querySelector('.ctx').textContent='DA NOBLE Y2K · '+phase;
-    rideSignalTray.querySelector('.live').textContent='LUBIAK FLIGHT SIGNAL · ALT '+altitude+' · SPD '+speed;
-  }
-}
-
-const joystick = document.createElement('div');
-joystick.id = 'lubiak-sphere-control';
-joystick.innerHTML = '<div class="sphere-shell" aria-hidden="true"><div class="sphere-knob"></div></div><span>MOVE</span>';
-joystick.setAttribute('role', 'application');
-joystick.setAttribute('aria-label', 'LUBIAK spherical movement control');
-document.body.appendChild(joystick);
-const joystickStyle = document.createElement('style');
-joystickStyle.textContent = `
-#lubiak-sphere-control{position:fixed;right:max(20px,env(safe-area-inset-right));left:auto;bottom:max(18px,env(safe-area-inset-bottom));width:118px;height:136px;z-index:60;display:grid;place-items:center;touch-action:none;user-select:none;color:#ffe2bd;font:700 10px/1 system-ui;letter-spacing:.18em;text-shadow:0 1px 4px #0008;opacity:.94}
-#lubiak-sphere-control .sphere-shell{position:relative;width:104px;height:104px;border-radius:50%;border:1px solid #f6c28b88;background:radial-gradient(circle at 32% 27%,#fff7 0 4%,#efad6d55 5% 17%,#6d3018bb 48%,#190a06ee 100%);box-shadow:inset -15px -18px 28px #000a,inset 9px 10px 22px #ffb76b2a,0 8px 28px #000a}
-#lubiak-sphere-control .sphere-shell:after{content:'';position:absolute;inset:10px;border-radius:50%;border:1px solid #ffd5a72b;box-shadow:inset 0 0 18px #ffb0671f}
-#lubiak-sphere-control .sphere-knob{position:absolute;left:50%;top:50%;width:38px;height:38px;border-radius:50%;transform:translate(-50%,-50%);background:radial-gradient(circle at 35% 28%,#fff8,#f2ae68 24%,#7c3415 66%,#210b04);box-shadow:0 4px 12px #000b,inset -5px -6px 8px #0008;border:1px solid #ffd7a1aa;will-change:transform}
-#lubiak-sphere-control span{position:absolute;bottom:2px;opacity:.78}
-@media (max-width:600px){#lubiak-sphere-control{right:max(10px,env(safe-area-inset-right));left:auto;bottom:max(8px,env(safe-area-inset-bottom));transform:scale(.88);transform-origin:right bottom}}
-`;
-document.head.appendChild(joystickStyle);
-
-// LUBIAK_FOLLOW_CLIMB_RIDE_CONTROLS_V1
-// LUBIAK_THREE_MODE_SELECTOR_V1
-// Explicit control choices: grounded/follow camera, detached aerial camera, or broom ride.
-const modeDock = document.createElement('div');
-modeDock.id = 'lubiak-mode-dock';
-modeDock.style.cssText = 'position:fixed;right:max(18px,env(safe-area-inset-right));bottom:158px;z-index:70;display:flex;gap:6px;align-items:center;padding:5px;border:1px solid #f6c28b55;border-radius:999px;background:#100806dd;box-shadow:0 6px 20px #0009;backdrop-filter:blur(8px)';
-
-function makeModeButton(label, aria) {
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.textContent = label;
-  button.setAttribute('aria-label', aria);
-  button.style.cssText = 'border:1px solid #f6c28b66;border-radius:999px;padding:9px 12px;background:#160b08cc;color:#ffe2bd;font:700 9px/1 system-ui;letter-spacing:.12em;cursor:pointer;opacity:.72';
-  modeDock.appendChild(button);
-  return button;
-}
-
-const followToggle = makeModeButton('FOLLOW', 'Follow the djinn in third person');
-const aerialToggle = makeModeButton('AERIAL', 'Use detached aerial observation camera');
-const rideToggle = makeModeButton('RIDE', 'Mount DA NOBLE Y2K and fly');
-
-document.body.appendChild(modeDock);
-
-function refreshLubiakModeButtons() {
-  if (typeof refreshVerticalControls === 'function') refreshVerticalControls();
-  const riding = playerMode === 'mounting' || playerMode === 'flight';
-  const active = cameraMode === 'aerial' ? aerialToggle : riding ? rideToggle : followToggle;
-  for (const button of [followToggle, aerialToggle, rideToggle]) {
-    const isActive = button === active;
-    button.style.opacity = isActive ? '1' : '.62';
-    button.style.background = isActive ? '#6d3018ee' : '#160b08cc';
-    button.style.borderColor = isActive ? '#ffd7a1cc' : '#f6c28b66';
-    button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
-  }
-}
-
-followToggle.addEventListener('click', () => {
-  if (cameraMode === 'aerial') setCameraMode('follow');
-  else {
-    cameraMode = 'follow';
-    showStatus(playerMode === 'flight' ? 'FOLLOWING RIDER' : 'FOLLOWING DJINN', 700);
-    refreshLubiakModeButtons();
-  }
-});
-
-aerialToggle.addEventListener('click', () => {
-  setCameraMode(cameraMode === 'aerial' ? 'follow' : 'aerial');
-  refreshLubiakModeButtons();
-});
-
-rideToggle.addEventListener('click', () => {
-  if (!playerReady || !playerRoot || !broomRoot) {
-    showStatus('DA NOBLE Y2K NOT READY', 900);
-    return;
-  }
-  if (cameraMode === 'aerial') setCameraMode('follow');
-  if (playerMode === 'walk') beginMountTransition();
-  else if (playerMode === 'mounting') showStatus('DA NOBLE Y2K · MOUNTING', 700);
-  else if (playerMode === 'flight') showStatus('RIDE MODE · DA NOBLE Y2K', 700);
-  refreshLubiakModeButtons();
-});
-
-queueMicrotask(() => refreshLubiakModeButtons());
-
-let verticalTrigger = 0;
-let climbAttached = false;
-const verticalDock = document.createElement('div');
-verticalDock.id = 'lubiak-vertical-dock';
-verticalDock.style.cssText = 'position:fixed;right:max(146px,calc(env(safe-area-inset-right) + 146px));bottom:max(22px,env(safe-area-inset-bottom));z-index:72;display:flex;flex-direction:column;gap:7px;pointer-events:auto';
-function makeVerticalButton(label, value) {
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.textContent = label;
-  button.style.cssText = 'min-width:64px;border:1px solid #f6c28b88;border-radius:12px;padding:10px;background:#160b08e8;color:#ffe2bd;font:800 9px/1 system-ui;letter-spacing:.12em;box-shadow:0 5px 16px #0009;touch-action:none;cursor:pointer';
-  const engage = (event) => { verticalTrigger = value; button.setPointerCapture?.(event.pointerId); event.preventDefault(); };
-  const release = () => { if (verticalTrigger === value) verticalTrigger = 0; };
-  button.addEventListener('pointerdown', engage);
-  button.addEventListener('pointerup', release);
-  button.addEventListener('pointercancel', release);
-  button.addEventListener('lostpointercapture', release);
-  verticalDock.appendChild(button);
-  return button;
-}
-const verticalUpButton = makeVerticalButton('▲ UP', 1);
-const verticalDownButton = makeVerticalButton('▼ DOWN', -1);
-document.body.appendChild(verticalDock);
-function refreshVerticalControls() {
-  const enabled = playerReady && cameraMode === 'follow' && (playerMode === 'walk' || playerMode === 'mounting' || playerMode === 'flight');
-  verticalDock.style.opacity = enabled ? '.94' : '.30';
-  verticalDock.style.pointerEvents = enabled ? 'auto' : 'none';
-  if (!enabled) verticalTrigger = 0;
-}
-
-const joystickVector = new THREE.Vector2();
-let joystickPointer = null;
-function updateJoystick(event) {
-  const shell = joystick.querySelector('.sphere-shell');
-  const knob = joystick.querySelector('.sphere-knob');
-  const rect = shell.getBoundingClientRect();
-  const radius = rect.width * 0.34;
-  let x = event.clientX - (rect.left + rect.width / 2);
-  let y = event.clientY - (rect.top + rect.height / 2);
-  const length = Math.hypot(x, y);
-  if (length > radius) {
-    x *= radius / length;
-    y *= radius / length;
-  }
-  joystickVector.set(x / radius, -y / radius);
-  knob.style.transform = `translate(calc(-50% + ${x}px),calc(-50% + ${y}px))`;
-}
-
-joystick.addEventListener('pointerdown', (event) => {
-  joystickPointer = event.pointerId;
-  joystick.setPointerCapture(event.pointerId);
-  updateJoystick(event);
-  event.preventDefault();
-});
-joystick.addEventListener('pointermove', (event) => {
-  if (event.pointerId === joystickPointer) updateJoystick(event);
-});
-function releaseJoystick(event) {
-  if (event.pointerId !== joystickPointer) return;
-  joystickPointer = null;
-  joystickVector.set(0, 0);
-  joystick.querySelector('.sphere-knob').style.transform = 'translate(-50%,-50%)';
-}
-joystick.addEventListener('pointerup', releaseJoystick);
-joystick.addEventListener('pointercancel', releaseJoystick);
-
-const raycaster = new THREE.Raycaster();
-const pointerNdc = new THREE.Vector2();
-const dragonGateClicks = [];
-const DRAGON_GATE_MAX_GAP = 650;
-const DRAGON_GATE_MAX_TRAVEL = 72;
-
-function pointerHitsDragon(event) {
-  if (!dragonRoot || worldMode !== 'exterior') return false;
-  const rect = renderer.domElement.getBoundingClientRect();
-  pointerNdc.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-  pointerNdc.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-  raycaster.setFromCamera(pointerNdc, camera);
-  return raycaster.intersectObject(dragonRoot, true).length > 0;
-}
-
-function pointerHitsPlayer(event) {
-  if (!playerReady || !playerRoot) return false;
-  const rect = renderer.domElement.getBoundingClientRect();
-  pointerNdc.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-  pointerNdc.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-  raycaster.setFromCamera(pointerNdc, camera);
-  return raycaster.intersectObject(playerRoot, true).length > 0;
-}
-
-function beginMountTransition() {
-  if (!playerReady || playerMode !== 'walk') return;
-  playerMode = 'mounting';
-  mountTransition = 0;
-  walkBlend = 0;
-  playerVelocity.set(0, 0, 0);
-  if (playerVisual) playerVisual.position.y = playerVisualGroundOffsetY;
-  prepareBroomForRide();
-  showStatus('DA NOBLE Y2K · MOUNTING', 1100);
-}
-
-function handlePlayerGatePointer(event) {
-  if (!event.shiftKey || event.button !== 0 || !pointerHitsPlayer(event)) {
-    playerGateClicks.length = 0;
-    return false;
-  }
-  const now = performance.now();
-  while (playerGateClicks.length && now - playerGateClicks[0].t > PLAYER_GATE_MAX_GAP * 2) playerGateClicks.shift();
-  const first = playerGateClicks[0];
-  if (first && Math.hypot(event.clientX - first.x, event.clientY - first.y) > PLAYER_GATE_MAX_TRAVEL) playerGateClicks.length = 0;
-  playerGateClicks.push({ t: now, x: event.clientX, y: event.clientY });
-  if (playerGateClicks.length < 3) return true;
-  const a = playerGateClicks[playerGateClicks.length - 3];
-  const b = playerGateClicks[playerGateClicks.length - 2];
-  const c = playerGateClicks[playerGateClicks.length - 1];
-  if (b.t - a.t <= PLAYER_GATE_MAX_GAP && c.t - b.t <= PLAYER_GATE_MAX_GAP) {
-    playerGateClicks.length = 0;
-    beginMountTransition();
-  }
-  return true;
-}
-
-function handleDragonGatePointer(event) {
-  if (event.button !== 0 || !pointerHitsDragon(event)) {
-    dragonGateClicks.length = 0;
-    return false;
-  }
-  const now = performance.now();
-  while (dragonGateClicks.length && now - dragonGateClicks[0].t > DRAGON_GATE_MAX_GAP * 2) dragonGateClicks.shift();
-  const first = dragonGateClicks[0];
-  if (first && Math.hypot(event.clientX - first.x, event.clientY - first.y) > DRAGON_GATE_MAX_TRAVEL) dragonGateClicks.length = 0;
-  dragonGateClicks.push({ t: now, x: event.clientX, y: event.clientY });
-  if (dragonGateClicks.length < 3) return true;
-  const a = dragonGateClicks[dragonGateClicks.length - 3];
-  const b = dragonGateClicks[dragonGateClicks.length - 2];
-  const c = dragonGateClicks[dragonGateClicks.length - 1];
-  if (b.t - a.t <= DRAGON_GATE_MAX_GAP && c.t - b.t <= DRAGON_GATE_MAX_GAP) {
-    dragonGateClicks.length = 0;
-    showStatus('ENTERING SILMARI’LLION MEGAPOLE', 0);
-    setTimeout(openMegapoleInsideLubiak, 140);
-  }
-  return true;
-}
-
-const keys = new Set();
-function setCameraMode(nextMode) {
-  if (typeof refreshVerticalControls === 'function') refreshVerticalControls();
-  if (!playerReady || !playerRoot || nextMode === cameraMode) return;
-  if (nextMode === 'aerial') {
-    aerialSaved.followYaw = followYaw;
-    aerialSaved.followPitch = followPitch;
-    aerialSaved.followDistance = followDistance;
-    const dir = new THREE.Vector3();
-    camera.getWorldDirection(dir);
-    aerialYaw = Math.atan2(-dir.x, -dir.z);
-    aerialPitch = Math.asin(THREE.MathUtils.clamp(dir.y, -1, 1));
-    cameraMode = 'aerial';
-    aerialReturnBlend = 0;
-    showStatus('AERIAL OBSERVATION · V TO RETURN', 1200);
-  } else {
-    cameraMode = 'follow';
-    followYaw = aerialSaved.followYaw;
-    followPitch = aerialSaved.followPitch;
-    followDistance = aerialSaved.followDistance;
-    aerialReturnBlend = 1;
-    showStatus('RETURNING TO DJINN', 800);
-  }
-  if (typeof refreshLubiakModeButtons === 'function') refreshLubiakModeButtons();
-}
-
-addEventListener('keydown', (event) => {
-  const key = event.key.toLowerCase();
-  if (key === 'v' && !event.repeat) {
-    setCameraMode(cameraMode === 'follow' ? 'aerial' : 'follow');
-    event.preventDefault();
-    return;
-  }
-  if (key === 'r' && !event.repeat) {
-    if (cameraMode === 'aerial') setCameraMode('follow');
-    if (playerReady && broomRoot && playerMode === 'walk') beginMountTransition();
-    if (typeof refreshLubiakModeButtons === 'function') refreshLubiakModeButtons();
-    event.preventDefault();
-    return;
-  }
-  keys.add(key);
-});
-addEventListener('keyup', (event) => keys.delete(event.key.toLowerCase()));
-let drag = null;
-renderer.domElement.addEventListener('pointerdown', (event) => {
-  if ((cameraMode === 'follow' && handlePlayerGatePointer(event)) || handleDragonGatePointer(event)) {
-    event.preventDefault();
-    return;
-  }
-  drag = { x: event.clientX, y: event.clientY };
-  renderer.domElement.setPointerCapture(event.pointerId);
-});
-renderer.domElement.addEventListener('pointermove', (event) => {
-  if (!drag) return;
-  if (playerReady && cameraMode === 'aerial') {
-    aerialYaw -= (event.clientX - drag.x) * 0.0042;
-    aerialPitch -= (event.clientY - drag.y) * 0.0032;
-    aerialPitch = THREE.MathUtils.clamp(aerialPitch, -1.32, 1.20);
-  } else if (playerReady) {
-    followYaw -= (event.clientX - drag.x) * 0.0042;
-    followPitch -= (event.clientY - drag.y) * 0.0032;
-    followPitch = THREE.MathUtils.clamp(followPitch, -0.58, 0.38);
-  } else {
-    yaw -= (event.clientX - drag.x) * 0.0042;
-    pitch -= (event.clientY - drag.y) * 0.0032;
-    pitch = THREE.MathUtils.clamp(pitch, -0.78, 0.62);
-  }
-  drag = { x: event.clientX, y: event.clientY };
-});
-renderer.domElement.addEventListener('pointerup', () => { drag = null; });
-renderer.domElement.addEventListener('pointercancel', () => { drag = null; });
-renderer.domElement.addEventListener('wheel', (event) => {
-  if (playerReady && cameraMode === 'aerial') {
-    aerialSpeed = THREE.MathUtils.clamp(aerialSpeed + Math.sign(event.deltaY) * 2.2, 5, 48);
-  } else if (playerReady) {
-    followDistance = THREE.MathUtils.clamp(followDistance + Math.sign(event.deltaY) * 0.45, 2.8, 7.2);
-  } else {
-    const forward = new THREE.Vector3(Math.sin(yaw), 0, -Math.cos(yaw));
-    camera.position.addScaledVector(forward, -Math.sign(event.deltaY) * 1.7);
-  }
-}, { passive: true });
-
-const collisionRaycaster = new THREE.Raycaster();
-const collisionOrigins = [
-  new THREE.Vector3(0,0.28,0), new THREE.Vector3(0,0.92,0), new THREE.Vector3(0,1.48,0),
-];
-// LUBIAK_DJINN_UNFREEZE_FOLLOW_RIDE_V1
-// Navigation uses a compact rider capsule. The visually oversized broom is never
-// allowed to turn the complete rendered GLB bounds into a hard movement blocker.
-const PLAYER_COLLISION_RADIUS = 0.34;
-const BROOM_COLLISION_RADIUS = 0.28;
-const RIDE_COLLISION_RADIUS = 0.56;
-// LUBIAK_ENTRANCE_CLEARANCE_V1
-// Keep the complete djinn + DA NOBLE Y2K silhouette away from nearby mesh borders.
-const PLAYER_BORDER_CLEARANCE = 0.62;
-const BROOM_BORDER_CLEARANCE = 0.78;
-const clearanceDirections = Array.from({ length: 12 }, (_, i) => {
-  const a = (i / 12) * Math.PI * 2;
-  return new THREE.Vector3(Math.cos(a), 0, Math.sin(a));
-});
-
-function activeCollisionRoots() {
-  const roots=[];
-  if(worldMode==='exterior') {
-    if(exteriorRoot?.visible) roots.push(exteriorRoot);
-    if(fallbackRoot?.visible) roots.push(fallbackRoot);
-    if(dragonRoot?.visible) roots.push(dragonRoot);
-  } else if(worldMode==='circus' && circusInterior?.visible) {
-    roots.push(circusInterior);
-  }
-  return roots;
-}
-
-function findClimbableSurface() {
-  if (!playerRoot || worldMode !== 'exterior') return null;
-  const origin = playerRoot.position.clone().add(new THREE.Vector3(0, 0.95, 0));
-  let best = null;
-  for (const dir of clearanceDirections) {
-    collisionRaycaster.set(origin, dir);
-    collisionRaycaster.near = 0.06;
-    collisionRaycaster.far = 1.15;
-    for (const root of activeCollisionRoots()) {
-      const hits = collisionRaycaster.intersectObject(root, true);
-      for (const hit of hits) {
-        const normal = worldHitNormal(hit);
-        if (!normal || Math.abs(normal.y) > 0.58) continue;
-        if (!best || hit.distance < best.hit.distance) best = { hit, normal };
-        break;
-      }
-    }
-  }
-  return best;
-}
-
-function applyFollowClimb(dt) {
-  if (!verticalTrigger || cameraMode !== 'follow' || playerMode !== 'walk') { climbAttached = false; return false; }
-  const wall = findClimbableSurface();
-  if (!wall) { climbAttached = false; return false; }
-  climbAttached = true;
-  playerVelocity.set(0, 0, 0);
-  restoreStandingWalkPose();
-  const nextY = playerRoot.position.y + verticalTrigger * 3.1 * dt;
-  playerRoot.position.y = THREE.MathUtils.clamp(nextY, 0, movementBounds?.max.y ?? 24);
-  playerBaseY = playerRoot.position.y;
-  const n = wall.normal.clone(); n.y = 0;
-  if (n.lengthSq() > 1e-6) {
-    n.normalize();
-    const hold = wall.hit.point.clone().addScaledVector(n, 0.46);
-    playerRoot.position.x += (hold.x - playerRoot.position.x) * Math.min(1, dt * 14);
-    playerRoot.position.z += (hold.z - playerRoot.position.z) * Math.min(1, dt * 14);
-    const face = Math.atan2(-n.x, -n.z);
-    playerHeading += (face - playerHeading) * Math.min(1, dt * 10);
-    playerRoot.rotation.y = playerHeading;
-  }
-  return true;
-}
-
-function rayBlocked(origin, direction, distance) {
-  if(direction.lengthSq()<1e-8) return false;
-  collisionRaycaster.set(origin, direction.clone().normalize());
-  collisionRaycaster.near=0;
-  collisionRaycaster.far=distance;
-  for(const root of activeCollisionRoots()) {
-    const hits=collisionRaycaster.intersectObject(root,true);
-    if(hits.some(h=>h.distance<=distance)) return true;
-  }
-  return false;
-}
-
-function hasMeshClearance(point, includeBroom=false) {
-  const radius = PLAYER_BORDER_CLEARANCE + (includeBroom ? BROOM_BORDER_CLEARANCE : 0);
-  for (const h of [0.24, 0.82, 1.36]) {
-    const origin = point.clone().add(new THREE.Vector3(0, h, 0));
-    for (const dir of clearanceDirections) {
-      if (rayBlocked(origin, dir, radius)) return false;
-    }
-  }
-  return true;
 }
 
 function findSafeEntranceSpawn(anchor, includeBroom=true) {
