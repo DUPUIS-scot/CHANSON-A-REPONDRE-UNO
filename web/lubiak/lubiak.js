@@ -96,6 +96,43 @@ let aerialPitch = -0.28;
 let aerialSpeed = 18;
 let aerialReturnBlend = 0;
 const aerialSaved = { followYaw: 0, followPitch: -0.10, followDistance: 4.35 };
+
+// LUBIAK_INPUT_AUTHORITY_REPAIR_V1
+const keys = new Set();
+function setCameraMode(nextMode) {
+  if (!playerReady || !playerRoot || nextMode === cameraMode) return;
+  if (nextMode === 'aerial') {
+    aerialSaved.followYaw = followYaw;
+    aerialSaved.followPitch = followPitch;
+    aerialSaved.followDistance = followDistance;
+    const dir = new THREE.Vector3();
+    camera.getWorldDirection(dir);
+    aerialYaw = Math.atan2(-dir.x, -dir.z);
+    aerialPitch = Math.asin(THREE.MathUtils.clamp(dir.y, -1, 1));
+    cameraMode = 'aerial';
+    aerialReturnBlend = 0;
+    showStatus('AERIAL OBSERVATION · V TO RETURN', 1200);
+  } else {
+    cameraMode = 'follow';
+    followYaw = aerialSaved.followYaw;
+    followPitch = aerialSaved.followPitch;
+    followDistance = aerialSaved.followDistance;
+    aerialReturnBlend = 1;
+    showStatus('RETURNING TO DJINN', 800);
+  }
+  const toggle = document.querySelector('#lubiak-aerial-toggle');
+  if (toggle) toggle.textContent = cameraMode === 'aerial' ? 'RETURN' : 'AERIAL';
+}
+addEventListener('keydown', (event) => {
+  const key = event.key.toLowerCase();
+  if (key === 'v' && !event.repeat) {
+    setCameraMode(cameraMode === 'follow' ? 'aerial' : 'follow');
+    event.preventDefault();
+    return;
+  }
+  keys.add(key);
+});
+addEventListener('keyup', (event) => keys.delete(event.key.toLowerCase()));
 let walkPhase = 0;
 let walkBlend = 0;
 let mountTransition = 0;
