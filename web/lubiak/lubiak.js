@@ -619,6 +619,16 @@ async function installCircusSet() {
   return circusSetPromise;
 }
 
+// LUBIAK_CIRCUS_EXIT_BUTTON_V1
+const circusExitButton=document.createElement('button');
+circusExitButton.id='lubiak-circus-exit';
+circusExitButton.type='button';
+circusExitButton.textContent='EXIT CIRCUS';
+circusExitButton.style.cssText='position:fixed;right:max(18px,env(safe-area-inset-right));top:max(66px,calc(env(safe-area-inset-top) + 66px));z-index:120;display:none;border:1px solid #f0d7ad99;background:#080504e8;color:#f0d7ad;padding:11px 14px;border-radius:3px;font:700 10px/1 ui-monospace;letter-spacing:.12em;cursor:pointer;touch-action:manipulation';
+document.body.appendChild(circusExitButton);
+circusExitButton.addEventListener('click',(event)=>{event.stopPropagation();if(worldMode==='circus'){transitionLockUntil=0;exitCircus();}});
+function syncCircusExitButton(){circusExitButton.style.display=worldMode==='circus'?'block':'none';}
+
 function enterCircus() {
   if (worldMode !== 'exterior' || circusTransitioning || performance.now() < transitionLockUntil) return;
   circusTransitioning = true;
@@ -636,6 +646,7 @@ function enterCircus() {
 
   setTimeout(() => {
     worldMode = 'circus';
+    syncCircusExitButton();
     setExteriorVisibility(false);
     circusInterior.visible = true;
     if (playerRoot) playerRoot.visible = true;
@@ -679,6 +690,7 @@ function enterCircus() {
 function exitCircus() {
   if (worldMode !== 'circus' || performance.now() < transitionLockUntil) return;
   worldMode = 'exterior';
+  syncCircusExitButton();
   transitionLockUntil = performance.now() + 1400;
   if (circusInterior) circusInterior.visible = false;
   setCircusMediaVisible(false);
