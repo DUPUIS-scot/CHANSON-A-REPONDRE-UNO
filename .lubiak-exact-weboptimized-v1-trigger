@@ -1,4 +1,4 @@
-trigger: 2026-09-03T12:52:00+01:00
+trigger: 2026-09-03T12:54:00+01:00
 scope: terrain plus ordered lubiak-assets modules
-run: 7
+run: 8
 clean: Freak Street -> Avenue -> Roof Top -> Palace -> Circus -> District 0 -> Card Room -> Dragon Lair
