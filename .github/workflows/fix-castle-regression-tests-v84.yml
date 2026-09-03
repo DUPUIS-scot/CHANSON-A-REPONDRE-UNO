@@ -1,0 +1,30 @@
+name: Fix Castle regression tests v84
+on:
+  push:
+    paths: ['.github/run-fix-castle-regression-tests-v84.txt']
+  workflow_dispatch:
+permissions: {contents: write}
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: main}
+      - run: node scripts/fix-castle-regression-tests-v84.mjs
+      - name: Validate targeted tests
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter test --no-pub test/castle_loading_performance_test.dart test/castle_jester_gatekeeper_integration_test.dart
+      - name: Commit and request deploy
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add test/castle_loading_performance_test.dart test/castle_jester_gatekeeper_integration_test.dart
+          if ! git diff --cached --quiet; then git commit -m 'Align Castle regression tests with exact-jester v84'; fi
+          printf 'deploy %s\n' "$(date -u +%FT%TZ)" > .github/deploy-now.txt
+          git add .github/deploy-now.txt
+          git commit -m 'Deploy after Castle regression fix'
+          git push
