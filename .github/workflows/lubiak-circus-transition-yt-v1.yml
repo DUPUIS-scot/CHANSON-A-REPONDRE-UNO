@@ -1,0 +1,30 @@
+name: LUBIAK circus transition and YT restore
+on:
+  push:
+    paths: ['.github/run-lubiak-circus-transition-yt-v1.txt']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: main}
+      - run: node scripts/restore-lubiak-circus-transition-yt-v1.mjs
+      - name: Validate
+        run: |
+          node --check web/lubiak/lubiak.js
+          grep -q 'LUBIAK_CIRCUS_TRANSITION_RESTORE_V2' web/lubiak/lubiak.js
+          grep -q 'LUBIAK_CIRCUS_YT_9X16_V2' web/lubiak/index.html
+          grep -q 'aspect-ratio:9/16' web/lubiak/index.html
+      - name: Commit and request deploy
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add web/lubiak/lubiak.js web/lubiak/index.html
+          if ! git diff --cached --quiet; then git commit -m 'Restore LUBIAK circus transition and 9x16 viewer'; fi
+          printf 'deploy %s\n' "$(date -u +%FT%TZ)" > .github/deploy-now.txt
+          git add .github/deploy-now.txt
+          git commit -m 'Deploy LUBIAK circus restore'
+          git push
