@@ -17,9 +17,30 @@ function safeDiagnosticValue(value) {
   return /^[A-Za-z0-9._:-]+$/.test(normalized) ? normalized : null;
 }
 
+function createLimiter(limit) {
+  return rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit,
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler(request, response) {
+      response.locals.errorCode = 'RATE_LIMITED';
+      response.status(429).json({
+        error: {
+          code: 'RATE_LIMITED',
+          message: 'Too many requests. Try again later.',
+          requestId: request.requestId,
+        },
+      });
+    },
+  });
+}
+
 export function createApp(environment, dependencies = {}) {
   const app = express();
   const startedAt = new Date().toISOString();
+  const production = environment.nodeEnvironment === 'production';
+  const revision = safeDiagnosticValue(process.env.RENDER_GIT_COMMIT)?.slice(0, 12) || null;
   const diagnostics = {
     lastAiSuccess: null,
     lastAiFailure: null,
@@ -73,6 +94,7 @@ export function createApp(environment, dependencies = {}) {
   app.get('/health', (_request, response) => response.json({
     status: 'ok',
     service: 'chanson-a-repondre-uno-backend',
+    revision,
   }));
   app.get('/ready', (_request, response) => response.json({
     status: 'ready',
@@ -83,51 +105,46 @@ export function createApp(environment, dependencies = {}) {
       anonymousAiProvider: 'gemini',
     },
   }));
-  app.get('/diagnostics', (_request, response) => response.json({
-    status: 'ok',
-    service: 'chanson-a-repondre-uno-backend',
-    runtime: {
-      node: process.version,
-      startedAt,
-      uptimeSeconds: Math.floor(process.uptime()),
-      renderCommit: safeDiagnosticValue(process.env.RENDER_GIT_COMMIT)?.slice(0, 12) || null,
-    },
-    configuration: {
-      nodeEnvironment: environment.nodeEnvironment,
-      geminiConfigured: Boolean(environment.geminiApiKey),
-      geminiModel: environment.geminiModel,
-      openAiByokSupported: true,
-      openAiConfigured: Boolean(environment.openAiApiKey),
-      openAiModel: environment.openaiModel,
-      supabaseConfigured: Boolean(
-        environment.supabaseUrl &&
-        environment.supabasePublishableKey &&
-        environment.supabaseServiceRoleKey,
-      ),
-      allowedOriginsCount: environment.allowedOrigins.length,
-      requestTimeoutMs: environment.requestTimeoutMs,
-      maxRequestBodyBytes: environment.maxRequestBodyBytes,
-    },
-    ai: diagnostics,
-  }));
-
-  const aiLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    limit: 20,
-    standardHeaders: true,
-    legacyHeaders: false,
-    handler(request, response) {
-      response.locals.errorCode = 'RATE_LIMITED';
-      response.status(429).json({
-        error: {
-          code: 'RATE_LIMITED',
-          message: 'Too many requests. Try again later.',
-          requestId: request.requestId,
-        },
+  app.get('/diagnostics', (_request, response) => {
+    if (production) {
+      return response.json({
+        status: 'ok',
+        service: 'chanson-a-repondre-uno-backend',
+        revision,
       });
-    },
+    }
+    return response.json({
+      status: 'ok',
+      service: 'chanson-a-repondre-uno-backend',
+      runtime: {
+        node: process.version,
+        startedAt,
+        uptimeSeconds: Math.floor(process.uptime()),
+        renderCommit: revision,
+      },
+      configuration: {
+        nodeEnvironment: environment.nodeEnvironment,
+        geminiConfigured: Boolean(environment.geminiApiKey),
+        geminiModel: environment.geminiModel,
+        openAiByokSupported: true,
+        openAiConfigured: Boolean(environment.openAiApiKey),
+        openAiModel: environment.openaiModel,
+        supabaseConfigured: Boolean(
+          environment.supabaseUrl &&
+          environment.supabasePublishableKey &&
+          environment.supabaseServiceRoleKey,
+        ),
+        allowedOriginsCount: environment.allowedOrigins.length,
+        requestTimeoutMs: environment.requestTimeoutMs,
+        maxRequestBodyBytes: environment.maxRequestBodyBytes,
+      },
+      ai: diagnostics,
+    });
   });
-  app.use(createProfileRouter(environment, dependencies));
+
+  const aiLimiter = createLimiter(20);
+  const profileLimiter = createLimiter(60);
+  app.use(createProfileRouter(environment, { ...dependencies, profileLimiter }));
   app.use(createAiRouter(environment, { ...dependencies, aiLimiter }));
 
   app.use((_request, _response, next) => {
