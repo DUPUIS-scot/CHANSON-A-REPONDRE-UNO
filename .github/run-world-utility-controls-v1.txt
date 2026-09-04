@@ -1,0 +1,2 @@
+run: 2026-09-04T08:00:00+01:00
+scope: unify HOME / SHARE / FULL SCREEN utility controls across LUBIAK and MEGAPOLE using main-screen black-gold circular design
