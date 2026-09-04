@@ -1,8 +1,10 @@
 (function(){
   'use strict';
   const SHARE_BASE='https://www.chanson-a-repondre-uno.scot/share/enochian/';
-  const SUPABASE_URL='https://dedwajzurhqrnyzrxouo.supabase.co';
-  const SUPABASE_KEY='sb_publishable_GY7s6hyG5qDHmQL1zHy1xA_y-67jVKZ';
+  const runtime=window.__UNO_RUNTIME_CONFIG__||{};
+  const productionHost=location.hostname==='www.chanson-a-repondre-uno.scot'||location.hostname==='chanson-a-repondre-uno.scot';
+  const SUPABASE_URL=runtime.supabaseUrl||(productionHost?'https://dedwajzurhqrnyzrxouo.supabase.co':'');
+  const SUPABASE_KEY=runtime.supabasePublishableKey||(productionHost?'sb_publishable_GY7s6hyG5qDHmQL1zHy1xA_y-67jVKZ':'');
   const WINDOW_MS=15000,SAMPLE_MS=250;
   const history=[];
   function ready(){return typeof a!=='undefined'&&a&&typeof idx!=='undefined'&&typeof tracks!=='undefined';}
@@ -27,6 +29,7 @@
     }catch(_){return ''}
   }
   async function incrementShareCount(){
+    if(!SUPABASE_URL||!SUPABASE_KEY)return;
     try{await fetch(SUPABASE_URL+'/rest/v1/rpc/record_social_preview_share',{method:'POST',headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY,'Content-Type':'application/json'},body:JSON.stringify({p_share_kind:'enochian_15s_fx'})});}catch(_){}
   }
   function makeUrl(){
