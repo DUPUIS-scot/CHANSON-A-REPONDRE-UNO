@@ -598,16 +598,37 @@ function repairLubiakStaticWorld(){
   worldContractScanned = true;
 }
 
-// In aerial mode the dragon remains a triple-click Megapole gateway. Walk mode keeps the existing authored handler.
-const aerialDragonClicks=[];
+// LUBIAK_MEGAPOLE_GATEWAY_V2
+// The dragon is an active Megapole passage in FOLLOW, RIDE and AERIAL.
+// Three deliberate taps/clicks on the dragon within 1.1s open Megapole inside LUBIAK.
+const megapoleDragonClicks=[];
 renderer.domElement.addEventListener('pointerup',(event)=>{
-  if(playerMode==='walk' || !dragonRoot || worldMode!=='exterior') return;
+  if(!dragonRoot || worldMode!=='exterior') return;
+  if(document.querySelector('#megapole-portal')?.classList.contains('is-open')) return;
+  if(typeof lookTravel==='number' && lookTravel>8) return;
   const rect=renderer.domElement.getBoundingClientRect();
-  const ndc=new THREE.Vector2(((event.clientX-rect.left)/rect.width)*2-1,-((event.clientY-rect.top)/rect.height)*2+1);
-  const ray=new THREE.Raycaster(); ray.setFromCamera(ndc,camera);
+  if(rect.width<=0 || rect.height<=0) return;
+  const pointer=new THREE.Vector2(
+    ((event.clientX-rect.left)/rect.width)*2-1,
+    -(((event.clientY-rect.top)/rect.height)*2-1),
+  );
+  const ray=new THREE.Raycaster();
+  ray.setFromCamera(pointer,camera);
   if(!ray.intersectObject(dragonRoot,true).length) return;
-  const now=performance.now(); aerialDragonClicks.push(now); while(aerialDragonClicks.length && now-aerialDragonClicks[0]>900) aerialDragonClicks.shift();
-  if(aerialDragonClicks.length>=3){ aerialDragonClicks.length=0; openMegapoleInsideLubiak(); }
+
+  const now=performance.now();
+  megapoleDragonClicks.push(now);
+  while(megapoleDragonClicks.length && now-megapoleDragonClicks[0]>1100) megapoleDragonClicks.shift();
+
+  if(megapoleDragonClicks.length>=3){
+    megapoleDragonClicks.length=0;
+    showStatus('ENTERING SILMARI’LLION — MEGAPOLE',900);
+    openMegapoleInsideLubiak();
+    return;
+  }
+
+  const left=3-megapoleDragonClicks.length;
+  showStatus('DRAGON GATE · '+left+' MORE '+(left===1?'TAP':'TAPS')+' TO MEGAPOLE',650);
 },true);
 
 function openMegapoleInsideLubiak() {
