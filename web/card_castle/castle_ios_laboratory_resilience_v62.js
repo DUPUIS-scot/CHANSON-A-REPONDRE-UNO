@@ -6,6 +6,9 @@ const isIOS = /iP(?:hone|ad|od)/.test(navigator.userAgent || '') ||
 
 if (isIOS && !window.__castleIOSLaboratoryResilienceV62Installed) {
   window.__castleIOSLaboratoryResilienceV62Installed = true;
+  // iOS owns its passage/navigation layer. Prevent the generic legacy layer
+  // from binding a second competing pointer/raycast authority later.
+  window.__castlePlatformStabilityV54Installed = true;
   const LABORATORY_URL = new URL('../assets/assets/models/textured-glb-comparison/laboratory_interior_book_videos.glb', document.baseURI).href;
   const LABORATORY_TARGET_SPAN = 50;
   const FETCH_TIMEOUT_MS = 16000;
