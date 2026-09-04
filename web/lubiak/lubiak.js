@@ -308,9 +308,10 @@ function decodeLubiakMoment(value){
     return state&&state.v===1?state:null;
   }catch{return null;}
 }
+// LUBIAK_SHARE_SOCIAL_PREVIEW_V5
+// Share a crawler-friendly preview page. Humans are redirected from that page to the exact saved moment.
 function buildLubiakMomentUrl(state=currentLubiakMomentState()){
-  const url=new URL(location.href);
-  url.hash='';
+  const url=new URL('/lubiak/share/',location.origin);
   url.searchParams.set('moment',encodeLubiakMoment(state));
   return url.toString();
 }
