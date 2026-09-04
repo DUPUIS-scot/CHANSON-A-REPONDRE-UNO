@@ -412,6 +412,42 @@ shareCaptureButton.addEventListener('click',shareLubiakCapture);
 window.__LUBIAK_SHARE_CAPTURE__=shareLubiakCapture;
 window.__LUBIAK_MOMENT_URL__=buildLubiakMomentUrl;
 
+// LUBIAK_SCENE_CENTER_LOCK_V1
+// Touch/mouse look is an orbit around the currently centred subject. The authored LUBIAK world is never translated or rotated by screen gestures.
+const centerLockFocus=new THREE.Vector3();
+let centerLockRadius=12;
+let centerLockActive=false;
+function currentCenterLockAngles(){
+  if(cameraMode==='aerial') return {yaw:aerialYaw,pitch:aerialPitch};
+  if(playerReady&&playerRoot) return {yaw:followYaw,pitch:followPitch};
+  return {yaw,pitch};
+}
+function captureCenterLockFocus(){
+  if(cameraMode==='follow'&&playerReady&&playerRoot){
+    centerLockFocus.copy(playerRoot.position).add(new THREE.Vector3(0,playerMode==='flight'?1.40:1.18,0));
+  }else{
+    const dir=new THREE.Vector3();camera.getWorldDirection(dir);
+    let distance=18;
+    if(movementBounds){
+      const size=movementBounds.getSize(new THREE.Vector3()).length();
+      distance=THREE.MathUtils.clamp(size*0.16,10,36);
+    }
+    centerLockFocus.copy(camera.position).addScaledVector(dir,distance);
+  }
+  centerLockRadius=THREE.MathUtils.clamp(camera.position.distanceTo(centerLockFocus),2.5,120);
+  centerLockActive=true;
+}
+function applyCenterLockedOrbit(){
+  if(!centerLockActive)return;
+  const a=currentCenterLockAngles();
+  const cp=Math.cos(a.pitch);
+  camera.position.set(
+    centerLockFocus.x+Math.sin(a.yaw)*cp*centerLockRadius,
+    centerLockFocus.y+Math.sin(a.pitch)*centerLockRadius,
+    centerLockFocus.z+Math.cos(a.yaw)*cp*centerLockRadius
+  );
+  camera.lookAt(centerLockFocus);
+}
 // LUBIAK_DIRECT_LOOK_V1
 // Drag directly on the WebGL scene to look with mouse or touch. UI overlays keep their own pointer authority.
 let lookPointerId=null;
@@ -425,6 +461,7 @@ renderer.domElement.style.touchAction='none';
 renderer.domElement.addEventListener('pointerdown',(event)=>{
   if(lookBlockedTarget(event.target) || event.button>0) return;
   lookPointerId=event.pointerId; lookLastX=event.clientX; lookLastY=event.clientY; lookTravel=0;
+  captureCenterLockFocus();
   renderer.domElement.setPointerCapture?.(event.pointerId);
 },{passive:true});
 renderer.domElement.addEventListener('pointermove',(event)=>{
@@ -439,9 +476,10 @@ renderer.domElement.addEventListener('pointermove',(event)=>{
     followPitch=THREE.MathUtils.clamp(followPitch-dy*sy,-0.92,0.58);
     if(!playerReady){ yaw-=dx*sx; pitch=THREE.MathUtils.clamp(pitch-dy*sy,-1.15,1.15); }
   }
+  applyCenterLockedOrbit();
   if(lookTravel>3) event.preventDefault();
 },{passive:false});
-function endDirectLook(event){ if(event.pointerId===lookPointerId) lookPointerId=null; }
+function endDirectLook(event){ if(event.pointerId===lookPointerId){lookPointerId=null;centerLockActive=false;} }
 renderer.domElement.addEventListener('pointerup',endDirectLook);
 renderer.domElement.addEventListener('pointercancel',endDirectLook);
 
@@ -463,6 +501,7 @@ renderer.domElement.addEventListener('pointerdown',(event)=>{
   orbitTouches.set(event.pointerId,{x:event.clientX,y:event.clientY});
   if(orbitTouches.size>=2){
     lookPointerId=null;
+    centerLockActive=false;
     orbitPinchDistance=orbitTouchDistance();
   }
 });
