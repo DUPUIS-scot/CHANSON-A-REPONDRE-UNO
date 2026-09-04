@@ -460,6 +460,9 @@ class _CreditsBody extends StatelessWidget {
                   const _CreditLine(
                     label: '3D / Interactive Environments', value: 'DUPUIS*'),
                   const _CreditLine(
+                    label: 'AI 3D generation / modelling',
+                    value: '3D AI Studio — 3daistudio.com'),
+                  const _CreditLine(
                     label: 'AI-assisted development & creative tools',
                     value:
                         'OpenAI / ChatGPT and other credited tools where applicable'),
