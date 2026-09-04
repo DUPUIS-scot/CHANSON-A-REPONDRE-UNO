@@ -162,9 +162,9 @@ verticalButton('▲ UP',1);verticalButton('▼ DOWN',-1);document.body.appendChi
 
 const modeDock=document.createElement('div');modeDock.id='lubiak-mode-dock';modeDock.style.cssText='position:fixed;right:max(14px,env(safe-area-inset-right));bottom:max(178px,calc(env(safe-area-inset-bottom) + 178px));z-index:82;display:flex;gap:6px;padding:5px;border:1px solid #f6c28b55;border-radius:999px;background:#100806dd;white-space:nowrap';
 function modeButton(label,fn){const b=document.createElement('button');b.textContent=label;b.style.cssText='border:1px solid #f6c28b66;border-radius:999px;padding:8px 10px;background:#160b08cc;color:#ffe2bd;font:700 9px system-ui;letter-spacing:.08em';b.addEventListener('click',fn);modeDock.appendChild(b);return b;}
-const followToggle=modeButton('FOLLOW',()=>{if(playerMode!=='walk'){playerMode='walk';restoreStandingWalkPose();}setCameraMode('follow');refreshLubiakModeButtons()});
+const followToggle=modeButton('FOLLOW',()=>{if(!playerReady||!playerRoot)return;if(playerMode!=='walk'){playerMode='walk';restoreStandingWalkPose();}else if(broomRoot&&typeof recoverBroomCarryIfNeeded==='function')recoverBroomCarryIfNeeded();if(typeof revealDjinnAndBroom==='function')revealDjinnAndBroom();setCameraMode('follow');followDistance=Math.max(followDistance,5.15);updateFollowCamera(1);refreshLubiakModeButtons()});
 const aerialToggle=modeButton('AERIAL',()=>{setCameraMode('aerial');refreshLubiakModeButtons()});
-const rideToggle=modeButton('RIDE',()=>{if(!playerReady||!broomRoot)return;if(playerMode==='walk'){prepareBroomForRide();mountTransition=0;playerMode='mounting';}setCameraMode('follow');refreshLubiakModeButtons()});
+const rideToggle=modeButton('RIDE',()=>{if(!playerReady||!playerRoot||!broomRoot)return;if(typeof forceActorTreeVisible==='function'){forceActorTreeVisible(playerRoot);forceActorTreeVisible(broomRoot);}if(playerMode==='walk'){if(typeof recoverBroomCarryIfNeeded==='function')recoverBroomCarryIfNeeded();walkBlend=0;prepareBroomForRide();mountTransition=0;playerMode='mounting';}setCameraMode('follow');followDistance=Math.max(followDistance,5.15);updateFollowCamera(1);refreshLubiakModeButtons()});
 document.body.appendChild(modeDock);
 function refreshLubiakModeButtons(){const riding=playerMode==='mounting'||playerMode==='flight';const active=cameraMode==='aerial'?aerialToggle:riding?rideToggle:followToggle;for(const b of [followToggle,aerialToggle,rideToggle])b.style.opacity=b===active?'1':'.65';verticalDock.style.display=(riding||cameraMode==='aerial')?'flex':'none';}
 function refreshVerticalControls(){refreshLubiakModeButtons();}
@@ -454,23 +454,33 @@ function currentCenterLockAngles(){
   if(playerReady&&playerRoot) return {yaw:followYaw,pitch:followPitch};
   return {yaw,pitch};
 }
-function captureCenterLockFocus(){
+function centerLockWorldFocus(out){
+  // LUBIAK_CENTERED_DJINN_FOLLOW_RIDE_V4
+  // Drag is orientation only. It never pans/translates the authored LUBIAK scene.
   if(cameraMode==='follow'&&playerReady&&playerRoot){
-    centerLockFocus.copy(playerRoot.position).add(new THREE.Vector3(0,playerMode==='flight'?1.40:1.18,0));
-  }else{
-    const dir=new THREE.Vector3();camera.getWorldDirection(dir);
-    let distance=18;
-    if(movementBounds){
-      const size=movementBounds.getSize(new THREE.Vector3()).length();
-      distance=THREE.MathUtils.clamp(size*0.16,10,36);
-    }
-    centerLockFocus.copy(camera.position).addScaledVector(dir,distance);
+    return out.copy(playerRoot.position).add(new THREE.Vector3(0,playerMode==='flight'||playerMode==='mounting'?1.40:1.18,0));
   }
-  centerLockRadius=THREE.MathUtils.clamp(camera.position.distanceTo(centerLockFocus),2.5,120);
+  const candidates=[worldMode==='circus'?circusSetRoot:null,worldMode==='circus'?circusInterior:null,exteriorRoot];
+  for(const root of candidates){
+    if(!root) continue;
+    try{
+      const box=new THREE.Box3().setFromObject(root);
+      if(!box.isEmpty()) return box.getCenter(out);
+    }catch(_){ }
+  }
+  if(movementBounds&&!movementBounds.isEmpty()) return movementBounds.getCenter(out);
+  const dir=new THREE.Vector3();camera.getWorldDirection(dir);
+  return out.copy(camera.position).addScaledVector(dir,18);
+}
+function captureCenterLockFocus(){
+  centerLockWorldFocus(centerLockFocus);
+  centerLockRadius=THREE.MathUtils.clamp(camera.position.distanceTo(centerLockFocus),2.5,160);
   centerLockActive=true;
 }
 function applyCenterLockedOrbit(){
   if(!centerLockActive)return;
+  // Re-pin the live subject while dragging so movement/animation cannot pull it off-centre.
+  centerLockWorldFocus(centerLockFocus);
   const a=currentCenterLockAngles();
   const cp=Math.cos(a.pitch);
   camera.position.set(
@@ -2218,6 +2228,7 @@ function animate() {
   updateCircusTransition();
   enforceLubiakWorldContract();
   repairLubiakStaticWorld();
+  if(centerLockActive) applyCenterLockedOrbit();
   if(typeof refreshRideSignalTray==='function') refreshRideSignalTray();
   renderer.render(scene, camera);
 }
