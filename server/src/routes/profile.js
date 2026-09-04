@@ -9,18 +9,19 @@ export function createProfileRouter(environment, dependencies = {}) {
     environment,
     dependencies.authClient,
   );
+  const profileLimiter = dependencies.profileLimiter || ((_request, _response, next) => next());
   const credentials =
     dependencies.userOpenAiService ||
     new UserOpenAiService(environment, dependencies);
 
-  router.get('/api/profile/openai-status', authenticate, async (request, response, next) => {
+  router.get('/api/profile/openai-status', profileLimiter, authenticate, async (request, response, next) => {
     try {
       response.json(await credentials.status(request.authUser.id));
     } catch (error) {
       next(error);
     }
   });
-  router.post('/api/profile/openai-credential', authenticate, async (request, response, next) => {
+  router.post('/api/profile/openai-credential', profileLimiter, authenticate, async (request, response, next) => {
     try {
       response.status(201).json(
         await credentials.connect(request.authUser.id, request.body?.apiKey),
@@ -29,7 +30,7 @@ export function createProfileRouter(environment, dependencies = {}) {
       next(error);
     }
   });
-  router.put('/api/profile/openai-credential', authenticate, async (request, response, next) => {
+  router.put('/api/profile/openai-credential', profileLimiter, authenticate, async (request, response, next) => {
     try {
       response.json(
         await credentials.connect(
@@ -42,14 +43,14 @@ export function createProfileRouter(environment, dependencies = {}) {
       next(error);
     }
   });
-  router.post('/api/profile/openai-test', authenticate, async (request, response, next) => {
+  router.post('/api/profile/openai-test', profileLimiter, authenticate, async (request, response, next) => {
     try {
       response.json(await credentials.test(request.authUser.id));
     } catch (error) {
       next(error);
     }
   });
-  router.delete('/api/profile/openai-credential', authenticate, async (request, response, next) => {
+  router.delete('/api/profile/openai-credential', profileLimiter, authenticate, async (request, response, next) => {
     try {
       await credentials.disconnect(request.authUser.id);
       response.status(204).end();
