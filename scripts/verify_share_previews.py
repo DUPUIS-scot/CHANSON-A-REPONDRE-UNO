@@ -13,6 +13,16 @@ PREVIEWS = ROOT / 'assets/share-previews'
 SHARES = ROOT / 'share'
 PUBLIC_BASE = 'https://www.chanson-a-repondre-uno.scot'
 IMAGE_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.webp'}
+UNIFORM_SHARE_SCRIPT = '/social-share-uniform-v1.js?v=20260904-v1'
+DEFAULT_PREVIEW = f'{PUBLIC_BASE}/social/chanson-a-repondre-uno-share.png'
+PUBLIC_PAGES = {
+    'index.html': f'{PUBLIC_BASE}/',
+    '404.html': f'{PUBLIC_BASE}/',
+    'lubiak/index.html': f'{PUBLIC_BASE}/lubiak/',
+    'megapole/index.html': f'{PUBLIC_BASE}/megapole/',
+    'enochian-terminal/index.html': f'{PUBLIC_BASE}/enochian-terminal/',
+    'enochian-terminal-live/index.html': f'{PUBLIC_BASE}/enochian-terminal/',
+}
 
 
 def read_json(path: Path) -> dict:
@@ -109,6 +119,36 @@ def verify_page(slug: str) -> None:
         raise SystemExit(f'Missing app redirect for {slug}')
 
 
+def verify_uniform_share_contract() -> None:
+    runtime = ROOT / 'social-share-uniform-v1.js'
+    if not runtime.is_file():
+        raise SystemExit(f'Missing uniform share runtime: {runtime}')
+    source = runtime.read_text(encoding='utf-8')
+    for marker in ('minimalUrl', 'PREVIEW_URL', 'navigator', 'share'):
+        if marker not in source:
+            raise SystemExit(f'Incomplete uniform share runtime: missing {marker}')
+
+    for rel, canonical_url in PUBLIC_PAGES.items():
+        path = ROOT / rel
+        if not path.is_file():
+            raise SystemExit(f'Missing public page for social contract: {path}')
+        html = path.read_text(encoding='utf-8')
+        required = (
+            UNIFORM_SHARE_SCRIPT,
+            f'<link rel="canonical" href="{canonical_url}">',
+            f'property="og:url" content="{canonical_url}"',
+            f'property="og:image" content="{DEFAULT_PREVIEW}"',
+            f'name="twitter:image" content="{DEFAULT_PREVIEW}"',
+        )
+        missing = [marker for marker in required if marker not in html]
+        if missing:
+            raise SystemExit(f'Incomplete uniform social contract for {rel}: {missing[0]}')
+
+    enoch_runtime = ROOT / 'enochian-test/live-copy.html'
+    if enoch_runtime.is_file() and UNIFORM_SHARE_SCRIPT not in enoch_runtime.read_text(encoding='utf-8'):
+        raise SystemExit('ENOCHIAN inner runtime is missing the uniform share contract')
+
+
 def main() -> None:
     expected = card_slugs()
     actual = {path.stem for path in PREVIEWS.glob('*.jpg')}
@@ -121,7 +161,8 @@ def main() -> None:
     for slug in sorted(expected):
         verify_preview(slug)
         verify_page(slug)
-    print(f'Validated {len(expected)} social preview images and share pages.')
+    verify_uniform_share_contract()
+    print(f'Validated {len(expected)} social preview images, share pages, and uniform URL sharing.')
 
 
 if __name__ == '__main__':
