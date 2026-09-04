@@ -1,0 +1,10 @@
+import fs from 'node:fs';
+const path='lib/screens/credits_screen.dart';
+let s=fs.readFileSync(path,'utf8');
+if(s.includes('3D AI Studio — 3daistudio.com')) process.exit(0);
+const needle="                  const _CreditLine(\n                    label: '3D / Interactive Environments', value: 'DUPUIS*'),";
+if(!s.includes(needle)) throw new Error('credits 3D line anchor missing');
+const insert=needle+"\n                  const _CreditLine(\n                    label: 'AI 3D generation / modelling',\n                    value: '3D AI Studio — 3daistudio.com'),";
+s=s.replace(needle,insert);
+fs.writeFileSync(path,s);
+console.log('Added 3D AI Studio credit.');
