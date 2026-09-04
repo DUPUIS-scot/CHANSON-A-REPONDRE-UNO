@@ -1,0 +1,35 @@
+name: WEB — Dispatch Live Deploy
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: dispatch-live-web
+  cancel-in-progress: true
+
+jobs:
+  dispatch:
+    name: Dispatch canonical live deployment
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch deploy-pages workflow for main
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          api="https://api.github.com/repos/${REPOSITORY}/actions/workflows/deploy-pages.yml/dispatches"
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Accept: application/vnd.github+json" \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            "$api" \
+            --data '{"ref":"main"}'
+          echo "Dispatched deploy-pages.yml for ${GITHUB_SHA}"
