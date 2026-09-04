@@ -5,12 +5,14 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   const imageUrl =
-      'https://dupuis-scot.github.io/CHANSON-A-REPONDRE-UNO/'
+      'https://www.chanson-a-repondre-uno.scot/'
       'social/chanson-a-repondre-uno-share.png';
 
-  test('main page explicitly uses the official Pages-hosted preview', () {
+  test('main page explicitly uses the canonical production preview', () {
     final html = File('web/index.html').readAsStringSync();
 
+    expect(html, contains('rel="canonical" href="https://www.chanson-a-repondre-uno.scot/"'));
+    expect(html, contains('property="og:url" content="https://www.chanson-a-repondre-uno.scot/"'));
     expect(html, contains('property="og:image"'));
     expect(html, contains('property="og:image:secure_url"'));
     expect(html, contains('name="twitter:image"'));
