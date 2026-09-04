@@ -1,0 +1,29 @@
+name: LUBIAK scene center lock v1
+on:
+  push:
+    paths: ['.github/run-lubiak-scene-center-lock-v1.txt']
+  workflow_dispatch:
+permissions: {contents: write}
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: main}
+      - name: Apply center lock
+        run: node scripts/patch-lubiak-scene-center-lock-v1.mjs
+      - name: Validate
+        run: |
+          node --check web/lubiak/lubiak.js
+          grep -q 'LUBIAK_SCENE_CENTER_LOCK_V1' web/lubiak/lubiak.js
+          grep -q 'applyCenterLockedOrbit' web/lubiak/lubiak.js
+          grep -q 'captureCenterLockFocus' web/lubiak/lubiak.js
+      - name: Commit patch
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add web/lubiak/lubiak.js
+          if ! git diff --cached --quiet; then
+            git commit -m 'Keep LUBIAK centred during touch and mouse look'
+            git push
+          fi
