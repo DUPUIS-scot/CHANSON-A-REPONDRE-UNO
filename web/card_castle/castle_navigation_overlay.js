@@ -1,6 +1,6 @@
 import './castle_shared_transition_loader_v64.js?v=74';
 import './castle_android_stability_v57.js?v=72';
-import './castle_ios_laboratory_resilience_v62.js?v=66';
+import './castle_ios_laboratory_resilience_v62.js?v=80';
 import './castle_reconstruction_patch_v83.js?v=83';
 import './castle_navigation_overlay_core.js?v=74';
 import './castle_laboratory_event_bridge_v69.js?v=69';
@@ -14,4 +14,4 @@ import './castle_bright_lab_ui_patch.js?v=73';
 import './castle_platform_stability_v54.js?v=72';
 import './castle_visual_regression_v55.js?v=70';
 import './castle_laboratory_entry_reset_v70.js?v=70';
-import './castle_journey_stability_v79.js?v=79';
+import './castle_journey_stability_v79.js?v=80';
