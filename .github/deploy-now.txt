@@ -1,2 +1,2 @@
-deploy 2026-09-04T08:52:00Z
-scope LUBIAK runtime hardening and native route fix
+deploy 2026-09-04T10:12:00Z
+scope LUBIAK navigation flash fix
