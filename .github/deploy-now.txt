@@ -1,2 +1,2 @@
-deploy 2026-09-04T07:33:00Z
-scope LUBIAK centred touch/mouse orbit + cleaned instruction panel
+deploy 2026-09-04T07:40:00Z
+scope GENERIQUE / CREDITS — credit 3D AI Studio usage
