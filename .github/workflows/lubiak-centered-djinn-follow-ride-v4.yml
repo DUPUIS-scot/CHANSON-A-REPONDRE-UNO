@@ -1,0 +1,34 @@
+name: LUBIAK centered Djinn follow ride v4
+on:
+  push:
+    paths: ['.github/run-lubiak-centered-djinn-follow-ride-v4.txt']
+  workflow_dispatch:
+permissions: {contents: write}
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: main}
+      - name: Restore centered Djinn follow ride
+        run: node scripts/restore-lubiak-centered-djinn-follow-ride-v4.mjs
+      - name: Validate
+        run: |
+          node --check web/lubiak/lubiak.js
+          grep -q 'LUBIAK_CENTERED_DJINN_FOLLOW_RIDE_V4' web/lubiak/lubiak.js
+          grep -q 'centerLockWorldFocus' web/lubiak/lubiak.js
+          grep -q 'if(centerLockActive) applyCenterLockedOrbit' web/lubiak/lubiak.js
+          grep -q "const followToggle=modeButton('FOLLOW'" web/lubiak/lubiak.js
+          grep -q "const rideToggle=modeButton('RIDE'" web/lubiak/lubiak.js
+          grep -q 'restoreStandingWalkPose' web/lubiak/lubiak.js
+          grep -q 'prepareBroomForRide' web/lubiak/lubiak.js
+          grep -q 'revealDjinnAndBroom' web/lubiak/lubiak.js
+      - name: Commit patch
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add web/lubiak/lubiak.js
+          if ! git diff --cached --quiet; then
+            git commit -m 'Restore centred LUBIAK Djinn follow and ride'
+            git push
+          fi
