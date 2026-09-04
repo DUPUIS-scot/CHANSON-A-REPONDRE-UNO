@@ -4,7 +4,7 @@
 // Forward the page cache-busting build ID to the compiled Flutter entrypoint.
 const searchParams = new URLSearchParams(window.location.search);
 const buildId = searchParams.get('v');
-const castleRuntimeRevision = '76';
+const castleRuntimeRevision = '80';
 const isWindows = /Windows/i.test(navigator.userAgent);
 if (buildId && globalThis._flutter?.buildConfig?.builds) {
   for (const build of globalThis._flutter.buildConfig.builds) {
@@ -15,8 +15,6 @@ if (buildId && globalThis._flutter?.buildConfig?.builds) {
   }
 }
 
-// Castle renderer compatibility. The Three.js iframe emits legacy event names
-// while the current Flutter host listens for the newer bridge names.
 window.addEventListener('message', event => {
   let message;
   try {
@@ -183,9 +181,6 @@ document.createElement = function(tagName, options) {
         readyHandled = true;
         injectEssentials();
 
-        // The jester is the heaviest post-exterior GLB. Do not begin it until
-        // the deferred ground/atmosphere hydration has finished (or a bounded
-        // safety window expires). This keeps the exterior-first contract real.
         let environmentPolls = 0;
         const environmentPoll = setInterval(() => {
           const environmentState =
@@ -215,8 +210,6 @@ document.createElement = function(tagName, options) {
       };
       window.addEventListener('message', onRendererMessage);
 
-      // Safety polling never injects heavy Castle work before the renderer is
-      // actually ready. This replaces the old 2.4s/3.4s unconditional timers.
       let polls = 0;
       const readyPoll = setInterval(() => {
         const body = element.contentDocument?.body;
