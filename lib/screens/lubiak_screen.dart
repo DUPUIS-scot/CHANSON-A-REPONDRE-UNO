@@ -11,6 +11,7 @@ class LubiakScreen extends StatefulWidget {
 
 class _LubiakScreenState extends State<LubiakScreen> {
   bool _launched = false;
+  bool _launchFailed = false;
 
   @override
   void didChangeDependencies() {
@@ -21,18 +22,43 @@ class _LubiakScreenState extends State<LubiakScreen> {
   }
 
   Future<void> _openLubiak() async {
-    if (!kIsWeb) return;
-    await launchUrl(
-      Uri.base.resolve('/lubiak/'),
-      webOnlyWindowName: '_self',
+    final uri = kIsWeb
+        ? Uri.base.resolve('/lubiak/')
+        : Uri.parse('https://www.chanson-a-repondre-uno.scot/lubiak/');
+
+    final opened = await launchUrl(
+      uri,
+      mode: kIsWeb ? LaunchMode.platformDefault : LaunchMode.externalApplication,
+      webOnlyWindowName: kIsWeb ? '_self' : null,
     );
+
+    if (!opened && mounted) {
+      setState(() => _launchFailed = true);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       backgroundColor: Colors.black,
-      body: Center(child: CircularProgressIndicator()),
+      body: Center(
+        child: _launchFailed
+            ? Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Unable to open LUBIAK.',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  const SizedBox(height: 16),
+                  FilledButton(
+                    onPressed: _openLubiak,
+                    child: const Text('TRY AGAIN'),
+                  ),
+                ],
+              )
+            : const CircularProgressIndicator(),
+      ),
     );
   }
 }
