@@ -1,0 +1,35 @@
+name: LUBIAK share social preview v5
+on:
+  push:
+    paths:
+      - '.github/run-lubiak-share-social-preview-v5.txt'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Apply exact-moment social preview repair
+        run: node scripts/patch-lubiak-share-social-preview-v5.mjs
+      - name: Validate
+        run: |
+          node --check web/lubiak/lubiak.js
+          grep -q 'LUBIAK_SHARE_SOCIAL_PREVIEW_V5' web/lubiak/lubiak.js
+          test -s web/lubiak/share/index.html
+          grep -q 'property="og:image"' web/lubiak/share/index.html
+          grep -q 'twitter:card' web/lubiak/share/index.html
+          grep -q 'window.location.replace' web/lubiak/share/index.html
+          grep -q "new URL('/lubiak/share/',location.origin)" web/lubiak/lubiak.js
+      - name: Commit patch
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add web/lubiak/lubiak.js web/lubiak/share/index.html
+          if ! git diff --cached --quiet; then
+            git commit -m 'Share LUBIAK moment link with social preview image'
+            git push
+          fi
