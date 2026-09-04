@@ -13,9 +13,22 @@ PUBLIC_BASE = (sys.argv[2] if len(sys.argv) > 2 else 'https://www.chanson-a-repo
 SHARE_ROOT = BUILD / 'share'
 PREVIEW_ROOT = BUILD / 'assets' / 'share-previews'
 MAX_BYTES = 350_000
+UNIFORM_SHARE_SCRIPT = '<script src="/social-share-uniform-v1.js?v=20260904-v1"></script>'
+DEFAULT_PREVIEW = PUBLIC_BASE + 'social/chanson-a-repondre-uno-share.png'
 
 OG_IMAGE_RE = re.compile(r'<meta property="og:image" content="([^"]+)">')
 OG_URL_RE = re.compile(r'<meta property="og:url" content="([^"]+)">')
+TITLE_RE = re.compile(r'<title>(.*?)</title>', re.I | re.S)
+DESCRIPTION_RE = re.compile(r'<meta\s+name=["\']description["\']\s+content=["\']([^"\']*)["\'][^>]*>', re.I)
+
+PUBLIC_PAGES = {
+    'index.html': '/',
+    '404.html': '/',
+    'lubiak/index.html': '/lubiak/',
+    'megapole/index.html': '/megapole/',
+    'enochian-terminal/index.html': '/enochian-terminal/',
+    'enochian-terminal-live/index.html': '/enochian-terminal/',
+}
 
 
 def local_asset_from_url(url: str) -> Path | None:
@@ -121,6 +134,52 @@ def replace_social_image(html: str, old_url: str, new_url: str) -> str:
     return html
 
 
+def inject_uniform_share_script(html: str) -> str:
+    if 'social-share-uniform-v1.js' in html or '</head>' not in html:
+        return html
+    return html.replace('</head>', UNIFORM_SHARE_SCRIPT + '</head>', 1)
+
+
+def strip_public_social_tags(html: str) -> str:
+    patterns = (
+        r'<link\s+rel=["\']canonical["\'][^>]*>',
+        r'<meta\s+property=["\']og:[^"\']+["\'][^>]*>',
+        r'<meta\s+name=["\']twitter:[^"\']+["\'][^>]*>',
+    )
+    for pattern in patterns:
+        html = re.sub(pattern, '', html, flags=re.I)
+    return html
+
+
+def apply_public_social_metadata(html: str, canonical_path: str) -> str:
+    title_match = TITLE_RE.search(html)
+    title = re.sub(r'\s+', ' ', title_match.group(1)).strip() if title_match else 'Chanson à Répondre UNO!'
+    desc_match = DESCRIPTION_RE.search(html)
+    description = desc_match.group(1).strip() if desc_match else 'Chanson à Répondre UNO! — official web application.'
+    canonical_url = PUBLIC_BASE.rstrip('/') + canonical_path
+    html = strip_public_social_tags(html)
+    block = (
+        f'<link rel="canonical" href="{canonical_url}">'
+        f'<meta property="og:type" content="website">'
+        f'<meta property="og:site_name" content="Chanson à Répondre UNO!">'
+        f'<meta property="og:title" content="{title}">'
+        f'<meta property="og:description" content="{description}">'
+        f'<meta property="og:url" content="{canonical_url}">'
+        f'<meta property="og:image" content="{DEFAULT_PREVIEW}">'
+        f'<meta property="og:image:secure_url" content="{DEFAULT_PREVIEW}">'
+        f'<meta property="og:image:type" content="image/png">'
+        f'<meta property="og:image:width" content="1200">'
+        f'<meta property="og:image:height" content="630">'
+        f'<meta name="twitter:card" content="summary_large_image">'
+        f'<meta name="twitter:title" content="{title}">'
+        f'<meta name="twitter:description" content="{description}">'
+        f'<meta name="twitter:image" content="{DEFAULT_PREVIEW}">'
+    )
+    if '</head>' not in html:
+        return html
+    return html.replace('</head>', block + '</head>', 1)
+
+
 PREVIEW_ROOT.mkdir(parents=True, exist_ok=True)
 pages = sorted(SHARE_ROOT.glob('*/index.html'))
 if not pages:
@@ -164,8 +223,22 @@ for target in sorted(preview_targets):
     brand_preview(target, logo_path)
     branded += 1
 
+uniform_injected = 0
+for html_path in sorted(BUILD.rglob('*.html')):
+    rel = html_path.relative_to(BUILD).as_posix()
+    if rel.startswith('share/'):
+        continue
+    html = html_path.read_text(encoding='utf-8')
+    rewritten = inject_uniform_share_script(html)
+    if rel in PUBLIC_PAGES:
+        rewritten = apply_public_social_metadata(rewritten, PUBLIC_PAGES[rel])
+    if rewritten != html:
+        html_path.write_text(rewritten, encoding='utf-8')
+        uniform_injected += 1
+
 print(
     'Global share previews: '
     f'{updated} pages updated, {generated} previews generated, '
-    f'{branded} branded with the UNO logo, {skipped} skipped.'
+    f'{branded} branded with the UNO logo, {skipped} skipped; '
+    f'{uniform_injected} interactive pages use the uniform share contract.'
 )
