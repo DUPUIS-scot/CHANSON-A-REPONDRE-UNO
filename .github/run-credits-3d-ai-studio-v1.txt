@@ -1,0 +1,2 @@
+run: 2026-09-04T08:35:00+01:00
+scope: mention 3D AI Studio in GENERIQUE / CREDITS
