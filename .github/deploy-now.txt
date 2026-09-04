@@ -1,2 +1,2 @@
-deploy 2026-09-04T07:58:00Z
-scope LUBIAK + MEGAPOLE — uniform HOME / SHARE / FULL SCREEN utility controls using main-screen black-gold circular design
+deploy 2026-09-04T08:06:00Z
+scope LUBIAK — keep authored world centred during drag; restore full Djinn + broom FOLLOW / RIDE authority
