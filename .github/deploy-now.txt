@@ -1,2 +1,2 @@
-deploy 2026-09-04T07:20:00Z
-scope LUBIAK exact moment link + social preview image v5
+deploy 2026-09-04T07:33:00Z
+scope LUBIAK centred touch/mouse orbit + cleaned instruction panel
