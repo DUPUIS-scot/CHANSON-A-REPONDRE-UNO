@@ -200,10 +200,42 @@ try {
 const shareCaptureButton=document.createElement('button');
 shareCaptureButton.id='lubiak-share-capture';
 shareCaptureButton.type='button';
-shareCaptureButton.textContent='SHARE';
-shareCaptureButton.setAttribute('aria-label','Capture and share LUBIAK screen');
-shareCaptureButton.style.cssText='position:fixed;right:max(86px,calc(env(safe-area-inset-right) + 86px));top:max(18px,env(safe-area-inset-top));z-index:120;border:1px solid #c47b3d88;background:#080504dd;color:#f0d7ad;padding:9px 12px;font:700 10px/1 ui-monospace;letter-spacing:.10em;cursor:pointer;touch-action:manipulation';
-document.body.appendChild(shareCaptureButton);
+// LUBIAK_MAIN_UTILITY_RUNTIME_V1
+shareCaptureButton.className='lubiak-utility-control';
+shareCaptureButton.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11m0-11-4 4m4-4 4 4M5 12v7h14v-7"/></svg>';
+shareCaptureButton.setAttribute('aria-label','Share LUBIAK moment');
+shareCaptureButton.title='Share';
+const lubiakUtilityDock=document.querySelector('#lubiak-utility-dock');
+const lubiakFullscreenButton=document.querySelector('#lubiak-fullscreen');
+if(lubiakUtilityDock){
+  if(lubiakFullscreenButton) lubiakUtilityDock.insertBefore(shareCaptureButton,lubiakFullscreenButton);
+  else lubiakUtilityDock.appendChild(shareCaptureButton);
+}else document.body.appendChild(shareCaptureButton);
+function lubiakFullscreenActive(){return !!(document.fullscreenElement||document.webkitFullscreenElement);}
+function syncLubiakFullscreenButton(){
+  if(!lubiakFullscreenButton)return;
+  const active=lubiakFullscreenActive();
+  lubiakFullscreenButton.setAttribute('aria-label',active?'Exit full screen':'Full screen');
+  lubiakFullscreenButton.title=active?'Exit full screen':'Full screen';
+}
+async function toggleLubiakFullscreen(){
+  try{
+    if(lubiakFullscreenActive()){
+      if(document.exitFullscreen)await document.exitFullscreen();
+      else if(document.webkitExitFullscreen)document.webkitExitFullscreen();
+    }else{
+      const el=document.documentElement;
+      if(el.requestFullscreen)await el.requestFullscreen();
+      else if(el.webkitRequestFullscreen)el.webkitRequestFullscreen();
+      else { showStatus('FULL SCREEN NOT AVAILABLE',900); return; }
+    }
+  }catch(error){console.warn('LUBIAK fullscreen failed',error);showStatus('FULL SCREEN NOT AVAILABLE',900);}
+  syncLubiakFullscreenButton();
+}
+lubiakFullscreenButton?.addEventListener('click',toggleLubiakFullscreen);
+document.addEventListener('fullscreenchange',syncLubiakFullscreenButton);
+document.addEventListener('webkitfullscreenchange',syncLubiakFullscreenButton);
+syncLubiakFullscreenButton();
 
 function loadCaptureBackdrop(){
   if(worldMode!=='exterior') return Promise.resolve(null);
@@ -951,9 +983,12 @@ async function installCircusSet() {
 const circusExitButton=document.createElement('button');
 circusExitButton.id='lubiak-circus-exit';
 circusExitButton.type='button';
-circusExitButton.textContent='EXIT CIRCUS';
-circusExitButton.style.cssText='position:fixed;right:max(18px,env(safe-area-inset-right));top:max(66px,calc(env(safe-area-inset-top) + 66px));z-index:120;display:none;border:1px solid #f0d7ad99;background:#080504e8;color:#f0d7ad;padding:11px 14px;border-radius:3px;font:700 10px/1 ui-monospace;letter-spacing:.12em;cursor:pointer;touch-action:manipulation';
-document.body.appendChild(circusExitButton);
+circusExitButton.className='lubiak-utility-control';
+circusExitButton.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H6m5-5-5 5 5 5M19 5v14"/></svg>';
+circusExitButton.setAttribute('aria-label','Exit circus');
+circusExitButton.title='Exit circus';
+circusExitButton.style.display='none';
+(lubiakUtilityDock||document.body).appendChild(circusExitButton);
 circusExitButton.addEventListener('click',(event)=>{event.stopPropagation();if(worldMode==='circus'){transitionLockUntil=0;exitCircus();}});
 function syncCircusExitButton(){circusExitButton.style.display=worldMode==='circus'?'block':'none';}
 
