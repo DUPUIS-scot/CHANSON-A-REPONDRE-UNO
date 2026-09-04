@@ -1,0 +1,31 @@
+name: World utility controls v1
+on:
+  push:
+    paths: ['.github/run-world-utility-controls-v1.txt']
+  workflow_dispatch:
+permissions: {contents: write}
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: main}
+      - name: Apply utility controls design
+        run: node scripts/patch-world-utility-controls-v1.mjs
+      - name: Validate
+        run: |
+          node --check web/lubiak/lubiak.js
+          grep -q 'LUBIAK_MAIN_UTILITY_CONTROLS_V1' web/lubiak/index.html
+          grep -q 'LUBIAK_MAIN_UTILITY_RUNTIME_V1' web/lubiak/lubiak.js
+          grep -q 'MEGAPOLE_MAIN_UTILITY_CONTROLS_V1' web/megapole/index.html
+          grep -q 'lubiak-fullscreen' web/lubiak/index.html
+          grep -q 'megapole-share' web/megapole/index.html
+      - name: Commit patch
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add web/lubiak/index.html web/lubiak/lubiak.js web/megapole/index.html
+          if ! git diff --cached --quiet; then
+            git commit -m 'Unify Home Share Fullscreen controls across LUBIAK worlds'
+            git push
+          fi
