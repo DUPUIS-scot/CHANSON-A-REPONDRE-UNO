@@ -5,11 +5,9 @@
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="Chanson à Répondre UNO! — official web application.">
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <meta http-equiv="Pragma" content="no-cache">
-  <meta http-equiv="Expires" content="0">
-  <meta property="og:type" content="website"><meta property="og:site_name" content="Chanson à Répondre UNO!"><meta property="og:title" content="Chanson à Répondre UNO!"><meta property="og:description" content="Chanson à Répondre UNO! — official web application."><meta property="og:url" content="https://dupuis-scot.github.io/CHANSON-A-REPONDRE-UNO/"><meta property="og:image" content="https://dupuis-scot.github.io/CHANSON-A-REPONDRE-UNO/social/chanson-a-repondre-uno-share.png"><meta property="og:image:secure_url" content="https://dupuis-scot.github.io/CHANSON-A-REPONDRE-UNO/social/chanson-a-repondre-uno-share.png"><meta property="og:image:type" content="image/png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="Chanson à Répondre UNO!">
-  <meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Chanson à Répondre UNO!"><meta name="twitter:description" content="Chanson à Répondre UNO! — official web application."><meta name="twitter:image" content="https://dupuis-scot.github.io/CHANSON-A-REPONDRE-UNO/social/chanson-a-repondre-uno-share.png"><meta name="twitter:image:alt" content="Chanson à Répondre UNO!">
+  <link rel="canonical" href="https://www.chanson-a-repondre-uno.scot/">
+  <meta property="og:type" content="website"><meta property="og:site_name" content="Chanson à Répondre UNO!"><meta property="og:title" content="Chanson à Répondre UNO!"><meta property="og:description" content="Chanson à Répondre UNO! — official web application."><meta property="og:url" content="https://www.chanson-a-repondre-uno.scot/"><meta property="og:image" content="https://www.chanson-a-repondre-uno.scot/social/chanson-a-repondre-uno-share.png"><meta property="og:image:secure_url" content="https://www.chanson-a-repondre-uno.scot/social/chanson-a-repondre-uno-share.png"><meta property="og:image:type" content="image/png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="Chanson à Répondre UNO!">
+  <meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Chanson à Répondre UNO!"><meta name="twitter:description" content="Chanson à Répondre UNO! — official web application."><meta name="twitter:image" content="https://www.chanson-a-repondre-uno.scot/social/chanson-a-repondre-uno-share.png"><meta name="twitter:image:alt" content="Chanson à Répondre UNO!">
   <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="apple-mobile-web-app-title" content="Chanson UNO"><link rel="apple-touch-icon" href="icons/Icon-192.png?v=uno-url-logo-20260817"><link rel="icon" type="image/png" href="favicon.png?v=uno-url-logo-20260817">
   <title>Chanson à Répondre UNO!</title><link rel="manifest" href="manifest.json?v=uno-url-logo-20260817">
   <style>
@@ -43,10 +41,6 @@
 </head>
 <body>
   <div id="shared-stage-background" aria-hidden="true"></div>
-  <script>
-    if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().then((registrations) => { for (const registration of registrations) registration.unregister(); });
-    if ('caches' in window) caches.keys().then((keys) => Promise.all(keys.map((key) => caches.delete(key))));
-  </script>
   <script src="card_share.js"></script><script>{{flutter_bootstrap_js}}</script>
 </body>
 </html>
