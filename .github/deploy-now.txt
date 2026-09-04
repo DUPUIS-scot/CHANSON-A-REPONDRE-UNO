@@ -1,2 +1,2 @@
-deploy 2026-09-04T08:10:00Z
-scope certify CHANSON À RÉPONDRE UNO 3.7.7.3.3
+deploy 2026-09-04T08:52:00Z
+scope LUBIAK runtime hardening and native route fix
