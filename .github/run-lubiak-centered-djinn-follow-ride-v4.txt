@@ -1,0 +1,2 @@
+run: 2026-09-04T08:00:00Z
+scope: keep LUBIAK centred during drag and restore complete Djinn + broom FOLLOW / RIDE
