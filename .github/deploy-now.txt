@@ -1,2 +1,2 @@
-deploy 2026-09-05T08:30:00Z
-scope restore exact 2MIX v10 source authority contract with single activation recovery authority
+deploy 2026-09-05T08:45:00Z
+scope restore 2MIX help-open regression contract while preserving single activation authority
