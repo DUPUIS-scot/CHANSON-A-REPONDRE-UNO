@@ -183,10 +183,14 @@ button { -webkit-tap-highlight-color: transparent; }
   inset: 0;
   padding: 0;
   overflow: hidden;
-  background: #16090c;
+  background-color: #16090c;
+  background-image: url("assets/banquet-stage.png?v=2");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
 }
 
-.cover-page img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cover-page > img { display: none; }
 .cover-page::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.2), transparent 25%, transparent 70%, rgba(0,0,0,.58)); }
 .cover-title { position: absolute; z-index: 2; left: 50%; top: 8%; transform: translateX(-50%); width: min(78%, 760px); padding: 16px 30px 14px; text-align: center; background: rgba(20,7,9,.68); border: 1px solid rgba(223,180,91,.6); box-shadow: 0 10px 30px rgba(0,0,0,.5); }
 .cover-title h2 { margin: 0; color: #f3d58d; font-size: clamp(1.35rem, 3vw, 2.9rem); letter-spacing: .035em; text-transform: uppercase; text-shadow: 0 2px 5px #000; }
