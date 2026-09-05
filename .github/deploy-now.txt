@@ -1,2 +1,2 @@
-deploy 2026-09-05T07:30:00Z
-scope stabilize LUBIAK 3D models and circus scene transition; remove WebGL canvas flashing
+deploy 2026-09-05T07:45:00Z
+scope deploy LUBIAK circus stability fix plus Enochian unified 3D terrain compatibility contract
