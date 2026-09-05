@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const VERSION='20260905-multipoint-sculpt-v4',ORANGE='#ff9d34';
+const VERSION='20260905-multipoint-sculpt-v5',ORANGE='#ff9d34';
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function install(frame){
  try{
@@ -8,7 +8,7 @@ function install(frame){
   const wave=d&&d.querySelector('.wave');
   if(!d||!w||!wave||!w.__enochAnalyser3D||!w.__enochAnalyserGesture)return false;
   if(d.documentElement.dataset.analyserMultipointSculpt===VERSION)return true;
-  const g=w.__enochAnalyserGesture,def=g.deform||(g.deform={});
+  const g=w.__enochAnalyserGesture,def=g.deform||(g.deform={}),view=g.view||(g.view={yaw:0,pitch:0,zoom:1});
   const defaults=()=>[
    {bin:2,row:2,pullY:0,pullZ:0,twist:0,radius:.17,strength:1,vY:0,vZ:0},
    {bin:5,row:4,pullY:0,pullZ:0,twist:0,radius:.17,strength:1,vY:0,vZ:0},
@@ -20,20 +20,38 @@ function install(frame){
   def.selectedAnchor=clamp(Number.isFinite(def.selectedAnchor)?def.selectedAnchor:2,0,4);
   const syncLegacy=()=>{const a=def.anchors[def.selectedAnchor];if(!a)return;def.grabBin=a.bin;def.grabRow=a.row;def.pullY=a.pullY;def.pullZ=a.pullZ;def.twist=a.twist;def.radius=a.radius;def.vY=a.vY||0;def.vZ=a.vZ||0};syncLegacy();
   const originalPick=w.__enochAnalyser3D.pick?.bind(w.__enochAnalyser3D),meshCanvas=()=>wave.querySelector('.analyser-3d-unified'),projected=()=>meshCanvas()?.__enochProjected||w.__enochAnalyser3D?.getProjected?.()||[];
-  // Anchors are stored in the stable legacy 0–15 coordinate system. Map them
-  // onto whichever visual mesh is active (the restored terrain is 40 × 28).
   const pointFor=(p,a)=>p[Math.round((a.row||0)*Math.max(0,p.length-1)/15)]?.[Math.round((a.bin||0)*Math.max(0,(p[0]?.length||1)-1)/15)];
   const nearestAnchor=(x,y)=>{const p=projected(),canvas=meshCanvas(),rect=canvas?.getBoundingClientRect();if(!rect||!canvas)return null;let best=null,dist=Infinity;def.anchors.forEach((a,i)=>{const q=pointFor(p,a);if(!q)return;const dx=q.x/(canvas.width/rect.width)-(x-rect.left),dy=q.y/(canvas.height/rect.height)-(y-rect.top),dd=Math.hypot(dx,dy);if(dd<dist){dist=dd;best=i}});return dist<28?best:null};
   const choose=(x,y)=>{let idx=nearestAnchor(x,y),pick=originalPick?.(x,y);if(idx===null){idx=def.selectedAnchor;if(pick){def.anchors[idx].bin=pick.bin;def.anchors[idx].row=pick.row}}def.selectedAnchor=idx;syncLegacy();w.__enochAnalyser3D.invalidate?.();return idx};
   const applyLegacyToSelected=()=>{const a=def.anchors[def.selectedAnchor];if(!a)return;a.pullY=def.pullY||0;a.pullZ=def.pullZ||0;a.twist=def.twist||0;a.radius=def.radius||.18;a.vY=def.vY||0;a.vZ=def.vZ||0;if(Number.isFinite(def.grabBin))a.bin=def.grabBin;if(Number.isFinite(def.grabRow))a.row=def.grabRow};
+
   let last='';const watch=()=>{if(w.__enochSignalModulation===true){const sig=[def.selectedAnchor,def.grabBin,def.grabRow,def.pullY,def.pullZ,def.twist,def.vY,def.vZ].join('|');if(sig!==last){last=sig;applyLegacyToSelected()}}w.__enochSignalEngagement=Object.assign(w.__enochSignalEngagement||{},{grabs:w.__enochSignalModulation===true?def.anchors.length:0,anchors:def.anchors,selected:def.selectedAnchor});d.documentElement.dataset.analyserSculptPointCount=String(def.anchors.length);requestAnimationFrame(watch)};requestAnimationFrame(watch);
   wave.addEventListener('pointerdown',e=>{if(w.__enochSignalModulation!==true||e.target.closest('button,input,textarea,select'))return;choose(e.clientX,e.clientY)},true);
   wave.addEventListener('wheel',e=>{if(w.__enochSignalModulation!==true||(w.__enochAnalyserWheelMode||'zoom')==='zoom')return;choose(e.clientX,e.clientY)},true);
+
   wave.querySelector('.analyser-sculpt-overlay')?.remove();
   const overlay=d.createElement('canvas');overlay.className='analyser-sculpt-overlay';overlay.setAttribute('aria-hidden','true');wave.appendChild(overlay);
-  const st=d.createElement('style');st.textContent='.analyser-sculpt-overlay{position:absolute;inset:0;width:100%;height:100%;z-index:5;pointer-events:none!important}.wave.analyser-signal-sculpting{cursor:crosshair!important}';d.head.appendChild(st);
+  wave.querySelector('.analyser-magnetic-overlay')?.remove();
+  const magnetic=d.createElement('canvas');magnetic.className='analyser-magnetic-overlay';magnetic.setAttribute('aria-hidden','true');wave.appendChild(magnetic);
+
+  d.getElementById('eno-signal-pipeline-v5')?.remove();
+  const pipeline=d.createElement('div');pipeline.id='eno-signal-pipeline-v5';pipeline.className='eno-signal-pipeline';pipeline.innerHTML='<span>MASTER</span><b>→</b><span>MIDI / INPUT / STEMS</span><b>→</b><span>3D SIGNAL</span><b>→</b><span>OUTPUT</span><b>→</b><span>SIGNAL MOD</span><b>→</b><span>FX</span><b>→</b><span>3D SIGNAL OUTPUT</span>';
+  wave.parentElement?.insertBefore(pipeline,wave);
+
+  const st=d.createElement('style');st.id='analyser-multipoint-sculpt-v5-style';st.textContent=`
+.analyser-sculpt-overlay{position:absolute;inset:0;width:100%;height:100%;z-index:6;pointer-events:none!important}.analyser-magnetic-overlay{position:absolute;inset:0;width:100%;height:100%;z-index:5;pointer-events:none!important;filter:drop-shadow(0 0 4px rgba(57,200,245,.24))}.wave.analyser-signal-sculpting{cursor:crosshair!important}.wave .analyser-3d-unified{opacity:.34!important}.eno-signal-pipeline{display:flex;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap;min-height:22px;padding:3px 6px;margin:0 0 4px;border:1px solid #0b4f73;border-radius:4px;background:linear-gradient(90deg,#02070b,#031019,#02070b);font:800 7px/1.15 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.08em;color:#8edff8;box-shadow:inset 0 0 14px rgba(20,146,200,.08)}.eno-signal-pipeline span{white-space:nowrap}.eno-signal-pipeline b{color:#ff9d34;font-size:8px}.eno-signal-pipeline span:nth-of-type(3),.eno-signal-pipeline span:last-child{color:#d5fbff;text-shadow:0 0 7px rgba(57,200,245,.6)}html.terminal-fullscreen .eno-signal-pipeline{min-height:17px;padding:2px 4px;margin-bottom:2px;font-size:6px;gap:3px}`;d.head.appendChild(st);
+
+  const twoM={a:{x:.24,y:.5,active:false},b:{x:.76,y:.5,active:false},drag:null};
+  const mouseTarget=e=>e.target?.closest?.('#twoMixA,#twoMixB');
+  const updatePole=(pole,e)=>{const wr=wave.getBoundingClientRect();if(!wr.width||!wr.height)return;const nx=clamp((e.clientX-wr.left)/wr.width,0,1),ny=clamp((e.clientY-wr.top)/wr.height,0,1),s=pole==='a'?1:-1,state=twoM[pole];state.x=nx;state.y=ny;state.active=true;const ids=pole==='a'?[0,1]:[3,4];ids.forEach((idx,j)=>{const a=def.anchors[idx];a.bin=clamp(nx*15+(j?1.2:-1.2)*s,0,15);a.row=clamp((1-ny)*15+(j?1.4:-.6),0,15);a.pullY=clamp((.5-ny)*2.2,-1.4,1.4);a.pullZ=clamp((nx-.5)*2.0*s,-1.4,1.4);a.twist=clamp((nx-.5)*2.8*s,-1.6,1.6);a.radius=.20+j*.035;a.strength=1});view.yaw=clamp(((twoM.a.x-.5)-(twoM.b.x-.5))*1.35,-1.15,1.15);view.pitch=clamp(((.5-twoM.a.y)+(.5-twoM.b.y))*.9,-.72,.72);view.zoom=clamp(1+Math.abs(twoM.a.x-twoM.b.x)*.58,.72,1.65);def.selectedAnchor=pole==='a'?1:3;syncLegacy();w.__enochSignalModulation=true;const modBtn=d.getElementById('signalModToggle');if(modBtn){modBtn.setAttribute('aria-pressed','true');modBtn.classList.add('active')}w.__enochAnalyser3D.invalidate?.();w.__enochTwoMMagneticSculpt={version:VERSION,a:{...twoM.a},b:{...twoM.b},yaw:view.yaw,pitch:view.pitch,zoom:view.zoom};d.documentElement.dataset.twoMMagneticSculpt='active'};
+  d.addEventListener('pointerdown',e=>{const t=mouseTarget(e);if(!t)return;twoM.drag=t.id==='twoMixA'?'a':'b';try{t.setPointerCapture?.(e.pointerId)}catch(_){}updatePole(twoM.drag,e)},true);
+  d.addEventListener('pointermove',e=>{if(!twoM.drag)return;updatePole(twoM.drag,e)},true);
+  d.addEventListener('pointerup',()=>{twoM.drag=null},true);d.addEventListener('pointercancel',()=>{twoM.drag=null},true);
+
+  const drawMagnetic=()=>{requestAnimationFrame(drawMagnetic);const rect=wave.getBoundingClientRect(),base=meshCanvas(),p=projected(),dpr=Math.min(1.75,w.devicePixelRatio||1),W=Math.max(1,Math.floor(rect.width*dpr)),H=Math.max(1,Math.floor(rect.height*dpr));if(magnetic.width!==W||magnetic.height!==H){magnetic.width=W;magnetic.height=H}const c=magnetic.getContext('2d');c.clearRect(0,0,W,H);if(!base||!p.length)return;const sx=W/Math.max(1,base.width),sy=H/Math.max(1,base.height),cx=W*.5,sep=(.035+Math.abs(twoM.a.x-twoM.b.x)*.075)*W,warp=((twoM.a.y-.5)-(twoM.b.y-.5))*H*.11;const drawField=(flip,pole,alpha)=>{for(let r=0;r<p.length;r+=2){const line=p[r];c.beginPath();for(let i=0;i<line.length;i++){const q=line[i],z=r/Math.max(1,p.length-1),origX=q.x*sx,origY=q.y*sy,x=(flip?(2*cx-origX):origX)+(flip?sep:-sep)*(1-z),y=origY+(flip?-warp:warp)*Math.sin((i/Math.max(1,line.length-1))*Math.PI);i?c.lineTo(x,y):c.moveTo(x,y)}c.strokeStyle=flip?`rgba(168,241,255,${alpha})`:`rgba(57,200,245,${alpha})`;c.lineWidth=(r===p.length-1?1.5:.75)*dpr;c.stroke()}};c.save();c.globalCompositeOperation='screen';c.shadowBlur=5*dpr;c.shadowColor='rgba(57,200,245,.45)';drawField(false,twoM.a,.38);c.shadowColor='rgba(168,241,255,.38)';drawField(true,twoM.b,.31);c.restore();c.save();c.font=`${7*dpr}px ui-monospace,monospace`;c.fillStyle='rgba(57,200,245,.75)';c.fillText('MAGNETIC FIELD A',8*dpr,12*dpr);c.textAlign='right';c.fillStyle='rgba(168,241,255,.72)';c.fillText('MAGNETIC FIELD B',W-8*dpr,12*dpr);c.restore();magnetic.dataset.fieldMode='opposed';magnetic.dataset.sculpt360='true'};requestAnimationFrame(drawMagnetic);
+
   const paint=()=>{requestAnimationFrame(paint);const rect=wave.getBoundingClientRect(),dpr=Math.min(1.75,w.devicePixelRatio||1),W=Math.max(1,Math.floor(rect.width*dpr)),H=Math.max(1,Math.floor(rect.height*dpr));if(overlay.width!==W||overlay.height!==H){overlay.width=W;overlay.height=H}const c=overlay.getContext('2d');c.clearRect(0,0,W,H);const p=projected(),canvas=meshCanvas(),modOn=w.__enochSignalModulation===true;overlay.dataset.markerCount='0';if(!p.length||!canvas||!modOn)return;let drawn=0;const sx=W/Math.max(1,canvas.width),sy=H/Math.max(1,canvas.height);def.anchors.slice(0,5).forEach((a,i)=>{const q=pointFor(p,a);if(!q)return;drawn++;const selected=i===def.selectedAnchor;c.save();c.globalAlpha=1;c.strokeStyle=ORANGE;c.fillStyle=selected?'rgba(255,157,52,.34)':'rgba(2,7,11,.82)';c.shadowColor=ORANGE;c.shadowBlur=selected?9*dpr:3*dpr;c.lineWidth=(selected?1.8:1.2)*dpr;c.beginPath();c.arc(q.x*sx,q.y*sy,(selected?5:4)*dpr,0,Math.PI*2);c.fill();c.stroke();c.restore()});overlay.dataset.markerCount=String(drawn)};requestAnimationFrame(paint);
-  const api={version:VERSION,anchors:def.anchors,select:i=>{def.selectedAnchor=clamp(i|0,0,4);syncLegacy()},reset:()=>{def.anchors=defaults();def.selectedAnchor=2;api.anchors=def.anchors;syncLegacy();w.__enochAnalyser3D.invalidate?.()}};w.__enochMultipointSculpt=api;d.documentElement.dataset.analyserMultipointSculpt=VERSION;d.documentElement.dataset.analyserSculptPointCount='5';return true;
+  const api={version:VERSION,anchors:def.anchors,select:i=>{def.selectedAnchor=clamp(i|0,0,4);syncLegacy()},reset:()=>{def.anchors=defaults();def.selectedAnchor=2;api.anchors=def.anchors;twoM.a={x:.24,y:.5,active:false};twoM.b={x:.76,y:.5,active:false};view.yaw=0;view.pitch=0;view.zoom=1;syncLegacy();w.__enochAnalyser3D.invalidate?.()}};w.__enochMultipointSculpt=api;d.documentElement.dataset.analyserMultipointSculpt=VERSION;d.documentElement.dataset.analyserSculptPointCount='5';d.documentElement.dataset.magneticSignalMesh='opposed-v1';return true;
  }catch(_){return false}
 }
 window.installEnochianMultipointSculptV1=frame=>{let n=0,t=setInterval(()=>{if(install(frame)||++n>240)clearInterval(t)},50)};
