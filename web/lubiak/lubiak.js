@@ -1733,7 +1733,7 @@ function findSafeEntranceSpawn(anchor, includeBroom=true) {
     const ground = groundSurfaceBelow(candidate, 18);
     if (!ground) continue;
     candidate.y = ground.hit.point.y + 0.045;
-    if (hasMeshClearance(candidate, includeBroom)) return candidate;
+    if (hasLubiakMeshClearance(candidate, includeBroom)) return candidate;
   }
   // Never fall back into the mesh. If the authored apron cannot be resolved, stay
   // visibly outside the +Z shell until a valid walkable point is available.
@@ -1766,15 +1766,15 @@ function movePlayerWithCollision(delta, includeBroom=false) {
   const start=playerRoot.position.clone();
   const desired=start.clone().add(delta);
   let solved=resolvePlayerCollision(start,desired,includeBroom);
-  if(!solved.equals(start) && !hasMeshClearance(solved, includeBroom)) solved=start.clone();
+  if(!solved.equals(start) && !hasLubiakMeshClearance(solved, includeBroom)) solved=start.clone();
   if(solved.equals(start)) {
     // Try axis-separated sliding so walls feel physical instead of sticky.
     let xTry=resolvePlayerCollision(start,start.clone().add(new THREE.Vector3(delta.x,0,0)),includeBroom);
-    if(!xTry.equals(start) && !hasMeshClearance(xTry, includeBroom)) xTry=start.clone();
+    if(!xTry.equals(start) && !hasLubiakMeshClearance(xTry, includeBroom)) xTry=start.clone();
     playerRoot.position.copy(xTry);
     const zStart=playerRoot.position.clone();
     let zTry=resolvePlayerCollision(zStart,zStart.clone().add(new THREE.Vector3(0,delta.y,delta.z)),includeBroom);
-    if(!zTry.equals(zStart) && !hasMeshClearance(zTry, includeBroom)) zTry=zStart.clone();
+    if(!zTry.equals(zStart) && !hasLubiakMeshClearance(zTry, includeBroom)) zTry=zStart.clone();
     playerRoot.position.copy(zTry);
     if(playerRoot.position.distanceTo(start)<1e-5) playerVelocity.multiplyScalar(0.15);
   } else playerRoot.position.copy(solved);
