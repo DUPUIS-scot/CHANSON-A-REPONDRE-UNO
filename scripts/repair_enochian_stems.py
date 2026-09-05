@@ -96,7 +96,9 @@ for marker in [
     if marker not in source_unified:
         raise SystemExit(f'unified signal source contract missing: {marker}')
 for marker in [
-    "analyserSignalUnified==='v4'",
+    "analyserSignalUnified==='v5'",
+    "const chamber=d.querySelector('.stage .wave')||d.querySelector('.wave')",
+    "chamber.appendChild(canvas)",
     "type==='authoritative-frequency'",
     "w.__enochAnalyser3D=api",
     "filter=controlNorm('filter',.5)",
