@@ -1,2 +1,2 @@
-deploy 2026-09-05T08:00:00Z
-scope validated Enochian retired-v9 compatibility contract plus LUBIAK circus model stability
+deploy 2026-09-05T08:15:00Z
+scope restore ENOCHIAN terminal 2MIX launcher activation authority and touch hit handling
