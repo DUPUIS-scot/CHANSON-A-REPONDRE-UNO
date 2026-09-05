@@ -2,7 +2,8 @@
 'use strict';
 // Compatibility loader only: the legacy renderer is retired. The unified terrain
 // renderer remains the sole 3D SIGNAL authority; this shim restores its mesh and
-// five sculpt controls without creating a competing renderer.
+// installs the five-point / 2M magnetic 360-degree sculpt controls without
+// creating a competing audio analyser authority.
 const loaded=new Map();
 const ensureScript=(src,test)=>new Promise(resolve=>{
  try{
@@ -23,12 +24,12 @@ async function install(frame){
   let mesh=null;
   for(let i=0;i<80&&!mesh;i++){mesh=d.querySelector('.analyser-3d-unified');if(!mesh)await new Promise(r=>setTimeout(r,25))}
   if(!mesh)return false;
-  mesh.style.setProperty('display','block','important');mesh.style.setProperty('opacity','.96','important');mesh.style.setProperty('visibility','visible','important');
+  mesh.style.setProperty('display','block','important');mesh.style.setProperty('opacity','.30','important');mesh.style.setProperty('visibility','visible','important');
   d.querySelectorAll('.analyser-3d:not(.analyser-3d-unified)').forEach(c=>{c.style.setProperty('display','none','important');c.style.setProperty('opacity','0','important')});
-  const sculptReady=await ensureScript('/enochian-test/analyser-multipoint-sculpt-v1.js?v=20260905-five-anchors-v1',()=>typeof window.installEnochianMultipointSculptV1==='function');
-  if(sculptReady)window.installEnochianMultipointSculptV1?.(frame);
-  d.documentElement.dataset.analyserSignal3d='retired-v9';
-  d.documentElement.dataset.analyserSignalTerrain='unified-terrain-restored-v13';
+  const sculptReady=await ensureScript('/enochian-test/analyser-multipoint-sculpt-v2.js?v=20260905-two-magnetic-360-v1',()=>typeof window.installEnochianMultipointSculptV2==='function');
+  if(sculptReady)window.installEnochianMultipointSculptV2?.(frame);
+  d.documentElement.dataset.analyserSignal3d='retired-v10';
+  d.documentElement.dataset.analyserSignalTerrain='unified-terrain-magnetic-v14';
   return true;
  }catch(_){return false}
 }
