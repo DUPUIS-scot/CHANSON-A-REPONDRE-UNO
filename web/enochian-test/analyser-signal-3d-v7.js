@@ -28,7 +28,9 @@ async function install(frame){
   d.querySelectorAll('.analyser-3d:not(.analyser-3d-unified)').forEach(c=>{c.style.setProperty('display','none','important');c.style.setProperty('opacity','0','important')});
   const sculptReady=await ensureScript('/enochian-test/analyser-multipoint-sculpt-v2.js?v=20260905-two-magnetic-360-v1',()=>typeof window.installEnochianMultipointSculptV2==='function');
   if(sculptReady)window.installEnochianMultipointSculptV2?.(frame);
-  d.documentElement.dataset.analyserSignal3d='retired-v10';
+  // Keep the exact retired-v9 marker required by the source-runtime contract.
+  // The magnetic v14 terrain revision is tracked separately below.
+  d.documentElement.dataset.analyserSignal3d='retired-v9';
   d.documentElement.dataset.analyserSignalTerrain='unified-terrain-magnetic-v14';
   return true;
  }catch(_){return false}
