@@ -96,7 +96,7 @@ for marker in [
     if marker not in source_unified:
         raise SystemExit(f'unified signal source contract missing: {marker}')
 for marker in [
-    "analyserSignalUnified==='v2'",
+    "analyserSignalUnified==='v3'",
     "type==='authoritative-frequency'",
     "w.__enochAnalyser3D=api",
     "filter=controlNorm('filter',.5)",
