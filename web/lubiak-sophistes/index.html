@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#120b0b">
+  <meta name="description" content="Le banquet des sophistes de Lubiak — flipbook interactif du texte français original.">
+  <meta property="og:title" content="Le banquet des sophistes — LUBIAK">
+  <meta property="og:description" content="Flipbook interactif du texte français original de Lubiak.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://www.chanson-a-repondre-uno.scot/lubiak-sophistes/">
+  <meta property="og:image" content="https://www.chanson-a-repondre-uno.scot/lubiak-sophistes/assets/banquet-stage.png">
+  <link rel="canonical" href="https://www.chanson-a-repondre-uno.scot/lubiak-sophistes/">
+  <title>Le banquet des sophistes — Flipbook</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="identity">
+        <span class="author">LUBIAK</span>
+        <h1>Le banquet des sophistes</h1>
+      </div>
+      <div class="header-actions">
+        <a class="return-link" href="../lubiak/" aria-label="Retour à LUBIAK">← LUBIAK</a>
+        <button class="icon-button" id="zoomOut" type="button" aria-label="Réduire le zoom" title="Réduire le zoom">−</button>
+        <output id="zoomValue" aria-live="polite">100%</output>
+        <button class="icon-button" id="zoomIn" type="button" aria-label="Agrandir le zoom" title="Agrandir le zoom">+</button>
+        <button class="text-button" id="fullscreen" type="button">Plein écran</button>
+      </div>
+    </header>
+
+    <main class="reader" aria-label="Livre interactif">
+      <button class="edge-nav edge-prev" id="prevEdge" type="button" aria-label="Page précédente"><span>‹</span></button>
+
+      <section class="book-stage" id="bookStage">
+        <div class="book" id="book">
+          <div class="binding" aria-hidden="true"></div>
+          <article class="paper" id="paper" aria-live="polite">
+            <div class="page-content" id="pageContent"></div>
+          </article>
+        </div>
+        <p class="gesture-hint" id="gestureHint">Cliquez, glissez ou utilisez les flèches du clavier</p>
+      </section>
+
+      <button class="edge-nav edge-next" id="nextEdge" type="button" aria-label="Page suivante"><span>›</span></button>
+    </main>
+
+    <footer class="controls">
+      <button class="control-button" id="prev" type="button">← Précédente</button>
+      <div class="progress-cluster">
+        <label for="pageSlider" class="sr-only">Aller à une page</label>
+        <input id="pageSlider" type="range" min="0" max="7" value="0" step="1">
+        <output id="pageIndicator" aria-live="polite">Couverture · 1 / 8</output>
+      </div>
+      <button class="control-button autoplay" id="autoplay" type="button" aria-pressed="false"><span class="play-mark">▶</span> Lecture auto</button>
+      <button class="control-button" id="next" type="button">Suivante →</button>
+    </footer>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
