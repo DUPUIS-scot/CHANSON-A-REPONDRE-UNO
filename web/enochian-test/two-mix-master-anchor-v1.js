@@ -3,6 +3,7 @@ const VERSION='v11';
 function install(frame){
  try{
   const live=frame?.contentDocument,deck=live?.getElementById('deck'),d=deck?.contentDocument,w=d?.defaultView;if(!d||!w)return false;
+  if(d.documentElement.dataset.twoMixMasterLayout==='v10'&&d.documentElement.dataset.twoMixActivationAuthority===VERSION)return true;
   const toggle=d.getElementById('twoMixToggle');if(!toggle)return false;
   const findMaster=()=>d.querySelector('[data-master-deck],.master-deck')||[...d.querySelectorAll('section,.box,.panel,.module,div')].find(el=>{const t=(el.textContent||'').toUpperCase(),r=el.getBoundingClientRect();return r.width>220&&r.height>70&&t.includes('MASTER DECK')});
   const master=findMaster();if(master){master.dataset.masterDeck='1';if(w.getComputedStyle(master).position==='static')master.style.position='relative';if(toggle.parentElement!==master)master.appendChild(toggle)}
@@ -11,8 +12,6 @@ function install(frame){
   toggle.classList.add('two-mix-master-anchor');toggle.style.pointerEvents='auto';toggle.style.touchAction='manipulation';toggle.title='2MIX';
   const state=()=>toggle.getAttribute('aria-pressed')==='true'||toggle.classList.contains('active');
   const sync=()=>{const on=state();toggle.setAttribute('aria-label',on?'Disable 2MIX':'Enable 2MIX');d.documentElement.dataset.twoMixActivation=on?'on':'off'};
-  // Single activation recovery authority. The underlying 2MIX owner gets the first
-  // native click. Only if that click leaves state unchanged do we repair state once.
   if(toggle.dataset.activationAuthority!==VERSION){
    toggle.dataset.activationAuthority=VERSION;
    let before=false,armed=false,repairing=false;
@@ -22,7 +21,7 @@ function install(frame){
    toggle.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&!e.repeat){e.preventDefault();const next=!state();toggle.classList.toggle('active',next);toggle.setAttribute('aria-pressed',String(next));toggle.dispatchEvent(new CustomEvent('enochian:two-mix-toggle',{bubbles:true,detail:{active:next,source:'keyboard'}}));sync()}});
   }
   sync();
-  d.documentElement.dataset.twoMixMasterAnchor='v1';d.documentElement.dataset.twoMixMasterLayout='v10';
+  d.documentElement.dataset.twoMixMasterAnchor='v1';d.documentElement.dataset.twoMixMasterLayout='v10';d.documentElement.dataset.twoMixActivationAuthority=VERSION;
   w.__enochTwoMixMasterAnchor={version:VERSION,toggle,master,sync};return true;
  }catch(_){return false}
 }
