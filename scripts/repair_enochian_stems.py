@@ -96,12 +96,16 @@ for marker in [
     if marker not in source_unified:
         raise SystemExit(f'unified signal source contract missing: {marker}')
 for marker in [
-    "analyserSignalUnified==='v3'",
+    "analyserSignalUnified==='v4'",
     "type==='authoritative-frequency'",
     "w.__enochAnalyser3D=api",
     "filter=controlNorm('filter',.5)",
     "feedback=controlNorm('fb',0)",
     "wet=controlNorm('wet',0)",
+    "AUDIO_ROWS=16,AUDIO_BINS=16,VISUAL_ROWS=28,VISUAL_BINS=40",
+    "bilinearSample(i,r)",
+    "lineHot:'#A8F1FF'",
+    "if(amp<=.58)continue",
 ]:
     if marker not in renderer_unified:
         raise SystemExit(f'unified 3D renderer contract missing: {marker}')
