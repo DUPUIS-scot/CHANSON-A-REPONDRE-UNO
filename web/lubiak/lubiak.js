@@ -2212,6 +2212,10 @@ function animate() {
   if (dragonMixer && worldMode === 'exterior') dragonMixer.update(dt);
   updateDragonPatrol(dt);
   if (playerReady) {
+    // The playable Djinn must survive pointer release and camera-mode changes.
+    playerRoot.visible = true;
+    forceActorTreeVisible(playerVisual);
+    if (broomRoot) forceActorTreeVisible(broomRoot);
     if (cameraMode === 'aerial') {
       // Freeze the djinn and broom exactly where they are while the detached camera explores LUBIAK.
       updateAerialCamera(dt);
