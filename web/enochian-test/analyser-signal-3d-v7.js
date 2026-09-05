@@ -25,8 +25,8 @@ async function install(frame){
   if(!mesh)return false;
   mesh.style.setProperty('display','block','important');mesh.style.setProperty('opacity','.96','important');mesh.style.setProperty('visibility','visible','important');
   d.querySelectorAll('.analyser-3d:not(.analyser-3d-unified)').forEach(c=>{c.style.setProperty('display','none','important');c.style.setProperty('opacity','0','important')});
-  const sculptReady=await ensureScript('/enochian-test/analyser-five-sculpt-points-v1.js?v=20260905-five-sculpt-restore-v3',()=>typeof window.installEnochianFiveSculptPointsV1==='function');
-  if(sculptReady)window.installEnochianFiveSculptPointsV1?.(frame);
+  const sculptReady=await ensureScript('/enochian-test/analyser-multipoint-sculpt-v1.js?v=20260905-five-anchors-v1',()=>typeof window.installEnochianMultipointSculptV1==='function');
+  if(sculptReady)window.installEnochianMultipointSculptV1?.(frame);
   d.documentElement.dataset.analyserSignal3d='retired-v9';
   d.documentElement.dataset.analyserSignalTerrain='unified-terrain-restored-v13';
   return true;
