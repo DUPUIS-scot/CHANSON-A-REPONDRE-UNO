@@ -1,4 +1,4 @@
-deploy-request: 2026-09-05T10:55:00+01:00
+deploy-request: 2026-09-05T11:05:00+01:00
 source: Codex
-scope: harden LUBIAK player spawn against omitted clearance helper
-commit: 0a135d93d1cb5643e236b9caa8a22689ce97e6ce
+scope: keep the LUBIAK Djinn and broom visible after pointer release
+commit: 4c2bbf55400929167b92a6f02b41a63de95e782a
