@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const VERSION='20260904-multipoint-sculpt-v3',ORANGE='#ff9d34';
+const VERSION='20260905-multipoint-sculpt-v4',ORANGE='#ff9d34';
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function install(frame){
  try{
@@ -19,7 +19,7 @@ function install(frame){
   def.anchors=Array.isArray(def.anchors)&&def.anchors.length?def.anchors.slice(0,5):defaults();while(def.anchors.length<5)def.anchors.push(defaults()[def.anchors.length]);
   def.selectedAnchor=clamp(Number.isFinite(def.selectedAnchor)?def.selectedAnchor:2,0,4);
   const syncLegacy=()=>{const a=def.anchors[def.selectedAnchor];if(!a)return;def.grabBin=a.bin;def.grabRow=a.row;def.pullY=a.pullY;def.pullZ=a.pullZ;def.twist=a.twist;def.radius=a.radius;def.vY=a.vY||0;def.vZ=a.vZ||0};syncLegacy();
-  const originalPick=w.__enochAnalyser3D.pick?.bind(w.__enochAnalyser3D),projected=()=>w.__enochAnalyser3D.getProjected?.()||[],meshCanvas=()=>wave.querySelector('.analyser-3d-unified');
+  const originalPick=w.__enochAnalyser3D.pick?.bind(w.__enochAnalyser3D),meshCanvas=()=>wave.querySelector('.analyser-3d-unified'),projected=()=>meshCanvas()?.__enochProjected||w.__enochAnalyser3D?.getProjected?.()||[];
   // Anchors are stored in the stable legacy 0–15 coordinate system. Map them
   // onto whichever visual mesh is active (the restored terrain is 40 × 28).
   const pointFor=(p,a)=>p[Math.round((a.row||0)*Math.max(0,p.length-1)/15)]?.[Math.round((a.bin||0)*Math.max(0,(p[0]?.length||1)-1)/15)];
@@ -32,7 +32,7 @@ function install(frame){
   wave.querySelector('.analyser-sculpt-overlay')?.remove();
   const overlay=d.createElement('canvas');overlay.className='analyser-sculpt-overlay';overlay.setAttribute('aria-hidden','true');wave.appendChild(overlay);
   const st=d.createElement('style');st.textContent='.analyser-sculpt-overlay{position:absolute;inset:0;width:100%;height:100%;z-index:5;pointer-events:none!important}.wave.analyser-signal-sculpting{cursor:crosshair!important}';d.head.appendChild(st);
-  const paint=()=>{requestAnimationFrame(paint);const rect=wave.getBoundingClientRect(),dpr=Math.min(1.75,w.devicePixelRatio||1),W=Math.max(1,Math.floor(rect.width*dpr)),H=Math.max(1,Math.floor(rect.height*dpr));if(overlay.width!==W||overlay.height!==H){overlay.width=W;overlay.height=H}const c=overlay.getContext('2d');c.clearRect(0,0,W,H);const p=projected(),canvas=meshCanvas(),modOn=w.__enochSignalModulation===true;if(!p.length||!canvas||!modOn)return;const sx=W/Math.max(1,canvas.width),sy=H/Math.max(1,canvas.height);def.anchors.slice(0,5).forEach((a,i)=>{const q=pointFor(p,a);if(!q)return;const selected=i===def.selectedAnchor;c.save();c.globalAlpha=1;c.strokeStyle=ORANGE;c.fillStyle=selected?'rgba(255,157,52,.34)':'rgba(2,7,11,.82)';c.shadowColor=ORANGE;c.shadowBlur=selected?9*dpr:3*dpr;c.lineWidth=(selected?1.8:1.2)*dpr;c.beginPath();c.arc(q.x*sx,q.y*sy,(selected?5:4)*dpr,0,Math.PI*2);c.fill();c.stroke();c.restore()})};requestAnimationFrame(paint);
+  const paint=()=>{requestAnimationFrame(paint);const rect=wave.getBoundingClientRect(),dpr=Math.min(1.75,w.devicePixelRatio||1),W=Math.max(1,Math.floor(rect.width*dpr)),H=Math.max(1,Math.floor(rect.height*dpr));if(overlay.width!==W||overlay.height!==H){overlay.width=W;overlay.height=H}const c=overlay.getContext('2d');c.clearRect(0,0,W,H);const p=projected(),canvas=meshCanvas(),modOn=w.__enochSignalModulation===true;overlay.dataset.markerCount='0';if(!p.length||!canvas||!modOn)return;let drawn=0;const sx=W/Math.max(1,canvas.width),sy=H/Math.max(1,canvas.height);def.anchors.slice(0,5).forEach((a,i)=>{const q=pointFor(p,a);if(!q)return;drawn++;const selected=i===def.selectedAnchor;c.save();c.globalAlpha=1;c.strokeStyle=ORANGE;c.fillStyle=selected?'rgba(255,157,52,.34)':'rgba(2,7,11,.82)';c.shadowColor=ORANGE;c.shadowBlur=selected?9*dpr:3*dpr;c.lineWidth=(selected?1.8:1.2)*dpr;c.beginPath();c.arc(q.x*sx,q.y*sy,(selected?5:4)*dpr,0,Math.PI*2);c.fill();c.stroke();c.restore()});overlay.dataset.markerCount=String(drawn)};requestAnimationFrame(paint);
   const api={version:VERSION,anchors:def.anchors,select:i=>{def.selectedAnchor=clamp(i|0,0,4);syncLegacy()},reset:()=>{def.anchors=defaults();def.selectedAnchor=2;api.anchors=def.anchors;syncLegacy();w.__enochAnalyser3D.invalidate?.()}};w.__enochMultipointSculpt=api;d.documentElement.dataset.analyserMultipointSculpt=VERSION;d.documentElement.dataset.analyserSculptPointCount='5';return true;
  }catch(_){return false}
 }
