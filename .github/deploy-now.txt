@@ -1,2 +1,4 @@
-deploy 2026-09-05T08:45:00Z
-scope restore 2MIX help-open regression contract while preserving single activation authority
+deploy-request: 2026-09-05T10:45:00+01:00
+source: Codex
+scope: repair LUBIAK clearance predicate runtime
+commit: e9310b64ff2d1819b25bb54f021d651dc091c5b8
