@@ -1,2 +1,2 @@
-deploy 2026-09-04T10:12:00Z
-scope LUBIAK navigation flash fix
+deploy 2026-09-05T07:00:00Z
+scope restore global UNO social preview metadata, generated card share redirects, clean URLs, and HP-007
