@@ -1,2 +1,2 @@
-deploy 2026-09-05T07:00:00Z
-scope restore global UNO social preview metadata, generated card share redirects, clean URLs, and HP-007
+deploy 2026-09-05T07:15:00Z
+scope restore Enochian 3D SIGNAL terrain sculpture mesh and five sculpt points
