@@ -1,2 +1,2 @@
-deploy 2026-09-05T07:45:00Z
-scope deploy LUBIAK circus stability fix plus Enochian unified 3D terrain compatibility contract
+deploy 2026-09-05T08:00:00Z
+scope validated Enochian retired-v9 compatibility contract plus LUBIAK circus model stability
