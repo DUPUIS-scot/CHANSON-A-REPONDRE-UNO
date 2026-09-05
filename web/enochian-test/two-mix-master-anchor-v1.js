@@ -11,7 +11,7 @@ function install(frame){
   style.textContent='#twoMixToggle.two-mix-master-anchor{position:absolute!important;right:10px!important;top:10px!important;left:auto!important;bottom:auto!important;z-index:2147483005!important;display:block!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;touch-action:manipulation!important;cursor:pointer!important;isolation:isolate!important}';
   toggle.classList.add('two-mix-master-anchor');toggle.style.pointerEvents='auto';toggle.style.touchAction='manipulation';toggle.title='2MIX';
   const state=()=>toggle.getAttribute('aria-pressed')==='true'||toggle.classList.contains('active');
-  const sync=()=>{const on=state();toggle.setAttribute('aria-label',on?'Disable 2MIX':'Enable 2MIX');d.documentElement.dataset.twoMixActivation=on?'on':'off'};
+  const sync=()=>{const on=state();toggle.setAttribute('aria-label',on?'Disable 2MIX':'Enable 2MIX');d.documentElement.dataset.twoMixActivation=on?'on':'off';d.documentElement.classList.toggle('two-mix-help-open',on)};
   if(toggle.dataset.activationAuthority!==VERSION){
    toggle.dataset.activationAuthority=VERSION;
    let before=false,armed=false,repairing=false;
