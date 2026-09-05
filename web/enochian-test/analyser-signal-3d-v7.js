@@ -1,5 +1,9 @@
 (()=>{
 'use strict';
+// Compatibility loader only: the legacy renderer is retired. The unified terrain
+// renderer remains the sole 3D SIGNAL authority; this shim restores its mesh and
+// five sculpt controls without creating a competing renderer.
+const RETIRED='retired-v9';
 const loaded=new Map();
 const ensureScript=(src,test)=>new Promise(resolve=>{
  try{
@@ -14,7 +18,7 @@ const ensureScript=(src,test)=>new Promise(resolve=>{
 async function install(frame){
  try{
   const live=frame?.contentDocument,deck=live?.getElementById('deck'),d=deck?.contentDocument,w=d?.defaultView;if(!d||!w)return false;
-  const unifiedReady=await ensureScript('/enochian-test/analyser-signal-unified-v1.js?v=20260905-terrain-restore-v1',()=>typeof window.installEnochianAnalyserSignalUnifiedV1==='function');
+  const unifiedReady=await ensureScript('/enochian-test/analyser-signal-unified-v1.js?v=20260905-terrain-restore-v2',()=>typeof window.installEnochianAnalyserSignalUnifiedV1==='function');
   if(!unifiedReady)return false;
   window.installEnochianAnalyserSignalUnifiedV1(frame);
   let mesh=null;
@@ -22,9 +26,10 @@ async function install(frame){
   if(!mesh)return false;
   mesh.style.setProperty('display','block','important');mesh.style.setProperty('opacity','.96','important');mesh.style.setProperty('visibility','visible','important');
   d.querySelectorAll('.analyser-3d:not(.analyser-3d-unified)').forEach(c=>{c.style.setProperty('display','none','important');c.style.setProperty('opacity','0','important')});
-  const sculptReady=await ensureScript('/enochian-test/analyser-five-sculpt-points-v1.js?v=20260905-five-sculpt-restore-v1',()=>typeof window.installEnochianFiveSculptPointsV1==='function');
+  const sculptReady=await ensureScript('/enochian-test/analyser-five-sculpt-points-v1.js?v=20260905-five-sculpt-restore-v2',()=>typeof window.installEnochianFiveSculptPointsV1==='function');
   if(sculptReady)window.installEnochianFiveSculptPointsV1?.(frame);
-  d.documentElement.dataset.analyserSignal3d='unified-terrain-restored-v11';
+  d.documentElement.dataset.analyserSignal3d=RETIRED;
+  d.documentElement.dataset.analyserSignalTerrain='unified-terrain-restored-v12';
   return true;
  }catch(_){return false}
 }
