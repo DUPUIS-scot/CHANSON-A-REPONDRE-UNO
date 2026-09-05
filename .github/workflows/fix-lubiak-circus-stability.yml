@@ -1,0 +1,102 @@
+name: Fix LUBIAK circus stability
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-lubiak-circus-stability.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Patch circus transition
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('web/lubiak/lubiak.js')
+          s=p.read_text()
+          old="""function enterCircus() {
+            if (worldMode !== 'exterior' || circusTransitioning || performance.now() < transitionLockUntil) return;
+            circusTransitioning = true;
+            transitionLockUntil = performance.now() + 1250;
+            makeCircusInterior();
+            exteriorReturn.position.copy(playerReady ? playerRoot.position : camera.position);
+            exteriorReturn.yaw = playerReady ? followYaw : yaw;
+            exteriorReturn.pitch = playerReady ? followPitch : pitch;
+
+            // LUBIAK_CIRCUS_ENTRY_FADE_V1 — briefly veil the hard scene swap so walking
+            // through the tent reads as one continuous transition rather than a teleport.
+            renderer.domElement.style.transition = 'opacity .22s ease';
+            renderer.domElement.style.opacity = '0.08';
+            showStatus('ENTERING LUBIAK CIRCUS', 700);
+
+            setTimeout(() => {
+              worldMode = 'circus';
+              syncCircusExitButton();
+              setExteriorVisibility(false);
+              circusInterior.visible = true;"""
+          new="""async function enterCircus() {
+            if (worldMode !== 'exterior' || circusTransitioning || performance.now() < transitionLockUntil) return;
+            circusTransitioning = true;
+            transitionLockUntil = performance.now() + 1250;
+            makeCircusInterior();
+            exteriorReturn.position.copy(playerReady ? playerRoot.position : camera.position);
+            exteriorReturn.yaw = playerReady ? followYaw : yaw;
+            exteriorReturn.pitch = playerReady ? followPitch : pitch;
+
+            // LUBIAK_CIRCUS_STABLE_SWAP_V1 — never fade the WebGL canvas or hide the
+            // authored exterior while the optional circus GLB is still decoding.
+            showStatus('PREPARING LUBIAK CIRCUS', 700);
+            await installCircusSet();
+            if (worldMode !== 'exterior') { circusTransitioning = false; return; }
+            circusInterior.visible = true;
+            await renderConfirmedFrame();
+            worldMode = 'circus';
+            syncCircusExitButton();
+            setExteriorVisibility(false);"""
+          if old not in s:
+              raise SystemExit('enterCircus transition anchor not found')
+          s=s.replace(old,new,1)
+          old2="""    installCircusSet();
+            requestAnimationFrame(() => {
+              renderer.domElement.style.opacity = '0.90';
+              setTimeout(() => {
+                circusTransitioning = false;
+                renderer.domElement.style.transition = '';
+                renderer.domElement.style.opacity = '';
+              }, 260);
+            });
+            showStatus('INSIDE LUBIAK CIRCUS', 1100);
+          }, 220);
+          }"""
+          new2="""    // The circus is already loaded and has produced a confirmed frame before
+            // the exterior authority is released, so there is no blank-scene interval.
+            circusTransitioning = false;
+            showStatus('INSIDE LUBIAK CIRCUS', 1100);
+          }"""
+          if old2 not in s:
+              raise SystemExit('circus fade tail anchor not found')
+          s=s.replace(old2,new2,1)
+          p.write_text(s)
+          PY
+      - name: Remove global canvas fade
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('web/lubiak/index.html'); s=p.read_text()
+          s=s.replace('transition:opacity .7s}body.lubiak-3d-ready canvas{opacity:1}', 'transition:none}body.lubiak-3d-ready canvas{opacity:1!important}')
+          s=s.replace('lubiak.js?v=20260904-navigation-resume-v1', 'lubiak.js?v=20260905-circus-stable-swap-v1')
+          p.write_text(s)
+          PY
+      - name: Commit fix
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add web/lubiak/lubiak.js web/lubiak/index.html
+          git diff --cached --check
+          git commit -m 'Stabilize LUBIAK circus scene swap' || exit 0
+          git push
