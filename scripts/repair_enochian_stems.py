@@ -99,6 +99,7 @@ for marker in [
     "analyserSignalUnified==='v5'",
     "const chamber=d.querySelector('.stage .wave')||d.querySelector('.wave')",
     "chamber.appendChild(canvas)",
+    "canvas.__enochProjected=pts",
     "type==='authoritative-frequency'",
     "w.__enochAnalyser3D=api",
     "filter=controlNorm('filter',.5)",
