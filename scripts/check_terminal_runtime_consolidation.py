@@ -37,6 +37,8 @@ checks = {
     "floating 2J is the sole launcher": "launcher.hidden=true;launcher.style.display='none'" in shield,
     "floating 2J defaults away from PLAYBACK": "top:auto;bottom:18px" in shield,
     "signal source waits for the embedded document root": "root=d?.documentElement;if(!d||!w||!root)return false" in signal_source,
+    "livestream signal attaches without a microphone prompt": "startInput(false)" in signal_source and "shared?.active" in signal_source,
+    "livestream signal follows replacement streams": "shared!==state.inputStream" in signal_source and "syncLivestream" in signal_source,
     "mobile 2J stays clear of the terminal header": "right:12px!important;top:auto!important;bottom:12px!important" in portal_spinner,
     "3MIX keeps a consistent accessible name": "Disable 2MIX" not in launcher_hit and "Enable 3MIX" in launcher_hit,
     "legacy fullscreen controls are removed after late insertion": "removeDuplicateFullscreen();syncUi()" in four_channel,
@@ -59,3 +61,4 @@ for name, ok in checks.items():
     print(("PASS" if ok else "FAIL") + ": " + name)
 if failed:
     raise SystemExit("terminal runtime consolidation failed: " + ", ".join(failed))
+
