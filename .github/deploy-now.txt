@@ -1,4 +1,4 @@
-deploy-request: 2026-09-05T11:05:00+01:00
+deploy-request: 2026-09-06T07:20:00+01:00
 source: Codex
-scope: keep the LUBIAK Djinn and broom visible after pointer release
-commit: 4c2bbf55400929167b92a6f02b41a63de95e782a
+scope: restore LUBIAK collision and clearance runtime dependencies
+commit: 6ff1ceb51cd3232d2e556950793bdc096f5e1693
