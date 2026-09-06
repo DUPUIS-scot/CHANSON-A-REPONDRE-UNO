@@ -82,7 +82,7 @@ if "authoritativeRuntime='v6'" not in authority:
     raise SystemExit('audio authority missing')
 if 'data-terminal-floatable' not in layout or '#doubleDeckerSpecial' not in layout:
     raise SystemExit('terminal viewport layout contract missing')
-if "twoMixMasterLayout==='v12'" not in two_mix_owner:
+if "twoMixMasterLayout==='v13'" not in two_mix_owner:
     raise SystemExit('2MIX authority missing')
 
 # Unified 3D SIGNAL authority contract.
