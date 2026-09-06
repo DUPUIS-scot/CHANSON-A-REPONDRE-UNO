@@ -51,7 +51,7 @@ void main() {
     expect(terminal,
         contains('enochian-terminal-polish-v1.js?v=20260827-polish-v3'));
     expect(terminal,
-        contains('enochian-ui-repairs-v1.js?v=20260827-ui-repairs-v7'));
+        contains('enochian-ui-repairs-v1.js?v=20260906-ui-repairs-v8'));
     expect(terminal,
         contains('analyser-controls-contained-v1.js?v=20260827-v6'));
     expect(terminal,
