@@ -43,7 +43,7 @@ void main() {
     expect(terminal,
         contains('authoritative-runtime.js?v=20260825-runtime-api-v2'));
     expect(terminal,
-        contains('double-decker-main-stem-link-v1.js?v=20260829-stem-jester-v14'));
+        contains('double-decker-main-stem-link-v1.js?v=20260906-stem-jester-v15'));
     expect(terminal,
         contains('double-jecker-radial-layout-v1.js?v=20260829-jester-radial-v13'));
     expect(terminal,
