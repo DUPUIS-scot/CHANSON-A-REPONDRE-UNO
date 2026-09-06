@@ -147,7 +147,7 @@ document.body.appendChild(joystick);
 const js=document.createElement('style');
 js.textContent='#lubiak-sphere-control .sphere-shell{position:relative;width:98px;height:98px;border-radius:50%;border:1px solid #f6c28b99;background:radial-gradient(circle at 32% 27%,#fff7 0 4%,#efad6d55 5% 17%,#6d3018bb 48%,#190a06ee 100%);box-shadow:inset -14px -17px 26px #000a,0 8px 28px #000a}#lubiak-sphere-control .sphere-knob{position:absolute;left:50%;top:50%;width:36px;height:36px;border-radius:50%;transform:translate(-50%,-50%);background:radial-gradient(circle at 35% 28%,#fff8,#f2ae68 24%,#7c3415 66%,#210b04);border:1px solid #ffd7a1aa}#lubiak-sphere-control span{position:absolute;bottom:1px}';
 document.head.appendChild(js);
-const mobileControlStyle=document.createElement('style');mobileControlStyle.textContent='@media(max-width:720px){#lubiak-mode-dock{right:max(12px,env(safe-area-inset-right))!important;bottom:max(174px,calc(env(safe-area-inset-bottom) + 174px))!important}#lubiak-vertical-dock{right:max(136px,calc(env(safe-area-inset-right) + 136px))!important;bottom:max(24px,calc(env(safe-area-inset-bottom) + 24px))!important}#lubiak-sphere-control{right:max(12px,env(safe-area-inset-right))!important;bottom:max(14px,env(safe-area-inset-bottom))!important}}';document.head.appendChild(mobileControlStyle);
+const mobileControlStyle=document.createElement('style');mobileControlStyle.textContent='@media(max-width:720px){#lubiak-mode-dock{right:max(12px,env(safe-area-inset-right))!important;bottom:max(150px,calc(env(safe-area-inset-bottom) + 150px))!important}#lubiak-vertical-dock{right:max(116px,calc(env(safe-area-inset-right) + 116px))!important;bottom:max(24px,calc(env(safe-area-inset-bottom) + 24px))!important}#lubiak-sphere-control{right:max(12px,env(safe-area-inset-right))!important;bottom:max(20px,calc(env(safe-area-inset-bottom) + 20px))!important;transform:scale(.84);transform-origin:right bottom}}';document.head.appendChild(mobileControlStyle);
 const knob=joystick.querySelector('.sphere-knob');
 let joyPointer=null;
 function setJoy(e){const r=joystick.querySelector('.sphere-shell').getBoundingClientRect();const x=(e.clientX-(r.left+r.width/2))/(r.width*.5);const y=(e.clientY-(r.top+r.height/2))/(r.height*.5);joystickVector.set(THREE.MathUtils.clamp(x,-1,1),THREE.MathUtils.clamp(-y,-1,1));if(joystickVector.length()>1) joystickVector.normalize();knob.style.transform='translate(calc(-50% + '+(joystickVector.x*29)+'px),calc(-50% + '+(-joystickVector.y*29)+'px))';}
@@ -1744,6 +1744,60 @@ function activeCollisionRoots() {
     roots.push(circusInterior);
   }
   return roots;
+}
+
+
+let climbAttached = false;
+
+function findClimbableSurface() {
+  if (!playerRoot || worldMode !== 'exterior') return null;
+  const origin = playerRoot.position.clone().add(new THREE.Vector3(0, 0.95, 0));
+  let best = null;
+  for (const dir of clearanceDirections) {
+    collisionRaycaster.set(origin, dir);
+    collisionRaycaster.near = 0.06;
+    collisionRaycaster.far = 1.15;
+    for (const root of activeCollisionRoots()) {
+      const hits = collisionRaycaster.intersectObject(root, true);
+      for (const hit of hits) {
+        const normal = worldHitNormal(hit);
+        if (!normal || Math.abs(normal.y) > 0.58) continue;
+        if (!best || hit.distance < best.hit.distance) best = { hit, normal };
+        break;
+      }
+    }
+  }
+  return best;
+}
+
+function applyFollowClimb(dt) {
+  if (!verticalTrigger || cameraMode !== 'follow' || playerMode !== 'walk') {
+    climbAttached = false;
+    return false;
+  }
+  const wall = findClimbableSurface();
+  if (!wall) {
+    climbAttached = false;
+    return false;
+  }
+  climbAttached = true;
+  playerVelocity.set(0, 0, 0);
+  restoreStandingWalkPose();
+  const nextY = playerRoot.position.y + verticalTrigger * 3.1 * dt;
+  playerRoot.position.y = THREE.MathUtils.clamp(nextY, 0, movementBounds?.max.y ?? 24);
+  playerBaseY = playerRoot.position.y;
+  const normal = wall.normal.clone();
+  normal.y = 0;
+  if (normal.lengthSq() > 1e-6) {
+    normal.normalize();
+    const hold = wall.hit.point.clone().addScaledVector(normal, 0.46);
+    playerRoot.position.x += (hold.x - playerRoot.position.x) * Math.min(1, dt * 14);
+    playerRoot.position.z += (hold.z - playerRoot.position.z) * Math.min(1, dt * 14);
+    const face = Math.atan2(-normal.x, -normal.z);
+    playerHeading += (face - playerHeading) * Math.min(1, dt * 10);
+    playerRoot.rotation.y = playerHeading;
+  }
+  return true;
 }
 
 function rayBlocked(origin, direction, distance) {
