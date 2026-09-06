@@ -1717,6 +1717,57 @@ async function installEnvironment() {
   }
 }
 
+// LUBIAK_COLLISION_RUNTIME_V1
+// Shared collision state must be defined before the player and follow camera begin.
+const collisionRaycaster = new THREE.Raycaster();
+const collisionOrigins = [
+  new THREE.Vector3(0, 0.28, 0),
+  new THREE.Vector3(0, 0.92, 0),
+  new THREE.Vector3(0, 1.48, 0),
+];
+const PLAYER_COLLISION_RADIUS = 0.34;
+const BROOM_COLLISION_RADIUS = 0.28;
+const PLAYER_BORDER_CLEARANCE = 0.62;
+const BROOM_BORDER_CLEARANCE = 0.78;
+const clearanceDirections = Array.from({ length: 12 }, (_, i) => {
+  const a = (i / 12) * Math.PI * 2;
+  return new THREE.Vector3(Math.cos(a), 0, Math.sin(a));
+});
+
+function activeCollisionRoots() {
+  const roots = [];
+  if (worldMode === 'exterior') {
+    if (exteriorRoot?.visible) roots.push(exteriorRoot);
+    if (fallbackRoot?.visible) roots.push(fallbackRoot);
+    if (dragonRoot?.visible) roots.push(dragonRoot);
+  } else if (worldMode === 'circus' && circusInterior?.visible) {
+    roots.push(circusInterior);
+  }
+  return roots;
+}
+
+function rayBlocked(origin, direction, distance) {
+  if (direction.lengthSq() < 1e-8) return false;
+  collisionRaycaster.set(origin, direction.clone().normalize());
+  collisionRaycaster.near = 0;
+  collisionRaycaster.far = distance;
+  for (const root of activeCollisionRoots()) {
+    if (collisionRaycaster.intersectObject(root, true).some((hit) => hit.distance <= distance)) return true;
+  }
+  return false;
+}
+
+function hasLubiakMeshClearance(point, includeBroom = false) {
+  const radius = PLAYER_BORDER_CLEARANCE + (includeBroom ? BROOM_BORDER_CLEARANCE : 0);
+  for (const h of [0.24, 0.82, 1.36]) {
+    const origin = point.clone().add(new THREE.Vector3(0, h, 0));
+    for (const direction of clearanceDirections) {
+      if (rayBlocked(origin, direction, radius)) return false;
+    }
+  }
+  return true;
+}
+
 function findSafeEntranceSpawn(anchor, includeBroom=true) {
   const env = environmentSize || new THREE.Vector3(76, 30, 130);
   const candidates = [];
