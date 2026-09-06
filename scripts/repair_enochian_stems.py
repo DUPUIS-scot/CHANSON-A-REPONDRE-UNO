@@ -26,7 +26,7 @@ for marker in ['window.__enochStemRuntimeApi=', 'stemMasterToggle', 'masterGate'
     if marker not in runtime:
         raise SystemExit(f'missing runtime marker: {marker}')
 
-for marker in ['stem-four-channel-ui-v1.js?v=20260827-v4', 'analyser-data-bus.js?v=20260824-v2', 'installEnochianTwoMixMasterAnchorV1']:
+for marker in ['stem-four-channel-ui-v1.js?v=20260827-v4', 'analyser-data-bus.js?v=20260906-three-mix-v3', 'installEnochianTwoMixMasterAnchorV1']:
     if marker not in shell:
         raise SystemExit(f'missing terminal shell marker: {marker}')
 
@@ -82,16 +82,16 @@ if "authoritativeRuntime='v6'" not in authority:
     raise SystemExit('audio authority missing')
 if 'data-terminal-floatable' not in layout or '#doubleDeckerSpecial' not in layout:
     raise SystemExit('terminal viewport layout contract missing')
-if "twoMixMasterLayout==='v10'" not in two_mix_owner:
+if "twoMixMasterLayout==='v12'" not in two_mix_owner:
     raise SystemExit('2MIX authority missing')
 
 # Unified 3D SIGNAL authority contract.
 for marker in [
-    "signalSourceUnified==='v3'",
+    "signalSourceUnified==='v4'",
     "bus.emit('authoritative-frequency'",
     "bus.emit('authoritative-signal'",
     "__enochLineInLiveWaveform?.getStream?.()",
-    "w.__enochSignalSourceAuthority={version:'v3'",
+    "w.__enochSignalSourceAuthority={version:'v4'",
 ]:
     if marker not in source_unified:
         raise SystemExit(f'unified signal source contract missing: {marker}')
@@ -127,7 +127,7 @@ for marker in [
 for marker in ["stemLevel('bass')", "stemLevel('other')", "authoritative-signal", "source.toUpperCase()"]:
     if marker not in composite:
         raise SystemExit(f'composite source/stem contract missing: {marker}')
-for marker in ["20260903-unified-v7", "selected==='midi'||selected==='input'", "analyser-3d-unified"]:
+for marker in ["20260906-three-mix-v8", "selected==='midi'||selected==='input'||selected==='mix'", "analyser-3d-unified"]:
     if marker not in live_health:
         raise SystemExit(f'unified health reporting missing: {marker}')
 
