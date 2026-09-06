@@ -19,7 +19,7 @@ function install(frame){
     d.head.appendChild(style);
     toggle.style.pointerEvents='auto';
     toggle.style.touchAction='manipulation';
-    toggle.setAttribute('aria-label',toggle.getAttribute('aria-pressed')==='true'?'Disable 2MIX':'Enable 2MIX');
+    toggle.setAttribute('aria-label',toggle.getAttribute('aria-pressed')==='true'?'Disable 3MIX':'Enable 3MIX');
     let before=false,armed=false;
     const on=()=>toggle.getAttribute('aria-pressed')==='true'||toggle.classList.contains('active');
     toggle.addEventListener('pointerdown',()=>{before=on();armed=true},{capture:true,passive:true});
@@ -30,7 +30,7 @@ function install(frame){
         try{toggle.click()}catch(_){}
       },0);
     },{capture:true,passive:true});
-    toggle.addEventListener('click',()=>setTimeout(()=>{const active=on();toggle.setAttribute('aria-label',active?'Disable 2MIX':'Enable 2MIX');d.documentElement.dataset.twoMixActivation=active?'on':'off'},0));
+    toggle.addEventListener('click',()=>setTimeout(()=>{const active=on();toggle.setAttribute('aria-label',active?'Disable 3MIX':'Enable 3MIX');d.documentElement.dataset.twoMixActivation=active?'on':'off'},0));
     toggle.dataset.launcherHitRepair=VERSION;
     d.documentElement.dataset.twoMixLauncherHitRepair=VERSION;
     return true;

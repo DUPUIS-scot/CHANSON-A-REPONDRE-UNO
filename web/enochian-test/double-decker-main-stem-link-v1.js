@@ -102,7 +102,7 @@ function install(host){
       if(delay)w.setTimeout(start,delay);else start();
     };
     loadAddon('shield','/enochian-test/double-jecker-turntable-shield-v1.js?v=20260829-v5','installEnochianDoubleJeckerTurntableShieldV1');
-    loadAddon('portal-spinner','/enochian-test/double-jester-portal-spinner-v1.js?v=20260829-v4','installEnochianDoubleJesterPortalSpinnerV4');
+    loadAddon('portal-spinner','/enochian-test/double-jester-portal-spinner-v1.js?v=20260906-v5','installEnochianDoubleJesterPortalSpinnerV4');
     loadAddon('output','/enochian-test/double-jecker-output-v1.js?v=20260829-output-v3','installEnochianDoubleJeckerOutputV1');
     loadAddon('signal-relay','/enochian-test/double-jecker-signal-relay-v1.js?v=20260827-relay-v3','installEnochianDoubleJeckerSignalRelayV1');
     loadAddon('radial-v13','/enochian-test/double-jecker-radial-layout-v1.js?v=20260829-jester-radial-v13','installEnochianDoubleJeckerRadialV1',80);
