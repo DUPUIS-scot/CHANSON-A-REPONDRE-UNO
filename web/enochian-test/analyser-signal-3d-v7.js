@@ -18,7 +18,7 @@ const ensureScript=(src,test)=>new Promise(resolve=>{
 async function install(frame){
  try{
   const live=frame?.contentDocument,deck=live?.getElementById('deck'),d=deck?.contentDocument,w=d?.defaultView;if(!d||!w)return false;
-  const unifiedReady=await ensureScript('/enochian-test/analyser-signal-unified-v1.js?v=20260906-single-authority-v1',()=>typeof window.installEnochianAnalyserSignalUnifiedV1==='function');
+  const unifiedReady=await ensureScript('/enochian-test/analyser-signal-unified-v1.js?v=20260906-terrain-anchor-v6',()=>typeof window.installEnochianAnalyserSignalUnifiedV1==='function');
   if(!unifiedReady)return false;
   window.installEnochianAnalyserSignalUnifiedV1(frame);
   let mesh=null;
@@ -26,7 +26,7 @@ async function install(frame){
   if(!mesh)return false;
   mesh.style.setProperty('display','block','important');mesh.style.setProperty('opacity','.96','important');mesh.style.setProperty('visibility','visible','important');
   d.querySelectorAll('.analyser-3d:not(.analyser-3d-unified)').forEach(c=>{c.style.setProperty('display','none','important');c.style.setProperty('opacity','0','important')});
-  const sculptReady=await ensureScript('/enochian-test/analyser-multipoint-sculpt-v2.js?v=20260906-colour-sculpt-v8',()=>typeof window.installEnochianMultipointSculptV2==='function');
+  const sculptReady=await ensureScript('/enochian-test/analyser-multipoint-sculpt-v2.js?v=20260906-terrain-anchor-v6',()=>typeof window.installEnochianMultipointSculptV2==='function');
   if(sculptReady)window.installEnochianMultipointSculptV2?.(frame);
   // Keep the exact retired-v9 marker required by the source-runtime contract.
   // The magnetic v14 terrain revision is tracked separately below.
