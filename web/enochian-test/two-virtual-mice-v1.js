@@ -15,7 +15,7 @@ function install(host){
   const help=d.createElement('div');help.id='twoMixHelp';help.innerHTML='<b>2MIX 360° SIGNAL SCULPT</b><br>A = amber magnetic pole · B = cyan opposite pole.<br>Drag inside 3D SIGNAL to move both poles. SHIFT changes pole distance. ALT rotates the field. Wheel changes depth/twist. ESC releases.';
   const a=d.createElement('div');a.id='twoMixA';a.className='twoMixPointer a';a.textContent='A';const b=d.createElement('div');b.id='twoMixB';b.className='twoMixPointer b';b.textContent='B';const tether=d.createElement('div');tether.id='twoMixTether';
   d.body.append(toggle,stateEl,help,tether,a,b);
-  const wave=d.querySelector('.wave');if(wave){if(w.getComputedStyle(wave).position==='static')wave.style.position='relative';const pipe=d.createElement('div');pipe.id='twoMixPipeline';pipe.innerHTML='<span>MASTER</span><span>MIDI / INPUT / STEMS</span><span class="hot">3D SIGNAL</span><span>OUTPUT</span><span>SIGNAL MOD</span><span>FX</span><span class="hot">3D SIGNAL OUTPUT</span>';wave.appendChild(pipe)}
+  const wave=d.querySelector('.wave');if(wave&&w.getComputedStyle(wave).position==='static')wave.style.position='relative';
   const S={on:false,armed:false,cx:w.innerWidth*.5,cy:w.innerHeight*.5,sep:220,ang:0,depth:0,twist:0,lastX:0,lastY:0};
   const deform=()=>w.__enochAnalyserGesture?.deform||null;
   function points(){return {ax:S.cx-Math.cos(S.ang)*S.sep*.5,ay:S.cy-Math.sin(S.ang)*S.sep*.5,bx:S.cx+Math.cos(S.ang)*S.sep*.5,by:S.cy+Math.sin(S.ang)*S.sep*.5}}
