@@ -87,11 +87,11 @@ if "twoMixMasterLayout==='v13'" not in two_mix_owner:
 
 # Unified 3D SIGNAL authority contract.
 for marker in [
-    "signalSourceUnified==='v4'",
+    "signalSourceUnified==='v5'",
     "bus.emit('authoritative-frequency'",
     "bus.emit('authoritative-signal'",
     "__enochLineInLiveWaveform?.getStream?.()",
-    "w.__enochSignalSourceAuthority={version:'v4'",
+    "w.__enochSignalSourceAuthority={version:'v5'",
 ]:
     if marker not in source_unified:
         raise SystemExit(f'unified signal source contract missing: {marker}')
@@ -151,3 +151,4 @@ for name in required_files:
         subprocess.run(['node', '--check', str(path)], check=True)
 
 print('Enochian runtime verified: one source authority, one 3D renderer, MAIN/MIDI/INPUT arbitration, four stems, full EQ/FX shaping, SIGNAL MOD gated MIDI feedback, and existing 2J/2JESTER/PLAYBACK/2MIX contracts.')
+
