@@ -96,7 +96,7 @@ for marker in [
     if marker not in source_unified:
         raise SystemExit(f'unified signal source contract missing: {marker}')
 for marker in [
-    "analyserSignalUnified==='v5'",
+    "analyserSignalUnified==='v6'",
     "const chamber=d.querySelector('.stage .wave')||d.querySelector('.wave')",
     "chamber.appendChild(canvas)",
     "canvas.__enochProjected=pts",
@@ -109,6 +109,7 @@ for marker in [
     "bilinearSample(i,r)",
     "lineHot:'#A8F1FF'",
     "if(amp<=.58)continue",
+    "projectionSpace='terrain-vertices-v1'",
 ]:
     if marker not in renderer_unified:
         raise SystemExit(f'unified 3D renderer contract missing: {marker}')
