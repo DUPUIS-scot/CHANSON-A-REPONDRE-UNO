@@ -473,12 +473,18 @@ function centerLockWorldFocus(out){
   return out.copy(camera.position).addScaledVector(dir,18);
 }
 function captureCenterLockFocus(){
+  // AERIAL is free-flight look: rotate from the current camera position and never
+  // re-anchor to the environment model's bounding-box centre.
+  if(cameraMode==='aerial'){
+    centerLockActive=false;
+    return;
+  }
   centerLockWorldFocus(centerLockFocus);
   centerLockRadius=THREE.MathUtils.clamp(camera.position.distanceTo(centerLockFocus),2.5,160);
   centerLockActive=true;
 }
 function applyCenterLockedOrbit(){
-  if(!centerLockActive)return;
+  if(!centerLockActive||cameraMode==='aerial')return;
   // Re-pin the live subject while dragging so movement/animation cannot pull it off-centre.
   centerLockWorldFocus(centerLockFocus);
   const a=currentCenterLockAngles();
