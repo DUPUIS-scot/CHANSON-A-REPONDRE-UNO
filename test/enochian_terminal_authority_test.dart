@@ -57,7 +57,7 @@ void main() {
     expect(terminal,
         contains('playback-transport-authority-v1.js?v=20260827-v1'));
     expect(terminal,
-        contains('two-mix-master-anchor-v1.js?v=20260906-three-mix-v12'));
+        contains('two-mix-master-anchor-v1.js?v=20260906-terrain-controls-v13'));
 
     expect(radial, contains("VERSION='v13'"));
     expect(radial, contains('doubleJesterRadialPanelRectV13'));
