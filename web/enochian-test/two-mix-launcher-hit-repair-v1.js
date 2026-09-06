@@ -19,6 +19,7 @@ function install(frame){
     d.head.appendChild(style);
     toggle.style.pointerEvents='auto';
     toggle.style.touchAction='manipulation';
+    toggle.title='3MIX · three signal mice';
     toggle.setAttribute('aria-label',toggle.getAttribute('aria-pressed')==='true'?'Disable 3MIX':'Enable 3MIX');
     let before=false,armed=false;
     const on=()=>toggle.getAttribute('aria-pressed')==='true'||toggle.classList.contains('active');
