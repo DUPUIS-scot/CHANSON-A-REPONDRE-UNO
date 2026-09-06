@@ -26,7 +26,7 @@ for marker in ['window.__enochStemRuntimeApi=', 'stemMasterToggle', 'masterGate'
     if marker not in runtime:
         raise SystemExit(f'missing runtime marker: {marker}')
 
-for marker in ['stem-four-channel-ui-v1.js?v=20260906-v6', 'analyser-data-bus.js?v=20260906-three-mix-v3', 'installEnochianTwoMixMasterAnchorV1']:
+for marker in ['stem-four-channel-ui-v1.js?v=20260906-v7', 'analyser-data-bus.js?v=20260906-three-mix-v3', 'installEnochianTwoMixMasterAnchorV1']:
     if marker not in shell:
         raise SystemExit(f'missing terminal shell marker: {marker}')
 
