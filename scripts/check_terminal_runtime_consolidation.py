@@ -13,6 +13,10 @@ ios = (terminal / "ios-touch-tuning.js").read_text(encoding="utf-8")
 viewport = (terminal / "target-viewport.js").read_text(encoding="utf-8")
 shield = (terminal / "double-jecker-turntable-shield-v1.js").read_text(encoding="utf-8")
 installer = (terminal / "terminal-installer-singleton-v1.js").read_text(encoding="utf-8")
+signal_source = (terminal / "signal-source-unified-v2.js").read_text(encoding="utf-8")
+portal_spinner = (terminal / "double-jester-portal-spinner-v1.js").read_text(encoding="utf-8")
+launcher_hit = (terminal / "two-mix-launcher-hit-repair-v1.js").read_text(encoding="utf-8")
+four_channel = (terminal / "stem-four-channel-ui-v1.js").read_text(encoding="utf-8")
 
 # The terminal shell may use either an absolute or relative same-origin iframe URL.
 # Validate the actual cache-busted live-copy entry instead of requiring a leading slash.
@@ -32,7 +36,11 @@ checks = {
     "one fullscreen control is reused": "actions.querySelector('[data-terminal-fullscreen]')" in viewport,
     "floating 2J is the sole launcher": "launcher.hidden=true;launcher.style.display='none'" in shield,
     "floating 2J defaults away from PLAYBACK": "top:auto;bottom:18px" in shield,
-    "consolidated installer is cache-busted": "terminal-installer-singleton-v1.js?v=20260829-v30" in shell,
+    "signal source waits for the embedded document root": "root=d?.documentElement;if(!d||!w||!root)return false" in signal_source,
+    "mobile 2J stays clear of the terminal header": "right:12px!important;top:auto!important;bottom:12px!important" in portal_spinner,
+    "3MIX keeps a consistent accessible name": "Disable 2MIX" not in launcher_hit and "Enable 3MIX" in launcher_hit,
+    "legacy fullscreen controls are removed after late insertion": "removeDuplicateFullscreen();syncUi()" in four_channel,
+    "consolidated installer is cache-busted": "terminal-installer-singleton-v1.js?v=20260906-v31" in shell,
     "consolidated runtime entry is cache-busted": live_copy_cache_busted,
     "late authorities use repaired revisions": all(
         marker in installer
