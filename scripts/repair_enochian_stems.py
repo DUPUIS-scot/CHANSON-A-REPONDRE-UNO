@@ -16,6 +16,7 @@ playback_owner = (base / 'playback-transport-authority-v1.js').read_text(encodin
 two_mix_owner = (base / 'two-mix-master-anchor-v1.js').read_text(encoding='utf-8')
 layout = (base / 'terminal-viewport-layout-contract-v1.js').read_text(encoding='utf-8')
 source_unified = (base / 'signal-source-unified-v2.js').read_text(encoding='utf-8')
+source_autonext = (base / 'signal-source-autonext-v1.js').read_text(encoding='utf-8')
 renderer_unified = (base / 'analyser-signal-unified-v1.js').read_text(encoding='utf-8')
 legacy_renderer = (base / 'analyser-signal-3d-v7.js').read_text(encoding='utf-8')
 midi_signal = (base / 'midi-signal-live-v1.js').read_text(encoding='utf-8')
@@ -96,6 +97,8 @@ for marker in [
 ]:
     if marker not in source_unified:
         raise SystemExit(f'unified signal source contract missing: {marker}')
+if '__enochSignalSourceAuthority' in source_autonext or '__enochPlaylistAutoNext' not in source_autonext:
+    raise SystemExit('playlist auto-next must not replace the unified signal authority')
 for marker in [
     "analyserSignalUnified==='v6'",
     "const chamber=d.querySelector('.stage .wave')||d.querySelector('.wave')",
