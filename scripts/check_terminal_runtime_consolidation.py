@@ -37,6 +37,7 @@ checks = {
     "floating 2J is the sole launcher": "launcher.hidden=true;launcher.style.display='none'" in shield,
     "floating 2J defaults away from PLAYBACK": "top:auto;bottom:18px" in shield,
     "signal source waits for the embedded document root": "root=d?.documentElement;if(!d||!w||!root)return false" in signal_source,
+    "livestream signal authority replaces the previous runtime": "root.dataset.signalSourceUnified='v5'" in signal_source,
     "livestream signal attaches without a microphone prompt": "startInput(false)" in signal_source and "shared?.active" in signal_source,
     "livestream signal follows replacement streams": "shared!==state.inputStream" in signal_source and "syncLivestream" in signal_source,
     "mobile 2J stays clear of the terminal header": "right:12px!important;top:auto!important;bottom:12px!important" in portal_spinner,
