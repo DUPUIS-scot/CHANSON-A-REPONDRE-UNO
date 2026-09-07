@@ -88,6 +88,7 @@ if "twoMixMasterLayout==='v13'" not in two_mix_owner:
 # Unified 3D SIGNAL authority contract.
 for marker in [
     "signalSourceUnified==='v5'",
+    "root.dataset.signalSourceUnified='v5'",
     "bus.emit('authoritative-frequency'",
     "bus.emit('authoritative-signal'",
     "__enochLineInLiveWaveform?.getStream?.()",
