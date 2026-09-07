@@ -14,6 +14,7 @@ viewport = (terminal / "target-viewport.js").read_text(encoding="utf-8")
 shield = (terminal / "double-jecker-turntable-shield-v1.js").read_text(encoding="utf-8")
 installer = (terminal / "terminal-installer-singleton-v1.js").read_text(encoding="utf-8")
 signal_source = (terminal / "signal-source-unified-v2.js").read_text(encoding="utf-8")
+signal_autonext = (terminal / "signal-source-autonext-v1.js").read_text(encoding="utf-8")
 portal_spinner = (terminal / "double-jester-portal-spinner-v1.js").read_text(encoding="utf-8")
 launcher_hit = (terminal / "two-mix-launcher-hit-repair-v1.js").read_text(encoding="utf-8")
 four_channel = (terminal / "stem-four-channel-ui-v1.js").read_text(encoding="utf-8")
@@ -40,6 +41,8 @@ checks = {
     "livestream signal authority replaces the previous runtime": "root.dataset.signalSourceUnified='v5'" in signal_source,
     "livestream signal attaches without a microphone prompt": "startInput(false)" in signal_source and "shared?.active" in signal_source,
     "livestream signal follows replacement streams": "shared!==state.inputStream" in signal_source and "syncLivestream" in signal_source,
+    "livestream authority is marked only after installation": "root.dataset.signalSourceUnified='v5';w.addEventListener" in signal_source,
+    "playlist auto-next cannot replace signal authority": "__enochSignalSourceAuthority" not in signal_autonext and "__enochPlaylistAutoNext" in signal_autonext,
     "mobile 2J stays clear of the terminal header": "right:12px!important;top:auto!important;bottom:12px!important" in portal_spinner,
     "3MIX keeps a consistent accessible name": "Disable 2MIX" not in launcher_hit and "Enable 3MIX" in launcher_hit,
     "legacy fullscreen controls are removed after late insertion": "removeDuplicateFullscreen();syncUi()" in four_channel,
