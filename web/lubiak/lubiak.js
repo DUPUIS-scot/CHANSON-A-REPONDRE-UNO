@@ -82,20 +82,23 @@ let broomRoot = null;
 let playerReady = false;
 let playerMode = 'walk';
 let playerVelocity = new THREE.Vector3();
-let playerHeading = Math.PI;
+let playerHeading = 0;
 let playerBaseY = 0;
 let followYaw = 0;
 let followPitch = -0.10;
-let followDistance = 4.35;
+let followDistance = 6.2;
 // LUBIAK_FOLLOW_RIGHT_SHOULDER_V1
-const followShoulderOffset = 0.72;
+// Centre the complete djinn + longitudinal broom silhouette in FOLLOW.
+const followShoulderOffset = 0;
 // LUBIAK_AERIAL_CAMERA_V1
 let cameraMode = 'follow';
 let aerialYaw = 0;
 let aerialPitch = -0.28;
-let aerialSpeed = 18;
+// LUBIAK_MOVEMENT_SPEED_V2 — 50% faster while retaining existing mode ratios.
+let aerialSpeed = 27;
+const rideSpeed = 14.25;
 let aerialReturnBlend = 0;
-const aerialSaved = { followYaw: 0, followPitch: -0.10, followDistance: 4.35 };
+const aerialSaved = { followYaw: 0, followPitch: -0.10, followDistance: 6.2 };
 
 // LUBIAK_INPUT_AUTHORITY_REPAIR_V1
 const keys = new Set();
@@ -114,7 +117,7 @@ function setCameraMode(nextMode) {
     showStatus('AERIAL OBSERVATION · V TO RETURN', 1200);
   } else {
     cameraMode = 'follow';
-    followYaw = aerialSaved.followYaw;
+    followYaw = playerReady ? -playerHeading : aerialSaved.followYaw;
     followPitch = aerialSaved.followPitch;
     followDistance = aerialSaved.followDistance;
     aerialReturnBlend = 1;
@@ -162,7 +165,7 @@ verticalButton('▲ UP',1);verticalButton('▼ DOWN',-1);document.body.appendChi
 
 const modeDock=document.createElement('div');modeDock.id='lubiak-mode-dock';modeDock.style.cssText='position:fixed;right:max(14px,env(safe-area-inset-right));bottom:max(178px,calc(env(safe-area-inset-bottom) + 178px));z-index:82;display:flex;gap:6px;padding:5px;border:1px solid #f6c28b55;border-radius:999px;background:#100806dd;white-space:nowrap';
 function modeButton(label,fn){const b=document.createElement('button');b.textContent=label;b.style.cssText='border:1px solid #f6c28b66;border-radius:999px;padding:8px 10px;background:#160b08cc;color:#ffe2bd;font:700 9px system-ui;letter-spacing:.08em';b.addEventListener('click',fn);modeDock.appendChild(b);return b;}
-const followToggle=modeButton('FOLLOW',()=>{if(!playerReady||!playerRoot)return;if(playerMode!=='walk'){playerMode='walk';restoreStandingWalkPose();}else if(broomRoot&&typeof recoverBroomCarryIfNeeded==='function')recoverBroomCarryIfNeeded();if(typeof revealDjinnAndBroom==='function')revealDjinnAndBroom();setCameraMode('follow');followDistance=Math.max(followDistance,5.15);updateFollowCamera(1);refreshLubiakModeButtons()});
+const followToggle=modeButton('FOLLOW',()=>{if(!playerReady||!playerRoot)return;if(playerMode!=='walk'){playerMode='walk';restoreStandingWalkPose();}else if(broomRoot&&typeof recoverBroomCarryIfNeeded==='function')recoverBroomCarryIfNeeded();if(typeof revealDjinnAndBroom==='function')revealDjinnAndBroom();setCameraMode('follow');followYaw=-playerHeading;followDistance=Math.max(followDistance,6.2);updateFollowCamera(1);refreshLubiakModeButtons()});
 const aerialToggle=modeButton('AERIAL',()=>{setCameraMode('aerial');refreshLubiakModeButtons()});
 const rideToggle=modeButton('RIDE',()=>{if(!playerReady||!playerRoot||!broomRoot)return;if(typeof forceActorTreeVisible==='function'){forceActorTreeVisible(playerRoot);forceActorTreeVisible(broomRoot);}if(playerMode==='walk'){if(typeof recoverBroomCarryIfNeeded==='function')recoverBroomCarryIfNeeded();walkBlend=0;prepareBroomForRide();mountTransition=0;playerMode='mounting';}setCameraMode('follow');followDistance=Math.max(followDistance,5.15);updateFollowCamera(1);refreshLubiakModeButtons()});
 document.body.appendChild(modeDock);
@@ -1399,7 +1402,7 @@ function attachBroomToShoulder() {
   // LUBIAK_BROOM_REFERENCE_PROPORTION_V2
   // Reference: DA NOBLE Y2K spans about 1.9x the 1.72-unit djinn height.
   broomRoot.scale.setScalar(3.34 / longest);
-  broomRoot.rotation.set(0.06, Math.PI * 0.5, 0.05);
+  broomRoot.rotation.set(0.06, 0, 0.05);
   broomRoot.position.set(-0.54, -0.015, -0.015);
 }
 
@@ -1488,7 +1491,7 @@ function restoreStandingWalkPose() {
   if (broomRoot && broomShoulderSocket && broomRoot.parent !== broomShoulderSocket) {
     broomShoulderSocket.attach(broomRoot);
     broomRoot.scale.setScalar(broomRoot.scale.x);
-    broomRoot.rotation.set(0.06, Math.PI * 0.5, 0.05);
+    broomRoot.rotation.set(0.06, 0, 0.05);
     broomRoot.position.set(-0.54, -0.015, -0.015);
     broomRideStart = null;
   }
@@ -2116,16 +2119,17 @@ function updatePlayer(dt) {
   } else if (playerMode === 'mounting') {
     mountTransition += dt;
     playerVelocity.multiplyScalar(Math.max(0, 1 - dt * 9));
-    const t = THREE.MathUtils.smoothstep(mountTransition, 0.10, 1.55);
+    const t = THREE.MathUtils.smoothstep(mountTransition, 0.08, 1.95);
     applyRidePose(t);
     const mountTarget = playerRoot.position.clone();
-    mountTarget.y = playerBaseY + t * 2.6;
+    const mountLift = THREE.MathUtils.smootherstep(t, 0.18, 1);
+    mountTarget.y = playerBaseY + mountLift * 0.95;
     // Mount vertically with the rider capsule; broom tips may sweep past nearby
     // scenery without aborting the transition at its first frame.
     const mountSolved = resolvePlayerCollision(playerRoot.position, mountTarget, false);
     playerRoot.position.y = mountSolved.y;
     playerRoot.rotation.x = -0.08 * t;
-    if (mountTransition > 1.78) {
+    if (mountTransition > 2.15) {
       playerMode = 'flight';
       applyRidePose(1);
       if (typeof refreshLubiakModeButtons === 'function') refreshLubiakModeButtons();
@@ -2152,7 +2156,7 @@ function updatePlayer(dt) {
     desired.y += verticalKey * 0.95;
     const mag3d = THREE.MathUtils.clamp(Math.hypot(mag2d, verticalKey), 0, 1);
     if (desired.lengthSq() > 0.001) desired.normalize();
-    playerVelocity.lerp(desired.multiplyScalar(9.5 * mag3d), Math.min(1, dt * 5));
+    playerVelocity.lerp(desired.multiplyScalar(rideSpeed * mag3d), Math.min(1, dt * 5));
     moveRideWithCollision(playerVelocity.clone().multiplyScalar(dt));
 
     // Terrain is a floor, not an altitude lock: maintain only a minimum clearance from the GLB below.
