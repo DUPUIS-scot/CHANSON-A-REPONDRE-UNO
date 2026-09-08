@@ -90,7 +90,7 @@ jobs:
           grep -q "double-jecker-radial-layout-v1.js?v=20260829-jester-radial-v13" "$shell"
           grep -q "double-jecker-runtime-repair-v1.js?v=20260827-jester-authority-v11" "$shell"
           grep -q "enochian-terminal-polish-v1.js?v=20260827-polish-v3" "$shell"
-          grep -q "double-decker-main-stem-link-v1.js?v=20260829-stem-jester-v14" "$shell"
+          grep -q "double-decker-main-stem-link-v1.js?v=20260906-stem-jester-v15" "$shell"
           grep -q '"three":"/vendor/three.module.js"' "$shell"
           grep -q "laboratory_portal_mirror.glb" "$spinner"
           grep -q "const VERSION='v4'" "$spinner"
