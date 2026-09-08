@@ -133,7 +133,7 @@ for marker in [
 for marker in ["stemLevel('bass')", "stemLevel('other')", "authoritative-signal", "source.toUpperCase()"]:
     if marker not in composite:
         raise SystemExit(f'composite source/stem contract missing: {marker}')
-for marker in ["20260906-three-mix-v8", "selected==='midi'||selected==='input'||selected==='mix'", "analyser-3d-unified"]:
+for marker in ["20260908-live-signal-v9", "selected==='midi'||selected==='input'||selected==='mix'", "analyser-3d-unified"]:
     if marker not in live_health:
         raise SystemExit(f'unified health reporting missing: {marker}')
 
