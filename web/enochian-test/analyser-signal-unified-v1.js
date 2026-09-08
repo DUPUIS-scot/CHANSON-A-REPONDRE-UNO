@@ -23,7 +23,7 @@ function install(frame){
  const shape=arr=>{if(!arr?.length)return null;const out=new Float32Array(AUDIO_BINS),low=clamp(((parseFloat(d.getElementById('low')?.value)||0)+18)/36),mid=clamp(((parseFloat(d.getElementById('mid')?.value)||0)+18)/36),high=clamp(((parseFloat(d.getElementById('high')?.value)||0)+18)/36),fxMix=textPct('fxMixV')||controlNorm('fxMix',.5),fxMacro=textPct('fxWheelV'),filter=controlNorm('filter',.5),drive=controlNorm('drive',0),delay=controlNorm('delay',0),feedback=controlNorm('fb',0),wet=controlNorm('wet',0),stemEnergy=(stem('vocals')+stem('drums')+stem('bass')+stem('other'))/4,instant=[...d.querySelectorAll('.instant-fx-btn')].some(active)?1:0;for(let i=0;i<AUDIO_BINS;i++){const a=Math.floor(i*arr.length/AUDIO_BINS),b=Math.max(a+1,Math.floor((i+1)*arr.length/AUDIO_BINS));let sum=0,n=0;for(let j=a;j<b&&j<arr.length;j++){sum+=arr[j];n++}const x=i/(AUDIO_BINS-1),eq=x<.33?low:x<.67?mid:high,filterTilt=clamp(1+(filter-.5)*(x-.5)*1.9,.45,1.55),fxEnergy=.10*fxMix+.08*fxMacro+.09*drive+.06*delay+.06*feedback+.08*wet+.07*instant,mult=(.56+.52*eq+.18*stemEnergy+fxEnergy)*filterTilt;out[i]=clamp((n?sum/n:0)*mult,0,255)}return out};
  const acceptPayload=(payload,source,serial=0)=>{const next=shape(payload);if(next){latest=next;latestStamp=performance.now();latestSource=source;lastFrameSerial=serial||lastFrameSerial}};
  const off=bus.subscribe((type,payload)=>{const selected=w.__enochSignalSource||'main';if(type==='frequency'){if(selected==='main')acceptPayload(payload,'main')}else if(type==='authoritative-frequency'&&payload?.source&&payload?.data){if(selected!=='main'&&payload.source===selected)acceptPayload(payload.data,payload.source,Number(payload.serial)||0)}});if((w.__enochSignalSource||'main')==='main'&&bus.frequency)acceptPayload(bus.frequency,'main');
- const idle=t=>{const a=new Float32Array(AUDIO_BINS);for(let i=0;i<AUDIO_BINS;i++)a[i]=8+7*(1+Math.sin(t*.0014+i*.55));return a};const push=t=>{if(t-lastPush<58)return;lastPush=t;const live=latest&&performance.now()-latestStamp<500;history[write]=new Float32Array(live?latest:idle(t));write=(write+1)%AUDIO_ROWS};const row=r=>history[(write-1-r+AUDIO_ROWS)%AUDIO_ROWS];
+ const idle=t=>{const a=new Float32Array(AUDIO_BINS);for(let i=0;i<AUDIO_BINS;i++)a[i]=18+16*(1+Math.sin(t*.0018+i*.55));return a};const push=t=>{if(t-lastPush<58)return;lastPush=t;const live=latest&&performance.now()-latestStamp<500;history[write]=new Float32Array(live?latest:idle(t));write=(write+1)%AUDIO_ROWS};const row=r=>history[(write-1-r+AUDIO_ROWS)%AUDIO_ROWS];
  const bilinearSample=(visualX,visualZ)=>{const x=visualX/(VISUAL_BINS-1)*(AUDIO_BINS-1),z=visualZ/(VISUAL_ROWS-1)*(AUDIO_ROWS-1),x0=Math.floor(x),x1=Math.min(AUDIO_BINS-1,x0+1),z0=Math.floor(z),z1=Math.min(AUDIO_ROWS-1,z0+1),tx=x-x0,tz=z-z0,a=row(z0)[x0]*(1-tx)+row(z0)[x1]*tx,b=row(z1)[x0]*(1-tx)+row(z1)[x1]*tx;return a*(1-tz)+b*tz};
  const anchorCoords=a=>{const rawBin=Number(a?.bin),rawRow=Number(a?.row),bin=Number.isFinite(rawBin)?rawBin:7.5,row=Number.isFinite(rawRow)?rawRow:0;return{bin:clamp(bin*(BINS-1)/15,0,BINS-1),row:clamp(row*(ROWS-1)/15,0,ROWS-1)}};
  const paint=t=>{
@@ -31,15 +31,15 @@ function install(frame){
   const rect=canvas.getBoundingClientRect(),dpr=Math.min(1.75,w.devicePixelRatio||1),W=Math.max(1,Math.floor(rect.width*dpr)),H=Math.max(1,Math.floor(rect.height*dpr));
   if(canvas.width!==W||canvas.height!==H){canvas.width=W;canvas.height=H}
   const c=canvas.getContext('2d');c.clearRect(0,0,W,H);
-  const gesture=w.__enochAnalyserGesture||{},view=gesture.view||{},def=gesture.deform||{},mod=w.__enochSignalModulation===true||d.getElementById('signalModToggle')?.getAttribute('aria-pressed')==='true',depth=clamp((parseFloat(d.getElementById('modWheelV')?.textContent)||0)/100),anchors=mod?(def.anchors||[]):[];
+  const gesture=w.__enochAnalyserGesture||{},view=gesture.view||{},def=gesture.deform||{},mod=w.__enochSignalModulation===true||d.getElementById('signalModToggle')?.getAttribute('aria-pressed')==='true',depth=clamp((parseFloat(d.getElementById('modWheelV')?.textContent)||0)/100),sculptDepth=mod?Math.max(depth,.55):0,anchors=mod?(def.anchors||[]):[];
   const yaw=clamp(view.yaw||0,-1.15,1.15),pitch=clamp(view.pitch||0,-.72,.72),zoom=clamp(view.zoom||1,.55,2.6),pts=[],live=!!latest&&performance.now()-latestStamp<500;
   for(let r=ROWS-1;r>=0;r--){
    const line=[];
    for(let i=0;i<BINS;i++){
     const amp=clamp(bilinearSample(i,r)/255),nx=i/(BINS-1)-.5,nz=r/(ROWS-1),baseX=nx*W*.90,baseZ=(nz-.5)*H*.72*zoom;
-    const turbulence=Math.sin(i*.52+t*.0017)*Math.cos(r*.41-t*.0011)*H*.012*(live?1:.42);
+    const turbulence=Math.sin(i*.52+t*.0017)*Math.cos(r*.41-t*.0011)*H*.012*(live?1:.72);
     let y=Math.pow(amp,1.28)*H*.36+turbulence,dy=0,dz=0,tw=0,modEnergy=0;
-    for(const a of anchors.slice(0,5)){const ac=anchorCoords(a),dx=(i-ac.bin)/BINS,dr=(r-ac.row)/ROWS,rad=clamp(a.radius||.2,.08,.55),inf=Math.exp(-(dx*dx+dr*dr)/(2*rad*rad))*depth*(a.strength||1);dy+=(a.pullY||0)*inf;dz+=(a.pullZ||0)*inf;tw+=(a.twist||0)*inf;modEnergy=Math.max(modEnergy,inf)}
+    for(const a of anchors.slice(0,5)){const ac=anchorCoords(a),dx=(i-ac.bin)/BINS,dr=(r-ac.row)/ROWS,rad=clamp(a.radius||.2,.08,.55),inf=Math.exp(-(dx*dx+dr*dr)/(2*rad*rad))*sculptDepth*(a.strength||1);dy+=(a.pullY||0)*inf;dz+=(a.pullZ||0)*inf;tw+=(a.twist||0)*inf;modEnergy=Math.max(modEnergy,inf)}
     y+=dy*H*.38;
     let x=baseX,z=baseZ+dz*H*.45,cs=Math.cos(tw),sn=Math.sin(tw),tx=x*cs-z*sn,tz=x*sn+z*cs,cy=Math.cos(yaw),sy=Math.sin(yaw),xr=tx*cy-tz*sy,zr=tx*sy+tz*cy,cp=Math.cos(pitch),sp=Math.sin(pitch),yr=y*cp-zr*sp,z2=y*sp+zr*cp,p=1/(1+Math.max(-H,z2)/(H*2));
     line.push({x:W*.5+xr*p,y:H*.61-yr*p-z2*.18,amp,energy:clamp(amp+modEnergy*.12)});
@@ -75,3 +75,4 @@ function install(frame){
 }
 let timer=0;window.installEnochianAnalyserSignalUnifiedV1=frame=>{if(install(frame)){if(timer)clearInterval(timer);timer=0;return true}if(!timer){let n=0;timer=setInterval(()=>{if(install(frame)||++n>240){clearInterval(timer);timer=0}},50)}return false};
 })();
+

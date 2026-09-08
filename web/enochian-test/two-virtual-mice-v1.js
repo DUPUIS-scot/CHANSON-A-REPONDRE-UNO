@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const VERSION='v6-20260906-terrain-anchored',clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const VERSION='v7-20260908-live-sculpt',clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function install(host){
  try{
   const live=host?.contentDocument,deck=live?.getElementById('deck'),d=deck?.contentDocument,w=d?.defaultView;
@@ -33,7 +33,7 @@ function install(host){
   function apply3D(){
    const def=gesture();if(!def)return;const anchors=Array.isArray(def.anchors)?def.anchors:[],map=[['a',[0,1]],['c',[2]],['b',[3,4]]];
    for(const [key,ids] of map){const p=S.poles[key];ids.forEach((idx,j)=>{const q=anchors[idx];if(!q)return;q.bin=clamp(p.bin+(j?.72:-.72),0,15);q.row=clamp(p.row+(j?.62:-.62),0,15);q.pullY=clamp((7.5-p.row)/7.5*.9,-1.25,1.25);q.pullZ=clamp((p.bin-7.5)/7.5*.85+S.depth,-1.3,1.3);q.twist=clamp(S.twist+(key==='a'?-1:key==='b'?1:0)*.42,-Math.PI,Math.PI);q.radius=key==='c'?.22:.18;q.strength=1})}
-   def.selectedAnchor=2;w.__enochSignalModulation=true;w.__enochSignalEngagement=Object.assign(w.__enochSignalEngagement||{},{threeMix:true,twoMix:false,signalMice:3,mode:'main-midi-input-360'});w.__enochThreeMixField={on:S.on,space:'terrain-vertices-v1',poles:JSON.parse(JSON.stringify(S.poles)),depth:S.depth,twist:S.twist};w.__enochAnalyser3D?.invalidate?.();
+   def.selectedAnchor=2;w.__enochSignalModulation=true;const modBtn=d.getElementById('signalModToggle');if(modBtn){modBtn.classList.add('active');modBtn.setAttribute('aria-pressed','true');modBtn.textContent='SIGNAL MOD ON'}w.__enochSignalEngagement=Object.assign(w.__enochSignalEngagement||{},{threeMix:true,twoMix:false,signalMice:3,mode:'main-midi-input-360'});w.__enochThreeMixField={on:S.on,space:'terrain-vertices-v1',poles:JSON.parse(JSON.stringify(S.poles)),depth:S.depth,twist:S.twist};w.__enochAnalyser3D?.invalidate?.();
   }
   async function setOn(on){S.on=!!on;S.armed=false;S.drag=null;if(S.on){const wr=wave.getBoundingClientRect();S.cx=wr.width*.5;S.cy=wr.height*.60;S.spread=Math.min(wr.width,wr.height)*.18;resetTriangle();await w.__enochSignalSourceAuthority?.set?.('mix');apply3D()}else{w.__enochSignalEngagement=Object.assign(w.__enochSignalEngagement||{},{threeMix:false,signalMice:0})}paint()}
   toggle.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();setOn(!S.on)});

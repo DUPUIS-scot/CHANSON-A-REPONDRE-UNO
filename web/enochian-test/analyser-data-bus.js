@@ -62,7 +62,7 @@
   const boot=async()=>{
     const frame=document.getElementById('terminalLive');if(!frame)return;
     try{
-      await load('/enochian-test/track-midi-reference-v1.js?v=20260829-mp3-midi-v1');
+      await load('/enochian-test/track-midi-reference-v1.js?v=20260908-partial-load-v3');
       await load('/enochian-test/midi-audio-pairing-v1.js?v=20260829-mp3-midi-v1');
       window.installEnochianTrackMidiReferenceV1?.(frame);
       window.installEnochianMidiAudioPairingV1?.(frame);

@@ -88,12 +88,13 @@ if "twoMixMasterLayout==='v13'" not in two_mix_owner:
 
 # Unified 3D SIGNAL authority contract.
 for marker in [
-    "signalSourceUnified==='v5'",
-    "root.dataset.signalSourceUnified='v5'",
+    "signalSourceUnified==='v6'",
+    "root.dataset.signalSourceUnified='v6'",
     "bus.emit('authoritative-frequency'",
     "bus.emit('authoritative-signal'",
     "__enochLineInLiveWaveform?.getStream?.()",
-    "w.__enochSignalSourceAuthority={version:'v5'",
+    "w.__enochLineIn?.stream",
+    "w.__enochSignalSourceAuthority={version:'v6'",
 ]:
     if marker not in source_unified:
         raise SystemExit(f'unified signal source contract missing: {marker}')
