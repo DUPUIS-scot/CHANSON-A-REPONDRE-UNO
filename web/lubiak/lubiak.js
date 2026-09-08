@@ -86,7 +86,7 @@ let playerHeading = 0;
 let playerBaseY = 0;
 let followYaw = 0;
 let followPitch = -0.10;
-let followDistance = 6.2;
+let followDistance = 10.5;
 // LUBIAK_FOLLOW_RIGHT_SHOULDER_V1
 // Centre the complete djinn + longitudinal broom silhouette in FOLLOW.
 const followShoulderOffset = 0;
@@ -98,7 +98,7 @@ let aerialPitch = -0.28;
 let aerialSpeed = 27;
 const rideSpeed = 14.25;
 let aerialReturnBlend = 0;
-const aerialSaved = { followYaw: 0, followPitch: -0.10, followDistance: 6.2 };
+const aerialSaved = { followYaw: 0, followPitch: -0.10, followDistance: 10.5 };
 
 // LUBIAK_INPUT_AUTHORITY_REPAIR_V1
 const keys = new Set();
@@ -165,9 +165,9 @@ verticalButton('▲ UP',1);verticalButton('▼ DOWN',-1);document.body.appendChi
 
 const modeDock=document.createElement('div');modeDock.id='lubiak-mode-dock';modeDock.style.cssText='position:fixed;right:max(14px,env(safe-area-inset-right));bottom:max(178px,calc(env(safe-area-inset-bottom) + 178px));z-index:82;display:flex;gap:6px;padding:5px;border:1px solid #f6c28b55;border-radius:999px;background:#100806dd;white-space:nowrap';
 function modeButton(label,fn){const b=document.createElement('button');b.textContent=label;b.style.cssText='border:1px solid #f6c28b66;border-radius:999px;padding:8px 10px;background:#160b08cc;color:#ffe2bd;font:700 9px system-ui;letter-spacing:.08em';b.addEventListener('click',fn);modeDock.appendChild(b);return b;}
-const followToggle=modeButton('FOLLOW',()=>{if(!playerReady||!playerRoot)return;if(playerMode!=='walk'){playerMode='walk';restoreStandingWalkPose();}else if(broomRoot&&typeof recoverBroomCarryIfNeeded==='function')recoverBroomCarryIfNeeded();if(typeof revealDjinnAndBroom==='function')revealDjinnAndBroom();setCameraMode('follow');followYaw=-playerHeading;followDistance=Math.max(followDistance,6.2);updateFollowCamera(1);refreshLubiakModeButtons()});
+const followToggle=modeButton('FOLLOW',()=>{if(!playerReady||!playerRoot)return;if(playerMode!=='walk'){playerMode='walk';restoreStandingWalkPose();}else if(broomRoot&&typeof recoverBroomCarryIfNeeded==='function')recoverBroomCarryIfNeeded();if(typeof revealDjinnAndBroom==='function')revealDjinnAndBroom();setCameraMode('follow');followYaw=-playerHeading;followDistance=Math.max(followDistance,10.5);updateFollowCamera(1);refreshLubiakModeButtons()});
 const aerialToggle=modeButton('AERIAL',()=>{setCameraMode('aerial');refreshLubiakModeButtons()});
-const rideToggle=modeButton('RIDE',()=>{if(!playerReady||!playerRoot||!broomRoot)return;if(typeof forceActorTreeVisible==='function'){forceActorTreeVisible(playerRoot);forceActorTreeVisible(broomRoot);}if(playerMode==='walk'){if(typeof recoverBroomCarryIfNeeded==='function')recoverBroomCarryIfNeeded();walkBlend=0;prepareBroomForRide();mountTransition=0;playerMode='mounting';}setCameraMode('follow');followDistance=Math.max(followDistance,5.15);updateFollowCamera(1);refreshLubiakModeButtons()});
+const rideToggle=modeButton('RIDE',()=>{if(!playerReady||!playerRoot||!broomRoot)return;if(typeof forceActorTreeVisible==='function'){forceActorTreeVisible(playerRoot);forceActorTreeVisible(broomRoot);}if(playerMode==='walk'){if(typeof recoverBroomCarryIfNeeded==='function')recoverBroomCarryIfNeeded();walkBlend=0;prepareBroomForRide();mountTransition=0;playerMode='mounting';}setCameraMode('follow');followDistance=Math.max(followDistance,10.5);updateFollowCamera(1);refreshLubiakModeButtons()});
 document.body.appendChild(modeDock);
 function refreshLubiakModeButtons(){const riding=playerMode==='mounting'||playerMode==='flight';const active=cameraMode==='aerial'?aerialToggle:riding?rideToggle:followToggle;for(const b of [followToggle,aerialToggle,rideToggle])b.style.opacity=b===active?'1':'.65';verticalDock.style.display=(riding||cameraMode==='aerial')?'flex':'none';}
 function refreshVerticalControls(){refreshLubiakModeButtons();}
@@ -1353,7 +1353,7 @@ function recoverBroomCarryIfNeeded(){
     playerRoot.attach(broomRoot);
     broomShoulderSocket=null;
     broomRoot.position.set(-0.62,1.22,0.10);
-    broomRoot.rotation.set(0.06,Math.PI*0.5,0.30);
+    broomRoot.rotation.set(0.06,0,0.05);
     broomRoot.updateMatrixWorld(true);
     box=actorWorldBox(broomRoot);
     if(box){
@@ -1374,7 +1374,7 @@ function revealDjinnAndBroom(){
   if(broomRoot){forceActorTreeVisible(broomRoot);recoverBroomCarryIfNeeded();}
   playerRoot.updateMatrixWorld(true);
   if(cameraMode!=='follow') cameraMode='follow';
-  followDistance=Math.max(followDistance,5.15);
+  followDistance=Math.max(followDistance,10.5);
   updateFollowCamera(1);
   return true;
 }
@@ -1607,7 +1607,7 @@ function preparePlayer(root) {
   const entranceAnchor=new THREE.Vector3(env.x*0.16,0.08,env.z*0.60);
   playerRoot.position.copy(entranceAnchor);
   playerBaseY=playerRoot.position.y;
-  playerHeading=Math.PI;
+  playerHeading=0;
   playerRoot.rotation.set(0,playerHeading,0,'YXZ');
   scene.add(playerRoot);
   const safeEntrance=findSafeEntranceSpawn(entranceAnchor,false);
@@ -1615,7 +1615,7 @@ function preparePlayer(root) {
   playerBaseY=playerRoot.position.y;
   followYaw=0;
   followPitch=-0.08;
-  followDistance=5.15;
+  followDistance=10.5;
   cachePlayerBones();
   playerReady=true;
   forceActorTreeVisible(playerRoot);
