@@ -48,7 +48,7 @@ checks = {
     "legacy fullscreen controls are removed after late insertion": "removeDuplicateFullscreen();syncUi()" in four_channel,
     "the primary fullscreen control is preserved": "btn===master||btn.id==='iosFullscreen'" in four_channel,
     "fullscreen cleanup covers every terminal action group": "querySelectorAll('.terminal-actions').forEach" in four_channel,
-    "consolidated installer is cache-busted": "terminal-installer-singleton-v1.js?v=20260906-v32" in shell,
+    "consolidated installer is cache-busted": "terminal-installer-singleton-v1.js?v=20260908-v33" in shell,
     "consolidated runtime entry is cache-busted": live_copy_cache_busted,
     "late authorities use repaired revisions": all(
         marker in installer
