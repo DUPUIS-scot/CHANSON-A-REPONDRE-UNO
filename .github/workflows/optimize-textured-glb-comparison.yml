@@ -20,13 +20,14 @@ jobs:
           node-version: '22'
       - name: Install glTF Transform CLI
         run: npm install --global @gltf-transform/cli@4
-      - name: Optimize Megapole, LUBIAK, and dragon web assets
+      - name: Optimize Megapole, LUBIAK, DUPUIS, and dragon web assets
         shell: bash
         run: |
           set -euo pipefail
           DIR='assets/models/textured-glb-comparison'
           gltf-transform optimize "$DIR/MEGAPOLE_PBR_TERRAIN_UPGRADED.glb" "$DIR/MEGAPOLE_PBR_TERRAIN_UPGRADED_WEB_OPTIMIZED.glb" --compress draco --texture-compress webp
           gltf-transform optimize "$DIR/LUBIAK_master_optimized_4_ELEMENT_PBR.glb" "$DIR/LUBIAK_master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED.glb" --compress draco --texture-compress webp
+          gltf-transform optimize "$DIR/DUPUIS.glb" "$DIR/DUPUIS_castle_WEB_OPTIMIZED.glb" --compress draco --texture-compress webp
 
           DRAGON='assets/models/lubiak_dragon_guardian_web.glb'
           DRAGON_TMP="$RUNNER_TEMP/lubiak_dragon_guardian_web.glb"
@@ -63,5 +64,5 @@ jobs:
             echo 'No optimized changes to commit.'
             exit 0
           fi
-          git commit -m 'Optimize textured Megapole and LUBIAK GLBs for web'
+          git commit -m 'Optimize textured Megapole, LUBIAK, and DUPUIS GLBs for web'
           git push
