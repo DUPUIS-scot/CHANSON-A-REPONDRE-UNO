@@ -58,7 +58,7 @@ class _PlayerHandState extends State<PlayerHand> {
       card.answer,
       card.displayTitle,
     ]) {
-      final normalized = candidate?.replaceAll(RegExp(r'\\s+'), ' ').trim() ?? '';
+      final normalized = candidate?.replaceAll(RegExp(r'\s+'), ' ').trim() ?? '';
       if (normalized.isEmpty) continue;
       return normalized.length > 240
           ? '${normalized.substring(0, 237)}...'
