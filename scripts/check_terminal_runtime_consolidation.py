@@ -31,6 +31,7 @@ checks = {
     "master PLAY retains native audio activation": "Main PLAY always belongs to the master deck" in transport,
     "master PLAY restores audible output": "ensureMainOutputAudible" in (terminal / "live-copy.html").read_text(encoding="utf-8"),
     "2JESTER does not capture-intercept master PLAY": "e.preventDefault();e.stopImmediatePropagation();void toggleJeckerTransport()" not in double_decker,
+    "2JESTER engine control is mounted in the visible radial centre": "center&&engineControl.parentElement!==center" in double_decker,
     "USB MIDI waits for CONNECT": "btn.onclick=connect;status.textContent='USB MIDI READY · PRESS CONNECT'" in midi,
     "expressive MIDI waits for CONNECT": "},500);connect();hookBus()" not in expressive,
     "iOS loader reuses existing authorities": "typeof window[name]==='function'" in ios,
