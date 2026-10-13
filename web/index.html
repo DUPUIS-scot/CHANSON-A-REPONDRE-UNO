@@ -56,30 +56,9 @@
         document.querySelector('meta[name="twitter:title"]')?.setAttribute('content', metadata[0]);
         document.querySelector('meta[name="twitter:description"]')?.setAttribute('content', metadata[1]);
       };
-      let accessibilityScheduled = false;
-      const enableAccessibility = () => {
-        const placeholder = document.querySelector('flt-semantics-placeholder');
-        if (!placeholder || accessibilityScheduled) return false;
-        accessibilityScheduled = true;
-        setTimeout(() => {
-          requestAnimationFrame(() => requestAnimationFrame(() => {
-            const livePlaceholder = document.querySelector('flt-semantics-placeholder');
-            if (livePlaceholder) {
-              livePlaceholder.click();
-              semanticsObserver.disconnect();
-            } else {
-              accessibilityScheduled = false;
-            }
-          }));
-        }, 1000);
-        return true;
-      };
       addEventListener('hashchange', syncRouteMetadata);
       addEventListener('popstate', syncRouteMetadata);
       syncRouteMetadata();
-      const semanticsObserver = new MutationObserver(enableAccessibility);
-      semanticsObserver.observe(document.documentElement, { childList: true, subtree: true });
-      enableAccessibility();
     })();
   </script>
   <script type="importmap">{ "imports": { "three": "./vendor/three.module.js" } }</script>
