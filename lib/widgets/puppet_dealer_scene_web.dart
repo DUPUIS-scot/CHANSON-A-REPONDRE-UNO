@@ -136,12 +136,18 @@ class _PuppetDealerSceneState extends State<PuppetDealerScene> {
   }
 
   @override
-  Widget build(BuildContext context) => SizedBox.expand(
-    key: const Key('puppet-stage-slot'),
-    child: ClipRect(
-      child: HtmlElementView(
-        viewType: _viewType,
-        onPlatformViewCreated: _mountDealer,
+  Widget build(BuildContext context) => Semantics(
+    container: true,
+    label: 'Live 3D jester dealer. Decorative animated game dealer.',
+    child: ExcludeSemantics(
+      child: SizedBox.expand(
+        key: const Key('puppet-stage-slot'),
+        child: ClipRect(
+          child: HtmlElementView(
+            viewType: _viewType,
+            onPlatformViewCreated: _mountDealer,
+          ),
+        ),
       ),
     ),
   );

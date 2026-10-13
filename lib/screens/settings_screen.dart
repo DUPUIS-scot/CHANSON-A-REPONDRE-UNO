@@ -229,6 +229,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       max: .6,
                       divisions: 12,
                       label: '${(background.darkOverlay * 100).round()}%',
+                      semanticFormatterCallback: (value) =>
+                          '${(value * 100).round()} percent',
                       onChanged: background.setOverlay,
                     ),
                     trailing: Text(
@@ -252,6 +254,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       max: 24,
                       divisions: 16,
                       label: '${advanced.rotationSpeed.round()} s',
+                      semanticFormatterCallback: (value) =>
+                          '${value.round()} seconds per rotation',
                       onChanged: (value) => settings.updateAdvanced(
                         advanced.copyWith(rotationSpeed: value),
                       ),

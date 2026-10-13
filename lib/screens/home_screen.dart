@@ -252,7 +252,8 @@ class _PrimaryEntrance extends StatelessWidget {
   Widget build(BuildContext context) {
     final entrance = Semantics(
       button: true,
-      label: label,
+      label: tooltip == null ? label : '$label. $tooltip',
+      excludeSemantics: true,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(48),

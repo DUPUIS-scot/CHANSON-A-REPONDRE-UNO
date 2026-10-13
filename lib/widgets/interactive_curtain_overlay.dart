@@ -43,7 +43,9 @@ class _InteractiveCurtainOverlayState extends State<InteractiveCurtainOverlay>
       _controller.value = next.curtainProgress;
       _syncing = false;
     }
-    _controller.duration = MediaQuery.disableAnimationsOf(context)
+    _controller.duration =
+        MediaQuery.disableAnimationsOf(context) ||
+            SemanticsBinding.instance.semanticsEnabled
         ? const Duration(milliseconds: 180)
         : const Duration(milliseconds: 1200);
   }
@@ -189,6 +191,7 @@ class _InteractiveCurtainOverlayState extends State<InteractiveCurtainOverlay>
             maxWidth: fullWidth,
             child: Image.asset(
               'assets/images/closed_curtains.png',
+              excludeFromSemantics: true,
               width: fullWidth,
               height: double.infinity,
               fit: BoxFit.cover,

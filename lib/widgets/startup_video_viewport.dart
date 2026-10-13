@@ -84,6 +84,7 @@ class _StartupVideoViewportState extends State<StartupVideoViewport>
     final controller = startup.controller;
     final reducedMotion =
         MediaQuery.disableAnimationsOf(context) ||
+        SemanticsBinding.instance.semanticsEnabled ||
         settings.advanced.reducedMotion;
     _syncRotation(settings, reducedMotion);
 

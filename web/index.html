@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <base href="$FLUTTER_BASE_HREF">
   <meta charset="UTF-8">
@@ -33,6 +33,44 @@
         try { widgetId = window.turnstile.render(container, { sitekey: siteKey, execution: 'execute', appearance: 'interaction-only', theme: 'auto', callback: (token) => { cleanup(); resolve(token); }, 'error-callback': (code) => { cleanup(); reject(new Error(`Turnstile verification failed: ${code || 'unknown'}`)); }, 'expired-callback': () => { cleanup(); reject(new Error('Turnstile verification expired.')); }, 'timeout-callback': () => { cleanup(); reject(new Error('Turnstile verification timed out.')); } }); window.turnstile.execute(widgetId); } catch (error) { cleanup(); reject(error); }
       });
     };
+  </script>
+  <script>
+    (() => {
+      const routeMetadata = {
+        '/home': ['Chanson à Répondre UNO!', 'Enter the Chanson à Répondre UNO experience.'],
+        '/play': ['Play — Chanson à Répondre UNO!', 'Play a five-card round of Chanson à Répondre UNO.'],
+        '/decks': ['Decks — Chanson à Répondre UNO!', 'Choose a Chanson à Répondre UNO card deck.'],
+        '/cards': ['Browse Cards — Chanson à Répondre UNO!', 'Browse and filter cards from the active deck.'],
+        '/journal': ['Journal — Chanson à Répondre UNO!', 'Write and revisit responses linked to cards.'],
+        '/rules': ['Rules — Chanson à Répondre UNO!', 'Read the rules and card categories.'],
+        '/settings': ['Settings — Chanson à Répondre UNO!', 'Adjust accessibility, motion and Home presentation settings.'],
+        '/profile': ['Profile — Chanson à Répondre UNO!', 'Manage the current Chanson à Répondre UNO account.']
+      };
+      const syncRouteMetadata = () => {
+        const route = (location.hash.slice(1).split('?')[0] || '/home').replace(/\/$/, '') || '/home';
+        const metadata = routeMetadata[route] || ['Chanson à Répondre UNO!', 'Chanson à Répondre UNO! — official web application.'];
+        document.title = metadata[0];
+        document.querySelector('meta[name="description"]')?.setAttribute('content', metadata[1]);
+        document.querySelector('meta[property="og:title"]')?.setAttribute('content', metadata[0]);
+        document.querySelector('meta[property="og:description"]')?.setAttribute('content', metadata[1]);
+        document.querySelector('meta[name="twitter:title"]')?.setAttribute('content', metadata[0]);
+        document.querySelector('meta[name="twitter:description"]')?.setAttribute('content', metadata[1]);
+      };
+      const enableAccessibility = () => {
+        const placeholder = document.querySelector('flt-semantics-placeholder');
+        if (!placeholder) return false;
+        placeholder.click();
+        return true;
+      };
+      addEventListener('hashchange', syncRouteMetadata);
+      addEventListener('popstate', syncRouteMetadata);
+      syncRouteMetadata();
+      const semanticsObserver = new MutationObserver(() => {
+        if (enableAccessibility()) semanticsObserver.disconnect();
+      });
+      semanticsObserver.observe(document.documentElement, { childList: true, subtree: true });
+      enableAccessibility();
+    })();
   </script>
   <script type="importmap">{ "imports": { "three": "./vendor/three.module.js" } }</script>
   <script type="module" src="transcription_draco_bootstrap.js?v=jester-draco-20260816-play-1"></script>
