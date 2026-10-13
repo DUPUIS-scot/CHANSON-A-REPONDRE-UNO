@@ -23,8 +23,6 @@ CardImageModel _card({
 void main() {
   testWidgets('play hand exposes the card prompt in semantics', (tester) async {
     final semantics = tester.ensureSemantics();
-    addTearDown(semantics.dispose);
-
     await tester.pumpWidget(
       MaterialApp(
         home: SizedBox(
@@ -47,12 +45,11 @@ void main() {
       ),
       findsOneWidget,
     );
+    semantics.dispose();
   });
 
   testWidgets('journal card picker identifies each checkbox', (tester) async {
     final semantics = tester.ensureSemantics();
-    addTearDown(semantics.dispose);
-
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
@@ -70,12 +67,11 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Prompt card'), findsOneWidget);
+    semantics.dispose();
   });
 
   testWidgets('home navigation has a single accessible label', (tester) async {
     final semantics = tester.ensureSemantics();
-    addTearDown(semantics.dispose);
-
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(
@@ -88,5 +84,6 @@ void main() {
       find.bySemanticsLabel('Return to Home'),
       findsOneWidget,
     );
+    semantics.dispose();
   });
 }
