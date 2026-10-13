@@ -31,6 +31,15 @@ void main() {
     );
   });
 
+  test('web shell declares language and route-specific metadata', () {
+    final html = File('web/index.html').readAsStringSync();
+
+    expect(html, contains('<html lang="en">'));
+    expect(html, contains("'/play': ['Play — Chanson à Répondre UNO!'"));
+    expect(html, contains("addEventListener('hashchange', syncRouteMetadata)"));
+    expect(html, contains("document.querySelector('flt-semantics-placeholder')"));
+  });
+
   test('official social preview is a 1200 by 630 PNG', () {
     final bytes = File(
       'web/social/chanson-a-repondre-uno-share.png',
