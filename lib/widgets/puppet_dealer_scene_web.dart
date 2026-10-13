@@ -145,7 +145,7 @@ class _PuppetDealerSceneState extends State<PuppetDealerScene> {
           ),
         ),
       ),
-      const Positioned(
+      Positioned(
         left: 0,
         top: 0,
         width: 1,
