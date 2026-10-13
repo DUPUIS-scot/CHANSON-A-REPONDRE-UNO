@@ -50,6 +50,30 @@ class _PlayerHandState extends State<PlayerHand> {
     setState(() {});
   }
 
+  String _accessibleCardContent(CardImageModel card) {
+    for (final candidate in <String?>[
+      card.cleanedTranscription,
+      card.transcription,
+      card.question,
+      card.answer,
+      card.displayTitle,
+    ]) {
+      final normalized = candidate?.replaceAll(RegExp(r'\\s+'), ' ').trim() ?? '';
+      if (normalized.isEmpty) continue;
+      return normalized.length > 240
+          ? '${normalized.substring(0, 237)}...'
+          : normalized;
+    }
+    return 'Card prompt unavailable';
+  }
+
+  String _semanticLabel(CardImageModel card, int index) =>
+      'Card ${index + 1} of ${widget.cards.length}, '
+      '${card.category}, '
+      '${revealed.contains(card.id) ? 'face up' : 'face down'}, '
+      '${widget.isPlayable(card) ? 'playable' : 'unavailable'}. '
+      '${_accessibleCardContent(card)}';
+
   @override
   Widget build(BuildContext context) {
     if (widget.cards.isEmpty) {
@@ -144,11 +168,7 @@ class _PlayerHandState extends State<PlayerHand> {
                       isSelected:
                           widget.selectedCardId == widget.cards[index].id,
                       isPlayable: widget.isPlayable(widget.cards[index]),
-                      semanticLabel:
-                          'Card ${index + 1} of ${widget.cards.length}, '
-                          '${widget.cards[index].category}, '
-                          '${revealed.contains(widget.cards[index].id) ? 'face up' : 'face down'}, '
-                          '${widget.isPlayable(widget.cards[index]) ? 'playable' : 'unavailable'}',
+                      semanticLabel: _semanticLabel(widget.cards[index], index),
                       onTap: () => select(widget.cards[index]),
                       onLongPress: widget.onLongPressCard == null
                           ? null
@@ -207,21 +227,28 @@ class _DealtCardState extends State<_DealtCard> {
   }
 
   @override
-  Widget build(BuildContext context) => AnimatedPositioned(
-    duration: const Duration(milliseconds: 420),
-    curve: Curves.easeOutBack,
-    left: dealt ? widget.left : -widget.width * .45,
-    bottom: dealt ? widget.bottom : widget.height + 36,
-    width: widget.width,
-    height: widget.height,
-    child: AnimatedScale(
-      scale: dealt ? (widget.selected ? 1.015 : 1) : .35,
-      duration: const Duration(milliseconds: 420),
-      child: AnimatedRotation(
-        turns: dealt ? widget.rotation / (2 * math.pi) : .2,
-        duration: const Duration(milliseconds: 420),
-        child: widget.child,
+  Widget build(BuildContext context) {
+    final animationDuration =
+        MediaQuery.disableAnimationsOf(context) ||
+            SemanticsBinding.instance.semanticsEnabled
+        ? Duration.zero
+        : const Duration(milliseconds: 420);
+    return AnimatedPositioned(
+      duration: animationDuration,
+      curve: Curves.easeOutBack,
+      left: dealt ? widget.left : -widget.width * .45,
+      bottom: dealt ? widget.bottom : widget.height + 36,
+      width: widget.width,
+      height: widget.height,
+      child: AnimatedScale(
+        scale: dealt ? (widget.selected ? 1.015 : 1) : .35,
+        duration: animationDuration,
+        child: AnimatedRotation(
+          turns: dealt ? widget.rotation / (2 * math.pi) : .2,
+          duration: animationDuration,
+          child: widget.child,
+        ),
       ),
-    ),
-  );
+    );
+  }
 }
