@@ -229,23 +229,25 @@ class _DealtCardState extends State<_DealtCard> {
 
   @override
   Widget build(BuildContext context) {
-    final animationDuration =
+    final animationsDisabled =
         MediaQuery.disableAnimationsOf(context) ||
-            SemanticsBinding.instance.semanticsEnabled
+        SemanticsBinding.instance.semanticsEnabled;
+    final isDealt = dealt || animationsDisabled;
+    final animationDuration = animationsDisabled
         ? Duration.zero
         : const Duration(milliseconds: 420);
     return AnimatedPositioned(
       duration: animationDuration,
       curve: Curves.easeOutBack,
-      left: dealt ? widget.left : -widget.width * .45,
-      bottom: dealt ? widget.bottom : widget.height + 36,
+      left: isDealt ? widget.left : -widget.width * .45,
+      bottom: isDealt ? widget.bottom : widget.height + 36,
       width: widget.width,
       height: widget.height,
       child: AnimatedScale(
-        scale: dealt ? (widget.selected ? 1.015 : 1) : .35,
+        scale: isDealt ? (widget.selected ? 1.015 : 1) : .35,
         duration: animationDuration,
         child: AnimatedRotation(
-          turns: dealt ? widget.rotation / (2 * math.pi) : .2,
+          turns: isDealt ? widget.rotation / (2 * math.pi) : .2,
           duration: animationDuration,
           child: widget.child,
         ),
