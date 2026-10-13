@@ -43,6 +43,8 @@ void main() {
     expect(terminal,
         contains('authoritative-runtime.js?v=20260825-runtime-api-v2'));
     expect(terminal,
+        contains('double-decker-special-v2.js?v=20261013-engine-control-v17'));
+    expect(terminal,
         contains('double-decker-main-stem-link-v1.js?v=20260906-stem-jester-v15'));
     expect(terminal,
         contains('double-jecker-radial-layout-v1.js?v=20260829-jester-radial-v13'));
@@ -66,6 +68,12 @@ void main() {
     expect(radial, contains("content:none!important;display:none!important"));
     expect(radial, contains('other:[22,34]'));
     expect(radial, contains('vocals:[34,82]'));
+    final doubleJester =
+        File('web/enochian-test/double-decker-special-v2.js')
+            .readAsStringSync();
+    expect(doubleJester, contains("ddsControls==='v12'"));
+    expect(doubleJester,
+        contains('center&&engineControl.parentElement!==center'));
     expect(stemJester, contains("const VERSION='v11'"));
     expect(stemJester, contains("['vocals','drums','bass','other']"));
     expect(stemJester, isNot(contains("mainLevel('instruments')")));
