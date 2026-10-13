@@ -6,8 +6,8 @@
       if(!d||!w)return false;
       const api=w.__enochDoubleDeckerSpecial,panel=document.getElementById('doubleDeckerSpecial'),launcher=d.getElementById('doubleDeckerSpecialLaunch');
       if(!api||!panel||!launcher)return false;
-      if(panel.dataset.ddsControls==='v11')return true;
-      panel.dataset.ddsControls='v11';
+      if(panel.dataset.ddsControls==='v12')return true;
+      panel.dataset.ddsControls='v12';
       const catalog=['ai_comptroller','caesar_spitter','the_kraken','heliogabal_design','vivid_void'];
       const stems=['vocals','drums','bass','other'];
       const master=d.getElementById('audio'),stemMaster=d.getElementById('stemMasterToggle'),mainPlay=d.getElementById('play');
@@ -38,8 +38,11 @@
         engineControl.className='dds-engine-control';
         engineControl.dataset.ddsEngineControl='';
         engineControl.innerHTML='<button type="button" data-dds-engine-direct aria-pressed="false">▶ START 2JESTER</button><small>MAIN GOES ON HOLD · ROUNDTABLE PLAYS</small>';
-        panel.insertBefore(engineControl,panel.firstChild);
+        (center||panel).insertBefore(engineControl,(center||panel).firstChild);
       }
+      // The radial skin hides panel-level engine chrome. Keep the real activation
+      // control inside the visible HYBRID MASTER centre so 2JESTER can be started.
+      if(center&&engineControl.parentElement!==center)center.insertBefore(engineControl,center.firstChild);
       let actions=panel.querySelector('.dds-v2-actions');
       if(!actions){actions=document.createElement('div');actions.className='dds-v2-actions';actions.innerHTML='<button type="button" data-dds-shuffle="A">SHUFFLE A</button><button type="button" data-dds-shuffle="B">SHUFFLE B</button>';center?.insertBefore(actions,center.querySelector('.dds-status'))}
       ['A','B'].forEach(name=>{const deckEl=panel.querySelector(`[data-dds-deck="${name}"]`);if(!deckEl)return;let b=deckEl.querySelector('[data-dds-deck-shuffle]');if(!b){b=document.createElement('button');b.type='button';b.className='dds-deck-shuffle';b.textContent='RANDOM / SHUFFLE STEM SOURCES';b.dataset.ddsDeckShuffle=name;deckEl.insertBefore(b,deckEl.children[1]||null)}});
