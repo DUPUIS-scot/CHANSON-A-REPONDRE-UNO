@@ -73,13 +73,30 @@ class _CardSelectionDialogState extends State<CardSelectionDialog> {
                                 child: Row(
                                   children: [
                                     Expanded(
-                                      child: Text(
-                                        card.category,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            card.displayTitle,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          Text(
+                                            card.category,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodySmall,
+                                          ),
+                                        ],
                                       ),
                                     ),
                                     Checkbox(
+                                      semanticLabel:
+                                          '${card.displayTitle}, ${card.category}',
                                       value: checked,
                                       onChanged: (_) => setState(
                                         () => checked
