@@ -56,10 +56,7 @@ class _PuppetDealerSceneState extends State<PuppetDealerScene> {
       return html.DivElement()
         ..id = _elementId
         ..className = 'dealer-3d-container'
-        ..setAttribute(
-          'aria-label',
-          'Live 3D jester dealer. Drag head, torso, arms and hands to pose.',
-        )
+        ..setAttribute('aria-hidden', 'true')
         ..style.width = '100%'
         ..style.height = '100%'
         ..style.position = 'relative'
@@ -136,12 +133,11 @@ class _PuppetDealerSceneState extends State<PuppetDealerScene> {
   }
 
   @override
-  Widget build(BuildContext context) => Semantics(
-    container: true,
-    label: 'Live 3D jester dealer. Decorative animated game dealer.',
-    child: ExcludeSemantics(
-      child: SizedBox.expand(
-        key: const Key('puppet-stage-slot'),
+  Widget build(BuildContext context) => Stack(
+    key: const Key('puppet-stage-slot'),
+    fit: StackFit.expand,
+    children: [
+      ExcludeSemantics(
         child: ClipRect(
           child: HtmlElementView(
             viewType: _viewType,
@@ -149,6 +145,17 @@ class _PuppetDealerSceneState extends State<PuppetDealerScene> {
           ),
         ),
       ),
-    ),
+      const Positioned(
+        left: 0,
+        top: 0,
+        width: 1,
+        height: 1,
+        child: Semantics(
+          container: true,
+          label: 'Live 3D jester dealer. Decorative animated game dealer.',
+          child: SizedBox.expand(),
+        ),
+      ),
+    ],
   );
 }
