@@ -147,6 +147,7 @@ class _HomeControl extends StatelessWidget {
     return Semantics(
       button: true,
       label: 'Return to Home',
+      excludeSemantics: true,
       child: MouseRegion(
         onEnter: (_) => onHover(true),
         onExit: (_) => onHover(false),
@@ -220,6 +221,7 @@ class _DjWhoControl extends StatelessWidget {
       button: true,
       selected: active,
       label: 'Open DJ WHO Videos',
+      excludeSemantics: true,
       child: MouseRegion(
         onEnter: (_) => onHover(true),
         onExit: (_) => onHover(false),
