@@ -37,7 +37,10 @@ void main() {
     expect(html, contains('<html lang="en">'));
     expect(html, contains("'/play': ['Play — Chanson à Répondre UNO!'"));
     expect(html, contains("addEventListener('hashchange', syncRouteMetadata)"));
-    expect(html, contains("document.querySelector('flt-semantics-placeholder')"));
+    expect(
+      html,
+      isNot(contains("document.querySelector('flt-semantics-placeholder')")),
+    );
   });
 
   test('official social preview is a 1200 by 630 PNG', () {
