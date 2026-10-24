@@ -21,9 +21,6 @@ class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   static const _searchStorageKey = 'search_path_state_v1';
-  static final _evelBungeeUri = Uri.parse(
-    'https://space-panda-bungee-360.true-creek-9787.chatgpt.site',
-  );
 
   Future<void> _openCastleFromHome(BuildContext context) async {
     final storage = context.read<LocalStorageService>();
@@ -55,17 +52,6 @@ class HomeScreen extends StatelessWidget {
       if (opened) return;
     }
     if (context.mounted) context.go(AppRoutes.enochianTerminal);
-  }
-
-  Future<void> _openEvelBungee(BuildContext context) async {
-    final opened = await launchUrl(
-      _evelBungeeUri,
-      webOnlyWindowName: '_self',
-    );
-    if (opened || !context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Unable to open EVEL BUNGEE.')),
-    );
   }
 
   Future<void> _openLubiak(BuildContext context) async {
@@ -127,7 +113,9 @@ class HomeScreen extends StatelessWidget {
             right: 18,
             bottom: 18,
             child: SafeArea(
-              child: _EvelBungeeCornerButton(onTap: () => _openEvelBungee(context)),
+              child: _EvelBungeeCornerButton(
+                onTap: () => context.go(AppRoutes.evelBungee),
+              ),
             ),
           ),
           if (background.type == BackgroundMediaType.video)
