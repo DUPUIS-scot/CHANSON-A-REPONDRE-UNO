@@ -67,8 +67,9 @@
       }
 
       const panel=mixer.closest('.pad-panel')||d.body;
-      if(panel&&!panel.__fxImpact50Observer){
-        const observer=new MutationObserver(markControls);
+      const MutationObserverForDocument=d.defaultView?.MutationObserver;
+      if(panel&&MutationObserverForDocument&&!panel.__fxImpact50Observer){
+        const observer=new MutationObserverForDocument(markControls);
         observer.observe(panel,{childList:true,subtree:true});
         panel.__fxImpact50Observer=observer;
       }
