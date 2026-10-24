@@ -116,7 +116,6 @@ class HomeScreen extends StatelessWidget {
                   onNavigate: (route) => context.go(route),
                   onCastle: () => _openCastleFromHome(context),
                   onEnochianTerminal: () => _openEnochianTerminal(context),
-                  onEvelBungee: () => _openEvelBungee(context),
                   onLubiak: () => _openLubiak(context),
                 ),
               ),
@@ -124,6 +123,13 @@ class HomeScreen extends StatelessWidget {
           ),
           const InteractiveCurtainOverlay(),
           const Home3dVideoViewport(),
+          Positioned(
+            right: 18,
+            bottom: 18,
+            child: SafeArea(
+              child: _EvelBungeeCornerButton(onTap: () => _openEvelBungee(context)),
+            ),
+          ),
           if (background.type == BackgroundMediaType.video)
             Positioned(
               right: 12,
@@ -154,14 +160,12 @@ class _ArtisticHome extends StatelessWidget {
     required this.onNavigate,
     required this.onCastle,
     required this.onEnochianTerminal,
-    required this.onEvelBungee,
     required this.onLubiak,
   });
 
   final ValueChanged<String> onNavigate;
   final VoidCallback onCastle;
   final VoidCallback onEnochianTerminal;
-  final VoidCallback onEvelBungee;
   final VoidCallback onLubiak;
 
   @override
@@ -200,12 +204,6 @@ class _ArtisticHome extends StatelessWidget {
                       icon: Icons.castle_rounded,
                       label: 'CASTLE',
                       onTap: onCastle,
-                    ),
-                    _PrimaryEntrance(
-                      icon: Icons.flight_rounded,
-                      label: 'EVEL BUNGEE',
-                      tooltip: 'Open the bungee experience',
-                      onTap: onEvelBungee,
                     ),
                     _PrimaryEntrance(
                       icon: Icons.explore_rounded,
@@ -253,6 +251,81 @@ class _ArtisticHome extends StatelessWidget {
         ),
       );
     },
+  );
+}
+
+
+class _EvelBungeeCornerButton extends StatefulWidget {
+  const _EvelBungeeCornerButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  State<_EvelBungeeCornerButton> createState() =>
+      _EvelBungeeCornerButtonState();
+}
+
+class _EvelBungeeCornerButtonState extends State<_EvelBungeeCornerButton> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) => MouseRegion(
+    cursor: SystemMouseCursors.click,
+    onEnter: (_) => setState(() => _hovered = true),
+    onExit: (_) => setState(() => _hovered = false),
+    child: SizedBox(
+      width: 92,
+      height: 92,
+      child: Align(
+        alignment: Alignment.bottomRight,
+        child: AnimatedOpacity(
+          opacity: _hovered ? 1 : 0,
+          duration: const Duration(milliseconds: 180),
+          child: AnimatedScale(
+            scale: _hovered ? 1 : .84,
+            duration: const Duration(milliseconds: 180),
+            child: IgnorePointer(
+              ignoring: !_hovered,
+              child: Tooltip(
+                message: 'EVEL BUNGEE',
+                child: Semantics(
+                  button: true,
+                  label: 'EVEL BUNGEE. Open the bungee experience.',
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: widget.onTap,
+                      borderRadius: BorderRadius.circular(32),
+                      child: Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          color: const Color(0xD0140B08),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: AppTheme.gold, width: 1.4),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x443D0804),
+                              blurRadius: 22,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.flight_rounded,
+                          color: AppTheme.gold,
+                          size: 30,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
   );
 }
 
