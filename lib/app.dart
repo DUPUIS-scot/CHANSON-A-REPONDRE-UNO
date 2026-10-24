@@ -278,7 +278,9 @@ class _ChansonUnoAppState extends State<ChansonUnoApp> {
                       ),
                     ),
                   );
-                },      ),
+                },
+              ),
+      ),
     );
   }
 }
