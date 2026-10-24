@@ -62,17 +62,16 @@
         document.querySelector('meta[name="twitter:title"]')?.setAttribute('content', metadata[0]);
         document.querySelector('meta[name="twitter:description"]')?.setAttribute('content', metadata[1]);
       };
-      const scheduleRouteMetadata = () => queueMicrotask(syncRouteMetadata);
       for (const method of ['pushState', 'replaceState']) {
         const original = history[method];
         history[method] = function (...args) {
           const result = original.apply(this, args);
-          scheduleRouteMetadata();
+          queueMicrotask(syncRouteMetadata);
           return result;
         };
       }
-      addEventListener('hashchange', scheduleRouteMetadata);
-      addEventListener('popstate', scheduleRouteMetadata);
+      addEventListener('hashchange', syncRouteMetadata);
+      addEventListener('popstate', syncRouteMetadata);
       syncRouteMetadata();
     })();
   </script>

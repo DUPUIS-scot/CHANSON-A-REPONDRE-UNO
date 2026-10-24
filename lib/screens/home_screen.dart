@@ -15,7 +15,6 @@ import '../theme/app_theme.dart';
 import '../widgets/background_widget.dart';
 import '../widgets/home_3d_video_viewport.dart';
 import '../widgets/home_header.dart';
-import '../widgets/home_intro_controls.dart';
 import '../widgets/interactive_curtain_overlay.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -110,7 +109,6 @@ class HomeScreen extends StatelessWidget {
           ),
           const InteractiveCurtainOverlay(),
           const Home3dVideoViewport(),
-          const HomeIntroControls(),
           if (background.type == BackgroundMediaType.video)
             Positioned(
               right: 12,
