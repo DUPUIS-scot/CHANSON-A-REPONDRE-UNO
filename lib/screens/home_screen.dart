@@ -21,6 +21,9 @@ class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   static const _searchStorageKey = 'search_path_state_v1';
+  static final _evelBungeeUri = Uri.parse(
+    'https://space-panda-bungee-360.true-creek-9787.chatgpt.site',
+  );
 
   Future<void> _openCastleFromHome(BuildContext context) async {
     final storage = context.read<LocalStorageService>();
@@ -52,6 +55,17 @@ class HomeScreen extends StatelessWidget {
       if (opened) return;
     }
     if (context.mounted) context.go(AppRoutes.enochianTerminal);
+  }
+
+  Future<void> _openEvelBungee(BuildContext context) async {
+    final opened = await launchUrl(
+      _evelBungeeUri,
+      webOnlyWindowName: '_self',
+    );
+    if (opened || !context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Unable to open EVEL BUNGEE.')),
+    );
   }
 
   Future<void> _openLubiak(BuildContext context) async {
@@ -102,6 +116,7 @@ class HomeScreen extends StatelessWidget {
                   onNavigate: (route) => context.go(route),
                   onCastle: () => _openCastleFromHome(context),
                   onEnochianTerminal: () => _openEnochianTerminal(context),
+                  onEvelBungee: () => _openEvelBungee(context),
                   onLubiak: () => _openLubiak(context),
                 ),
               ),
@@ -139,12 +154,14 @@ class _ArtisticHome extends StatelessWidget {
     required this.onNavigate,
     required this.onCastle,
     required this.onEnochianTerminal,
+    required this.onEvelBungee,
     required this.onLubiak,
   });
 
   final ValueChanged<String> onNavigate;
   final VoidCallback onCastle;
   final VoidCallback onEnochianTerminal;
+  final VoidCallback onEvelBungee;
   final VoidCallback onLubiak;
 
   @override
@@ -183,6 +200,12 @@ class _ArtisticHome extends StatelessWidget {
                       icon: Icons.castle_rounded,
                       label: 'CASTLE',
                       onTap: onCastle,
+                    ),
+                    _PrimaryEntrance(
+                      icon: Icons.flight_rounded,
+                      label: 'EVEL BUNGEE',
+                      tooltip: 'Open the bungee experience',
+                      onTap: onEvelBungee,
                     ),
                     _PrimaryEntrance(
                       icon: Icons.explore_rounded,
