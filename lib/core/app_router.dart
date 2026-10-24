@@ -11,6 +11,7 @@ import '../screens/card_transcription_screen.dart';
 import '../screens/deck_selection_screen.dart';
 import '../screens/dj_who_videos_screen.dart';
 import '../screens/enochian_terminal_screen.dart';
+import '../screens/evel_bungee_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/journal_screen.dart';
 import '../screens/lubiak_screen.dart';
@@ -42,6 +43,7 @@ abstract final class AppRoutes {
   static const profile = '/profile';
   static const djWhoVideos = '/djwho';
   static const enochianTerminal = '/enochian-terminal';
+  static const evelBungee = '/evel-bungee';
   static const lubiak = '/lubiak';
   static const login = '/login';
   static const register = '/register';
@@ -134,6 +136,10 @@ abstract final class AppRouter {
       GoRoute(
         path: AppRoutes.enochianTerminal,
         builder: (_, _) => const EnochianTerminalScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.evelBungee,
+        builder: (_, _) => const EvelBungeeScreen(),
       ),
       GoRoute(path: AppRoutes.lubiak, builder: (_, _) => const LubiakScreen()),
       GoRoute(
