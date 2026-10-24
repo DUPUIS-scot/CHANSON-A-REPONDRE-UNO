@@ -206,52 +206,79 @@ class _ChansonUnoAppState extends State<ChansonUnoApp> {
                 darkTheme: AppTheme.dark,
                 themeMode: settings.themeMode,
                 routerConfig: AppRouter.router,
-                builder: (context, child) => CallbackShortcuts(
-                  bindings: {
-                    const SingleActivator(
-                      LogicalKeyboardKey.keyH,
-                      alt: true,
-                    ): () => _returnHome(context),
-                    const SingleActivator(
-                      LogicalKeyboardKey.arrowLeft,
-                      alt: true,
-                    ): () {
-                      if (AppRouter.router.canPop()) {
-                        AppRouter.router.pop();
-                      } else {
-                        AppRouter.router.go(AppRoutes.home);
-                      }
+                builder: (context, child) {
+                  final mediaQuery = MediaQuery.of(context).copyWith(
+                    textScaler: TextScaler.linear(settings.textScale),
+                    disableAnimations:
+                        MediaQuery.disableAnimationsOf(context) ||
+                        settings.advanced.reducedMotion,
+                  );
+                  final routeContent =
+                      auth.mode == AuthenticationMode.developmentBypass
+                      ? Column(
+                          children: [
+                            const DevelopmentAuthBanner(),
+                            Expanded(
+                              child: child ?? const SizedBox.shrink(),
+                            ),
+                          ],
+                        )
+                      : child ?? const SizedBox.shrink();
+
+                  return CallbackShortcuts(
+                    bindings: {
+                      const SingleActivator(
+                        LogicalKeyboardKey.keyH,
+                        alt: true,
+                      ): () => _returnHome(context),
+                      const SingleActivator(
+                        LogicalKeyboardKey.arrowLeft,
+                        alt: true,
+                      ): () {
+                        if (AppRouter.router.canPop()) {
+                          AppRouter.router.pop();
+                        } else {
+                          AppRouter.router.go(AppRoutes.home);
+                        }
+                      },
                     },
-                  },
-                  child: Column(
-                    children: [
-                      if (auth.mode == AuthenticationMode.developmentBypass)
-                        const DevelopmentAuthBanner(),
-                      Expanded(
-                        child: Focus(
-                          autofocus: true,
-                          child: MediaQuery(
-                            data: MediaQuery.of(context).copyWith(
-                              textScaler: TextScaler.linear(settings.textScale),
-                              disableAnimations:
-                                  MediaQuery.disableAnimationsOf(context) ||
-                                  settings.advanced.reducedMotion,
-                            ),
-                            child: Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                child!,
-                                const PersistentDjWhoPlayer(),
-                              ],
-                            ),
-                          ),
+                    child: Focus(
+                      autofocus: true,
+                      child: MediaQuery(
+                        data: mediaQuery,
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            final viewport = MediaQuery.sizeOf(context);
+                            final width =
+                                constraints.hasBoundedWidth &&
+                                    constraints.maxWidth > 0
+                                ? constraints.maxWidth
+                                : viewport.width;
+                            final height =
+                                constraints.hasBoundedHeight &&
+                                    constraints.maxHeight > 0
+                                ? constraints.maxHeight
+                                : viewport.height;
+                            if (width <= 0 || height <= 0) {
+                              return const SizedBox.shrink();
+                            }
+                            return SizedBox(
+                              width: width,
+                              height: height,
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  routeContent,
+                                  const PersistentDjWhoPlayer(),
+                                ],
+                              ),
+                            );
+                          },
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              ),
-      ),
+                    ),
+                  );
+                },      ),
     );
   }
 }
