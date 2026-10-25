@@ -27,7 +27,11 @@
     url.host = 'www.chanson-a-repondre-uno.scot';
     url.username = '';
     url.password = '';
+    // LUBIAK's moment identifier is functional state, not tracking.
+    const moment = /^\/lubiak\/(?:share\/)?$/i.test(url.pathname)
+      ? url.searchParams.get('moment') : null;
     url.search = '';
+    if (moment) url.searchParams.set('moment', moment);
 
     let path = url.pathname.replace(/\/index\.html$/i, '/').replace(/\/{2,}/g, '/');
     if (!path.startsWith('/')) path = '/' + path;
