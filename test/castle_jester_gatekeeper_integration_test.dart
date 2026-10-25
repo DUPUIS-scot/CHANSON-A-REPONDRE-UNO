@@ -50,9 +50,9 @@ void main() {
       overlay,
       contains("castleJesterRotationOwner='castle-front-gate-v72'"),
     );
-    expect(overlay, contains("castle_jester_gatekeeper.js?v=61"));
+    expect(overlay, contains("castle_jester_gatekeeper.js?v=85"));
     expect(overlay, contains("castleJesterFacing='visitor-facing-front-gate-v85'"));
-    expect(overlay, contains('const JESTER_MODEL_FORWARD_OFFSET=Math.PI*.5'));
+    expect(overlay, contains('const JESTER_MODEL_FORWARD_OFFSET=-Math.PI*.5'));
     expect(
       overlay,
       contains('Math.atan2(outward.x,outward.z)+JESTER_MODEL_FORWARD_OFFSET'),
