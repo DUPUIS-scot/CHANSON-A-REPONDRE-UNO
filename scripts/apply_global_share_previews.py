@@ -13,7 +13,7 @@ PUBLIC_BASE = (sys.argv[2] if len(sys.argv) > 2 else 'https://www.chanson-a-repo
 SHARE_ROOT = BUILD / 'share'
 PREVIEW_ROOT = BUILD / 'assets' / 'share-previews'
 MAX_BYTES = 350_000
-UNIFORM_SHARE_SCRIPT = '<script src="/social-share-uniform-v1.js?v=20260904-v1"></script>'
+UNIFORM_SHARE_SCRIPT = '<script src="/social-share-uniform-v1.js?v=20261025-v2"></script>'
 DEFAULT_PREVIEW = PUBLIC_BASE + 'social/chanson-a-repondre-uno-share.png'
 
 OG_IMAGE_RE = re.compile(r'<meta property="og:image" content="([^"]+)">')

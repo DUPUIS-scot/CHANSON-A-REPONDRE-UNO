@@ -13,7 +13,7 @@ PREVIEWS = ROOT / 'assets/share-previews'
 SHARES = ROOT / 'share'
 PUBLIC_BASE = 'https://www.chanson-a-repondre-uno.scot'
 IMAGE_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.webp'}
-UNIFORM_SHARE_SCRIPT = '/social-share-uniform-v1.js?v=20260904-v1'
+UNIFORM_SHARE_SCRIPT = '/social-share-uniform-v1.js?v=20261025-v2'
 DEFAULT_PREVIEW = f'{PUBLIC_BASE}/social/chanson-a-repondre-uno-share.png'
 PUBLIC_PAGES = {
     'index.html': f'{PUBLIC_BASE}/',
@@ -110,6 +110,7 @@ def verify_page(slug: str) -> None:
         'property="og:image:height" content="900"',
         f'property="og:url" content="{expected_page}"',
         f'name="twitter:image" content="{expected_image}"',
+        'name="twitter:card" content="summary_large_image"',
         f'<link rel="canonical" href="{expected_page}">',
     )
     missing = [marker for marker in required if marker not in html]
