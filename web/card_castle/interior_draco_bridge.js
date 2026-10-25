@@ -1,6 +1,6 @@
 import * as THREE from '../vendor/three.module.js';
 import { GLTFLoader } from '../vendor/GLTFLoader.js';
-import { DRACOLoader } from 'https://unpkg.com/three@0.160.0/examples/jsm/loaders/DRACOLoader.js';
+import { DRACOLoader } from '../vendor/draco/DRACOLoader.js';
 
 if (!window.__castleInteriorDracoBridgeInstalled) {
   window.__castleInteriorDracoBridgeInstalled = true;
@@ -13,8 +13,7 @@ if (!window.__castleInteriorDracoBridgeInstalled) {
     '../assets/assets/models/textured-glb-comparison/castle_interior_textured.glb',
     document.baseURI,
   ).href;
-  const decoderPath =
-    'https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/gltf/';
+  const decoderPath = new URL('../vendor/draco/', document.baseURI).href;
 
   if (root && video && transition) {
     const exteriorCanvas = root.querySelector('canvas');

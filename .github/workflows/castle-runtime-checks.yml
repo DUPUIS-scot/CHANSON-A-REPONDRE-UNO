@@ -1,13 +1,38 @@
 name: Castle runtime checks
 
 on:
+  push:
+    paths:
+      - 'web/flutter_bootstrap.js'
+      - 'web/card_castle/**'
+      - 'web/vendor/draco/**'
+      - 'lib/screens/search_screen.dart'
+      - 'lib/widgets/webgl_card_castle_view_web.dart'
+      - 'assets/models/textured-glb-comparison/castle_exterior.glb'
+      - 'assets/models/textured-glb-comparison/castle_interior_textured.glb'
+      - 'assets/models/textured-glb-comparison/laboratory_interior_book_videos.glb'
+      - 'assets/models/castle_jester_rigged.glb'
+      - 'assets/videos/castle_entrance.mp4'
+      - 'assets/videos/bureau_screen_loop.mp4'
+      - 'test/castle_*'
+      - 'test/search_path_test.dart'
+      - '.github/workflows/castle-runtime-checks.yml'
+      - '.github/workflows/deploy-pages.yml'
   pull_request:
     paths:
       - 'web/flutter_bootstrap.js'
       - 'web/card_castle/**'
-      - 'assets/models/laboratory_interior.glb'
+      - 'web/vendor/draco/**'
+      - 'lib/screens/search_screen.dart'
+      - 'lib/widgets/webgl_card_castle_view_web.dart'
+      - 'assets/models/textured-glb-comparison/castle_exterior.glb'
+      - 'assets/models/textured-glb-comparison/castle_interior_textured.glb'
+      - 'assets/models/textured-glb-comparison/laboratory_interior_book_videos.glb'
+      - 'assets/models/castle_jester_rigged.glb'
+      - 'assets/videos/castle_entrance.mp4'
       - 'assets/videos/bureau_screen_loop.mp4'
       - 'test/castle_*'
+      - 'test/search_path_test.dart'
       - '.github/workflows/castle-runtime-checks.yml'
       - '.github/workflows/deploy-pages.yml'
   workflow_dispatch:
@@ -65,7 +90,10 @@ jobs:
       - name: Castle regression tests
         run: |
           flutter test \
+            test/castle_javascript_syntax_test.dart \
             test/castle_jester_gatekeeper_integration_test.dart \
             test/castle_laboratory_video_ownership_test.dart \
             test/castle_laboratory_asset_contract_test.dart \
-            test/castle_ios_laboratory_resilience_test.dart
+            test/castle_ios_laboratory_resilience_test.dart \
+            test/castle_loading_performance_test.dart \
+            test/search_path_test.dart

@@ -120,6 +120,7 @@ jobs:
                   raise SystemExit(f'pinned Draco asset incomplete: {name}')
 
           runtime = Path('web/lubiak/lubiak.js').read_text()
+          page = Path('web/lubiak/index.html').read_text()
           for contract in [
               "../vendor/draco/DRACOLoader.js",
               "timed out after",
@@ -129,6 +130,14 @@ jobs:
           ]:
               if contract not in runtime:
                   raise SystemExit(f'LUBIAK runtime contract missing: {contract}')
+          if 'LUBIAK_REASSEMBLED_MODULAR_WEB.glb' in runtime:
+              raise SystemExit('obsolete combined LUBIAK master is still wired into runtime')
+          if runtime.count('/lubiak-assets/') != 8:
+              raise SystemExit('LUBIAK runtime must load exactly eight authored modules')
+          if 'assets/lubiak-kathmandu-360.jpg' not in runtime:
+              raise SystemExit('verified Kathmandu panorama is not wired into runtime')
+          if "assets/lubiak-kathmandu-360.jpg" not in page or 'ChatGPT%20Image%20Aug%2030' in page:
+              raise SystemExit('LUBIAK page background does not use the verified panorama')
           print(f'LUBIAK verified: panorama={width}x{height}, street={len(street)}, dragon={len(dragon)}')
           PY
 

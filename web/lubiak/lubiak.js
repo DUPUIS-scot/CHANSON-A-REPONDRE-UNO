@@ -31,21 +31,23 @@ const scene = new THREE.Scene();
 const exteriorBackground = new THREE.Color(0x000000);
 const exteriorFogColor = new THREE.Color(0x050303);
 let exteriorBackgroundTexture = null;
-// Keep the Kathmandu JPG supplied by #stage visible behind the transparent exterior canvas.
+// Keep the verified Kathmandu panorama as the CSS fallback until WebGL is ready.
 scene.background = null;
 scene.fog = new THREE.FogExp2(exteriorFogColor, 0.0024);
 
 // LUBIAK_KATHMANDU_360_BACKGROUND_V2
 // The supplied equirectangular Kathmandu night panorama is the exterior world background.
 new THREE.TextureLoader().load(
-  'assets/ChatGPT%20Image%20Aug%2030%2C%202026%2C%2001_48_08%20AM.png',
+  'assets/lubiak-kathmandu-360.jpg',
   (texture) => {
     texture.colorSpace = THREE.SRGBColorSpace;
     texture.mapping = THREE.EquirectangularReflectionMapping;
     texture.needsUpdate = true;
     exteriorBackgroundTexture = texture;
-    // The CSS Kathmandu background stays visible; use the panorama only for material reflections.
-    if (worldMode === 'exterior') scene.environment = texture;
+    if (worldMode === 'exterior') {
+      scene.background = texture;
+      scene.environment = texture;
+    }
   },
   undefined,
   (error) => console.warn('LUBIAK Kathmandu 360 background failed; black fallback retained.', error),
@@ -125,6 +127,7 @@ function setCameraMode(nextMode) {
   }
   const toggle = document.querySelector('#lubiak-aerial-toggle');
   if (toggle) toggle.textContent = cameraMode === 'aerial' ? 'RETURN' : 'AERIAL';
+  if (typeof refreshLubiakModeButtons === 'function') refreshLubiakModeButtons();
 }
 addEventListener('keydown', (event) => {
   const key = event.key.toLowerCase();
@@ -166,7 +169,8 @@ verticalButton('▲ UP',1);verticalButton('▼ DOWN',-1);document.body.appendChi
 const modeDock=document.createElement('div');modeDock.id='lubiak-mode-dock';modeDock.style.cssText='position:fixed;right:max(14px,env(safe-area-inset-right));bottom:max(178px,calc(env(safe-area-inset-bottom) + 178px));z-index:82;display:flex;gap:6px;padding:5px;border:1px solid #f6c28b55;border-radius:999px;background:#100806dd;white-space:nowrap';
 function modeButton(label,fn){const b=document.createElement('button');b.textContent=label;b.style.cssText='border:1px solid #f6c28b66;border-radius:999px;padding:8px 10px;background:#160b08cc;color:#ffe2bd;font:700 9px system-ui;letter-spacing:.08em';b.addEventListener('click',fn);modeDock.appendChild(b);return b;}
 const followToggle=modeButton('FOLLOW',()=>{if(!playerReady||!playerRoot)return;if(playerMode!=='walk'){playerMode='walk';restoreStandingWalkPose();}else if(broomRoot&&typeof recoverBroomCarryIfNeeded==='function')recoverBroomCarryIfNeeded();if(typeof revealDjinnAndBroom==='function')revealDjinnAndBroom();setCameraMode('follow');followYaw=-playerHeading;followDistance=Math.max(followDistance,6.2);updateFollowCamera(1);refreshLubiakModeButtons()});
-const aerialToggle=modeButton('AERIAL',()=>{setCameraMode('aerial');refreshLubiakModeButtons()});
+const aerialToggle=modeButton('AERIAL',()=>{setCameraMode(cameraMode==='aerial'?'follow':'aerial');});
+aerialToggle.id='lubiak-aerial-toggle';
 const rideToggle=modeButton('RIDE',()=>{if(!playerReady||!playerRoot||!broomRoot)return;if(typeof forceActorTreeVisible==='function'){forceActorTreeVisible(playerRoot);forceActorTreeVisible(broomRoot);}if(playerMode==='walk'){if(typeof recoverBroomCarryIfNeeded==='function')recoverBroomCarryIfNeeded();walkBlend=0;prepareBroomForRide();mountTransition=0;playerMode='mounting';}setCameraMode('follow');followDistance=Math.max(followDistance,5.15);updateFollowCamera(1);refreshLubiakModeButtons()});
 document.body.appendChild(modeDock);
 function refreshLubiakModeButtons(){const riding=playerMode==='mounting'||playerMode==='flight';const active=cameraMode==='aerial'?aerialToggle:riding?rideToggle:followToggle;for(const b of [followToggle,aerialToggle,rideToggle])b.style.opacity=b===active?'1':'.65';verticalDock.style.display=(riding||cameraMode==='aerial')?'flex':'none';}
@@ -246,7 +250,7 @@ function loadCaptureBackdrop(){
     const image=new Image();
     image.onload=()=>resolve(image);
     image.onerror=()=>resolve(null);
-    image.src='assets/ChatGPT%20Image%20Aug%2030%2C%202026%2C%2001_48_08%20AM.png';
+    image.src='assets/lubiak-kathmandu-360.jpg';
   });
 }
 // LUBIAK_SHARE_SOCIAL_COMPOSITION_V2
@@ -1077,8 +1081,8 @@ function exitCircus() {
   if (circusInterior) circusInterior.visible = false;
   setCircusMediaVisible(false);
   setExteriorVisibility(true);
-  // Keep the Kathmandu JPG supplied by #stage visible behind the transparent exterior canvas.
-scene.background = null;
+  scene.background = exteriorBackgroundTexture;
+  scene.environment = exteriorBackgroundTexture;
   scene.fog = new THREE.FogExp2(exteriorFogColor, 0.0024);
   renderer.toneMappingExposure = 1.0;
   if (playerReady) {
@@ -1688,42 +1692,54 @@ async function installPlayer(decoder) {
 async function installEnvironment() {
   setStatus('STARTING 3D ENGINE', 4);
   const decoder = await getMeshoptDecoder();
-  // LUBIAK_COMPLETE_MASTER_RESTORE_V1
-  // Restore the last complete authored world as one scene. Keep the eight modular
-  // asset URLs as a cache/deploy manifest only; they are not separate scene roots.
-  const LUBIAK_MODULAR_CACHE_MANIFEST = [
-    '/assets/assets/models/textured-glb-comparison/lubiak-assets/freak%20street.glb?v=20260903-restore-master-v1',
-    '/assets/assets/models/textured-glb-comparison/lubiak-assets/avenue.glb?v=20260903-restore-master-v1',
-    '/assets/assets/models/textured-glb-comparison/lubiak-assets/roof%20top.glb?v=20260903-restore-master-v1',
-    '/assets/assets/models/textured-glb-comparison/lubiak-assets/palace.glb?v=20260903-restore-master-v1',
-    '/assets/assets/models/textured-glb-comparison/lubiak-assets/circus.glb?v=20260903-restore-master-v1',
-    '/assets/assets/models/textured-glb-comparison/lubiak-assets/district.glb?v=20260903-restore-master-v1',
-    '/assets/assets/models/textured-glb-comparison/lubiak-assets/card%20room.glb?v=20260903-restore-master-v1',
-    '/assets/assets/models/textured-glb-comparison/lubiak-assets/dragon%20lair.glb?v=20260903-restore-master-v1',
+  // LUBIAK_ORDERED_MODULAR_ENVIRONMENT_V2
+  // Load the authored districts progressively so the entrance is interactive
+  // after Freak Street, rather than blocking on the 21.8 MB combined master.
+  const modules = [
+    { name:'FREAK STREET', url:'/assets/assets/models/textured-glb-comparison/lubiak-assets/freak%20street.glb?v=20260903-modular-v3', position:[0,12.114883422851562,34], rotation:null, scale:[72,72,72] },
+    { name:'AVENUE', url:'/assets/assets/models/textured-glb-comparison/lubiak-assets/avenue.glb?v=20260903-modular-v3', position:[11.479494094848633,12.264254570007324,49.055965423583984], rotation:[0,0.4113151431083679,0,0.9114933013916016], scale:[71.86261749267578,71.86260223388672,71.86261749267578] },
+    { name:'ROOF TOP', url:'/assets/assets/models/textured-glb-comparison/lubiak-assets/roof%20top.glb?v=20260903-modular-v3', position:[-9.29807186126709,22.525930404663086,33.840213775634766], rotation:[-0.12447847425937653,-0.14730167388916016,-0.028115851804614067,0.9808245897293091], scale:[28.742916107177734,28.7429141998291,28.742918014526367] },
+    { name:'PALACE', url:'/assets/assets/models/textured-glb-comparison/lubiak-assets/palace.glb?v=20260903-modular-v3', position:[0,11.905579566955566,-18], rotation:null, scale:[77.90990447998047,77.90990447998047,77.90990447998047] },
+    { name:'CIRCUS', url:'/assets/assets/models/textured-glb-comparison/lubiak-assets/circus.glb?v=20260903-modular-v3', position:[0,7.115546226501465,-17], rotation:[0,-0.4972151815891266,0,0.8676272630691528], scale:[25.0000057220459,25,25.0000057220459] },
+    { name:'DISTRICT 0', url:'/assets/assets/models/textured-glb-comparison/lubiak-assets/district.glb?v=20260903-modular-v3', position:[-24.26102638244629,8.422406196594238,29.6292724609375], rotation:[0.07996269315481186,-0.9552930593490601,0.28146034479141235,0.04244136065244675], scale:[9.534232139587402,9.534231185913086,9.53423023223877] },
+    { name:'CARD ROOM', url:'/assets/assets/models/textured-glb-comparison/lubiak-assets/card%20room.glb?v=20260903-modular-v3', position:[5.9719696044921875,6.680505275726318,29.453205108642578], rotation:[0.0668065994977951,0.7124782204627991,0.07561159133911133,0.6944023966789246], scale:[11.452020645141602,11.452018737792969,11.452022552490234] },
+    { name:'DRAGON LAIR', url:'/assets/assets/models/textured-glb-comparison/lubiak-assets/dragon%20lair.glb?v=20260903-modular-v3', position:[-21.879623413085938,4.855525016784668,-53.868255615234375], rotation:null, scale:[17.452329635620117,17.452329635620117,17.452329635620117] },
   ];
-  void LUBIAK_MODULAR_CACHE_MANIFEST;
-  const url='/assets/assets/models/textured-glb-comparison/LUBIAK_REASSEMBLED_MODULAR_WEB.glb?v=20260903-complete-master-restore-v1';
-  try {
-    setStatus('LOADING COMPLETE LUBIAK',8);
-    const gltf=await loadGlb(url,decoder,'LOADING COMPLETE LUBIAK',true,45000);
-    const root=gltf.scene;
-    root.name='LUBIAK_ENVIRONMENT';
-    scene.add(root);
-    if(!frameLoadedEnvironment(root)) { scene.remove(root); throw new Error('Complete LUBIAK has invalid or empty bounds'); }
-    exteriorRoot=root;
-    repairLubiakStaticWorld();
-    await renderConfirmedFrame();
-    // Restore player authority before optional guardian loading, especially on iPhone.
-    const actorReady=await installPlayer(decoder);
-    const sharedMoment=applySharedLubiakMoment();
-    finishLoad(sharedMoment?'SHARED LUBIAK MOMENT':(actorReady?'DJINN PLAYER READY':'ENTER LUBIAK'));
-
-    setTimeout(()=>{ void installDragon(decoder); },700);
-  } catch(error) {
-    console.error('Complete LUBIAK master failed.',error);
-    finishLoad('LUBIAK MASTER UNAVAILABLE');
-    await renderConfirmedFrame();
+  const root=new THREE.Group();
+  root.name='LUBIAK_ENVIRONMENT';
+  scene.add(root);
+  let loaded=0;
+  for (const module of modules) {
+    try {
+      setStatus(`LOADING ${module.name}`,8+(loaded/modules.length)*76);
+      const gltf=await loadGlb(module.url,decoder,`LOADING ${module.name}`,true,32000);
+      const part=gltf.scene;
+      part.name=`LUBIAK_${module.name.replace(/\s+/g,'_')}`;
+      part.position.fromArray(module.position);
+      if(module.rotation) part.quaternion.fromArray(module.rotation);
+      part.scale.fromArray(module.scale);
+      root.add(part);
+      part.updateMatrixWorld(true);
+      loaded+=1;
+      if(loaded===1) await renderConfirmedFrame();
+    } catch(error) {
+      console.error(`LUBIAK module failed: ${module.name}`,error);
+      showStatus(`${module.name} UNAVAILABLE · CONTINUING`,850);
+    }
   }
+  if(!loaded || !frameLoadedEnvironment(root)) {
+    scene.remove(root);
+    finishLoad('LUBIAK ENVIRONMENT UNAVAILABLE');
+    await renderConfirmedFrame();
+    return;
+  }
+  exteriorRoot=root;
+  repairLubiakStaticWorld();
+  await renderConfirmedFrame();
+  const actorReady=await installPlayer(decoder);
+  const sharedMoment=applySharedLubiakMoment();
+  finishLoad(sharedMoment?'SHARED LUBIAK MOMENT':(actorReady?'DJINN PLAYER READY':'ENTER LUBIAK'));
+  setTimeout(()=>{ void installDragon(decoder); },700);
 }
 
 // LUBIAK_COLLISION_RUNTIME_V1
@@ -2288,8 +2304,9 @@ function updateAerialCamera(dt) {
   const cp = Math.cos(aerialPitch);
   const forward = new THREE.Vector3(-Math.sin(aerialYaw) * cp, Math.sin(aerialPitch), -Math.cos(aerialYaw) * cp).normalize();
   const right = new THREE.Vector3(Math.cos(aerialYaw), 0, -Math.sin(aerialYaw)).normalize();
-  const vertical = (keys.has(' ') || keys.has('space') || keys.has('pageup') || keys.has('e') ? 1 : 0)
+  const keyboardVertical = (keys.has(' ') || keys.has('space') || keys.has('pageup') || keys.has('e') ? 1 : 0)
     - (keys.has('control') || keys.has('ctrl') || keys.has('pagedown') || keys.has('q') ? 1 : 0);
+  const vertical = THREE.MathUtils.clamp(keyboardVertical + verticalTrigger, -1, 1);
   const delta = new THREE.Vector3();
   delta.addScaledVector(forward, input.y * aerialSpeed * dt);
   delta.addScaledVector(right, input.x * aerialSpeed * dt);

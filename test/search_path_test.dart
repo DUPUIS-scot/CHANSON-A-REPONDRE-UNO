@@ -139,6 +139,12 @@ void main() {
       );
       expect(castleBridge, contains("case 'categoriesRequested':"));
       expect(castleBridge, contains('widget.onCategoriesRequested()'));
+      expect(
+        castleBridge.replaceAll(RegExp(r'\s+'), ''),
+        contains(
+          "case'cardSelected':finalid=d['cardId']asString?;if(id!=null){widget.onCardSelected(id);unawaited(widget.onCardOpened(id));}",
+        ),
+      );
     });
 
     test('castle card source keeps selected built-in decks isolated', () {

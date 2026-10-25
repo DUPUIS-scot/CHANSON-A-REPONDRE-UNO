@@ -16,7 +16,7 @@ void main() {
     final medallion = File('web/card_castle/castle_laboratory_medallion_button.js').readAsStringSync();
     final uiPatch = File('web/card_castle/castle_bright_lab_ui_patch.js').readAsStringSync();
 
-    expect(bootstrap, contains("const castleRuntimeRevision = '80';"));
+    expect(bootstrap, contains("const castleRuntimeRevision = '85';"));
     expect(bootstrap, contains("url.searchParams.set('v', buildId || castleRuntimeRevision)"));
     expect(bootstrap, contains('card_castle/card_castle_fast.html'));
 

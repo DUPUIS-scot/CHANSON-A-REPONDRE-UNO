@@ -46,6 +46,10 @@ void main() {
     expect(fastLoader, contains('const isMobile=isIOS||isAndroid'));
     expect(fastLoader, contains('const isWindows='));
     expect(fastLoader, contains('DRACOLoader'));
+    expect(fastLoader, contains('../vendor/draco/DRACOLoader.js'));
+    expect(fastLoader, contains("new URL('../vendor/draco/',document.baseURI).href"));
+    expect(fastLoader, isNot(contains('cdn.jsdelivr.net')));
+    expect(fastLoader, isNot(contains('www.gstatic.com')));
     expect(fastLoader, contains('window.DRACOLoader=DRACOLoader'));
     expect(fastLoader, contains('window.__castleSharedDraco'));
     expect(fastLoader, contains('dracoLoader.setWorkerLimit'));
@@ -74,10 +78,11 @@ void main() {
     expect(fastLoader, contains('ios-draco-direct-v40'));
     expect(fastLoader, contains('android-draco-mobile-v41-staged-cards'));
     expect(fastLoader, contains('windows-draco-direct-v40'));
-    expect(fastLoader, contains('jester-loading'));
-    expect(fastLoader, contains('jester-failed'));
     expect(fastLoader, contains('renderer-failed'));
-    expect(fastLoader, contains('6000'));
+    expect(fastLoader, isNot(contains('jester-loading')));
+    expect(fastLoader, isNot(contains('jesterTimeoutArmed')));
+    expect(fastLoader, contains('requiredTransforms'));
+    expect(fastLoader, contains('missingTransforms'));
     expect(fastLoader, isNot(contains('search_castle.glb')));
 
     expect(environment, contains('castle_exterior_ground.png'));
@@ -149,11 +154,14 @@ void main() {
     );
 
     expect(jesterGatekeeper, contains('const SharedDRACOLoader=window.DRACOLoader'));
-    expect(jesterGatekeeper, contains("setDecoderConfig({type:isIOS?'js':'wasm'})"));
-    expect(jesterGatekeeper, contains('setWorkerLimit(isMobile?1:2)'));
-    expect(jesterGatekeeper, contains('www.gstatic.com/draco/versioned/decoders/1.5.7/'));
+    expect(jesterGatekeeper, contains("shared?.decoderType||(isIOS?'js':'wasm')"));
+    expect(jesterGatekeeper, contains('shared?.workerLimit||(isMobile?1:2)'));
+    expect(jesterGatekeeper, contains("new URL('../vendor/draco/',document.baseURI).href"));
+    expect(jesterGatekeeper, isNot(contains('www.gstatic.com')));
     expect(jesterGatekeeper, contains("castleJesterError='shared-draco-unavailable'"));
     expect(jesterGatekeeper, isNot(contains('unpkg.com')));
+    expect(jesterOverlay, contains('JESTER_MODEL_FORWARD_OFFSET=-Math.PI*.5'));
+    expect(jesterOverlay, contains("castleJesterFacing='visitor-facing-front-gate-v85'"));
 
     // The navigation overlay is now an orchestration wrapper; interaction
     // ownership lives in the core module it imports.
