@@ -1,10 +1,24 @@
 (()=>{
   'use strict';
   const innerDocument=frame=>{try{return frame?.contentDocument?.getElementById('deck')?.contentDocument||null}catch(_){return null}};
-  const wrap=(name,ready)=>{const original=window[name];if(typeof original!=='function'||original.__enochSingletonWrapped)return;let documentToken=null,armed=false;const wrapped=frame=>{let token=null;try{token=innerDocument(frame)||frame?.contentDocument||null}catch(_){}if(token!==documentToken){documentToken=token;armed=false}if(ready?.(frame)){armed=true;return true}if(armed)return false;try{const ok=!!original(frame);armed=ok;return ok}catch(_){armed=false;return false}};wrapped.__enochSingletonWrapped=true;wrapped.__enochOriginal=original;window[name]=wrapped};
+  const wrap=(name,ready)=>{const original=window[name];if(typeof original!=='function'||original.__enochSingletonWrapped)return;let documentToken=null,armed=false;const wrapped=frame=>{let token=null;try{token=innerDocument(frame)||frame?.contentDocument||null}catch(_){}if(token!==documentToken){documentToken=token;armed=false}if(ready?.(frame)){armed=true;return true}if(armed)return false;try{const ok=!!original(frame);armed=ok;return ok}catch(error){armed=false;console.warn('[ENOCHIAN] installer failed:',name,error);return false}};wrapped.__enochSingletonWrapped=true;wrapped.__enochOriginal=original;window[name]=wrapped};
   const innerDataset=(frame,key)=>innerDocument(frame)?.documentElement?.dataset?.[key];
   wrap('installEnochianAnalyserDataBus',frame=>['v2','v3'].includes(innerDataset(frame,'analyserDataBus')));wrap('installEnochianStemFourChannelV1',frame=>['v3','v4'].includes(innerDataset(frame,'stemFourChannel')));wrap('installEnochianPerformanceResetV1',frame=>innerDataset(frame,'performanceResetV1')==='1');wrap('installEnochianDoubleJeckerRuntimeRepairV1',frame=>{try{return ['v11','v12'].includes(innerDocument(frame)?.defaultView?.__enochDoubleJesterRuntimeRepair?.version)}catch(_){return false}});wrap('installEnochianDoubleDeckerSpecialV2',()=>document.getElementById('doubleDeckerSpecial')?.dataset?.ddsControls==='v11');
-  const loadScript=(attr,src,ready)=>{if(ready())return;if(document.querySelector(`script[${attr}]`))return;const s=document.createElement('script');s.src=src;s.setAttribute(attr,'v8');s.onload=ready;document.head.appendChild(s)};
+  const loadScript=(attr,src,ready)=>{
+    const attempt=()=>{try{return !!ready()}catch(error){console.warn('[ENOCHIAN] late installer failed:',attr,error);return false}};
+    if(attempt())return;
+    let s=document.querySelector(`script[${attr}]`);
+    if(s?.dataset.enochLateState==='ready')return;
+    if(!s){s=document.createElement('script');s.src=src;s.setAttribute(attr,'v9');s.dataset.enochLateState='loading';document.head.appendChild(s)}
+    if(s.dataset.enochLateRetryAttached==='1')return;
+    s.dataset.enochLateRetryAttached='1';
+    let retries=0,timer=null;
+    const retry=()=>{if(attempt()){s.dataset.enochLateState='ready';if(timer!==null)clearInterval(timer);timer=null;return}if(++retries>=120){if(timer!==null)clearInterval(timer);timer=null;console.warn('[ENOCHIAN] late installer timed out:',attr,src)}};
+    const begin=()=>{if(timer===null){s.dataset.enochLateState='loaded';retry();if(s.dataset.enochLateState!=='ready')timer=setInterval(retry,100)}};
+    s.addEventListener('load',begin,{once:true});
+    s.addEventListener('error',()=>{s.dataset.enochLateState='error';console.error('[ENOCHIAN] script load failed:',src)},{once:true});
+    if(s.dataset.enochLateState==='loaded')begin();
+  };
   const retryInstall=(install,frame,attempts=240,delay=50)=>{let n=0;const run=()=>{try{if(install?.(frame))return true}catch(_){}if(++n>=attempts)return false;setTimeout(run,delay);return false};return run()};
   const installLateAuthorities=()=>{const frame=document.getElementById('terminalLive');
     loadScript('data-enoch-playback-blue','/enochian-test/playback-elapsed-terminal-blue-v1.js?v=20260827-v1',()=>window.installEnochianPlaybackElapsedBlueV1?(window.installEnochianPlaybackElapsedBlueV1(frame),true):false);
