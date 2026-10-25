@@ -1,4 +1,5 @@
-deploy-request: 2026-10-25T11:00:00Z
+deploy-request: 2026-10-25T11:45:00Z
 source: ChatGPT
-scope: merged PR #304 UNO social previews, Evel Bungee navigation, Castle regression correction
-merge-commit: 0498350fc854833e8547ba58f830322b5034a919
+scope: publish DUPUIS jester Visit Card Open Graph and Twitter preview
+asset: web/social/credits-dupuis-visit.png
+page-commit: 229309a27ee1d831a1e82230b970fad8cbe3066d
