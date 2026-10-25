@@ -55,3 +55,12 @@ test('copy link uses the same canonicalization', async () => {
   await authority.copyLink('/share/BRIO-004/?utm_medium=share');
   assert.equal(calls[0].clipboard, 'https://www.chanson-a-repondre-uno.scot/share/BRIO-004/');
 });
+
+test('Settings Visit Card has a dedicated static crawler preview', () => {
+  const page = fs.readFileSync(path.join(__dirname, '../web/share/credits/index.html'), 'utf8');
+  const image = 'https://www.chanson-a-repondre-uno.scot/social/credits-sherlock-visit.jpg';
+  assert.ok(page.includes('property="og:image" content="' + image + '"'));
+  assert.ok(page.includes('name="twitter:image" content="' + image + '"'));
+  assert.ok(page.includes('property="og:url" content="https://www.chanson-a-repondre-uno.scot/share/credits/"'));
+  assert.ok(page.includes('content="image/jpeg"'));
+});
