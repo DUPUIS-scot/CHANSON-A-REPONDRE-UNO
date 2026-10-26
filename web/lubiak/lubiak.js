@@ -74,6 +74,7 @@ let circusSetPromise = null;
 let worldMode = 'exterior';
 let transitionLockUntil = 0;
 let circusTransitioning = false;
+let circusGateArmed = true;
 const circusGate = new THREE.Vector3(12, 2, -9);
 const exteriorReturn = { position: new THREE.Vector3(), yaw: 0, pitch: 0 };
 
@@ -372,7 +373,8 @@ function applySharedLubiakMoment(){
     worldMode='exterior';
     setExteriorVisibility(true);
     if(circusInterior)circusInterior.visible=false;
-    scene.background=null;
+    scene.background=exteriorBackgroundTexture;
+    scene.environment=exteriorBackgroundTexture;
     scene.fog=new THREE.FogExp2(exteriorFogColor,0.0024);
     renderer.toneMappingExposure=1.0;
     setCircusMediaVisible(false);
@@ -1002,18 +1004,27 @@ async function installCircusSet() {
   return circusSetPromise;
 }
 
-// LUBIAK_CIRCUS_EXIT_BUTTON_V1
+// LUBIAK_CIRCUS_ACCESS_BUTTON_V2 — one obvious control enters and exits the tent.
 const circusExitButton=document.createElement('button');
 circusExitButton.id='lubiak-circus-exit';
 circusExitButton.type='button';
 circusExitButton.className='lubiak-utility-control';
-circusExitButton.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H6m5-5-5 5 5 5M19 5v14"/></svg>';
-circusExitButton.setAttribute('aria-label','Exit circus');
-circusExitButton.title='Exit circus';
-circusExitButton.style.display='none';
+circusExitButton.style.cssText='width:auto;min-width:82px;padding:0 14px!important;border-radius:999px!important;font:800 10px/1 ui-monospace;letter-spacing:.1em';
 (lubiakUtilityDock||document.body).appendChild(circusExitButton);
-circusExitButton.addEventListener('click',(event)=>{event.stopPropagation();if(worldMode==='circus'){transitionLockUntil=0;exitCircus();}});
-function syncCircusExitButton(){circusExitButton.style.display=worldMode==='circus'?'block':'none';}
+circusExitButton.addEventListener('click',(event)=>{
+  event.stopPropagation();
+  transitionLockUntil=0;
+  if(worldMode==='circus') exitCircus();
+  else enterCircus();
+});
+function syncCircusExitButton(){
+  const inside=worldMode==='circus';
+  circusExitButton.textContent=inside?'EXIT':'CIRCUS';
+  circusExitButton.setAttribute('aria-label',inside?'Exit circus':'Enter circus');
+  circusExitButton.title=inside?'Exit circus':'Enter circus';
+  circusExitButton.style.display='inline-grid';
+}
+syncCircusExitButton();
 
 function enterCircus() {
   if (worldMode !== 'exterior' || circusTransitioning || performance.now() < transitionLockUntil) return;
@@ -1076,6 +1087,7 @@ function enterCircus() {
 function exitCircus() {
   if (worldMode !== 'circus' || performance.now() < transitionLockUntil) return;
   worldMode = 'exterior';
+  circusGateArmed = false;
   syncCircusExitButton();
   transitionLockUntil = performance.now() + 1400;
   if (circusInterior) circusInterior.visible = false;
@@ -1112,7 +1124,11 @@ function updateCircusTransition() {
     const dx = p.x - circusGate.x;
     const dz = p.z - circusGate.z;
     const distance = Math.hypot(dx, dz);
-    if (distance < 11 && p.y < 9) enterCircus();
+    if (!circusGateArmed) {
+      if (distance > 14) circusGateArmed = true;
+      return;
+    }
+    if (distance < 8 && p.y < 9) enterCircus();
   } else if (p.z > 21.2) {
     exitCircus();
   }
