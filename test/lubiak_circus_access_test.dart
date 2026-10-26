@@ -13,6 +13,7 @@ void main() {
     expect(runtime, contains('circusGateArmed = false;'));
     expect(runtime, contains('if (distance > 14) circusGateArmed = true;'));
     expect(runtime, contains('if (distance < 8 && p.y < 9) enterCircus();'));
+    expect(runtime, isNot(contains('else if (p.z > 21.2)')));
   });
 
   test('Kathmandu panorama remains the exterior background after transitions', () {

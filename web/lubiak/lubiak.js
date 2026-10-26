@@ -1129,8 +1129,6 @@ function updateCircusTransition() {
       return;
     }
     if (distance < 8 && p.y < 9) enterCircus();
-  } else if (p.z > 21.2) {
-    exitCircus();
   }
 }
 
