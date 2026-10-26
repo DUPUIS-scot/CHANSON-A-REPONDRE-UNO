@@ -51,6 +51,7 @@ flutter:
     - assets/images/utility_background.png
     - assets/models/
     - assets/models/textured-glb-comparison/
+    - assets/models/textured-glb-comparison/lubiak-assets/
     - assets/cards/final_import/
     - assets/cards/category_versos/
     - assets/decks/chanson_a_repondre_brio/

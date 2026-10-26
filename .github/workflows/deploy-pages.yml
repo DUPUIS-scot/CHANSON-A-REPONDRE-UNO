@@ -301,6 +301,9 @@ jobs:
           test -s build/web/assets/assets/models/LUBIAK_master_optimized.glb
           test -s build/web/assets/assets/models/LUBIAK_palace_pbr_repaired_final.glb
           test -s build/web/assets/assets/models/SILMARI_LLION_MEGAPOLE_LUBIAK_LIVE.glb
+          for module in "freak street.glb" avenue.glb "roof top.glb" palace.glb circus.glb district.glb "card room.glb" "dragon lair.glb"; do
+            test -s "build/web/assets/assets/models/textured-glb-comparison/lubiak-assets/$module"
+          done
           cmp -s assets/models/LUBIAK_master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED.glb build/web/assets/assets/models/LUBIAK_master_optimized.glb
           cmp -s assets/models/textured-glb-comparison/SILMARI_LLION_MEGAPOLE_LUBIAK_LIVE.glb build/web/assets/assets/models/SILMARI_LLION_MEGAPOLE_LUBIAK_LIVE.glb
           test "$(grep -oE "lubiak-assets/(freak%20street|avenue|roof%20top|palace|circus|district|card%20room|dragon%20lair)\.glb\?v=safe-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" build/web/lubiak/lubiak.js | wc -l)" -eq 8
