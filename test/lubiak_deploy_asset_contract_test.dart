@@ -13,7 +13,7 @@ void main() {
     );
     expect(
       workflow,
-      contains('cp "$modules"/*.glb "$deployed_modules/"'),
+      contains('cp "\$modules"/*.glb "\$deployed_modules/"'),
       reason: 'Deployment must explicitly package the nested Lubiak modules',
     );
 
