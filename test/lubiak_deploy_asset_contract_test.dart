@@ -11,6 +11,11 @@ void main() {
       pubspec,
       contains('assets/models/textured-glb-comparison/lubiak-assets/'),
     );
+    expect(
+      workflow,
+      contains('cp "$modules"/*.glb "$deployed_modules/"'),
+      reason: 'Deployment must explicitly package the nested Lubiak modules',
+    );
 
     for (final module in <String>[
       'freak street.glb',

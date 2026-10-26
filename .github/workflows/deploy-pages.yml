@@ -192,9 +192,13 @@ jobs:
           set -euo pipefail
           models="build/web/assets/assets/models"
           safe="assets/models/textured-glb-comparison"
+          modules="$safe/lubiak-assets"
+          deployed_modules="$models/textured-glb-comparison/lubiak-assets"
           test -s "assets/models/LUBIAK_master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED.glb"
           test -s "$safe/LUBIAK_palace_pbr_repaired_final.glb"
           test -s "$safe/SILMARI_LLION_MEGAPOLE_LUBIAK_LIVE.glb"
+          mkdir -p "$deployed_modules"
+          cp "$modules"/*.glb "$deployed_modules/"
           cp "assets/models/LUBIAK_master_optimized_4_ELEMENT_PBR_WEB_OPTIMIZED.glb" "$models/LUBIAK_master_optimized.glb"
           cp "$safe/LUBIAK_palace_pbr_repaired_final.glb" "$models/LUBIAK_palace_pbr_repaired_final.glb"
           cp "$safe/SILMARI_LLION_MEGAPOLE_LUBIAK_LIVE.glb" "$models/SILMARI_LLION_MEGAPOLE_LUBIAK_LIVE.glb"
