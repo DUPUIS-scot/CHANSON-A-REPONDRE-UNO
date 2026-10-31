@@ -1,8 +1,8 @@
-optimize-request: 2026-08-31T15:19:20+01:00
-scope: LUBIAK animated dragon web compression
-input: assets/models/lubiak_dragon_guardian_web.glb
+optimize-request: 2026-09-02T18:00:00+01:00
+scope: DUPUIS castle interior web compression
+input: assets/models/textured-glb-comparison/DUPUIS.glb
+output: assets/models/textured-glb-comparison/DUPUIS_castle_WEB_OPTIMIZED.glb
 contract:
-  animation: guardian_45s
-  rig: preserved
   geometry: draco
   textures: webp
+  target: castle interior
