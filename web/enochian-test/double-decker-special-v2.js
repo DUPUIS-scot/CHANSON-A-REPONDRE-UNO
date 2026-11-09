@@ -147,7 +147,7 @@
       takeoverHud?.querySelector('[data-dds-transport]')?.addEventListener('click',async()=>{await toggleJeckerTransport();paint()});
       takeoverHud?.querySelector('[data-dds-return]')?.addEventListener('click',async()=>{if(api.state?.enabled){api.disable?.();await restoreNormalStems();setMasterHold(false)}paint();if(panel.classList.contains('open'))launcher.click()});
       const engineBtn=panel.querySelector('[data-dds-enable]');
-      if(engineBtn&&engineBtn.dataset.ddsEngineBound!=='v7'){engineBtn.dataset.ddsEngineBound='v7';engineBtn.addEventListener('click',async e=>{e.preventDefault();e.stopPropagation();if(api.state?.enabled){api.disable?.();await restoreNormalStems();setMasterHold(false)}else{await suspendNormalStems();await api.enable?.();if(api.state?.enabled){await enforceActivePlayback(true);setCrossfader(api.state.crossfader);setMasterHold(true)}else await restoreNormalStems()}paint()},{capture:true})}
+      if(engineBtn&&engineBtn.dataset.ddsEngineBound!=='v7'){engineBtn.dataset.ddsEngineBound='v7';engineBtn.addEventListener('click',async e=>{e.preventDefault();e.stopImmediatePropagation();if(api.state?.enabled){api.disable?.();await restoreNormalStems();setMasterHold(false)}else{await suspendNormalStems();await api.enable?.();if(api.state?.enabled){await enforceActivePlayback(true);setCrossfader(api.state.crossfader);setMasterHold(true)}else await restoreNormalStems()}paint()},{capture:true})}
       const directEngine=engineControl?.querySelector('[data-dds-engine-direct]');
       if(directEngine&&directEngine.dataset.ddsEngineBound!=='v1'){
         directEngine.dataset.ddsEngineBound='v1';
