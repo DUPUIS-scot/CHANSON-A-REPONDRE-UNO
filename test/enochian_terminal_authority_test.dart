@@ -71,7 +71,10 @@ void main() {
     final doubleJester =
         File('web/enochian-test/double-decker-special-v2.js')
             .readAsStringSync();
-    expect(doubleJester, contains("ddsControls==='v12'"));
+    expect(doubleJester, contains("ddsControls==='v14'"));
+    expect(doubleJester, contains('2JESTER SIGNAL · OVER MAIN'));
+    expect(doubleJester, contains('LIVE · OVER MAIN'));
+    expect(doubleJester, contains('LIVE UNDERLAY'));
     expect(doubleJester,
         contains('center&&engineControl.parentElement!==center'));
     expect(stemJester, contains("const VERSION='v11'"));
