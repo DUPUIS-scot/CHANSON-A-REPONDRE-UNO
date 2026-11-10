@@ -43,11 +43,11 @@ void main() {
     expect(terminal,
         contains('authoritative-runtime.js?v=20260825-runtime-api-v2'));
     expect(terminal,
-        contains('double-decker-special-v2.js?v=20261013-engine-control-v17'));
+        contains('double-decker-special-v2.js?v=20261110-signal-overlay-v18'));
     expect(terminal,
         contains('double-decker-main-stem-link-v1.js?v=20260906-stem-jester-v15'));
     expect(terminal,
-        contains('double-jecker-radial-layout-v1.js?v=20260829-jester-radial-v13'));
+        contains('double-jecker-radial-layout-v1.js?v=20261110-signal-overlay-v14'));
     expect(terminal,
         contains('double-jecker-runtime-repair-v1.js?v=20260827-jester-authority-v11'));
     expect(terminal,
