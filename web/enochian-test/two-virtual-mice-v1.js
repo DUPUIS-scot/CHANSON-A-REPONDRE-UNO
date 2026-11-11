@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const VERSION='v7-20260908-live-sculpt',clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const VERSION='v8-20261111-header-toggle',clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function install(host){
  try{
   const live=host?.contentDocument,deck=live?.getElementById('deck'),d=deck?.contentDocument,w=d?.defaultView;
@@ -29,7 +29,8 @@ function install(host){
   function setPole(key,x,y){Object.assign(S.poles[key],snap(x,y))}
   function resetTriangle(){const wr=wave.getBoundingClientRect();for(const [i,k] of ['a','b','c'].entries()){const q=S.ang+i*Math.PI*2/3;setPole(k,S.cx+Math.cos(q)*S.spread,S.cy+Math.sin(q)*S.spread)}}
   function drawTether(){const wr=wave.getBoundingClientRect(),ratio=Math.min(2,w.devicePixelRatio||1),W=Math.max(1,Math.round(wr.width*ratio)),H=Math.max(1,Math.round(wr.height*ratio));if(tether.width!==W||tether.height!==H){tether.width=W;tether.height=H;tether.style.width=wr.width+'px';tether.style.height=wr.height+'px'}const x=tether.getContext('2d');x.clearRect(0,0,W,H);if(!S.on)return;x.save();x.scale(ratio,ratio);x.strokeStyle='rgba(168,241,255,.58)';x.shadowColor='rgba(57,200,245,.55)';x.shadowBlur=7;x.lineWidth=1;x.beginPath();x.moveTo(S.poles.a.x,S.poles.a.y);x.lineTo(S.poles.b.x,S.poles.b.y);x.lineTo(S.poles.c.x,S.poles.c.y);x.closePath();x.stroke();x.restore()}
-  function paint(){a.style.left=S.poles.a.x+'px';a.style.top=S.poles.a.y+'px';b.style.left=S.poles.b.x+'px';b.style.top=S.poles.b.y+'px';c.style.left=S.poles.c.x+'px';c.style.top=S.poles.c.y+'px';[a,b,c,tether,stateEl].forEach(el=>el.classList.toggle('on',S.on));toggle.classList.toggle('active',S.on);toggle.setAttribute('aria-pressed',String(S.on));stateEl.textContent=S.on?'3MIX · ANCHORED':'3MIX OFF';wave.classList.toggle('three-mix-sculpt-active',S.on);drawTether()}
+  const syncHeaderToggle=()=>{const headerToggle=d.getElementById('enochBrandLogo');if(!headerToggle)return;headerToggle.setAttribute('aria-pressed',String(S.on));headerToggle.setAttribute('aria-label',S.on?'Disable 3MIX':'Enable 3MIX');headerToggle.title=S.on?'3MIX ON · click to disable':'3MIX OFF · click to enable'};
+  function paint(){a.style.left=S.poles.a.x+'px';a.style.top=S.poles.a.y+'px';b.style.left=S.poles.b.x+'px';b.style.top=S.poles.b.y+'px';c.style.left=S.poles.c.x+'px';c.style.top=S.poles.c.y+'px';[a,b,c,tether,stateEl].forEach(el=>el.classList.toggle('on',S.on));toggle.classList.toggle('active',S.on);toggle.setAttribute('aria-pressed',String(S.on));stateEl.textContent=S.on?'3MIX · ANCHORED':'3MIX OFF';wave.classList.toggle('three-mix-sculpt-active',S.on);syncHeaderToggle();drawTether()}
   function apply3D(){
    const def=gesture();if(!def)return;const anchors=Array.isArray(def.anchors)?def.anchors:[],map=[['a',[0,1]],['c',[2]],['b',[3,4]]];
    for(const [key,ids] of map){const p=S.poles[key];ids.forEach((idx,j)=>{const q=anchors[idx];if(!q)return;q.bin=clamp(p.bin+(j?.72:-.72),0,15);q.row=clamp(p.row+(j?.62:-.62),0,15);q.pullY=clamp((7.5-p.row)/7.5*.9,-1.25,1.25);q.pullZ=clamp((p.bin-7.5)/7.5*.85+S.depth,-1.3,1.3);q.twist=clamp(S.twist+(key==='a'?-1:key==='b'?1:0)*.42,-Math.PI,Math.PI);q.radius=key==='c'?.22:.18;q.strength=1})}
@@ -37,6 +38,7 @@ function install(host){
   }
   async function setOn(on){S.on=!!on;S.armed=false;S.drag=null;if(S.on){const wr=wave.getBoundingClientRect();S.cx=wr.width*.5;S.cy=wr.height*.60;S.spread=Math.min(wr.width,wr.height)*.18;resetTriangle();await w.__enochSignalSourceAuthority?.set?.('mix');apply3D()}else{w.__enochSignalEngagement=Object.assign(w.__enochSignalEngagement||{},{threeMix:false,signalMice:0})}paint()}
   toggle.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();setOn(!S.on)});
+  d.addEventListener('click',e=>{if(!e.target?.closest?.('#enochBrandLogo'))return;e.preventDefault();e.stopPropagation();void setOn(!S.on)},{capture:true});
   toggle.addEventListener('enochian:two-mix-toggle',e=>setOn(!!e.detail?.active));d.addEventListener('enochian:two-mix-toggle',e=>setOn(!!e.detail?.active));
   for(const [el,key] of [[a,'a'],[b,'b'],[c,'c']])el.addEventListener('pointerdown',e=>{if(!S.on)return;S.drag=key;S.lastX=e.clientX;S.lastY=e.clientY;try{el.setPointerCapture(e.pointerId)}catch(_){}e.preventDefault();e.stopPropagation()});
   wave.addEventListener('pointerdown',e=>{if(!S.on||e.button!==0||e.target.closest('button,input,textarea,select,.threeMixPointer'))return;S.armed=true;S.lastX=e.clientX;S.lastY=e.clientY;e.preventDefault()},{capture:true});
