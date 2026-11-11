@@ -1,4 +1,4 @@
-deploy-request: 2026-11-11T12:00:00Z
+deploy-request: 2026-11-11T07:35:00Z
 source: Codex
-scope: publish Chanson à Répondre ECO deck and work-in-progress ribbons
-page-commit: aa94cb2
+scope: replace legacy Double Jester decks with the 360 Signal Table
+page-commit: a9b6fe3ffbc925fd7bb8b3c74fc8c4f23b1caa1c
