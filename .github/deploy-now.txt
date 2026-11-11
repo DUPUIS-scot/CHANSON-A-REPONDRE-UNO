@@ -1,4 +1,4 @@
-deploy-request: 2026-11-10T04:55:00Z
+deploy-request: 2026-11-11T07:12:00Z
 source: Codex
-scope: publish final Double Jester signal overlay and cache-busted terminal scripts
-page-commit: 7fa3e3b2686b7c575ea401fd0d99c7faa25165ee
+scope: publish Double Jester 360 Signal Table and Jester-only effect bank
+page-commit: 33b402615d7cae93dbfacb96562563684b37e9a8
