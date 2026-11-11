@@ -32,6 +32,8 @@ void main() {
             .readAsStringSync();
     final jesterOutput = File('web/enochian-test/double-jecker-output-v1.js')
         .readAsStringSync();
+    final doubleJester360 =
+        File('web/enochian-test/double-jester-360-fx-v1.js').readAsStringSync();
 
     expect(liveCopy, contains('window.__enochStemRuntimeApi='));
     expect(liveCopy, contains("version:'v1'"));
@@ -46,6 +48,8 @@ void main() {
         contains('authoritative-runtime.js?v=20260825-runtime-api-v2'));
     expect(terminal,
         contains('double-decker-special-v2.js?v=20261110-signal-overlay-v18'));
+    expect(terminal,
+        contains('double-jester-360-fx-v1.js?v=20261111-360-fx-v1'));
     expect(terminal,
         contains('double-decker-main-stem-link-v1.js?v=20260906-stem-jester-v15'));
     expect(terminal,
@@ -96,6 +100,15 @@ void main() {
     expect(jesterTransport, contains('data-jester-play'));
     expect(jesterTransport, contains('data-jester-pause'));
     expect(jesterOutput, contains('MASTER JESTER'));
+    expect(doubleJester360, contains("const VERSION='v1'"));
+    expect(doubleJester360, contains('360 SIGNAL TABLE'));
+    expect(doubleJester360, contains("['radio','RADIO']"));
+    expect(doubleJester360, contains("['freeze','FREEZE']"));
+    expect(doubleJester360, contains("['stutter','STUTTER']"));
+    expect(doubleJester360, contains("['reverse','REVERSE']"));
+    expect(doubleJester360, contains("['ring','RING MOD']"));
+    expect(doubleJester360, contains("['shift','FREQ SHIFT']"));
+    expect(doubleJester360, contains("['shimmer','SHIMMER']"));
 
     // The current terminal boot owns only the active analyser/stem/control
     // authorities. The legacy UI-repairs script may remain loaded for
