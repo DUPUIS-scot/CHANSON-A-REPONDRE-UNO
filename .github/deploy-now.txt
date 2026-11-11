@@ -1,4 +1,4 @@
-deploy-request: 2026-11-11T07:35:00Z
+deploy-request: 2026-11-11T07:51:00Z
 source: Codex
-scope: replace legacy Double Jester decks with the 360 Signal Table
+scope: publish legacy-free Double Jester 360 Signal Table after regression contract simplification
 page-commit: a9b6fe3ffbc925fd7bb8b3c74fc8c4f23b1caa1c
