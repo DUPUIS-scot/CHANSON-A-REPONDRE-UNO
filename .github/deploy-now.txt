@@ -1,4 +1,4 @@
-deploy-request: 2026-11-11T07:12:00Z
+deploy-request: 2026-11-11T12:00:00Z
 source: Codex
-scope: publish Double Jester 360 Signal Table and Jester-only effect bank
-page-commit: 33b402615d7cae93dbfacb96562563684b37e9a8
+scope: publish Chanson à Répondre ECO deck and work-in-progress ribbons
+page-commit: aa94cb2
