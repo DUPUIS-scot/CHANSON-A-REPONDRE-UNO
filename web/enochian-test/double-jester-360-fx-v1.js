@@ -91,7 +91,7 @@
         const graph=ensureGraph();
         if(graph){
           const mapping={radio:'radioWet',freeze:'freezeWet',stutter:'stutterWet',reverse:'reverseWet',ring:'ringWet',shift:'shiftWet',shimmer:'shimmerWet'};
-          const gain=graph[mapping[name]]?.gain;if(gain)setOutputGain(gain,on?.68:0);
+          const gain=graph[mapping[name]]?.gain;if(gain)setOutputGain(gain,on ? .68 : 0);
           if(name==='stutter'){setOutputGain(graph.stutter.gain,on?0:1);if(state.stutterTimer)clearInterval(state.stutterTimer);state.stutterTimer=null;if(on){let flip=false;state.stutterTimer=w.setInterval(()=>{flip=!flip;setOutputGain(graph.stutter.gain,flip?1:0,.008)},92)}}
         }
         root.querySelector('[data-dj360-fx="'+name+'"]')?.classList.toggle('active',!!on);
