@@ -49,7 +49,7 @@ void main() {
     expect(terminal,
         contains('double-decker-special-v2.js?v=20261110-signal-overlay-v18'));
     expect(terminal,
-        contains('double-jester-360-fx-v1.js?v=20261111-360-fx-v1'));
+        contains('double-jester-360-fx-v1.js?v=20261111-360-replace-v2'));
     expect(terminal,
         contains('double-decker-main-stem-link-v1.js?v=20260906-stem-jester-v15'));
     expect(terminal,
@@ -102,6 +102,9 @@ void main() {
     expect(jesterOutput, contains('MASTER JESTER'));
     expect(doubleJester360, contains("const VERSION='v1'"));
     expect(doubleJester360, contains('360 SIGNAL TABLE'));
+    expect(doubleJester360, contains('TAKE THE AIR'));
+    expect(doubleJester360, contains('.dds-grid> :not(.dds-center)'));
+    expect(doubleJester360, contains('.dds-center> :not(.dj360-table)'));
     expect(doubleJester360, contains("['radio','RADIO']"));
     expect(doubleJester360, contains("['freeze','FREEZE']"));
     expect(doubleJester360, contains("['stutter','STUTTER']"));
