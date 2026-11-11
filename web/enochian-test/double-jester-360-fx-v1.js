@@ -34,7 +34,7 @@
         .dj360-disc:after{content:'◉';position:absolute;inset:30px;border:1px solid #f1dba8;border-radius:50%;display:grid;place-items:center;color:#f1dba8;background:radial-gradient(circle,#38120c 0 18%,#140b09 19% 51%,#4a1611 52% 55%,#080909 56%);font-size:30px;text-shadow:0 0 8px #ff301c}.dj360-disc:active{cursor:grabbing;box-shadow:inset 0 0 0 4px #080808,inset 0 0 0 6px #fff0ba,0 0 0 1px #fff0ba,0 0 38px #ff3822}
         .dj360-route{display:grid;grid-template-columns:1fr auto 1fr;gap:5px;align-items:center;color:#d1c19d;font-size:6px}.dj360-route b{color:#ff754d;text-align:center}.dj360-route span:last-child{text-align:right;color:#78e4db}
         .dj360-fx{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}.dj360-fx button{min-height:24px;border:1px solid #4d4030;border-radius:3px;background:#070b0b;color:#cdbd98;font:900 6px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;cursor:pointer}.dj360-fx button.active{border-color:#ff5e44;background:#35110d;color:#fff0bd;box-shadow:0 0 12px #ff311e88}
-        .dj360-help{color:#83a8a5;font-size:6px;text-align:center;letter-spacing:.04em}
+        .dj360-help{color:#83a8a5;font-size:6px;text-align:center;letter-spacing:.04em}.dj360-start{min-height:30px;border:1px solid #ff7354;border-radius:4px;background:linear-gradient(180deg,#601d14,#230b09);color:#fff0bd;font:1000 8px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.1em;cursor:pointer;box-shadow:0 0 15px #ff331d55}.dj360-start.live{border-color:#79f4e0;background:linear-gradient(180deg,#0c3c35,#061c1a);color:#aaffef;box-shadow:0 0 18px #2cf2c177}#doubleDeckerSpecial .dds-grid{display:block!important;grid-template-columns:1fr!important}#doubleDeckerSpecial .dds-grid> :not(.dds-center){display:none!important}#doubleDeckerSpecial .dds-center{display:block!important;width:100%!important;max-width:none!important;min-height:0!important}#doubleDeckerSpecial .dds-center> :not(.dj360-table){display:none!important}
         @media(max-width:720px){.dj360-stage{min-height:112px}.dj360-disc{width:98px;height:98px}.dj360-disc:after{inset:25px;font-size:24px}.dj360-fx{grid-template-columns:repeat(3,minmax(0,1fr))}}
       `;
       document.head.appendChild(style);
@@ -46,10 +46,10 @@
         root.className='dj360-table';
         root.dataset.dj360Table='';
         root.setAttribute('aria-label','Double Jester 360 Signal Table');
-        root.innerHTML='<div class="dj360-head"><b>2JESTER · 360 SIGNAL TABLE</b><output data-dj360-state>ARMED · MAIN UNDERLAY</output></div><div class="dj360-stage"><button type="button" class="dj360-disc" data-dj360-disc role="slider" aria-label="Double Jester 360 signal blend" aria-valuemin="0" aria-valuemax="360" aria-valuenow="0"></button><div class="dj360-underlay">MAIN PROGRAM · CONTINUES UNDERNEATH</div></div><div class="dj360-route"><span>JESTER A</span><b data-dj360-route>0° · A</b><span>JESTER B</span></div><div class="dj360-fx">'+FX.map(([id,label])=>'<button type="button" data-dj360-fx="'+id+'" aria-pressed="false">'+label+'</button>').join('')+'</div><div class="dj360-help">DRAG TAG TO BLEND A ↔ B · EFFECTS PROCESS JESTER ONLY</div>';
+        root.innerHTML='<div class="dj360-head"><b>2JESTER · 360 SIGNAL TABLE</b><output data-dj360-state>ARMED · MAIN UNDERLAY</output></div><button type="button" class="dj360-start" data-dj360-start aria-pressed="false">▶ TAKE THE AIR</button><div class="dj360-stage"><button type="button" class="dj360-disc" data-dj360-disc role="slider" aria-label="Double Jester 360 signal blend" aria-valuemin="0" aria-valuemax="360" aria-valuenow="0"></button><div class="dj360-underlay">MAIN PROGRAM · CONTINUES UNDERNEATH</div></div><div class="dj360-route"><span>JESTER A</span><b data-dj360-route>0° · A</b><span>JESTER B</span></div><div class="dj360-fx">'+FX.map(([id,label])=>'<button type="button" data-dj360-fx="'+id+'" aria-pressed="false">'+label+'</button>').join('')+'</div><div class="dj360-help">DRAG TAG TO BLEND A ↔ B · EFFECTS PROCESS JESTER ONLY</div>';
         center.insertBefore(root,center.querySelector('[data-jester-signal-route]')||center.firstChild);
       }
-      const disc=root.querySelector('[data-dj360-disc]'),route=root.querySelector('[data-dj360-route]'),status=root.querySelector('[data-dj360-state]');
+      const disc=root.querySelector('[data-dj360-disc]'),route=root.querySelector('[data-dj360-route]'),status=root.querySelector('[data-dj360-state]'),start=root.querySelector('[data-dj360-start]');
       const state=api.state.dj360||(api.state.dj360={angle:0,fx:{},stutterTimer:null,reverseTimer:null});
 
       const slots=()=>['A','B'].flatMap(deckName=>['vocals','drums','bass','other'].map(stem=>api.state?.slots?.[deckName]?.[stem]).filter(Boolean));
@@ -111,7 +111,8 @@
       disc.addEventListener('pointerup',()=>{drag=null});
       disc.addEventListener('keydown',event=>{if(event.key==='ArrowRight'||event.key==='ArrowUp'){setAngle(state.angle+15);event.preventDefault()}if(event.key==='ArrowLeft'||event.key==='ArrowDown'){setAngle(state.angle-15);event.preventDefault()}});
       root.querySelectorAll('[data-dj360-fx]').forEach(button=>button.addEventListener('click',()=>{const name=button.dataset.dj360Fx;setFx(name,!state.fx[name])}));
-      const sync=()=>{const on=!!api.state?.enabled;status.textContent=on?'LIVE · JESTER OVER MAIN':'ARMED · MAIN UNDERLAY';root.classList.toggle('is-live',on)};
+      start?.addEventListener('click',()=>panel.querySelector('[data-dds-engine-direct]')?.click());
+      const sync=()=>{const on=!!api.state?.enabled;status.textContent=on?'LIVE · JESTER OVER MAIN':'ARMED · MAIN UNDERLAY';root.classList.toggle('is-live',on);if(start){start.classList.toggle('live',on);start.setAttribute('aria-pressed',String(on));start.textContent=on?'■ RETURN TO MAIN':'▶ TAKE THE AIR'}};
       const oldEnable=api.enable,oldDisable=api.disable;
       if(!api.__dj360Wrapped){api.__dj360Wrapped=true;if(oldEnable)api.enable=async(...args)=>{const result=await oldEnable.apply(api,args);ensureGraph();sync();return result};if(oldDisable)api.disable=async(...args)=>{const result=await oldDisable.apply(api,args);sync();return result};}
       api.set360Angle=setAngle;api.set360Fx=setFx;api.ensure360Fx=ensureGraph;
