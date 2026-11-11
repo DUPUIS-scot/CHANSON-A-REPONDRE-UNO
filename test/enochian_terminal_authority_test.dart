@@ -13,6 +13,8 @@ void main() {
         .readAsStringSync();
     final twoMixOwner = File('web/enochian-test/two-mix-master-anchor-v1.js')
         .readAsStringSync();
+    final threeMixOwner = File('web/enochian-test/two-virtual-mice-v1.js')
+        .readAsStringSync();
     final signalOwner = File('web/enochian-test/analyser-controls-contained-v1.js')
         .readAsStringSync();
     final radial = File('web/enochian-test/double-jecker-radial-layout-v1.js')
@@ -103,6 +105,9 @@ void main() {
     expect(playbackOwner, contains('repeat(9,minmax(0,1fr))'));
     expect(twoMixOwner, contains("twoMixMasterAnchor='v1'"));
     expect(twoMixOwner, contains('two-mix-help-open'));
+    expect(threeMixOwner, contains("VERSION='v8-20261111-header-toggle'"));
+    expect(threeMixOwner, contains("closest?.('#enochBrandLogo')"));
+    expect(threeMixOwner, contains('syncHeaderToggle'));
     expect(signalOwner, contains("analyserControlsContained='v6'"));
     expect(signalOwner, isNot(contains('const repairPlayback=')));
     expect(signalOwner, isNot(contains('const repairTwoMix=')));
