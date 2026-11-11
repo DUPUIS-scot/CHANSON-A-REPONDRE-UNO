@@ -48,6 +48,7 @@ class DeckProvider extends ChangeNotifier {
       await _installProductionDeck();
       await _installBrioDeck();
       await _installHpDeck();
+      await _installEcoDeck();
       _activeDeckId = _decodeStoredId(await _storage.read(_activeKey));
       if (activeDeck == null) {
         _activeDeckId = AppConstants.productionDeckId;
@@ -260,6 +261,41 @@ class DeckProvider extends ChangeNotifier {
     );
     _decks = [
       ..._decks.where((item) => item.id != AppConstants.hpDeckId),
+      deck,
+    ];
+  }
+
+  Future<void> _installEcoDeck() async {
+    final paths = await _bundledImagesUnder(
+      'assets/decks/chanson_a_repondre_eco/cards/',
+    );
+    final cards = <CardImageModel>[
+      for (var index = 0; index < paths.length; index++)
+        CardImageModel(
+          id: 'eco-${(index + 1).toString().padLeft(3, '0')}',
+          deckId: AppConstants.ecoDeckId,
+          title: 'ECO ${(index + 1).toString().padLeft(3, '0')}',
+          path: paths[index],
+          category: cardCategoryAt(index).label,
+          colour: cardCategoryAt(index).colour,
+          importedAt: DateTime.utc(2026, 11, 11),
+        ),
+    ];
+    if (cards.length < 2) {
+      throw const FormatException(
+        'The bundled ECO deck must contain two cards.',
+      );
+    }
+    final deck = Deck(
+      id: AppConstants.ecoDeckId,
+      name: 'CHANSON A REPONDRE ECO',
+      coverPath: AppConstants.ecoDeckCover,
+      cardBack: AppConstants.ecoDeckCover,
+      cards: cards,
+      hasExplicitCategories: true,
+    );
+    _decks = [
+      ..._decks.where((item) => item.id != AppConstants.ecoDeckId),
       deck,
     ];
   }

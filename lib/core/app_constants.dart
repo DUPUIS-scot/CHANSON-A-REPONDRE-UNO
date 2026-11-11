@@ -10,5 +10,13 @@ abstract final class AppConstants {
       'assets/decks/chanson_a_repondre_brio/deck.json';
   static const hpDeckId = 'chanson-a-repondre-hp';
   static const hpDeckCover = 'assets/hp/verso.png';
-  static const builtInDeckIds = {productionDeckId, brioDeckId, hpDeckId};
+  static const ecoDeckId = 'chanson-a-repondre-eco';
+  static const ecoDeckCover =
+      'assets/decks/chanson_a_repondre_eco/cover.png';
+  static const builtInDeckIds = {
+    productionDeckId,
+    brioDeckId,
+    hpDeckId,
+    ecoDeckId,
+  };
 }

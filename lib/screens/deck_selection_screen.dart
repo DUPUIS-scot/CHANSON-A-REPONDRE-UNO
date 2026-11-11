@@ -96,7 +96,8 @@ class DeckSelectionScreen extends StatelessWidget {
                         onDelete: () {},
                       );
 
-                      if (deck.id != AppConstants.hpDeckId) {
+                      if (deck.id != AppConstants.hpDeckId &&
+                          deck.id != AppConstants.ecoDeckId) {
                         return tile;
                       }
 
@@ -111,7 +112,7 @@ class DeckSelectionScreen extends StatelessWidget {
                               child: FractionallySizedBox(
                                 widthFactor: compactLandscape ? 0.86 : 0.94,
                                 child: Image.asset(
-                                  'assets/hp/work_in_progress_ribbon.webp',
+                                  'assets/images/work_in_progress_ribbon.png',
                                   fit: BoxFit.contain,
                                   filterQuality: FilterQuality.high,
                                   errorBuilder: (_, _, _) =>
