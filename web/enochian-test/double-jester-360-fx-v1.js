@@ -24,7 +24,7 @@
       if(style)style.remove();
       style=document.createElement('style');
       style.id='dj360-signal-table-style';
-      style.textContent=\`
+      style.textContent=`
         .dj360-table{display:grid;gap:6px;border:1px solid #805b31;border-radius:7px;padding:7px;background:linear-gradient(145deg,#160b08,#030607 56%,#10100c);box-shadow:inset 0 0 0 1px #2e2013,0 0 18px #e22b1828;color:#e8d0a0;font:800 7px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
         .dj360-head{display:flex;align-items:center;justify-content:space-between;gap:6px;color:#f7d991;letter-spacing:.11em}.dj360-head b{color:#ff654e}.dj360-head output{color:#7ff3e0;font-size:6px;text-align:right}
         .dj360-stage{position:relative;display:grid;place-items:center;min-height:132px;overflow:hidden;border:1px solid #3e3320;border-radius:5px;background:radial-gradient(ellipse at center,#301008 0,#0c0908 48%,#020303 76%)}
@@ -36,7 +36,7 @@
         .dj360-fx{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}.dj360-fx button{min-height:24px;border:1px solid #4d4030;border-radius:3px;background:#070b0b;color:#cdbd98;font:900 6px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;cursor:pointer}.dj360-fx button.active{border-color:#ff5e44;background:#35110d;color:#fff0bd;box-shadow:0 0 12px #ff311e88}
         .dj360-help{color:#83a8a5;font-size:6px;text-align:center;letter-spacing:.04em}
         @media(max-width:720px){.dj360-stage{min-height:112px}.dj360-disc{width:98px;height:98px}.dj360-disc:after{inset:25px;font-size:24px}.dj360-fx{grid-template-columns:repeat(3,minmax(0,1fr))}}
-      \`;
+      `;
       document.head.appendChild(style);
 
       const center=panel.querySelector('.dds-center')||panel;
