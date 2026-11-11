@@ -74,7 +74,7 @@ void main() {
       final storage = LocalStorageService(); final provider = DeckProvider(storage, DeckImportService(storage)); addTearDown(provider.dispose); await provider.load();
       await provider.rename(AppConstants.productionDeckId, 'Changed'); await provider.delete(AppConstants.productionDeckId);
       await provider.rename(AppConstants.brioDeckId, 'Changed BRIO'); await provider.delete(AppConstants.brioDeckId); await provider.select('missing-deck');
-      expect(provider.decks, hasLength(3)); expect(provider.activeDeckId, AppConstants.productionDeckId); expect(provider.decks.first.name, isNot('Changed'));
+      expect(provider.decks, hasLength(AppConstants.builtInDeckIds.length)); expect(provider.activeDeckId, AppConstants.productionDeckId); expect(provider.decks.first.name, isNot('Changed'));
       expect(provider.decks.singleWhere((deck) => deck.id == AppConstants.brioDeckId).name, isNot('Changed BRIO'));
       expect(provider.decks.first.cards, hasLength(AppConstants.productionDeckSize));
     });
