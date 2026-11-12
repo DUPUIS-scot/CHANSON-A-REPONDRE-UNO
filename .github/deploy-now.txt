@@ -1,4 +1,4 @@
-deploy-request: 2026-11-12T06:39:00Z
+deploy-request: 2026-11-12T06:43:00Z
 source: Codex
-scope: publish Double Jester 360 Signal Table as the only performance surface
-page-commit: 85f9eebd38e553a92088fd0407d33c7e9bee13d8
+scope: publish Double Jester 360-only release after preserving informational Flutter notices
+page-commit: a700536bb4d617a6748fa4fa41571271000ee61b
