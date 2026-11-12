@@ -1,4 +1,4 @@
-deploy-request: 2026-11-12T08:56:00Z
+deploy-request: 2026-11-12T09:07:00Z
 source: Codex
-scope: publish Double Jester 360 interface mounted in the actual deck frame
-page-commit: 05b57c8748c9420dbbe131c014280a710ae18c86
+scope: publish Double Jester 360 overlay-to-deck runtime bridge
+page-commit: b1cbd25d0e411cf181e5a14aeb88d6f38e6687f4
