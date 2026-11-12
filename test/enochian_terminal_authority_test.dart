@@ -49,7 +49,7 @@ void main() {
     expect(terminal,
         contains('double-decker-special-v2.js?v=20261110-signal-overlay-v18'));
     expect(terminal,
-        contains('double-jester-360-fx-v1.js?v=20261112-deck-frame-v4'));
+        contains('double-jester-360-fx-v1.js?v=20261112-overlay-bridge-v5'));
     expect(terminal,
         contains('double-decker-main-stem-link-v1.js?v=20260906-stem-jester-v15'));
     expect(terminal,
@@ -101,7 +101,7 @@ void main() {
     expect(jesterTransport, contains('data-jester-pause'));
     expect(jesterOutput, contains('MASTER JESTER'));
     expect(doubleJester360, contains("const VERSION='v1'"));
-    expect(doubleJester360, contains("panel=d.getElementById('doubleDeckerSpecial')"));
+    expect(doubleJester360, contains("panel=outer.getElementById('doubleDeckerSpecial')"));
     expect(doubleJester360, contains('360 SIGNAL TABLE'));
     expect(doubleJester360, contains('TAKE THE AIR'));
     expect(doubleJester360, contains('.dds-body>.dds-deck{display:none!important}'));
