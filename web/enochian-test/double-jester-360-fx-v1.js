@@ -15,14 +15,14 @@
   function install(host){
     try{
       const live=host?.contentDocument,deck=live?.getElementById('deck'),d=deck?.contentDocument,w=d?.defaultView;
-      const api=w?.__enochDoubleDeckerSpecial,panel=d.getElementById('doubleDeckerSpecial');
+      const outer=host?.ownerDocument||document,api=w?.__enochDoubleDeckerSpecial,panel=outer.getElementById('doubleDeckerSpecial');
       if(!d||!w||!api||!panel)return false;
       if(panel.dataset.dj360Table===VERSION)return true;
       panel.dataset.dj360Table=VERSION;
 
-      let style=d.getElementById('dj360-signal-table-style');
+      let style=outer.getElementById('dj360-signal-table-style');
       if(style)style.remove();
-      style=d.createElement('style');
+      style=outer.createElement('style');
       style.id='dj360-signal-table-style';
       style.textContent=`
         .dj360-table{display:grid;gap:6px;border:1px solid #805b31;border-radius:7px;padding:7px;background:linear-gradient(145deg,#160b08,#030607 56%,#10100c);box-shadow:inset 0 0 0 1px #2e2013,0 0 18px #e22b1828;color:#e8d0a0;font:800 7px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
@@ -37,12 +37,12 @@
         .dj360-help{color:#83a8a5;font-size:6px;text-align:center;letter-spacing:.04em}.dj360-start{min-height:30px;border:1px solid #ff7354;border-radius:4px;background:linear-gradient(180deg,#601d14,#230b09);color:#fff0bd;font:1000 8px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.1em;cursor:pointer;box-shadow:0 0 15px #ff331d55}.dj360-start.live{border-color:#79f4e0;background:linear-gradient(180deg,#0c3c35,#061c1a);color:#aaffef;box-shadow:0 0 18px #2cf2c177}#doubleDeckerSpecial{grid-template-rows:minmax(0,1fr)!important}#doubleDeckerSpecial .dds-bar,#doubleDeckerSpecial .dds-foot{display:none!important}#doubleDeckerSpecial .dds-body{display:block!important;padding:7px!important;overflow:auto!important}#doubleDeckerSpecial .dds-body>.dds-deck{display:none!important}#doubleDeckerSpecial .dds-body>.dds-center{display:block!important;width:100%!important;max-width:none!important;min-height:0!important}#doubleDeckerSpecial .dds-center> :not(.dj360-table){display:none!important}
         @media(max-width:720px){.dj360-stage{min-height:112px}.dj360-disc{width:98px;height:98px}.dj360-disc:after{inset:25px;font-size:24px}.dj360-fx{grid-template-columns:repeat(3,minmax(0,1fr))}}
       `;
-      d.head.appendChild(style);
+      outer.head.appendChild(style);
 
       const center=panel.querySelector('.dds-center')||panel;
       let root=panel.querySelector('[data-dj360-table]');
       if(!root){
-        root=d.createElement('section');
+        root=outer.createElement('section');
         root.className='dj360-table';
         root.dataset.dj360Table='';
         root.setAttribute('aria-label','Double Jester 360 Signal Table');
@@ -120,5 +120,5 @@
       return true;
     }catch(_){return false}
   }
-  window.installEnochianDoubleJester360FxV1=host=>{let n=0,t=setInterval(()=>{if(install(host)||++n>240)clearInterval(t)},60);return install(host)};
+  window.installEnochianDoubleJester360FxV1=host=>{let n=0,t=setInterval(()=>{if(install(host)||++n>900)clearInterval(t)},60);return install(host)};
 })();
