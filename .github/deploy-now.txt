@@ -1,4 +1,4 @@
-deploy-request: 2026-11-11T07:51:00Z
+deploy-request: 2026-11-12T06:39:00Z
 source: Codex
-scope: publish legacy-free Double Jester 360 Signal Table after regression contract simplification
-page-commit: a9b6fe3ffbc925fd7bb8b3c74fc8c4f23b1caa1c
+scope: publish Double Jester 360 Signal Table as the only performance surface
+page-commit: 85f9eebd38e553a92088fd0407d33c7e9bee13d8
